@@ -48,9 +48,9 @@ router.register(r'users', UserViewSet)
 
 urlpatterns = [
     url(r'api/v1/', include(router.urls)),
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'api/v1/hello-world/$', hello_world),
 
-    url(r'api/v1/my-own-view/$', hello_world),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
     path('polls/', include('polls.urls')),
     path('admin/', admin.site.urls),
