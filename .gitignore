@@ -1,2 +1,9 @@
 db.sqlite3
 __pycache__
+*/*.pyc
+__pycache__/*.pyc
+catboost_info
+_*.pyx
+*.pyc
+*.cbm
+.ipynb_checkpoints
