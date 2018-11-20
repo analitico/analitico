@@ -120,6 +120,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATIC_ROOT = "static/"
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
