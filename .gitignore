@@ -7,3 +7,5 @@ _*.pyx
 *.pyc
 *.cbm
 .ipynb_checkpoints
+static
+
