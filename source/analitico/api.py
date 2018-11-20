@@ -1,6 +1,9 @@
 
 import datetime
 
+from rest_framework.request import Request
+from rest_framework.response import Response
+
 # RESTful API Design Tips from Experience
 # https://medium.com/studioarmix/learn-restful-api-design-ideals-c5ec915a430f
 
@@ -27,47 +30,48 @@ class ApiException(Exception):
 
 
 
-def api_get_parameter(request, parameter):
-    """ Returns a request parameter either from the url query (eg: ?param=value) or from the json payload """
-    if parameter in request.args:
-        return request.args[parameter]
-    return request.json[parameter] if request.json and parameter in request.json else None
+def api_get_parameter(request: Request, parameter: str) -> str:
+    """ Returns a parameter either from the request's json payload, form parameters or query parameters. """
+    if parameter in request.data:
+        return request.data[parameter]
+    if parameter in request.query_params:
+        return request.query_params[parameter]
+    return None
 
 
-def api_check_auth(request, resource):
+def api_check_auth(request: Request, resource: str) -> str:
     """ Will raise an exception if the auth token is missing or incorrect """
-    token = request.headers.get('analitico-token', None)
+    token = request.META.get('HTTP_ANALITICO_TOKEN') # somehow, django converts to uppercase and adds http
+    if token is None:
+        token = api_get_parameter(request, 'analitico-token')
     if token != 'ea255071ef844c5e9435ba1382d4728c' and token != 'gio55071ef844c5e9435ba1382d4728c':
         raise ApiException("Missing or invalid 'analitico-token' in http headers. Access is not authorized.", 401)
 
    
-def api_wrapper(method, gcs_request=None, **kwargs):
+def api_wrapper(method, request, **kwargs) -> {}:
     """ APIs wrapper used to handle shared services like auth, tracking, errors, etc """
     try:
-
         started_on = datetime.datetime.now()
-        debug = api_get_parameter(request, "debug")
-        req = gcs_request if gcs_request is not None else request
 
         # TODO: Handle auth_token for authentication, authorization, billing
-
-        results = method(req, debug, **kwargs)
+        results = method(request, **kwargs)
         # TODO: track calls and performance in Google Analytics
 
         results["meta"]["elapsed_ms"] = int((datetime.datetime.now() - started_on).total_seconds() * 1000)
 
     except ApiException as error:
-        response = jsonify(error.to_dict())
-        response.status_code = error.status_code
-        return response
+        data = error.to_dict()
+        data['status'] = error.status_code
+        return Response(data, error.status_code)
 
     except Exception as exception:
         print(exception)
-        results = { "errors" : [{
+        data = { "errors" : [{
             "status": 500,
             "detail": str(exception) if exception.args[0] is None else exception.args[0]  
         }]}
+        return Response(data, 500)
         # TODO: track errors in Google Analytics
 
-    return flask.jsonify(results)
+    return Response(results)
 

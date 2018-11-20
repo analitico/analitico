@@ -1,5 +1,9 @@
-# Sorting supermarket orders based on machine learned market maps
-# Copyright (C) 2018 by Analitco.ai. All rights reserved.
+
+# Sorting supermarket orders based on 
+# machine learned market maps
+
+# Copyright (C) 2018 by Analitco.ai
+# All rights reserved.
 
 import os
 import sys
@@ -9,7 +13,6 @@ import multiprocessing
 import pandas as pd
 import numpy as np
 
-from flask import jsonify
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
 from catboost import Pool, CatBoostRegressor, CatBoostClassifier
@@ -426,7 +429,7 @@ def s24_sort_order(order) -> ({}, {}):
     return order, meta
 
 
-def handle_sorting_request(request, debug, version):
+def handle_sorting_request(request):
     """ Responds to an API call, returning a sorted order """
     api_check_auth(request, PROJECT_ID)
 

@@ -12,6 +12,7 @@ urlpatterns = [
 
     path('api/v1/', include('api.urls')),
     path('api/v1/', include(api_router.urls)),
+    path('api/v1/s24', include('s24.urls')),
 
     path('polls/', include('polls.urls')),
     path('admin/', admin.site.urls),
