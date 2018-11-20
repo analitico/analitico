@@ -34,4 +34,13 @@ Resources
 ---
 
 Django Tutorial  
-https://docs.djangoproject.com/en/2.1/intro/tutorial01/
+https://docs.djangoproject.com/en/2.1/intro/tutorial01/   
+
+Django Testing Tools  
+https://docs.djangoproject.com/en/2.1/topics/testing/tools/  
+
+Use Django in Visual Studio Code  
+https://code.visualstudio.com/docs/python/tutorial-django  
+
+Django REST Framework   
+https://www.django-rest-framework.org/  

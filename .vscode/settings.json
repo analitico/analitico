@@ -1,3 +1,13 @@
 {
-    "python.venvPath": "~/envs"
+    "python.venvPath": "~/envs",
+    "python.unitTest.unittestArgs": [
+        "-v",
+        "-s",
+        "./source",
+        "-p",
+        "test*.py"
+    ],
+    "python.unitTest.pyTestEnabled": false,
+    "python.unitTest.nosetestsEnabled": false,
+    "python.unitTest.unittestEnabled": true
 }
