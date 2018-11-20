@@ -29,7 +29,7 @@
             "name": "Python: Django",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manage.py",
+            "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
             "args": [
                 "runserver",
