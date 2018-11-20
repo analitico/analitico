@@ -12,16 +12,30 @@ from rest_framework.decorators import api_view
 
 from . import views
 
-from .views import UserViewSet, hello_world
+# Serializers define the API representation.
+class UserSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = User
+        fields = ('url', 'username', 'email', 'is_staff')
+
+# ViewSets define the view behavior.
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+@api_view()
+def hello_world(request):
+    return Response({ "data": {"message": "Hello, world!"}})
 
 # Routers provide an easy way of automatically determining the URL conf.
-router = routers.DefaultRouter()
-router.register(r'users', UserViewSet)
-
+api_router = routers.DefaultRouter()
+api_router.register(r'users', UserViewSet)
 
 app_name = 'api'
 urlpatterns = [
-    url(r'v1/', include(router.urls)),
-    url(r'v1/hello-world/$', hello_world),
+
+#    url(r'^v1/', include((api_router.urls, 'api'))),
+    url(r'hello/$', hello_world),
+
 ]
 

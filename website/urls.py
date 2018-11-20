@@ -26,11 +26,24 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+
+
+# Routers provide an easy way of automatically determining the URL conf.
+#router = routers.DefaultRouter()
+
+from api.urls import UserViewSet, hello_world, api_router
+
+#router.register(r'users', UserViewSet)
+
+
 urlpatterns = [
+#    url(r'api/v1/hello-world/$', hello_world),
 
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+ #   url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
-    path('api/', include('api.urls')),
+    path(r'api/v1/', include('api.urls')),
+    path(r'api/v1/', include(api_router.urls)),
+
     path('polls/', include('polls.urls')),
     path('admin/', admin.site.urls),
 ]
