@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.venvPath": "~/envs",
+		"python.pythonPath": "/home/gionata/envs/analitico/bin/python"
+	}
+}
