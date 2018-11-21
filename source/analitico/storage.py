@@ -22,6 +22,9 @@ from analitico.api import ApiException
 
 _BUCKET="analitico-api"
 
+# default time to live for cached files
+_CACHE_TTL_SEC = 600
+
 # cloud storage key is copied in user root (not under source control)
 KEY_PATH = '~/analitico-api-key.json'
 
@@ -110,7 +113,7 @@ def storage_temp(path) -> str:
     return temp_path
 
 
-def storage_cache(storage_path, file_path=None, ttl_sec=600) -> str:
+def storage_cache(storage_path, file_path=None, ttl_sec=_CACHE_TTL_SEC) -> str:
     """ Will download a storage file to a local cache (if needed) and return its path """
     if file_path is None:
         file_path = storage_path

@@ -9,7 +9,7 @@ MARTINELLI_ORDER_PATH = 'data/s24/test/simple-order-martinelli.json'
 ESSELUNGA_VR_ORDER_PATH = 'data/s24/test/simple-order-esselunga-vr.json'
 ESSELUNGA_MI_ORDER_PATH = 'data/s24/test/simple-order-esselunga-mi.json'
 
-class Test_S24_OrderSorting(unittest.TestCase):
+class Test_s24_OrderSorting(unittest.TestCase):
 
     def test_sort_order(self):
 
@@ -33,6 +33,7 @@ class Test_S24_OrderSorting(unittest.TestCase):
         self.assertGreaterEqual(meta['total_ms'], 10)        
 
     def get_item_index(self, order_path, item_name):
+        """ Sorts an order, returns the index of the given item_name """
         with open(order_path) as f:
             order = json.load(f)
         sorted, _ = s24_sort_order(order)
@@ -51,7 +52,7 @@ class Test_S24_OrderSorting(unittest.TestCase):
         self.assertLessEqual(migross_index, 5) # verdure in testa
 
     def test_sort_zucchine_martinelli(self):
-        # zucchine al 25. la verdura è abbastanza in testa, dopo latticini
+        # zucchine al 5. la verdura è abbastanza in testa, dopo latticini
         print(MARTINELLI_ORDER_PATH)
         martinelli_index = self.get_item_index(MARTINELLI_ORDER_PATH, 'Zucchine')
         self.assertLessEqual(martinelli_index, 5) # verdure in testa
@@ -62,7 +63,7 @@ class Test_S24_OrderSorting(unittest.TestCase):
         self.assertLessEqual(esselunga_mi_index, 5) # verdure in testa
 
     def test_sort_zucchine_esselunga_vr(self):
-        print(ESSELUNGA_VR_ORDER_PATH)
+        print(ESSELUNGA_VR_ORDER_PATH) # esselunga verona fiera
         esselunga_vr_index = self.get_item_index(ESSELUNGA_VR_ORDER_PATH, 'Zucchine')
         self.assertLessEqual(esselunga_vr_index, 20) # verdure in testa?
         # 15, cannato?
@@ -72,5 +73,3 @@ class Test_S24_OrderSorting(unittest.TestCase):
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(Test_S24_OrderSorting)
     unittest.TextTestRunner(verbosity=2).run(suite)
-
-    
