@@ -26,7 +26,7 @@ from ortools.constraint_solver import routing_enums_pb2
 from analitico.api import ApiException, api_check_auth, api_get_parameter
 from analitico.utilities import timestamp_to_time, timestamp_diff_secs, dataframe_to_catpool
 from analitico.train import time_ms
-from analitico.storage import storage_open, storage_path, storage_temp
+from analitico.storage import storage_open, storage_path, storage_temp, storage_cache
 
 from s24.categories import s24_get_category_id, s24_get_category_name, s24_get_category_slug
 
@@ -179,7 +179,7 @@ def train():
     with storage_open(TRAINING_CSV_PATH) as training_csv:
         df = pd.read_csv(training_csv)
         data['records']['source'] = len(df) 
-        meta['loading_ms'] =time_ms(started_on)
+        meta['loading_ms'] = time_ms(started_on)
 
     # remove rows without an item's category
     df = df.dropna(subset=['category_id'])
@@ -222,8 +222,8 @@ def train():
     model.save_model(MODEL_PATH)
 
     data['assets'] = {}
-    data['assets']['model_url'] = MODEL_PATH
-    data['assets']['scores_url'] = SCORES_PATH
+    data['assets']['model_path'] = MODEL_PATH
+    data['assets']['scores_path'] = SCORES_PATH
 
     meta['total_iterations'] = total_iterations
     meta['best_iteration'] = model.get_best_iteration()
@@ -362,19 +362,15 @@ def s24_sort_order(order) -> ({}, {}):
     # https://developers.google.com/optimization/routing/tsp
     # https://developers.google.com/optimization/routing/vrp
 
+    model_path = storage_cache(MODEL_PATH)
+
+    # TODO cache model using weak pointer? check if model was updated?
     global _model
-    if True:#_model is None:
+    if _model is None:
         # create model to predict run times between items
         loading_on = time_ms()
         _model = CatBoostRegressor()
-        try:
-            # read model from local file system (if available)
-            _model.load_model(MODEL_PATH)
-        except:
-            #  download model from google cloud storage to a temp file
-            model_temp = storage_temp(MODEL_PATH)
-            _model.load_model(model_temp)
-            os.remove(model_temp)
+        _model.load_model(model_path)
         meta['loading_ms'] = time_ms(loading_on)
 
     # traveling salesman goes from entrance to cashier's nodes
@@ -427,11 +423,12 @@ def s24_sort_order(order) -> ({}, {}):
             print('%4d, %6d %s > %s > %s: %s' % (index, category_id, s24_get_category_slug(category_id, 0), s24_get_category_slug(category_id, 1), s24_get_category_slug(category_id, 2), details[node-1]['item_name']))
         index = assignment.Value(routing.NextVar(index))
 
-    # return metadata with original and sorted time estimates
-    meta['unsorted_time_sec'] = unsorted_distance
-    meta['sorted_time_sec'] = assignment.ObjectiveValue()
     meta['routing_ms'] = routing_ms
     meta['total_ms'] = time_ms(started_on)
+
+    # add original and sorted order picking time estimates
+    meta['unsorted_time_sec'] = unsorted_distance
+    meta['sorted_time_sec'] = assignment.ObjectiveValue()
 
     # returns order with sorted items, enhanched category info, metadata
     order['details'] = sorted_details

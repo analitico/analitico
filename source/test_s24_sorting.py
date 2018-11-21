@@ -40,9 +40,9 @@ class Test_S24_OrderSorting(unittest.TestCase):
         return item_index
 
     def test_sort_zucchine(self):
-        # famila superstore saval
+
         famila_index = self.get_item_index(FAMILA_ORDER_PATH, 'Zucchine')
-        self.assertGreaterEqual(famila_index, 22) # verdure in ? 
+        self.assertGreaterEqual(famila_index, 22) # zucchine in ? 
 
         migross_index = self.get_item_index(MIGROSS_ORDER_PATH, 'Zucchine')
         self.assertLessEqual(migross_index, 5) # verdure in testa

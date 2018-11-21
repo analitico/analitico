@@ -6,22 +6,31 @@ import json
 import tempfile
 import datetime
 import requests
-
+import time
+import hashlib
+import base64
 import pandas as pd
 
 from google.cloud import storage
 from pathlib import Path
 
+from analitico.api import ApiException
+
 # internals for operations on google cloud storage
 # https://googleapis.github.io/google-cloud-python/latest/storage/blobs.html
+# https://gcloud-python.readthedocs.io/en/latest/storage/blobs.html
 
 _BUCKET="analitico-api"
+
+# cloud storage key is copied in user root (not under source control)
+KEY_PATH = '~/analitico-api-key.json'
 
 def _gcs_get_client():
     try: 
         return storage.Client()
     except:
-        return storage.Client.from_service_account_json('~/analitico-api-key.json')
+        key_path = os.path.expanduser(KEY_PATH)
+        return storage.Client.from_service_account_json(key_path)
 
 def _get_bucket(bucket_id):
     client = _gcs_get_client()
@@ -99,3 +108,39 @@ def storage_temp(path) -> str:
     _gcs_download_to_filename(_BUCKET, path, temp_path)
     print("storage_temp('%s') - to %s" % (path, temp_path))
     return temp_path
+
+
+def storage_cache(storage_path, file_path=None, ttl_sec=600) -> str:
+    """ Will download a storage file to a local cache (if needed) and return its path """
+    if file_path is None:
+        file_path = storage_path
+
+    now = time.time()
+
+    # check if file is more recent than requested in ttl_sec
+    if os.path.isfile(file_path):
+        touched_sec = int(now - os.path.getctime(file_path))
+        if touched_sec < ttl_sec:
+            print("storage_cache('%s') - from cache (modified %ds ago)" % (file_path, touched_sec))
+            return file_path
+    
+    blob = _get_blob(_BUCKET, storage_path)
+    if blob is None:
+        raise ApiException("Could not find '%s' in storage" % storage_path, 404)
+
+    # check if cached file is old but still valid (same md5 as cloud copy)
+    if os.path.isfile(file_path):
+        file_md5 = hashlib.md5(open(file_path,'rb').read()).digest()
+        file_md5 = base64.standard_b64encode(file_md5).decode('utf-8')
+        if file_md5 == blob.md5_hash:
+            os.utime(file_path, (now, now))
+            print("storage_cache('%s') - from cache (after md5 check)" % file_path)
+            return file_path
+
+    # download and refresh cache
+    blob.download_to_filename(file_path + '.downloading')
+    os.replace(file_path + '.downloading', file_path)
+    os.utime(file_path, (now, now))
+ 
+    print("storage_cache('%s') - from cloud storage" % file_path)
+    return file_path
