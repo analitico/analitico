@@ -16,6 +16,7 @@ class TestSupermercatoCategories(unittest.TestCase):
         self.assertEqual(name, 'Condimenti e sottoli')
         self.assertEqual(slug, 'sdm-condimenti-sottoli')
 
+
     def test_get_category_slug(self):
         slug = s24_get_category_slug(100160) 
         self.assertEqual(slug, 'sughi-scatolame-condimenti')
@@ -73,6 +74,7 @@ class TestSupermercatoCategories(unittest.TestCase):
     def test_get_category_missing_depth(self):
         category_id = s24_get_category_id(20, 1) # 20 is itself a main category
         self.assertIsNone(category_id)
+
         
     def test_get_category_missing_id(self):
         category_id = s24_get_category_id(-20) # -20 is not a valid id
