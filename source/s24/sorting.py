@@ -391,7 +391,7 @@ def s24_sort_order(order) -> ({}, {}):
     # solve the problem
     routing_on = time_ms()
     assignment = routing.SolveWithParameters(search_parameters)
-    routing_ms = time_ms(routing_on)
+    routing_ms = time_ms(routing_on) - meta['predictions_ms']
 
     if assignment is False:
         raise ApiException("Could not come up with an optimal route for this order", 417) # expectation failed
@@ -423,6 +423,7 @@ def s24_sort_order(order) -> ({}, {}):
     meta['unsorted_time_sec'] = unsorted_distance
     meta['sorted_time_sec'] = assignment.ObjectiveValue()
     meta['routing_ms'] = routing_ms
+    meta['total_ms'] = time_ms(started_on)
 
     # returns order with sorted items, enhanched category info, metadata
     order['details'] = sorted_details
