@@ -52,12 +52,9 @@ def api_wrapper(method, request, **kwargs) -> {}:
     """ APIs wrapper used to handle shared services like auth, tracking, errors, etc """
     try:
         started_on = datetime.datetime.now()
-
-        # TODO: Handle auth_token for authentication, authorization, billing
         results = method(request, **kwargs)
-        # TODO: track calls and performance in Google Analytics
-
         results["meta"]["total_ms"] = int((datetime.datetime.now() - started_on).total_seconds() * 1000)
+        # TODO: track calls and performance in Google Analytics
 
     except ApiException as error:
         data = error.to_dict()

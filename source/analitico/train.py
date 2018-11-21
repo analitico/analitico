@@ -22,16 +22,9 @@ from pandas.api.types import CategoricalDtype
 from pathlib import Path
 
 from analitico.api import api_get_parameter, ApiException
-from analitico.utilities import augment_timestamp_column, dataframe_to_catpool
+from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms
 from analitico.storage import storage_download_prj_settings, storage_upload_prj_file
 
-def time_ms(started_on=None):
-    return datetime.now() if started_on is None else int((datetime.now() - started_on).total_seconds() * 1000)
-
-def time_it(code):
-    started_on = datetime.now()
-    code()
-    return int((datetime.now() - started_on).total_seconds() * 1000)
 
 def _train_catboost_regressor(settings, train_df, test_df, results):
     # read features from configuration file
@@ -208,6 +201,7 @@ def train(project_id, data_url, upload=True):
     # output test set with predictions
     test_df = test_df.copy()
     test_df[label_feature] = test_labels
+    
     # move label to the end for easier reading
     cols = list(test_df.columns.values)
     cols.pop(cols.index(label_feature))

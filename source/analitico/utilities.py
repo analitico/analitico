@@ -5,15 +5,39 @@ import os
 import time
 import pandas as pd
 import numpy as np
+import json
 
 from catboost import Pool
 from pandas.api.types import CategoricalDtype
+from datetime import datetime
 
 __all__ = [
     "timestamp_to_time",
     "augment_timestamp_column",
     "dataframe_to_catpool"
 ]
+
+
+def save_json(data, filename, indent=4):
+    """ Saves given data in a json file (prettified by default) """
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=indent)
+
+def read_json(filename):
+    """ Reads, decodes and returns the contents of a json file """
+    with open(filename) as f:
+        return json.load(f)
+
+def time_ms(started_on=None):
+    """ Returns the time elapsed since given time in ms """
+    return datetime.now() if started_on is None else int((datetime.now() - started_on).total_seconds() * 1000)
+
+def time_it(code):
+    """ Returns the time elapsed to execute the given call in ms """
+    started_on = datetime.now()
+    code()
+    return int((datetime.now() - started_on).total_seconds() * 1000)
+
 
 # holiday calendar
 import holidays

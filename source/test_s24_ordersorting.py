@@ -1,7 +1,7 @@
 import unittest
 import json
 
-from s24.sorting import s24_sort_order
+from s24.ordersorting import s24_sort_order
 
 FAMILA_ORDER_PATH = 'data/s24/test/simple-order-famila.json'
 MIGROSS_ORDER_PATH = 'data/s24/test/simple-order-migross.json'
@@ -9,7 +9,7 @@ MARTINELLI_ORDER_PATH = 'data/s24/test/simple-order-martinelli.json'
 ESSELUNGA_VR_ORDER_PATH = 'data/s24/test/simple-order-esselunga-vr.json'
 ESSELUNGA_MI_ORDER_PATH = 'data/s24/test/simple-order-esselunga-mi.json'
 
-class Test_s24_OrderSorting(unittest.TestCase):
+class Test_S24_OrderSorting(unittest.TestCase):
 
     def test_sort_order(self):
 
@@ -71,5 +71,5 @@ class Test_s24_OrderSorting(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(Test_s24_OrderSorting)
+    suite = unittest.TestLoader().loadTestsFromTestCase(Test_S24_OrderSorting)
     unittest.TextTestRunner(verbosity=2).run(suite)

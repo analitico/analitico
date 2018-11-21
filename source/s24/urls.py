@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
 from . import views
-from .views import order_sorting
+from .views import order_sorting, order_time
 
 # Routers provide an easy way of automatically determining the URL conf.
 #api_router = routers.DefaultRouter()
@@ -19,8 +19,7 @@ from .views import order_sorting
 
 app_name = 's24'
 urlpatterns = [
-
     url('order-sorting', order_sorting),
-
+    url('order-time', order_time),
 ]
 

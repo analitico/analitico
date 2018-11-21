@@ -362,14 +362,13 @@ def s24_sort_order(order) -> ({}, {}):
     # https://developers.google.com/optimization/routing/tsp
     # https://developers.google.com/optimization/routing/vrp
 
-    model_path = storage_cache(MODEL_PATH)
-
     # TODO cache model using weak pointer? check if model was updated?
     global _model
     if _model is None:
         # create model to predict run times between items
         loading_on = time_ms()
         _model = CatBoostRegressor()
+        model_path = storage_cache(MODEL_PATH)
         _model.load_model(model_path)
         meta['loading_ms'] = time_ms(loading_on)
 
@@ -435,7 +434,7 @@ def s24_sort_order(order) -> ({}, {}):
     return order, meta
 
 
-def handle_sorting_request(request):
+def handle_request(request):
     """ Responds to an API call, returning a sorted order """
     api_check_auth(request, PROJECT_ID)
 
