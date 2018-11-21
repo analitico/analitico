@@ -90,19 +90,29 @@ def storage_open(path, prefer_cloud=False):
         print("storage_open('%s') - local file" % path)
         return open(path, 'r')
     blob = _get_blob(_BUCKET, path)
-    url = blob.generate_signed_url(expiration=datetime.timedelta(hours=1), method='GET')
-    response = requests.get(url, stream=True)
-    print("storage_open('%s') - cloud storage" % path)
-    return io.BytesIO(response.content)
+    try:
+        url = blob.generate_signed_url(expiration=datetime.timedelta(hours=1), method='GET')
+        response = requests.get(url, stream=True)
+        print("storage_open('%s') - cloud storage" % path)
+        return io.BytesIO(response.content)
+    except Exception as exception:
+        detail = str(exception) if exception.args[0] is None else exception.args[0] 
+        print('storage_open(%s) - exception: %s' % (path, detail))
+        raise ApiException('storage_open', 500)
 
 def storage_path(path, prefer_cloud=False):
     """ Will open the file for reading at the given path, if that fails, will try same from google storage bucket """
-    if prefer_cloud is False and os.path.isfile(path):
-        print("storage_path('%s') - local file" % path)
-        return path
-    blob = _get_blob(_BUCKET, path)
-    print("storage_path('%s') - cloud storage" % path)
-    return blob.generate_signed_url(expiration=datetime.timedelta(hours=1), method='GET')
+    try:
+        if prefer_cloud is False and os.path.isfile(path):
+            print("storage_path('%s') - local file" % path)
+            return path
+        blob = _get_blob(_BUCKET, path)
+        print("storage_path('%s') - cloud storage" % path)
+        return blob.generate_signed_url(expiration=datetime.timedelta(hours=1), method='GET')
+    except Exception as exception:
+        detail = str(exception) if exception.args[0] is None else exception.args[0] 
+        print('storage_path(%s) - exception: %s' % (path, detail))
+        raise ApiException('storage_open', 500)
 
 def storage_temp(path) -> str:
     """ Will download a storage file to a temp file and return its path """

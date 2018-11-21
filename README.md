@@ -21,9 +21,11 @@ See which packages are in use in the environment
 Update requirements file  
 `pip freeze > requirements.txt`
 
+Install requirements
+`pip install -r requirements.txt`
+
 Run development server   
-`cd source`  
-`python3 manage.py runserver`  
+`python3 source/manage.py runserver 0.0.0.0:8000`
 
 Run tests  
 `cd source`  
