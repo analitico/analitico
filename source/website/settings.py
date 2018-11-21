@@ -83,17 +83,18 @@ WSGI_APPLICATION = 'website.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'mysql.connector.django',
-        'NAME': 'dj001',
-        'USER': 'django',
-        'PASSWORD': 'justTesting',
-        'HOST': '127.0.0.1',
+        'NAME': 'analitico',
+        'USER': 'analitico',
+        'PASSWORD': '4eRwg67hj',
+        'HOST': 's1.analitico.ai',
         'PORT': '3306',
     }
 }
 
-#        'OPTIONS': {
-#            'read_default_file': '/etc/mysql/my.cnf',
-#        }
+# TODO use environment variable or external file to hide password:
+#   'OPTIONS': {
+#     'read_default_file': '/etc/mysql/my.cnf',
+#   }
 
 
 

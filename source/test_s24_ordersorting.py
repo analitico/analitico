@@ -1,20 +1,19 @@
 import unittest
 import json
 
+from analitico.utilities import read_json
 from s24.ordersorting import s24_sort_order
 
-FAMILA_ORDER_PATH = 'data/s24/test/simple-order-famila.json'
-MIGROSS_ORDER_PATH = 'data/s24/test/simple-order-migross.json'
-MARTINELLI_ORDER_PATH = 'data/s24/test/simple-order-martinelli.json'
-ESSELUNGA_VR_ORDER_PATH = 'data/s24/test/simple-order-esselunga-vr.json'
-ESSELUNGA_MI_ORDER_PATH = 'data/s24/test/simple-order-esselunga-mi.json'
+FAMILA_ORDER_PATH = 'data/s24/test/order-sorting-famila.json'
+MIGROSS_ORDER_PATH = 'data/s24/test/order-sorting-migross.json'
+MARTINELLI_ORDER_PATH = 'data/s24/test/order-sorting-martinelli.json'
+ESSELUNGA_VR_ORDER_PATH = 'data/s24/test/order-sorting-esselunga-vr.json'
+ESSELUNGA_MI_ORDER_PATH = 'data/s24/test/order-sorting-esselunga-mi.json'
 
-class Test_S24_OrderSorting(unittest.TestCase):
+class Test_s24_OrderSorting(unittest.TestCase):
 
     def test_sort_order(self):
-
-        with open(FAMILA_ORDER_PATH) as order_file:
-            order = json.load(order_file)
+        order = read_json(FAMILA_ORDER_PATH)
         order_details = order['details']
 
         self.assertIsNotNone(order)
@@ -34,8 +33,7 @@ class Test_S24_OrderSorting(unittest.TestCase):
 
     def get_item_index(self, order_path, item_name):
         """ Sorts an order, returns the index of the given item_name """
-        with open(order_path) as f:
-            order = json.load(f)
+        order = read_json(order_path)
         sorted, _ = s24_sort_order(order)
         details = sorted['details']
         item_index = next((index for (index, d) in enumerate(details) if d["item_name"] == item_name), None)
@@ -71,5 +69,5 @@ class Test_S24_OrderSorting(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(Test_S24_OrderSorting)
+    suite = unittest.TestLoader().loadTestsFromTestCase(Test_s24_OrderSorting)
     unittest.TextTestRunner(verbosity=2).run(suite)
