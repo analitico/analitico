@@ -71,5 +71,5 @@ class Test_s24_OrderSorting(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(Test_S24_OrderSorting)
+    suite = unittest.TestLoader().loadTestsFromTestCase(Test_s24_OrderSorting)
     unittest.TextTestRunner(verbosity=2).run(suite)
