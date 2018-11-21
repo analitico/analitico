@@ -36,6 +36,7 @@ PROJECT_ID = 's24-order-sorting'
 # paths of training data and trained model
 TRAINING_CSV_PATH = 'data/s24/training/order-details-joined.csv'
 MODEL_PATH = 'data/s24/models/order-sorting/model.cbm'
+SCORES_PATH = 'data/s24/models/order-sorting/scores.json'
 
 # subset of rows used for quick training while developing
 _training_sample = None # eg: 5000 for quick run
@@ -122,6 +123,7 @@ def _training_augment_chunk(df):
 
 
 def _training_augment_df(df):
+    """ Augments a given dataframe, returns augmented df """
 
     # add columns for previous and next order_detail
     df['prev_order_id'] = df['order_id'].shift(1)
@@ -198,7 +200,8 @@ def train():
     # this field in we have more records. also, the system learns to
     # differentiate elapsed time based on status and we will only place
     # predictions for status == PURCHASED which are easier to predict
-    #df = df[df['status'] == 'PURCHASED']
+    #
+    # df = df[df['status'] == 'PURCHASED']
     
     data['records']['filtered'] = len(df) 
     meta['processing_ms'] = time_ms(started_on)
@@ -211,7 +214,7 @@ def train():
     train_pool, _ = dataframe_to_catpool(train_df, _features, _features, None, _label_feature)
     test_pool, test_labels = dataframe_to_catpool(test_df, _features, _features, None, _label_feature)
 
-    # create, train and save cateboost regression model 
+    # create, train and save catboost regression model 
     training_on = time_ms()
     total_iterations = 100
     model = CatBoostRegressor(task_type='GPU', iterations=total_iterations, loss_function='RMSE')
@@ -220,6 +223,7 @@ def train():
 
     data['assets'] = {}
     data['assets']['model_url'] = MODEL_PATH
+    data['assets']['scores_url'] = SCORES_PATH
 
     meta['total_iterations'] = total_iterations
     meta['best_iteration'] = model.get_best_iteration()
@@ -242,6 +246,10 @@ def train():
         data['features_importance'][label] = round(importance, 5)
 
     meta['total_ms'] = time_ms(started_on)
+
+    with open(SCORES_PATH, 'w') as f:
+        f.write(json.dumps({ 'data': data, 'meta': meta }, indent=4))
+
     return data, meta
 
 ##

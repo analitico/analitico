@@ -21,7 +21,7 @@ def _gcs_get_client():
     try: 
         return storage.Client()
     except:
-        return storage.Client.from_service_account_json('/home/gionata/Documents/analitico-api-key.json')
+        return storage.Client.from_service_account_json('~/analitico-api-key.json')
 
 def _get_bucket(bucket_id):
     client = _gcs_get_client()
