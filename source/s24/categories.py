@@ -8,7 +8,7 @@ from analitico.train import time_ms
 from analitico.storage import storage_open
 
 # csv file with category table from s24 database
-CATEGORY_CSV_PATH = 'assets/s24/category.csv'
+CATEGORY_CSV_PATH = 'data/s24/training/category.csv'
 
 ##
 ## PRIVATE METHODS

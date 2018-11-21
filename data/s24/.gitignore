@@ -1,2 +1,6 @@
 *.csv
 *.cbm
+
+orders-famila-saval.json
+
+!categories.csv
