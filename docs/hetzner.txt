@@ -21,7 +21,7 @@ Host key:	95:1c:82:31:ca:5d:bd:6d:ff:f3:a2:59:39:4a:ef:e1 (RSA 2048)
 2d:91:0e:d6:ad:39:4a:9f:dc:c6:14:50:b6:2b:f5:4e (ECDSA 256)
 37:84:1e:da:ac:a3:aa:ed:50:4e:19:fe:5e:7e:0f:d9 (ED25519 256)
 
-sql on s1
+mysql on s1
 root/2uzWOJb5ZW9f
 analitico/4eRwg67hj
 
