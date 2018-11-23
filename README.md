@@ -21,7 +21,7 @@ See which packages are in use in the environment
 Update requirements file  
 `pip freeze > requirements.txt`
 
-Install requirements
+Install requirements   
 `pip install -r requirements.txt`
 
 Run development server   
@@ -44,21 +44,21 @@ https://code.visualstudio.com/docs/python/tutorial-django
 Django REST Framework   
 https://www.django-rest-framework.org/  
 
-GitLab CI/CD Pipelines
+GitLab CI/CD Pipelines    
 https://gitlab.com/gionata/analitico-api/pipelines
 
-Google Cloud Functions Console
+Google Cloud Functions Console   
 https://console.cloud.google.com/functions/list?project=analitico-api
 
-How to organize project:
+How to organize project:   
 https://docs.python-guide.org/writing/structure/
 
 
 Testing
 ---  
 
-Django Testing Tools  
+Django Testing Tools     
 https://docs.djangoproject.com/en/2.1/topics/testing/tools/  
 
-Visual Studio Code Unit Testing
+Visual Studio Code Unit Testing    
 https://code.visualstudio.com/docs/python/unit-testing
