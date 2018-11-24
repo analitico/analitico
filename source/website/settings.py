@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     's24.apps.S24Config',
     'polls.apps.PollsConfig',
 
+    'gunicorn',
     'rest_framework',
     
     'django.contrib.admin',
