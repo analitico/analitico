@@ -30,29 +30,50 @@ analitico/4eRwg67hj
 ##
 
 # create new user
-adduser analitico # create analitico user
-usermod -aG sudo analitico # give it superuser rights
-su analitico # switch user 
+adduser www # create analitico user
+usermod -aG sudo www # give it superuser rights
+su www # switch user 
 sudo ls -la /root # see that it's working
 
+mkdir /var/www
+sudo chown -R www:www /var/www
+
 # general updating (choose to keep local version of ssh settings when asked)
-sudo apt update && sudo apt upgrade -y
+sudo apt update
+sudo apt upgrade -y
+
+sudo apt install python-pip
+sudo apt install python3.6-dev -y
+sudo apt install python3-venv -y
+sudo apt install build-essential python3-dev -y
 
 # install repo
+mkdir /var/www
+cd /var/www
 sudo apt install git -y
-mkdir github
-cd github
 git clone https://gitlab.com/analitico/analitico.git
 
 cd analitico
-sudo apt install python3.6-dev -y
-sudo apt install python3-venv -y
-python3 -m venv ~/envs/analitico
-source ~/envs/analitico/bin/activate
+
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 
 # run dev server
 python3 source/manage.py runserver 0.0.0.0:8000
+
+# Setting up Django_and_nginx
+https://uwsgi-docs.readthedocs.io/en/latest/tutorials/Django_and_nginx.html
+
+# install and try uwsgi
+pip install https://projects.unbit.it/downloads/uwsgi-lts.tar.gz
+pip install uwsgi
+cd source
+uwsgi --http :8000 --module website.wsgi
+
+# install nginx
+sudo apt install nginx -y
+
 
 ##
 ## INSTALLING MYSQL
