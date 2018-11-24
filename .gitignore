@@ -8,4 +8,4 @@ _*.pyx
 *.cbm
 .ipynb_checkpoints
 static
-
+venv
