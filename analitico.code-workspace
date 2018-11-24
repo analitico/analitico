@@ -6,6 +6,6 @@
 	],
 	"settings": {
 		"python.venvPath": "~/envs",
-		"python.pythonPath": "/home/gionata/envs/analitico/bin/python"
+		"python.pythonPath": "venv/bin/python"
 	}
 }
