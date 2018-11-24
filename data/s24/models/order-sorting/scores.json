@@ -29,8 +29,8 @@
         }
     },
     "meta": {
-        "loading_ms": 10333,
-        "processing_ms": 167058,
+        "loading_ms": 16208,
+        "processing_ms": 518861,
         "total_iterations": 100,
         "best_iteration": 99,
         "best_score": {
@@ -41,7 +41,7 @@
                 "RMSE": 53.007413539837025
             }
         },
-        "training_ms": 77159,
-        "total_ms": 269703
+        "training_ms": 109397,
+        "total_ms": 679207
     }
 }
