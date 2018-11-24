@@ -1,0 +1,45 @@
+{
+    "type": "analitico/settings",
+    "version": "1.0",
+    "project_id": "s24-order-category",
+    "algorithm": "catboost-multiclass",
+    "features": {
+        "all": [
+            "order_amount",
+            "order_volume",
+            "order_deliver_at_start",
+            "items_total",
+            "items_with_variable_weight",
+            "customer_id",
+            "customer_province",
+            "customer_area",
+            "customer_ztl",
+            "customer_lat",
+            "customer_lng",
+            "store_id",
+            "store_name",
+            "store_province",
+            "store_area",
+            "store_lat",
+            "store_lng",
+            "store_customer_distance",
+            "store_customer_duration"
+        ],
+        "categorical": [
+            "customer_province",
+            "customer_area",
+            "customer_ztl",
+            "store_id",
+            "store_name",
+            "store_province",
+            "store_area"
+        ],
+        "timestamp": [
+            "order_deliver_at_start"
+        ],
+        "label": "order_category"
+    },
+    "training": {
+        "model_url": "https://storage.cloud.google.com/analitico-api/projects/s24-order-category/model.cbm"
+    }
+}

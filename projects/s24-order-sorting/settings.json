@@ -1,0 +1,50 @@
+{
+    "type": "analitico/settings",
+    "version": "1.0",
+
+    "project_id": "s24-order-sorting",
+    "algorithm": "catboost-regressor",
+
+    "features": {
+        "all": [
+            "order_amount",
+            "order_volume",
+            "order_deliver_at_start",
+            "order_fulfillment_type",
+            "items_total",
+            "items_with_variable_weight",
+            "customer_id",
+            "customer_province",
+            "customer_area",
+            "customer_ztl",
+            "customer_lat",
+            "customer_lng",
+            "store_id",
+            "store_name",
+            "store_province",
+            "store_area",
+            "store_lat",
+            "store_lng",
+            "store_customer_distance",
+            "store_customer_duration"
+        ],
+        "categorical": [
+            "order_fulfillment_type",
+            "customer_province",
+            "customer_area",
+            "customer_ztl",
+            "store_id",
+            "store_name",
+            "store_province",
+            "store_area"
+        ],
+        "timestamp": [
+            "order_deliver_at_start"
+        ],
+        "label": "total_min"
+    },
+    
+    "training": {
+        "model_url": "https://storage.cloud.google.com/analitico-api/projects/s24-order-time/model.cbm"
+    }
+}
