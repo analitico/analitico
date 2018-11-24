@@ -1,0 +1,17 @@
+
+# This file tells systemd how to create an autostarting socket listener, see:
+# https://docs.gunicorn.org/en/latest/deploy.html
+#
+# Should be copied or symlinked to:
+# /etc/systemd/system/gunicorn.socket
+# sudo ls -s /home/www/analitico/conf/systemd/gunicorn.socket /etc/systemd/system/gunicorn.socket
+
+
+[Unit]
+Description=gunicorn socket
+
+[Socket]
+ListenStream=/run/gunicorn/socket
+
+[Install]
+WantedBy=sockets.target
