@@ -63,7 +63,7 @@ def _gcs_download_json(bucket_id, blobname):
 
 def storage_download_prj_settings(project_id):
     try:
-        with open('../projects/' + project_id + '/settings.json') as jf:
+        with open('projects/' + project_id + '/settings.json') as jf:
             return json.load(jf)
     except:
         # catch and load from network
