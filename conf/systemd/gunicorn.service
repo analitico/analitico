@@ -4,7 +4,7 @@
 #
 # Should be copied or symlinked to:
 # /etc/systemd/system/gunicorn.service
-# sudo ls -s /home/www/analitico/conf/systemd/gunicorn.service /etc/systemd/system/gunicorn.service
+# sudo ln -s /home/www/analitico/conf/systemd/gunicorn.service /etc/systemd/system/gunicorn.service
 
 [Unit]
 Description=gunicorn daemon
@@ -17,8 +17,7 @@ User=www-data
 Group=www-data
 RuntimeDirectory=gunicorn
 WorkingDirectory=/home/www/analitico/source
-ExecStart=/home/www/analitico/venv/gunicorn --pid /run/gunicorn/pid   \
-          --bind unix:/run/gunicorn/socket website.wsgi
+ExecStart=/home/www/analitico/venv/bin/gunicorn --pid /run/gunicorn/pid --bind unix:/tmp/gunicorn.sock website.wsgi --error-logfile /var/log/analitico.log --log-level debug --capture-output
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
 PrivateTmp=true

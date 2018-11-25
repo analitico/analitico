@@ -1,0 +1,19 @@
+
+# This script will launch gunicorn to serve analitico.ai
+# on a local unix://tmp/gunicorn.sock socket so that nginx 
+# can reverse proxy it and serve it to http clients
+#
+# Should be placed or symlinked to:
+# /usr/lib/systemd/system/gunicorn_analitico.service
+
+
+[Unit]
+Description=Analitico gunicorn daemon
+
+[Service]
+Type=simple
+User=www
+ExecStart=/home/www/analitico/conf/gunicorn_start.sh
+
+[Install]
+WantedBy=multi-user.target
