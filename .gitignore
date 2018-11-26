@@ -7,5 +7,4 @@ _*.pyx
 *.pyc
 *.cbm
 .ipynb_checkpoints
-/source/static
 venv
