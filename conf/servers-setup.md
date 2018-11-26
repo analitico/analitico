@@ -19,6 +19,8 @@ Give user sudo access (TODO may not be necessary):
 Switch to www user:   
 `su www`
 
+Change server name:
+`sudo gedit /etc/hostname /etc/hosts`
 
 ## Server Updates, Upgrades
 
@@ -29,7 +31,8 @@ Install python3 add ons:
 `sudo apt install python-pip -y`   
 `sudo apt install python3.6-dev -y`   
 `sudo apt install python3-venv -y`   
-`sudo apt install build-essential python3-dev -y`   
+`sudo apt install build-essential`
+`sudo apt install python3-dev -y`   
 
 
 ## Download and Install Analitico
@@ -56,6 +59,12 @@ run analitico on port 8000 using django dev server:
 
 Nginx serves the site's static assets and acts as reverse proxy for django/gunicorn.
 
+Install nginx:   
+`sudo apt install nginx`    
+
+Check nginx status:   
+`systemctl status nginx`   
+
 Production site home:  
 `/home/www/analitico/source`]
 
@@ -63,6 +72,7 @@ Nginx home:
 `/etc/nginx/`
 
 Analitico's nginx conf is symlinked:  
+`sudo rm /etc/nginx/nginx.conf`  
 `/etc/nginx/nginx.conf`  
 `sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/`  
 
