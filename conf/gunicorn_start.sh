@@ -5,7 +5,7 @@ DJANGODIR=/home/www/analitico/source      # Django project directory
 SOCKFILE=/tmp/gunicorn.sock               # we will communicate using this unix socket
 USER=www                                  # the user to run as
 GROUP=www                                 # the group to run as
-NUM_WORKERS=4                             # how many worker processes should Gunicorn spawn
+NUM_WORKERS=1                             # how many worker processes should Gunicorn spawn
 DJANGO_SETTINGS_MODULE=website.settings   # which settings file should Django use
 DJANGO_WSGI_MODULE=website.wsgi           # WSGI module name
 
