@@ -57,7 +57,7 @@ run analitico on port 8000 using django dev server:
 
 ## Nginx Setup
 
-Nginx serves the site's static assets and acts as reverse proxy for django/gunicorn.
+Nginx serves the site's static assets and acts as reverse proxy for django/gunicorn. SSL connections need the proper certificates which should be copied on the server just once from the analitico-ops/certificates directory to /home/www/ssl/ directory on the server. For now production and staging certificates are different and require different nginx.conf files.   
 
 Install nginx:   
 `sudo apt install nginx`    
