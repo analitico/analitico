@@ -44,6 +44,10 @@ echo 'done'
 echo 'Applying Configuration'
 sudo rm /etc/nginx/nginx.conf
 sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/
+
+# staging server has a specific config file
+# sudo ln -s /home/www/analitico/conf/nginx.staging.conf /etc/nginx/nginx.conf
+
 sudo systemctl restart nginx
 echo 'done'
 
