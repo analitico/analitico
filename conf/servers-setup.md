@@ -73,7 +73,11 @@ Nginx home:
 
 Analitico's nginx conf is symlinked:  
 `sudo rm /etc/nginx/nginx.conf`  
-`/etc/nginx/nginx.conf`  
+
+Staging server has specific SSL configuration:
+`sudo ln -s /home/www/analitico/conf/nginx.staging.conf /etc/nginx/nginx.conf`  
+
+Production server (and all others):
 `sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/`  
 
 Nginx logs:  
