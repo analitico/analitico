@@ -13,8 +13,11 @@ To collect nginx, weblog (nginx, gunicorn), mysql data:
 `sudo cp collectors/python.d/web_log.conf /etc/netdata/python.d/`
 `sudo cp collectors/python.d/mysql.conf /etc/netdata/python.d/`
 
-To restart netdata:   
+Restart service:   
 `sudo systemctl restart netdata`
+
+Debug problems:
+`tail -f error.log | grep keyword`
 
 ## Tutorials
 
@@ -31,6 +34,7 @@ https://github.com/PyMySQL/mysqlclient-python
 
 You may need to install the Python and MySQL development headers and libraries like so:
 `sudo apt-get install python-dev default-libmysqlclient-dev`
+`sudo apt-get install python-mysqldb`
 
 To create read only user for netdata on mysql:
 `grant select on analitico.* to 'netdata'@'%' identified by 'rfgTyh56weER';`
