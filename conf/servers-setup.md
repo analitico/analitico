@@ -13,8 +13,9 @@ The website, along with nginx and gunicorn's deamon runs as 'www' user in 'www' 
 Create user for nginx, gunicorn, etc (see credentials for pwds):   
 `adduser www`
 
-Give user sudo access (TODO may not be necessary):  
+Give user sudo and log writing access (TODO may not be necessary):  
 `usermod -aG sudo www`
+`usermod -aG syslog www`
 
 Switch to www user:   
 `su www`

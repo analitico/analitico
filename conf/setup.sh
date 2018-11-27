@@ -1,7 +1,8 @@
 
 echo 'Creating User'
 adduser www
-usermod -aG sudo www
+usermod -aG sudo www 
+usermod -aG syslog www
 su www
 
 echo 'Setting Server Name'
