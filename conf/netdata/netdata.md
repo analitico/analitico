@@ -53,3 +53,9 @@ https://github.com/netdata/netdata/tree/master/collectors/python.d.plugin/web_lo
 
 http check   
 https://github.com/netdata/netdata/tree/master/collectors/python.d.plugin/httpcheck   
+
+## Notifications
+
+Enabling Telegram notifications   
+https://docs.netdata.cloud/health/notifications/telegram/   
+
