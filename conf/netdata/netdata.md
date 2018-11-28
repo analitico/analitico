@@ -49,3 +49,6 @@ https://www.tecmint.com/monitor-mysql-mariadb-using-netdata-on-centos-7/
 
 web_log
 https://github.com/netdata/netdata/tree/master/collectors/python.d.plugin/web_log
+
+http check   
+https://github.com/netdata/netdata/tree/master/collectors/python.d.plugin/httpcheck   
