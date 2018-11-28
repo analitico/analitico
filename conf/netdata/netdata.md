@@ -12,6 +12,7 @@ To collect nginx, weblog (nginx, gunicorn), mysql data:
 `sudo cp collectors/python.d/nginx.conf /etc/netdata/python.d/`  
 `sudo cp collectors/python.d/web_log.conf /etc/netdata/python.d/`
 `sudo cp collectors/python.d/mysql.conf /etc/netdata/python.d/`
+`sudo cp collectors/python.d/httpcheck.conf /etc/netdata/python.d/`
 
 Restart service:   
 `sudo systemctl restart netdata`
