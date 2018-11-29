@@ -42,12 +42,15 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     'website.apps.WebsiteConfig',
-    'api.apps.ApiConfig',
+ #   'api.apps.ApiConfig',
     's24.apps.S24Config',
     'polls.apps.PollsConfig',
 
+    'api',
+
     'gunicorn',
     'rest_framework',
+    'rest_framework.authtoken',
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -99,6 +102,7 @@ DATABASES = {
         'USER': 'analitico',
         'PASSWORD': '4eRwg67hj',
         'HOST': 's1.analitico.ai',
+      # 'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }
@@ -109,10 +113,13 @@ DATABASES = {
 #   }
 
 
+# User substitution
+# https://docs.djangoproject.com/en/1.11/topics/auth/customizing/#auth-custom-user
+AUTH_USER_MODEL = 'api.User'
+# making these changes makes migrations stop working
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator' },
     { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator' },

@@ -25,3 +25,8 @@ urlpatterns = [
     # home page served from template, named for reverse lookup
     path('', IndexView.as_view(), name='index')
 ]
+
+from rest_framework.authtoken import views
+urlpatterns += [
+    url(r'^api-token-auth/', views.obtain_auth_token)
+]
