@@ -23,9 +23,9 @@ from catboost import Pool, CatBoostRegressor, CatBoostClassifier
 from pandas.api.types import CategoricalDtype
 from pathlib import Path
 
-from analitico.api import api_get_parameter, api_check_auth, ApiException
 from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json
 from analitico.storage import storage_download_prj_settings, storage_upload_prj_file, storage_cache
+from rest_framework.exceptions import ParseError
 
 ##
 ## AnaliticoModel
@@ -49,22 +49,8 @@ class AnaliticoModel:
         return { 'data': None, 'meta': None }
 
     def predict(self, data) -> dict:
-        """ Runs prediction on given data, returns prediction data and metadata """
-        return { 'data': data, 'meta': {} }
-
-    def predict_request(self, request) -> dict:
-        """ Responds to an API call by running a prediction and returning results and metadata """
-        started_on = time_ms()
-        if self.project_id:
-            api_check_auth(request, self.project_id)
-
-        request_data = api_get_parameter(request, 'data')
-        if request_data is None:
-            raise ApiException("API call should include 'data' field (see documentation).", 500)
-
-        results = self.predict(request_data)
-        results['meta']['total_ms'] = time_ms(started_on)
-        return results
+        """ Runs prediction on given data, returns predictions and metadata """
+        return { 'data': None, 'meta': None }
 
 ##
 ## AnaliticoTabularRegressorModel
@@ -235,7 +221,7 @@ class AnaliticoTabularRegressorModel(AnaliticoModel):
         # elif algorithm == 'catboost-multiclass':
         #     model, test_labels, test_predictions = _train_catboost_multiclass(settings, train_df, test_df, results)
         else:
-            raise ApiException('Unknown algorithm: ' + algorithm, status_code=400) # bad request
+            raise ParseError('Unknown algorithm: ' + algorithm) # bad request
 
         # catboost can tell which features weigh more heavily on the predictions
         feature_importance = model.get_feature_importance(prettified=True)

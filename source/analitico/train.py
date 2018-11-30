@@ -21,7 +21,7 @@ from catboost import Pool, CatBoostRegressor, CatBoostClassifier
 from pandas.api.types import CategoricalDtype
 from pathlib import Path
 
-from analitico.api import api_get_parameter, ApiException
+from api.utilities import api_get_parameter
 from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms
 from analitico.storage import storage_download_prj_settings, storage_upload_prj_file
 

@@ -1,12 +1,8 @@
+
 from django.db import models
-
-# Create your models here.
-"""Declare models for api app."""
-
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
 
 class UserManager(BaseUserManager):
     """Define a model manager for User model with no username field."""
@@ -41,14 +37,3 @@ class UserManager(BaseUserManager):
 
         return self._create_user(email, password, **extra_fields)
 
-
-class User(AbstractUser):
-    """User model."""
-
-    username = None
-    email = models.EmailField(_('email address'), unique=True)
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
-
-    objects = UserManager()

@@ -41,12 +41,10 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    'website.apps.WebsiteConfig',
- #   'api.apps.ApiConfig',
-    's24.apps.S24Config',
-    'polls.apps.PollsConfig',
-
     'api',
+    'polls',
+    's24',
+    'website',
 
     'gunicorn',
     'rest_framework',
@@ -101,8 +99,8 @@ DATABASES = {
         'NAME': 'analitico',
         'USER': 'analitico',
         'PASSWORD': '4eRwg67hj',
-        'HOST': 's1.analitico.ai',
-      # 'HOST': '127.0.0.1',
+       # 'HOST': 's1.analitico.ai',
+        'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }
@@ -145,10 +143,24 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = "static/"
 
+# TODO better mechanism for auth tokens
+# https://github.com/James1345/django-rest-knox
+
 REST_FRAMEWORK = {
+
+    # custom exception handler reports exception with specific formatting
+    'EXCEPTION_HANDLER': 'api.utilities.api_exception_handler',
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'api.authentication.BearerAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
- #       'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        # 'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication'
     ]
 }

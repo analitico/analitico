@@ -1,13 +1,11 @@
 
 import sys
 import json
-import flask
 import datetime
 
 import pandas as pd
 import numpy as np
 
-from flask import Flask, request
 from catboost import Pool, CatBoostRegressor
 
 from analitico.api import api_get_parameter, api_check_auth

@@ -11,10 +11,9 @@ import hashlib
 import base64
 import pandas as pd
 
+from rest_framework.exceptions import APIException
 from google.cloud import storage
 from pathlib import Path
-
-from analitico.api import ApiException
 
 # internals for operations on google cloud storage
 # https://googleapis.github.io/google-cloud-python/latest/storage/blobs.html
@@ -26,14 +25,18 @@ _BUCKET="analitico-api"
 _CACHE_TTL_SEC = 600
 
 # cloud storage key is copied in user root (not under source control)
-KEY_PATH = '~/analitico-api-key.json'
+KEY_PATH = '~/credentials/google-cloud-analitico-api-key.json'
 
 def _gcs_get_client():
     try: 
         return storage.Client()
     except:
         key_path = os.path.expanduser(KEY_PATH)
-        return storage.Client.from_service_account_json(key_path)
+        try:
+            return storage.Client.from_service_account_json(key_path)
+        except:
+            raise APIException('Cloud credentials missing')
+
 
 def _get_bucket(bucket_id):
     client = _gcs_get_client()
@@ -98,7 +101,7 @@ def storage_open(path, prefer_cloud=False):
     except Exception as exception:
         detail = str(exception) if exception.args[0] is None else exception.args[0] 
         print('storage_open(%s) - exception: %s' % (path, detail))
-        raise ApiException('storage_open', 500)
+        raise APIException('storage_open', 500)
 
 def storage_path(path, prefer_cloud=False):
     """ Will open the file for reading at the given path, if that fails, will try same from google storage bucket """
@@ -112,7 +115,7 @@ def storage_path(path, prefer_cloud=False):
     except Exception as exception:
         detail = str(exception) if exception.args[0] is None else exception.args[0] 
         print('storage_path(%s) - exception: %s' % (path, detail))
-        raise ApiException('storage_open', 500)
+        raise APIException('storage_open', 500)
 
 def storage_temp(path) -> str:
     """ Will download a storage file to a temp file and return its path """
@@ -139,7 +142,7 @@ def storage_cache(storage_path, file_path=None, ttl_sec=_CACHE_TTL_SEC) -> str:
     
     blob = _get_blob(_BUCKET, storage_path)
     if blob is None:
-        raise ApiException("Could not find '%s' in storage" % storage_path, 404)
+        raise APIException("Could not find '%s' in storage" % storage_path, 404)
 
     # check if cached file is old but still valid (same md5 as cloud copy)
     if os.path.isfile(file_path):

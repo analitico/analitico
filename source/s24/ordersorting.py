@@ -23,10 +23,12 @@ from joblib import Parallel, delayed
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 
-from analitico.api import ApiException, api_check_auth, api_get_parameter
 from analitico.utilities import timestamp_to_time, timestamp_diff_secs, dataframe_to_catpool
 from analitico.train import time_ms
 from analitico.storage import storage_open, storage_path, storage_temp, storage_cache
+
+from rest_framework.exceptions import APIException, ParseError
+from api.utilities import api_get_parameter, api_check_authorization
 
 from s24.categories import s24_get_category_id, s24_get_category_name, s24_get_category_slug
 
@@ -384,6 +386,7 @@ def s24_sort_order(order) -> ({}, {}):
 
     # we are looking for the shortest route that includes all nodes with given start, end
     search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
+    # pylint: disable=no-member
     search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
 
     # the distance callback will estimate the distance in seconds between items of certain
@@ -397,7 +400,7 @@ def s24_sort_order(order) -> ({}, {}):
     routing_ms = time_ms(routing_on) - meta['predictions_ms']
 
     if assignment is False:
-        raise ApiException("Could not come up with an optimal route for this order", 417) # expectation failed
+        raise APIException("Could not come up with an optimal route for this order", 417) # expectation failed
 
     # calculate how long we estimate it would have taken to shop this list without sorting
     unsorted_distance = 0
@@ -436,12 +439,12 @@ def s24_sort_order(order) -> ({}, {}):
 
 def handle_request(request):
     """ Responds to an API call, returning a sorted order """
-    api_check_auth(request, PROJECT_ID)
+    api_check_authorization(request, PROJECT_ID)
 
     # request must be for a single order sorting
     order = api_get_parameter(request, "data")
     if order is None:
-        raise ApiException('Call to methods should include data with an order and order details, see documentation', 500)
+        raise ParseError('Call to methods should include data with an order and order details, see documentation')
 
     # return sorted order and metadata
     order, meta = s24_sort_order(order)
