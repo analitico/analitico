@@ -201,6 +201,8 @@ class AnaliticoTabularRegressorModel(AnaliticoModel):
         test_random = False
         test_size = 0.10
 
+        # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html
+
         if test_random:
             # test set if from a random assortment of rows
             train_df, test_df = train_test_split(df, test_size=0.05, random_state=42)
