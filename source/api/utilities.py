@@ -11,7 +11,7 @@ from rest_framework.exceptions import APIException, ParseError
 from analitico.models import AnaliticoModel
 from analitico.utilities import time_ms
 
-from api.models.machinelearning import Inference
+from api.models.apicall import ApiCall
 
 # RESTful API Design Tips from Experience
 # https://medium.com/studioarmix/learn-restful-api-design-ideals-c5ec915a430f
@@ -70,8 +70,8 @@ def api_handle_inference(model: AnaliticoModel, request) -> Response:
     results['meta']['total_ms'] = time_ms(started_on)
 
     # Track inference in database
-    inference = Inference()
-    inference.user = request.user
+    inference = ApiCall()
+    # inference.user = request.user
     inference.data = request.data
     inference.results = results
     inference.save()
