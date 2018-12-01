@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.middleware.csrf import CsrfViewMiddleware
 from django.utils.six import text_type
 from django.utils.translation import ugettext_lazy as _
+from django.db import models
 
 from rest_framework.authentication import BaseAuthentication, get_authorization_header, exceptions
 
@@ -51,10 +52,9 @@ class BearerAuthentication(BaseAuthentication):
         return self.authenticate_credentials(token)
 
     def authenticate_credentials(self, key):
-        model = self.get_model()
         try:
-            token = model.objects.select_related('user').get(key=key)
-        except model.DoesNotExist:
+            token = Token.objects.select_related('user').get(key=key)
+        except Token.DoesNotExist:
             raise exceptions.AuthenticationFailed(_('Invalid token.'))
 
         if not token.user.is_active:

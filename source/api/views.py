@@ -14,15 +14,15 @@ from api.utilities import api_wrapper, api_handle_inference
 
 
 # Serializers define the API representation.
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = User
-        fields = ('url', 'username', 'email', 'is_staff')
+#class UserSerializer(serializers.HyperlinkedModelSerializer):
+#    class Meta:
+#        model = User2
+#        fields = ('url', 'username', 'email', 'is_staff')
 
 # ViewSets define the view behavior.
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+#class UserViewSet(viewsets.ModelViewSet):
+#    queryset = User.objects.all()
+#    serializer_class = UserSerializer
 
 @api_view()
 def hello(request):

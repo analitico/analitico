@@ -4,15 +4,20 @@ import jsonfield
 
 from django.db import models
 from django.contrib.auth.models import Group
-from django.utils.crypto import get_random_string
 
 from .project import Project
+
+
+def generate_training_id():
+    from django.utils.crypto import get_random_string
+    return 'tnr_' + get_random_string()
+
 
 class Training(models.Model):
     """ A training session for a machine learning model """
 
     # training id
-    id = models.SlugField(primary_key=True, default=get_random_string) 
+    id = models.SlugField(primary_key=True, default=generate_training_id) 
 
     # model that was trained in this session
     project = models.ForeignKey(Project, on_delete=models.CASCADE, default=None, verbose_name='Project that was trained')

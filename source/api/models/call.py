@@ -4,23 +4,37 @@ import jsonfield
 
 from django.db import models
 from django.contrib.auth.models import Group
-from django.utils.crypto import get_random_string
 
 from .user import User
 from .token import Token
 
+def generate_api_id():
+    from django.utils.crypto import get_random_string
+    return 'api_' + get_random_string()
 
-class ApiCall(models.Model):
+class Call(models.Model):
     """ Tracks API calls """
 
     # random alphanumberical id for this inference
-    id = models.SlugField(max_length=8, primary_key=True, default=get_random_string(length=8)) 
+    id = models.SlugField(primary_key=True, default=generate_api_id) 
 
-    # token used for inference
-    token = models.SlugField(blank=True) # models.ForeignKey(Token, on_delete=models.SET_NULL, verbose_name='Token used to authorize call', blank=True, null=True)
+    # token used for calling
+    token = models.ForeignKey(Token, on_delete=models.SET_NULL, verbose_name='Token used to authorize call', blank=True, null=True)
 
     # url that was called
     url = models.URLField(blank=True)
+
+    HTTP_METHOD_CHOICES = (
+        ('GET',     'GET'),
+        ('POST',    'POST'),
+        ('PUT',     'PUT'),
+        ('PATCH',   'PATCH'),
+        ('OPTIONS', 'OPTIONS'),
+        ('HEAD',    'HEAD')
+    )
+
+    # http method used to call (eg: GET, POST, etc)
+    method = models.CharField(max_length=16, blank=True, choices=HTTP_METHOD_CHOICES)
 
     # data sent to request inference
     data = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, verbose_name='Request received', blank=True, null=True)
