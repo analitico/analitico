@@ -7,10 +7,10 @@ Environment
 ---
 
 Create the virtual environment   
-`python3 -m venv ~/envs/analitico`   
+`python3 -m venv venv`   
 
 Activate the environment   
-`source ~/envs/analitico/bin/activate`   
+`source venv/bin/activate`   
 
 Deactivate the environment  
 `deactivate`   
