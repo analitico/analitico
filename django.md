@@ -20,3 +20,7 @@ python manage.py makemigrations api
 # which is then used by admin as a reference key in the django_admin_log table
 # fake migration that fails because of custom user model
 python manage.py migrate --fake admin 0001_initial
+
+
+Prospector: Code quality analysis tool   
+https://pypi.org/project/prospector/

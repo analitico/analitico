@@ -53,6 +53,7 @@ class BearerAuthentication(BaseAuthentication):
 
     def authenticate_credentials(self, key):
         try:
+            # pylint: disable=no-member
             token = Token.objects.select_related('user').get(key=key)
         except Token.DoesNotExist:
             raise exceptions.AuthenticationFailed(_('Invalid token.'))
