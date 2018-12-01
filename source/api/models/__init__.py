@@ -1,4 +1,9 @@
 
 from .user import User
 from .usermanager import UserManager
-from .machinelearning import Model, Training, Inference
+from .apicall import ApiCall
+from .token import Token
+
+from .project import Project
+from .training import Training
+
