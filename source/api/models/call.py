@@ -19,7 +19,7 @@ class Call(models.Model):
     id = models.SlugField(primary_key=True, default=generate_api_id) 
 
     # token used for calling
-    token = models.ForeignKey(Token, on_delete=models.SET_NULL, verbose_name='Token used to authorize call', blank=True, null=True)
+    token = models.ForeignKey(Token, on_delete=models.SET_NULL, verbose_name='Token', blank=True, null=True)
 
     # url that was called
     url = models.URLField(blank=True)
@@ -46,10 +46,10 @@ class Call(models.Model):
     status = models.IntegerField(default=200)
 
     # time when inference was requested
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created')
 
     # last time record updated
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Updated')
 
     class Meta:
         verbose_name = 'call'

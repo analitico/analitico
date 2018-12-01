@@ -6,10 +6,14 @@ import time
 import pandas as pd
 import numpy as np
 import json
+import logging
 
 from catboost import Pool
 from pandas.api.types import CategoricalDtype
 from datetime import datetime
+
+# default logger for analitico's libraries
+logger = logging.getLogger('analitico')
 
 __all__ = [
     "timestamp_to_time",

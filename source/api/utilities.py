@@ -9,7 +9,8 @@ from rest_framework.views import exception_handler
 from rest_framework.exceptions import APIException, ParseError
 
 from analitico.models import AnaliticoModel
-from analitico.utilities import time_ms
+from analitico.utilities import time_ms, logger
+from api.models import Call, Token
 
 #from api.models.apicall import ApiCall
 
@@ -51,7 +52,7 @@ def api_get_parameter(request: Request, parameter: str) -> str:
 
 def api_check_authorization(request: Request, resource: str):
     """ Will raise an exception if the token is missing or incorrect """
-    # raise APIException("Missing or invalid 'analitico-token' in http headers. Access is not authorized.", 401)
+    # raise APIException("Missing or invalid authorization bearer token. Access is not authorized.", 401)
     pass
 
 
@@ -69,12 +70,18 @@ def api_handle_inference(model: AnaliticoModel, request) -> Response:
     results = model.predict(request_data)
     results['meta']['total_ms'] = time_ms(started_on)
 
-    # Track inference in database
-    #inference = ApiCall()
-    # inference.user = request.user
-    #inference.data = request.data
-    #inference.results = results
-    #inference.save()
+    try:
+        # track api call in database
+        call = Call()
+        call.user = request.user
+        call.token = request.auth if request.auth and type(request.auth) is Token else None
+        call.url = request.path
+        call.method = request.method
+        call.data = request.data
+        call.results = results
+        call.save()
+    except Exception as exc:
+        logger.error(exc)
 
     return Response(results)
 
