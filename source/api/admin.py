@@ -6,7 +6,10 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import ugettext_lazy as _
 
 from .models import User
-from .models.machinelearning import Model, Training, Inference
+from .models import Project
+from .models import Training
+from .models import ApiCall
+from .models import Token
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
@@ -30,17 +33,19 @@ class UserAdmin(DjangoUserAdmin):
     ordering = ('email',)
 
 
-@admin.register(Model)
-class ModelAdmin(admin.ModelAdmin):
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
     pass
 
 @admin.register(Training)
 class TrainingAdmin(admin.ModelAdmin):
     pass
 
-@admin.register(Inference)
-class InferenceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'training', 'created_at')    
+@admin.register(ApiCall)
+class ApiCallAdmin(admin.ModelAdmin):
+    list_display = ('id', 'token', 'created_at')   
+    ordering = ('created_at',) 
 
-
-
+# @admin.register(Token)
+# class TokenAdmin(admin.ModelAdmin):
+#    pass
