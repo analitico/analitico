@@ -69,12 +69,21 @@ class TabularRegressorModel(AnaliticoModel):
         super().__init__(settings)
         logger.info('TabularRegressorModel: %s' % self.project_id)
 
+    #
+    # training
+    #
+
+    def _train_preprocess_records(self, df):
+        """ This method is called after data is loaded but before it is augmented and used for training """
+        return df
+
+
     def _train_catboost_regressor(self, train_df, test_df, results):
         # read features from configuration file
-        features = self.settings['features']['all']
-        categorical_features = self.settings['features']['categorical']
-        timestamp_features = self.settings['features']['timestamp']
-        label_feature = self.settings['features']['label']
+        features = get_dict_dot(self.settings, 'features.all')
+        categorical_features = get_dict_dot(self.settings, 'features.categorical')
+        timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
+        label_feature = get_dict_dot(self.settings, 'features.label')
 
         meta = results['meta']
 
@@ -91,7 +100,7 @@ class TabularRegressorModel(AnaliticoModel):
         learning_rate = 1
 
         # create model with training parameters 
-        model = CatBoostRegressor(iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='RMSE')
+        model = CatBoostRegressor(task_type='GPU', iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='RMSE')
 
         # train the model
         logger.info('training...')
@@ -114,53 +123,6 @@ class TabularRegressorModel(AnaliticoModel):
         return model, test_labels, test_predictions
 
 
-    def _OFFtrain_catboost_multiclass(self, settings, train_df, test_df, results):
-        # read features from configuration file
-        features = settings['features']['all']
-        categorical_features = settings['features']['categorical']
-        timestamp_features = settings['features']['timestamp']
-        label_feature = settings['features']['label']
-
-        meta = results['meta']
-
-        # initialize data pools
-        preprocessing_on = time_ms()
-        print('processing training data...')
-        train_pool, _ = dataframe_to_catpool(train_df, features, categorical_features, timestamp_features, label_feature)
-        print('processing test data...')
-        test_pool, test_labels = dataframe_to_catpool(test_df, features, categorical_features, timestamp_features, label_feature)
-        meta['processing_ms'] = time_ms(preprocessing_on)
-        print('processed %d ms' % meta['processing_ms'])
-
-        total_iterations = 50
-        learning_rate = 1
-
-        # create model with training parameters 
-        model = CatBoostClassifier(iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='MultiClass')
-
-        # train the model
-        print('training...')
-        training_on = time_ms()
-        model.fit(train_pool, eval_set=test_pool)
-        meta['total_iterations'] = total_iterations
-        meta['best_iteration'] = model.get_best_iteration()
-        meta['learning_rate'] = learning_rate
-        meta['training_ms'] = time_ms(training_on)
-        print('trained %d ms' % meta['training_ms'])
-
-        # make the prediction using the resulting model
-        test_predictions = model.predict(test_pool)
-
-        # loss metrics on test set
-        scores = results['data']['scores'] = {}
-        scores['median_abs_error'] = round(median_absolute_error(test_predictions, test_labels), 5)
-        scores['mean_abs_error'] = round(mean_absolute_error(test_predictions, test_labels), 5)
-        scores['sqrt_mean_squared_error'] = round(np.sqrt(mean_squared_error(test_predictions, test_labels)), 5)
-
-        return model, test_labels, test_predictions    
-        #model = CatBoostClassifier(iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='MultiClass')
-
-
     def train(self, training_id, upload=True):
         """ Trains model with given data (or data configured in settins) and returns training results """
         temp_dir = tempfile.TemporaryDirectory()
@@ -175,7 +137,7 @@ class TabularRegressorModel(AnaliticoModel):
             # load data from results of mysql query joining multiple tables in s24 database
             logger.info('loading data...')    
             loading_on = time_ms()
-            data_url = self.settings['training_data']['url']
+            data_url = get_dict_dot(self.settings, 'training_data.url')
             df = pd.read_csv(data_url, low_memory=False)
             meta['loading_ms'] = time_ms(loading_on)
             logger.info('loaded %d ms' % meta['loading_ms'])
@@ -183,18 +145,11 @@ class TabularRegressorModel(AnaliticoModel):
             records = data['records'] = {}
             records['source'] = len(df)
 
-            # DEBUG ONLY TO LIMIT ROWS
-            df = df.head(10000)
-
-            # remove outliers from s24 dataset
-            # TODO: this should be done prior to submitting dataset
-            if self.project_id[:9] == 's24-order':
-                df = df[(df['total_min'] is not None) and (df['total_min'] < 120)]
-                # sort orders oldest to most recent
-                df = df.sort_values(by=['order_deliver_at_start'], ascending=True)
+            # filter outliers, etc
+            df = self._train_preprocess_records(df)
 
             # remove rows without labels
-            label_feature = self.settings['features']['label']
+            label_feature = get_dict_dot(self.settings, 'features.label')
             df = df.dropna(subset=[label_feature])
             records['total'] = len(df)
 
@@ -269,6 +224,9 @@ class TabularRegressorModel(AnaliticoModel):
             temp_dir.cleanup()
             raise
 
+    #
+    # inference
+    #
 
     def predict(self, data, debug=False):
         """ Runs a model, returns predictions """
