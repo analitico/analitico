@@ -33,6 +33,7 @@ class UserAdmin(DjangoUserAdmin):
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
 
+
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
     list_display = ('key', 'user', 'name', 'created_at')
@@ -44,10 +45,13 @@ class ApiCallAdmin(admin.ModelAdmin):
     list_display = ('id', 'token', 'created_at')   
     ordering = ('created_at',) 
 
+
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     pass
 
+
 @admin.register(Training)
 class TrainingAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'project_id', 'is_active', 'records', 'rmse', 'created_at')
+    ordering = ('created_at',) 

@@ -197,7 +197,7 @@ class TabularRegressorModel(AnaliticoModel):
             # remove rows without labels
             label_feature = self.settings['features']['label']
             df = df.dropna(subset=[label_feature])
-            records['filtered'] = len(df)
+            records['total'] = len(df)
 
             # TODO: decide this from settings variable
             test_random = False

@@ -13,7 +13,7 @@ from rest_framework.decorators import api_view
 from . import views
 #from .views import UserViewSet
 from .views import s24_order_time, s24_order_sorting
-from .views import handle_project, handle_training, handle_inference
+from .views import handle_prj, handle_prj_training, handle_prj_inference
 
 
 @api_view(['GET', 'POST'])
@@ -35,8 +35,8 @@ urlpatterns = [
     url('s24/order-sorting', s24_order_sorting),
     url('s24/order-time', s24_order_time),
 
-    path('project/<str:project_id>/', handle_project),
-    path('project/<str:project_id>/training', handle_training),
-    path('project/<str:project_id>/inference', handle_inference),
+    path('project/<str:project_id>/', handle_prj),
+    path('project/<str:project_id>/training', handle_prj_training),
+    path('project/<str:project_id>/inference', handle_prj_inference),
 ]
 

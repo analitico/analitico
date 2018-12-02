@@ -95,7 +95,7 @@ def get_project_model(project_id: str) -> (Project, AnaliticoModel):
 
 
 @api_view(['GET', 'POST'])
-def handle_project(request: Request, project_id: str) -> Response:
+def handle_prj(request: Request, project_id: str) -> Response:
     """ Returns project settings for the given project_id """
     project, _ = get_project_model(project_id)
     return Response({ 'data': { 'settings': project.settings }})
@@ -103,7 +103,7 @@ def handle_project(request: Request, project_id: str) -> Response:
 
 
 @api_view(['GET', 'POST'])
-def handle_training(request: Request, project_id: str) -> Response:
+def handle_prj_training(request: Request, project_id: str) -> Response:
     """ Train project with given data, return training results """
     training = Training()
     project, model = get_project_model(project_id)
@@ -126,7 +126,7 @@ def handle_training(request: Request, project_id: str) -> Response:
 
 
 @api_view(['GET', 'POST'])
-def handle_inference(request: Request, project_id: str) -> Response:
+def handle_prj_inference(request: Request, project_id: str) -> Response:
     project, model = get_project_model(project_id)
     return Response('Inference: ' + project_id)
 
