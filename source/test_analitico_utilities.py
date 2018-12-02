@@ -3,14 +3,15 @@ import unittest
 from analitico.utilities import get_dict_dot
 
 DICTIONARY = {
-    "first": {
-        "second": {
-            "third": 5,
-            "alt-third": 6
+    'first': {
+        'second': {
+            'third': 5,
+            'alt-third': 6,
+            'stringhy': 'me-string'
         },
-        "key2": 50
+        'key2': 50
     },
-    "lev0-key1": 60
+    'lev0-key1': 60
 }
 
 class TestAnaliticoUtilities(unittest.TestCase):
@@ -18,6 +19,7 @@ class TestAnaliticoUtilities(unittest.TestCase):
     def test_get_dict_dot(self):
         self.assertEqual(get_dict_dot(DICTIONARY, 'first.second.third'), 5)
         self.assertEqual(get_dict_dot(DICTIONARY, 'first.second.alt-third'), 6)
+        self.assertEqual(get_dict_dot(DICTIONARY, 'first.second.stringhy'), 'me-string')
         self.assertEqual(get_dict_dot(DICTIONARY, 'first.key2'), 50)
         self.assertEqual(get_dict_dot(DICTIONARY, 'lev0-key1'), 60)
 
