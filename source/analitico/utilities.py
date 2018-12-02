@@ -1,15 +1,13 @@
 # Utility methods to process dataframes and simplify workflow.
 # Copyright (C) 2018 by Analitico.ai. All rights reserved.
 
-import os
 import time
 import pandas as pd
-import numpy as np
 import json
 import logging
+import holidays
 
 from catboost import Pool
-from pandas.api.types import CategoricalDtype
 from datetime import datetime
 
 # default logger for analitico's libraries
@@ -44,7 +42,6 @@ def time_it(code):
 
 
 # holiday calendar
-import holidays
 _it_holidays = holidays.Italy()
 
 
@@ -118,3 +115,18 @@ def dataframe_to_catpool(df: pd.DataFrame, features, categorical_features=None, 
     df2 = df.copy()
     pool = Pool(df2, df_labels, cat_features=categorical_idx)
     return pool, df_labels
+
+
+def get_dict_dot(d:dict, key:str = None):
+    """ Gets an entry from a dictionary using dot notation key, eg: this.that.something """
+    try:
+        if d and key:
+            split = key.split('.')
+            value = d[split[0]]
+            if value:
+                if len(split) == 1:
+                    return value
+                return get_dict_dot(value, key[len(split[0])+1:])
+    except KeyError:
+        pass
+    return None
