@@ -7,18 +7,16 @@
 # Copyright (C) 2018 by Analitico.ai
 # All rights reserved
 
-from analitico.models import AnaliticoTabularRegressorModel
+from analitico.utilities import logger
+from analitico.models import TabularRegressorModel
 
 
-TRAINING_CSV_PATH = 'data/s24/training/orders-joined.csv'
+class OrderTimeModel(TabularRegressorModel):
 
+    def __init__(self, settings):
+        super().__init__(settings)
+        logger.info('OrderTimeModel.__init__')
 
-class OrderTimeModel(AnaliticoTabularRegressorModel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        print('OrderTimeModel')
-        self.project_id = 's24-order-time'
-        self.models_dir = 'data/s24/models/order-time'
-
-    def train(self):
-        return self._train(TRAINING_CSV_PATH)
+    def train(self, training_id):
+        logger.info('OrderTimeModel.train: %s' % training_id)
+        return super().train(training_id)

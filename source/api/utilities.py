@@ -25,6 +25,25 @@ from api.models import Call, Token
 
 
 
+def api_save_call(request=None, results=None, status=200) -> Call:
+    """ Track API call in database by creating and saving API call model """
+    try:
+        call = Call()
+        if request:
+            call.user = request.user
+            call.token = request.auth if request.auth and type(request.auth) is Token else None
+            call.url = request.path
+            call.method = request.method
+            call.data = request.data
+        call.results = results
+        call.status = status
+        call.save()
+        results['meta']['call_id'] = call.id
+    except Exception as exc:
+        logger.error(exc)
+    return call
+
+
 def api_exception_handler(exc, context):
     """ Call REST framework's default exception handler first, to get the standard error response. """
     response = exception_handler(exc, context)
@@ -70,19 +89,7 @@ def api_handle_inference(model: AnaliticoModel, request) -> Response:
     results = model.predict(request_data)
     results['meta']['total_ms'] = time_ms(started_on)
 
-    try:
-        # track api call in database
-        call = Call()
-        call.user = request.user
-        call.token = request.auth if request.auth and type(request.auth) is Token else None
-        call.url = request.path
-        call.method = request.method
-        call.data = request.data
-        call.results = results
-        call.save()
-    except Exception as exc:
-        logger.error(exc)
-
+    api_save_call(request, results)
     return Response(results)
 
 

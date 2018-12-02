@@ -10,7 +10,7 @@ from .project import Project
 
 def generate_training_id():
     from django.utils.crypto import get_random_string
-    return 'tnr_' + get_random_string()
+    return 'trn_' + get_random_string()
 
 
 class Training(models.Model):
@@ -20,10 +20,13 @@ class Training(models.Model):
     id = models.SlugField(primary_key=True, default=generate_training_id) 
 
     # model that was trained in this session
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, default=None, verbose_name='Project that was trained')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, default=None, verbose_name='Project')
 
-    # a dictionary with training configuration, results, etc...
-    scores = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, verbose_name='Training scores and information', blank=True, null=True)
+    # model settings when training was run
+    settings = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, blank=True, null=True)
+
+    # a dictionary with training configuration, results, scores, etc...
+    results = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, verbose_name='Results', blank=True, null=True)
 
     # url were test.csv or similar was stored
     # test_url = models.URLField(null=True)

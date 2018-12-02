@@ -19,7 +19,7 @@ from pathlib import Path
 # https://googleapis.github.io/google-cloud-python/latest/storage/blobs.html
 # https://gcloud-python.readthedocs.io/en/latest/storage/blobs.html
 
-_BUCKET="analitico-api"
+_BUCKET="data.analitico.ai"
 
 # default time to live for cached files
 _CACHE_TTL_SEC = 600
@@ -78,14 +78,26 @@ def storage_download_prj_model(project_id) -> Path:
     _gcs_download_to_filename(_BUCKET, 'projects/' + project_id  +'/model.cbm', path)
     return path
 
+
+def storage_download_file(blobname, filename):
+    return _gcs_download_to_filename(_BUCKET, blobname, filename)
+
+
 def storage_download_prj_file(project_id, blobname, filename):
     return _gcs_download_to_filename(_BUCKET, project_id + '/' + blobname, filename)
 
-def storage_upload_prj_file(project_id, blobname, filename):
-    blob = _create_blob(_BUCKET, 'projects/' + project_id + '/' + blobname)
+
+def storage_upload_file(blobname, filename):
+    blob = _create_blob(_BUCKET, blobname)
     with open(filename, "rb") as tmpfile:
         blob.upload_from_file(tmpfile)
     return blob.public_url
+
+
+def storage_upload_prj_file(project_id, blobname, filename):
+    """ Uploads a file to the project's folder in storage """
+    return storage_upload_file('projects/' + project_id + '/' + blobname, filename)
+
 
 def storage_open(path, prefer_cloud=False):
     """ Will open the file for reading at the given path, if that fails, will try same from google storage bucket """

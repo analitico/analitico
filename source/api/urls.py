@@ -12,10 +12,15 @@ from rest_framework.decorators import api_view
 
 from . import views
 #from .views import UserViewSet
-from .views import hello, s24_order_time, s24_order_sorting
+from .views import s24_order_time, s24_order_sorting
+from .views import handle_project, handle_training, handle_inference
 
 
-
+@api_view(['GET', 'POST'])
+def handle_ping(request):
+    return Response({ 
+        "data": request.data 
+    })
 
 
 # Routers provide an easy way of automatically determining the URL conf.
@@ -25,9 +30,13 @@ from .views import hello, s24_order_time, s24_order_sorting
 app_name = 'api'
 urlpatterns = [
 
-    url('hello/$', hello),
+    url('ping', handle_ping),
 
     url('s24/order-sorting', s24_order_sorting),
     url('s24/order-time', s24_order_time),
+
+    path('project/<str:project_id>/', handle_project),
+    path('project/<str:project_id>/training', handle_training),
+    path('project/<str:project_id>/inference', handle_inference),
 ]
 

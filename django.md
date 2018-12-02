@@ -24,3 +24,6 @@ python manage.py migrate --fake admin 0001_initial
 
 Prospector: Code quality analysis tool   
 https://pypi.org/project/prospector/
+
+Material Design for Bootstrap   
+https://fezvrasta.github.io/bootstrap-material-design/

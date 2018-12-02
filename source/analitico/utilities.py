@@ -117,7 +117,7 @@ def dataframe_to_catpool(df: pd.DataFrame, features, categorical_features=None, 
     return pool, df_labels
 
 
-def get_dict_dot(d:dict, key:str = None):
+def get_dict_dot(d:dict, key:str):
     """ Gets an entry from a dictionary using dot notation key, eg: this.that.something """
     try:
         if d and key:
