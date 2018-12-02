@@ -40,5 +40,5 @@ class Token(models.Model):
         unique_together = (('user', 'name'),)
 
     def __str__(self):
-        return 'Token(user=%s, key=%s, name=%s)' % (self.user, self.key, self.name) 
+        return self.key
 
