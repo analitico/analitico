@@ -35,8 +35,9 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
-    list_display = ('key', 'user', 'name')
-    pass
+    list_display = ('key', 'user', 'name', 'created_at')
+    ordering = ('user', 'name', 'created_at') 
+
 
 @admin.register(Call)
 class ApiCallAdmin(admin.ModelAdmin):
