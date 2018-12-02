@@ -23,8 +23,7 @@ from joblib import Parallel, delayed
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 
-from analitico.utilities import timestamp_to_time, timestamp_diff_secs, dataframe_to_catpool
-from analitico.train import time_ms
+from analitico.utilities import timestamp_to_time, timestamp_diff_secs, dataframe_to_catpool, time_ms
 from analitico.storage import storage_open, storage_path, storage_temp, storage_cache
 
 from rest_framework.exceptions import APIException, ParseError

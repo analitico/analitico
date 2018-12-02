@@ -9,18 +9,21 @@ from rest_framework import permissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, APIException, ParseError
 
 import analitico.models
+import analitico.utilities
+
+import api.utilities
+
 import s24.ordertime
 import s24.ordersorting
 
-import analitico.utilities
 
 from analitico.models import AnaliticoModel, TabularRegressorModel
 
 from api.models import User, Project, Training
-from api.utilities import api_wrapper, api_handle_inference
+from api.utilities import api_wrapper, api_handle_inference, time_ms, api_get_parameter, api_check_authorization
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -127,7 +130,28 @@ def handle_prj_training(request: Request, project_id: str) -> Response:
 
 @api_view(['GET', 'POST'])
 def handle_prj_inference(request: Request, project_id: str) -> Response:
+    """ Run inference on a given project id using its active trained model """
+    started_on = time_ms()
+    api_check_authorization(request, project_id)
+
+    # retrieve project, model and active training session
     project, model = get_project_model(project_id)
-    return Response('Inference: ' + project_id)
+    training = Training.objects.get(pk=project.training_id) if project.training_id else None
+
+    if not project.training_id:
+        raise NotFound('Project ' + project_id + ' has not been trained yet.')
+
+    model.settings = training.settings
+    model.training = training.results
+
+    request_data = api_get_parameter(request, 'data')
+    if request_data is None:
+        raise ParseError("API call should include 'data' field (see documentation).")
+
+    results = model.predict(request_data)
+    results['meta']['total_ms'] = time_ms(started_on)
+
+    api.utilities.api_save_call(request, results)
+    return Response(results)
 
 

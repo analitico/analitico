@@ -17,6 +17,8 @@ import numpy as np
 import tempfile
 import copy
 
+import analitico.storage
+
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
@@ -24,8 +26,7 @@ from catboost import Pool, CatBoostRegressor, CatBoostClassifier
 from pandas.api.types import CategoricalDtype
 from pathlib import Path
 
-from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger
-from analitico.storage import storage_upload_file, storage_cache
+from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger, get_dict_dot
 from rest_framework.exceptions import ParseError
 
 ##
@@ -37,25 +38,23 @@ class AnaliticoModel:
     # Project settings    
     settings: dict = None
 
+    # training information (as returned by previous call to train)
+    training:dict = None
+
     # project id used for tracking, directories, access, billing
-    project_id:str = ''
+    project_id:str = None
 
-    # More info when in debugging mode
-    debug:bool = False
-
-    # directory where models are saved
-    models_dir:str = ''
 
     def __init__(self, settings:dict):
         self.settings = settings
         self.project_id = settings.get('project_id')
 
     def train(self) -> dict:
-        return { 'data': None, 'meta': None }
+        raise NotImplementedError()
 
     def predict(self, data) -> dict:
         """ Runs prediction on given data, returns predictions and metadata """
-        return { 'data': None, 'meta': None }
+        raise NotImplementedError()
 
 ##
 ## TabularRegressorModel
@@ -185,7 +184,7 @@ class TabularRegressorModel(AnaliticoModel):
             records['source'] = len(df)
 
             # DEBUG ONLY TO LIMIT ROWS
-            # df = df.head(10000)
+            df = df.head(10000)
 
             # remove outliers from s24 dataset
             # TODO: this should be done prior to submitting dataset
@@ -254,14 +253,15 @@ class TabularRegressorModel(AnaliticoModel):
             if upload:
                 # upload model, results, predictions
                 blobprefix = 'training/' + training_id + '/'
-                assets['model_url'] = storage_upload_file(blobprefix + 'model.cbm', model_fname)
-                assets['test_url'] = storage_upload_file(blobprefix + 'test.csv', test_fname)
+                assets['model_url'] = analitico.storage.upload_file(blobprefix + 'model.cbm', model_fname)
+                assets['test_url'] = analitico.storage.upload_file(blobprefix + 'test.csv', test_fname)
                 # update with assets urls saving to storage
                 assets['training_url'] = assets['model_url'].replace('model.cbm', 'training.json')
                 meta['total_ms'] = time_ms(started_on) # include uploads
                 save_json(results, results_fname, indent=4)
-                assets['training_url'] = storage_upload_file(blobprefix + 'training.json', results_fname)
+                assets['training_url'] = analitico.storage.upload_file(blobprefix + 'training.json', results_fname)
 
+            self.training = results
             return results
 
         except Exception as exc:
@@ -270,24 +270,22 @@ class TabularRegressorModel(AnaliticoModel):
             raise
 
 
-    def predict(self, data):
+    def predict(self, data, debug=False):
         """ Runs a model, returns predictions """
 
         results = { "meta": {} }
         results["meta"]["project_id"] = self.project_id
-        if self.debug:
+        
+        if debug:
             results["meta"]["settings"] = self.settings
 
         # request can be for a single prediction or an array of records to predict
         if type(data) is dict: data = [data]
         
-        if (self.settings is None):
-            self.settings = storage_download_prj_settings(self.project_id)
-
         # read features from configuration file
-        features = self.settings['features']['all']
-        categorical_features = self.settings['features']['categorical']
-        timestamp_features = self.settings['features']['timestamp']
+        features = get_dict_dot(self.settings, 'features.all')
+        categorical_features = get_dict_dot(self.settings, 'features.categorical')
+        timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
 
         # initialize data pool to be tested from json params
         df = pd.DataFrame(data)
@@ -296,8 +294,8 @@ class TabularRegressorModel(AnaliticoModel):
         # create model object from stored model file if not cached
         if self.model is None:
             loading_on = time_ms()
-            model_path = os.path.join(self.models_dir, 'model.cbm')
-            model_filename = storage_cache(model_path)
+            model_url = get_dict_dot(self.training, 'data.assets.model_url')
+            model_filename = analitico.storage.download_file(model_url)
             model = CatBoostRegressor()
             model.load_model(model_filename)
             self.model = model
@@ -309,5 +307,4 @@ class TabularRegressorModel(AnaliticoModel):
         results["data"] = {
             "predictions": list(predictions)
         }
-
         return results
