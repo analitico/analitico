@@ -12,6 +12,10 @@ from .models import Call
 from .models import Project
 from .models import Training
 
+# TODO customize admin site
+# https://stackoverflow.com/questions/4938491/django-admin-change-header-django-administration-text/24983231#24983231
+admin.site.site_header = 'Analitico.ai'
+
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     """Define admin model for custom User model with no email field."""
