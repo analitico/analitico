@@ -38,7 +38,7 @@ def api_save_call(request=None, results=None, status=200) -> Call:
         call.results = results
         call.status = status
         call.save()
-        results['meta']['call_id'] = call.id
+        results['meta']['api_id'] = call.id
     except Exception as exc:
         logger.error(exc)
     return call
