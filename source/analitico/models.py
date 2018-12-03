@@ -44,7 +44,6 @@ class AnaliticoModel:
     # project id used for tracking, directories, access, billing
     project_id:str = None
 
-
     def __init__(self, settings:dict):
         self.settings = settings
         self.project_id = settings.get('project_id')
@@ -61,6 +60,16 @@ class AnaliticoModel:
 ##
 
 class TabularRegressorModel(AnaliticoModel):
+
+    # feature columns that should be considered for training
+    def get_features(self):
+        return get_dict_dot(self.settings, 'features.all')
+    features = property(get_features)
+
+    # label column
+    def get_label(self):
+        return get_dict_dot(self.settings, 'features.label')
+    label = property(get_label)
 
     # Model used for predictions
     model: CatBoostRegressor = None
@@ -96,8 +105,8 @@ class TabularRegressorModel(AnaliticoModel):
         meta['processing_ms'] = time_ms(preprocessing_on)
         logger.info('processed %d ms' % meta['processing_ms'])
 
-        total_iterations = 50
-        learning_rate = 1
+        total_iterations = get_dict_dot(self.settings, 'iterations', 50)
+        learning_rate = get_dict_dot(self.settings, 'learning_rate', 1)
 
         # create model with training parameters 
         model = CatBoostRegressor(task_type='GPU', iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='RMSE')
@@ -134,7 +143,7 @@ class TabularRegressorModel(AnaliticoModel):
             data['project_id'] = self.project_id
             data['training_id'] = training_id
 
-            # load data from results of mysql query joining multiple tables in s24 database
+            # load csv data from results of query joining multiple tables in source database
             logger.info('loading data...')    
             loading_on = time_ms()
             data_url = get_dict_dot(self.settings, 'training_data.url')
@@ -145,6 +154,9 @@ class TabularRegressorModel(AnaliticoModel):
             records = data['records'] = {}
             records['source'] = len(df)
 
+            # DEBUG ONLY
+            # df = df.head(5000)
+
             # filter outliers, etc
             df = self._train_preprocess_records(df)
 
@@ -154,19 +166,21 @@ class TabularRegressorModel(AnaliticoModel):
             records['total'] = len(df)
 
             # TODO: decide this from settings variable
-            test_random = False
+            chronological = get_dict_dot(self.settings, 'chronological', False)
             test_size = 0.10
 
             # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html
 
-            if test_random:
-                # test set if from a random assortment of rows
-                train_df, test_df = train_test_split(df, test_size=0.05, random_state=42)
-            else:
+            if chronological:
                 # test set if from the last rows (chronological order)
+                logger.info('chronological test set')
                 test_rows = int(len(df) * test_size)
                 test_df = df[-test_rows:]
                 train_df = df[:-test_rows]
+            else:
+                # test set if from a random assortment of rows
+                logger.info('random test set')
+                train_df, test_df = train_test_split(df, test_size=0.05, random_state=42)
 
             # separate rows between training and testing set
             records['training'] = len(train_df)
