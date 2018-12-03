@@ -36,9 +36,6 @@ TRAINING_CSV_PATH = 'data/s24/training/order-details-joined.csv'
 MODEL_PATH = 'data/s24/models/order-sorting/model.cbm'
 SCORES_PATH = 'data/s24/models/order-sorting/scores.json'
 
-# subset of rows used for quick training while developing
-_training_sample = None # eg: 5000 for quick run, None for all
-
 
 class OrderSortingModel(analitico.models.TabularRegressorModel):
     """
@@ -54,7 +51,6 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
 
     def __init__(self, settings):
         super().__init__(settings)
-        analitico.utilities.logger.info('OrderSortingModel.__init__')
 
     #
     # training
@@ -124,8 +120,9 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
     def _train_augment_records(self, df):
         """ Augments a given dataframe, returns augmented df """
 
-        # TODO can I remove this?
-        df = df.copy()
+        # disable warning on chained assignments below...
+        # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
+        pd.options.mode.chained_assignment = None
 
         # add columns for previous and next order_detail
         df['prev_order_id'] = df['order_id'].shift(1)
@@ -139,7 +136,7 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
         # speeding up augmentation substantially (eg: laptop has 12 cores)
         # https://joblib.readthedocs.io/en/latest/parallel.html
 
-        parallel = False
+        parallel = True
 
         if not parallel:
             # process all records at once (mostly single-thread)

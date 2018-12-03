@@ -29,6 +29,10 @@ from pathlib import Path
 from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger, get_dict_dot
 from rest_framework.exceptions import ParseError
 
+# subset of rows used for quick training while developing
+_training_sample = None # eg: 5000 for quick run, None for all
+
+
 ##
 ## AnaliticoModel
 ##
@@ -157,7 +161,9 @@ class TabularRegressorModel(AnaliticoModel):
             records['source'] = len(df)
 
             # DEBUG ONLY
-            # df = df.head(5000)
+            if _training_sample:
+                logger.warning('Cutting rows down to %s for quicker debugging, disable in production', _training_sample)
+                df = df.head(_training_sample)
 
             # filter outliers, etc
             df = self._train_preprocess_records(df)
