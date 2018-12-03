@@ -24,7 +24,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY = '111&xe5+tyf29&&%t!jk9-v)!v07gc%0ha4*4#8e+rfd@7i80#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -88,7 +88,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'website.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 # https://dev.mysql.com/doc/connector-python/en/connector-python-django-backend.html
@@ -96,11 +95,11 @@ WSGI_APPLICATION = 'website.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'mysql.connector.django',
-        'NAME': 'analitico',
+        'NAME': 'ai',
         'USER': 'analitico',
         'PASSWORD': '4eRwg67hj',
-       # 'HOST': 's1.analitico.ai',
-        'HOST': '127.0.0.1',
+        'HOST': 's1.analitico.ai',
+      # 'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }
