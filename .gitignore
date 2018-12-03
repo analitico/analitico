@@ -8,3 +8,5 @@ _*.pyx
 *.cbm
 .ipynb_checkpoints
 venv
+
+/source/django

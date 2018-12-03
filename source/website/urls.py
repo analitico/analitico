@@ -7,7 +7,7 @@ from django.urls import include, path
 from django.conf.urls import url, include
 from django.views.generic import TemplateView
 
-from api.urls import api_router
+#from api.urls import api_router
 
 # serves template for home page
 class IndexView(TemplateView):
@@ -16,8 +16,7 @@ class IndexView(TemplateView):
 urlpatterns = [
 
     path('api/v1/', include('api.urls')),
-    path('api/v1/', include(api_router.urls)),
-    path('api/v1/s24', include('s24.urls')),
+    #path('api/v1/', include(api_router.urls)),
 
     path('polls/', include('polls.urls')),
     path('admin/', admin.site.urls),
@@ -26,6 +25,7 @@ urlpatterns = [
     path('', IndexView.as_view(), name='index')
 ]
 
+# service used to retrieve tokens
 from rest_framework.authtoken import views
 urlpatterns += [
     url(r'^api-token-auth/', views.obtain_auth_token)

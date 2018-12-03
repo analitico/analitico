@@ -24,7 +24,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY = '111&xe5+tyf29&&%t!jk9-v)!v07gc%0ha4*4#8e+rfd@7i80#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -41,16 +41,14 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    'website.apps.WebsiteConfig',
- #   'api.apps.ApiConfig',
-    's24.apps.S24Config',
-    'polls.apps.PollsConfig',
-
     'api',
+    'polls',
+    's24',
+    'website',
 
     'gunicorn',
     'rest_framework',
-    'rest_framework.authtoken',
+#    'rest_framework.authtoken',
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -90,7 +88,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'website.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 # https://dev.mysql.com/doc/connector-python/en/connector-python-django-backend.html
@@ -98,7 +95,7 @@ WSGI_APPLICATION = 'website.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'mysql.connector.django',
-        'NAME': 'analitico',
+        'NAME': 'ai',
         'USER': 'analitico',
         'PASSWORD': '4eRwg67hj',
         'HOST': 's1.analitico.ai',
@@ -145,10 +142,24 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = "static/"
 
+# TODO better mechanism for auth tokens
+# https://github.com/James1345/django-rest-knox
+
 REST_FRAMEWORK = {
+
+    # custom exception handler reports exception with specific formatting
+    'EXCEPTION_HANDLER': 'api.utilities.api_exception_handler',
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'api.authentication.BearerAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
- #       'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        # 'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication'
     ]
 }

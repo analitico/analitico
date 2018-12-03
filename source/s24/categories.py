@@ -4,9 +4,8 @@
 import unittest
 import pandas as pd
 
-from analitico.train import time_ms
 from analitico.storage import storage_open
-from analitico.utilities import save_json
+from analitico.utilities import save_json, time_ms
 
 # csv file with category table from s24 database
 CATEGORY_CSV_PATH = 'data/s24/training/category.csv'

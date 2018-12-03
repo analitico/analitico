@@ -3,7 +3,10 @@
     "version": "1.0",
 
     "project_id": "s24-order-time",
-    "algorithm": "catboost-regressor",
+    "model_id": "s24-order-time-model",
+
+    "iterations": 50,
+    "chronological": true,
 
     "features": {
         "all": [
@@ -44,7 +47,7 @@
         "label": "total_min"
     },
     
-    "training": {
-        "model_url": "https://storage.cloud.google.com/analitico-api/projects/s24-order-time/model.cbm"
+    "training_data": {
+        "url": "https://storage.googleapis.com/data.analitico.ai/data/s24/training/orders-joined.csv"
     }
 }
