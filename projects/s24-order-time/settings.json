@@ -48,6 +48,6 @@
     },
     
     "training_data": {
-        "url": "data/s24/training/orders-joined.csv"
+        "url": "https://storage.googleapis.com/data.analitico.ai/data/s24/training/orders-joined.csv"
     }
 }

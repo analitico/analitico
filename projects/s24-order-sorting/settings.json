@@ -35,6 +35,6 @@
     },
         
     "training_data": {
-        "url": "data/s24/training/order-details-joined.csv"
+        "url": "https://storage.googleapis.com/data.analitico.ai/data/s24/training/order-details-joined.csv"
     }
 }

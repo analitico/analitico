@@ -48,7 +48,8 @@ class AnaliticoModel:
         self.settings = settings
         self.project_id = settings.get('project_id')
 
-    def train(self) -> dict:
+    def train(self, training_id, upload=True) -> dict:
+        """ Trains machine learning model and returns a dictionary with the training's results """
         raise NotImplementedError()
 
     def predict(self, data) -> dict:
@@ -132,7 +133,7 @@ class TabularRegressorModel(AnaliticoModel):
         return model, test_labels, test_predictions
 
 
-    def train(self, training_id, upload=True):
+    def train(self, training_id, upload=True) -> dict:
         """ Trains model with given data (or data configured in settins) and returns training results """
         temp_dir = tempfile.TemporaryDirectory()
         try:
@@ -147,7 +148,8 @@ class TabularRegressorModel(AnaliticoModel):
             logger.info('loading data...')    
             loading_on = time_ms()
             data_url = get_dict_dot(self.settings, 'training_data.url')
-            df = pd.read_csv(data_url, low_memory=False)
+            data_filename = analitico.storage.download_file(data_url) # cached
+            df = pd.read_csv(data_filename, low_memory=False)
             meta['loading_ms'] = time_ms(loading_on)
             logger.info('loaded %d ms' % meta['loading_ms'])
             
@@ -223,7 +225,9 @@ class TabularRegressorModel(AnaliticoModel):
                 # upload model, results, predictions
                 blobprefix = 'training/' + training_id + '/'
                 assets['model_url'] = analitico.storage.upload_file(blobprefix + 'model.cbm', model_fname)
+                assets['model_size'] = os.path.getsize(model_fname)
                 assets['test_url'] = analitico.storage.upload_file(blobprefix + 'test.csv', test_fname)
+                assets['test_size'] = os.path.getsize(test_fname)
                 # update with assets urls saving to storage
                 assets['training_url'] = assets['model_url'].replace('model.cbm', 'training.json')
                 meta['total_ms'] = time_ms(started_on) # include uploads
