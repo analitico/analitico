@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import logging.config
+import sentry_sdk
+import raven
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 #BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,8 +51,8 @@ INSTALLED_APPS = [
 
     'gunicorn',
     'rest_framework',
-#    'rest_framework.authtoken',
-    
+    'raven.contrib.django.raven_compat',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -163,3 +166,57 @@ REST_FRAMEWORK = {
         # 'rest_framework.authentication.SessionAuthentication'
     ]
 }
+
+# Examples of logging configuration:
+# https://lincolnloop.com/blog/django-logging-right-way/
+
+# Sentry/Django documentation
+# https://docs.sentry.io/clients/python/integrations/django/
+
+sentry_sdk.init("https://3cc8a3cf05e140a9bef3946e24756dc5@sentry.io/1336917")
+
+RAVEN_CONFIG = {
+    'dsn': 'https://3cc8a3cf05e140a9bef3946e24756dc5:30ab9adb8199489a962d94566cd746bc@sentry.io/1336917',
+    # If you are using git, you can also automatically configure the
+    # release based on the git info.
+    'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
+#    'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
+}
+
+LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
+
+LOGGING_CONFIG = None
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            # exact format is not important, this is the minimum information
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
+        },
+        # Add Handler for Sentry for `warning` and above
+        'sentry': {
+            'level': 'WARNING',
+            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+        },
+    },
+    'loggers': {
+        # root logger
+        '': {
+            'level': 'WARNING',
+            'handlers': ['console', 'sentry'],
+        },
+        'analitico': {
+            'level': LOGLEVEL,
+            'handlers': ['console', 'sentry'],
+            # required to avoid double logging with root logger
+            'propagate': False,
+        },
+    },
+})
