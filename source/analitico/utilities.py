@@ -122,7 +122,7 @@ def get_dict_dot(d:dict, key:str, default=None):
     try:
         if d and key:
             split = key.split('.')
-            value = d[split[0]]
+            value = d.get(split[0])
             if value:
                 if len(split) == 1:
                     return value
