@@ -162,6 +162,10 @@ def upload_file(blobname, filename):
 def download_file(url, filename=None, cache_ttl=CACHE_TTL_SEC) -> str:
     """ Downloads a file in storage from given url to given filename, if cached returns local copy """
 
+    # if url is a local file, just return that
+    if os.path.isfile(url):
+        return url
+
     if not url.startswith(STORAGE_URL_PREFIX):
         raise NotFound(url + ' is not a storage url')
 
