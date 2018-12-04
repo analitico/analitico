@@ -37,6 +37,9 @@ MODELS = {
 
     # model to sort s24 orders based on supermarket layout    
     's24-order-sorting-model': s24.ordersorting.OrderSortingModel,
+
+    # model to predict if items may be out of stock    
+    's24-out-of-stock-model': s24.models.outofstock.OutOfStockModel,
 }
 
 #

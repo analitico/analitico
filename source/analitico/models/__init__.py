@@ -1,0 +1,4 @@
+
+from .analiticomodel import AnaliticoModel
+from .tabularregressormodel import TabularRegressorModel
+from .tabularclassifiermodel import TabularClassifierModel

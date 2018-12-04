@@ -32,39 +32,13 @@ from rest_framework.exceptions import ParseError
 # subset of rows used for quick training while developing
 _training_sample = None # eg: 5000 for quick run, None for all
 
+from analitico.models.analiticomodel import AnaliticoModel
 
 ##
-## AnaliticoModel
+## TabularClassifierModel
 ##
 
-class AnaliticoModel:
-
-    # Project settings    
-    settings: dict = None
-
-    # training information (as returned by previous call to train)
-    training:dict = None
-
-    # project id used for tracking, directories, access, billing
-    project_id:str = None
-
-    def __init__(self, settings:dict):
-        self.settings = settings
-        self.project_id = settings.get('project_id')
-
-    def train(self, training_id, upload=True) -> dict:
-        """ Trains machine learning model and returns a dictionary with the training's results """
-        raise NotImplementedError()
-
-    def predict(self, data) -> dict:
-        """ Runs prediction on given data, returns predictions and metadata """
-        raise NotImplementedError()
-
-##
-## TabularRegressorModel
-##
-
-class TabularRegressorModel(AnaliticoModel):
+class TabularClassifierModel(AnaliticoModel):
 
     # feature columns that should be considered for training
     def get_features(self):
@@ -114,7 +88,7 @@ class TabularRegressorModel(AnaliticoModel):
         learning_rate = get_dict_dot(self.settings, 'learning_rate', 1)
 
         # create model with training parameters 
-        model = CatBoostRegressor(task_type='GPU', iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='RMSE')
+        model = CatBoostClassifier(iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='Logloss')
 
         # train the model
         logger.info('training...')
@@ -128,6 +102,12 @@ class TabularRegressorModel(AnaliticoModel):
 
         # make the prediction using the resulting model
         test_predictions = model.predict(test_pool)
+
+        # Get predicted probabilities for each class
+        test_probabilities = model.predict_proba(test_pool)
+
+        # Get predicted RawFormulaVal
+        test_raw = model.predict(test_pool, prediction_type='RawFormulaVal')
 
         # loss metrics on test set
         scores = results['data']['scores'] = {}
@@ -157,6 +137,9 @@ class TabularRegressorModel(AnaliticoModel):
             meta['loading_ms'] = time_ms(loading_on)
             logger.info('loaded %d ms' % meta['loading_ms'])
             
+            if self.debug:
+                df = df.tail(50000)
+
             records = data['records'] = {}
             records['source'] = len(df)
 
@@ -227,7 +210,7 @@ class TabularRegressorModel(AnaliticoModel):
             meta['total_ms'] = time_ms(started_on)
             save_json(results, results_fname, indent=4)
             
-            if upload:
+            if False and upload:
                 # upload model, results, predictions
                 blobprefix = 'training/' + training_id + '/'
                 assets['model_url'] = analitico.storage.upload_file(blobprefix + 'model.cbm', model_fname)
