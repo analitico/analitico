@@ -21,6 +21,9 @@ class Training(models.Model):
     # training id
     id = models.SlugField(primary_key=True, default=generate_training_id) 
 
+    # current status, eg: Created, Processing, Completed, Failed
+    status = models.SlugField(blank=True, default='Created')
+
     # model that was trained in this session
     project = models.ForeignKey(Project, on_delete=models.CASCADE, default=None, verbose_name='Project')
 
