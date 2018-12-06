@@ -180,7 +180,7 @@ def download_file(url, filename=None, cache_ttl=CACHE_TTL_SEC) -> str:
     if os.path.isfile(filename):
         touched_sec = int(now - os.path.getctime(filename))
         if touched_sec < cache_ttl:
-            print("download_file: %s (from cache, modified %ds ago)" % (filename, touched_sec))
+            logger.info("download_file: %s (from cache, modified %ds ago)", filename, touched_sec)
             return filename
 
     # TODO download and cache URL which are not in our storage
