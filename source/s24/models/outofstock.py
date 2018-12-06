@@ -129,8 +129,9 @@ class OutOfStockModel(analitico.models.TabularClassifierModel):
 	    # sql: ((((price*(1-variable_weight))+(variable_weight*price_per_type)) + surcharge_fixed) / ((price*(1-variable_weight))+(variable_weight*price_per_type))) 'item_promo', 
         df['dyn_price_promo'] = df.apply(lambda row: self._get_price_promo(row), axis=1)
 
-        # for now we will treat this problem as a regression issue, later as a classification
-        df['dyn_purchased'] = df.apply(lambda row: 'PURCHASED' if row['odt_status'] == 'PURCHASED' else 'NOT_PURCHASED', axis=1) 
+        if training:
+            # there are four classes in the original status, turn them to just two bought or not
+            df['dyn_purchased'] = df.apply(lambda row: 'PURCHASED' if row['odt_status'] == 'PURCHASED' else 'NOT_PURCHASED', axis=1) 
 
         logger.info('OutOfStock.preprocess_data - %d records (after)', len(df))
         # superclass will apply categorical types, augment timestamps, etc
