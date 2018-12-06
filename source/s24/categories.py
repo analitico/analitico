@@ -57,20 +57,42 @@ def _prepare():
 def s24_get_category(id: int, depth=0) -> (id, str, str):
     """ Returns (id, name, slug) of the category at given depth (0-main, 1-sub, 2-category) """
     _prepare()
-    try: return _categories[id][depth][:3]
-    except: return None
+    try:
+        if id and (id in _categories):
+            cat = _categories[id][depth]
+            if cat:
+                return cat[:3]
+        # return _categories[id][depth][:3]
+    except TypeError: 
+        pass    
+    return None
 
 def s24_get_category_id(id: int, depth=0) -> int:
     """ Returns the id of the category at given depth (0-main, 1-sub, 2-category) """
-    try: return s24_get_category(id, depth)[0]
-    except: return None
+    try: 
+        cat = s24_get_category(id, depth)
+        return cat[0] if cat else None
+        # return s24_get_category(id, depth)[0]
+    except TypeError: 
+        pass    
+    return None
 
 def s24_get_category_name(id: int, depth=0) -> str:
     """ Returns the name of the category at given depth (0-main, 1-sub, 2-category) """
-    try: return s24_get_category(id, depth)[1] 
-    except: return None
+    try: 
+        cat = s24_get_category(id, depth)
+        return cat[1] if cat else None
+        # return s24_get_category(id, depth)[1] 
+    except TypeError: 
+        pass
+    return None
 
 def s24_get_category_slug(id: int, depth=0) -> str:
     """ Returns the url slug of the category at given depth (0-main, 1-sub, 2-category) """
-    try: return s24_get_category(id, depth)[2] 
-    except: return None
+    try: 
+        cat = s24_get_category(id, depth)
+        return cat[1] if cat else None
+        # return s24_get_category(id, depth)[2] 
+    except TypeError: 
+        pass    
+    return None
