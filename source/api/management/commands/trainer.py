@@ -2,13 +2,10 @@
 import os
 import time
 
-import analitico.utilities
-import api.models
-
 from api.models import Training
 from api.views import get_project_model
-
 from analitico.utilities import logger
+
 from django.core.management.base import BaseCommand, CommandError
 
 # Writing custom django-admin commands
@@ -32,7 +29,7 @@ class Command(BaseCommand):
         training = None
         try:
             if training_id:
-                training = api.models.Training.objects.get(pk=training_id)
+                training = Training.objects.get(pk=training_id)
             else:
                 # TODO find a job that's waiting
                 return
@@ -75,7 +72,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """ Called when command is run will keep processing jobs """
-        logger.info('Trainer')
+        logger.info('Trainer - started')
 
         # first run any jobs that were specifically indicated in the command
         for training_id in options['training_id']:
