@@ -14,11 +14,18 @@ import analitico.models
 import analitico.utilities
 import analitico.storage
 
+import numpy as np
+
+
 from analitico.utilities import timestamp_diff_secs, time_ms, get_dict_dot, logger
 
 from rest_framework.exceptions import APIException
 
 from s24.categories import s24_get_category_id, s24_get_category_name, s24_get_category_slug
+
+
+import multiprocessing
+from joblib import Parallel, delayed
 
 
 class OutOfStockModel(analitico.models.TabularClassifierModel):
@@ -29,6 +36,26 @@ class OutOfStockModel(analitico.models.TabularClassifierModel):
     model to predict distances between items, sorts the shopping list in the manner which 
     will be quicker to shop using a travelling salesman approach.
     """
+
+    def __init__(self, settings):
+        super().__init__(settings)
+        logger.info('OutOfStockModel - project_id: %s' % self.project_id)
+
+
+    # experimental, call to callable didn't work for some reason
+    def parallel_df(self, df:pd.DataFrame, call:callable):
+        chunk_size = 5000
+        chunk_dfs = [df[i:i+chunk_size].copy() for i in range(0, df.shape[0], chunk_size)]
+
+        results = Parallel(n_jobs=multiprocessing.cpu_count())(
+            delayed(call)(chunk_df) for chunk_df in chunk_dfs)
+
+        df_joined = None 
+        for df_result in results:
+            df_joined = df_joined.append(df_result) if df_joined else df_result
+
+        return df_joined
+
 
     #
     # training
@@ -43,32 +70,56 @@ class OutOfStockModel(analitico.models.TabularClassifierModel):
 
 
     def _get_price_promo(self, row):
-        return (row['dyn_price'] + row['odt_surcharge_fixed']) / row['dyn_price']
+        try:
+            return (row['dyn_price'] + row['odt_surcharge_fixed']) / row['dyn_price']
+        except ZeroDivisionError:
+            return 1
 
 
-    def _train_preprocess_records(self, df):
-        """ Remove outliers and sort dataset before it's used for training """
-        df = super()._train_preprocess_records(df)
+    def _get_category_id(self, row, level):
+        try:
+            if not pd.isnull(row['odt_category_id']):
+                return s24_get_category_id(int(row['odt_category_id']), level)
+        except TypeError:
+            pass
+        return None
 
+
+    def _get_category_slug(self, row, level):
+        try:
+            if not pd.isna(row['odt_category_id']):
+                return s24_get_category_slug(int(row['odt_category_id']), level)
+        except TypeError:
+            pass
+        return None
+
+
+    def preprocess_data(self, df, training=False, results=None):
+        """ Remove outliers and sort dataset before it's used for training or just calculate dynamic fields before inference """
+        logger.info('OutOfStock.preprocess_data - %d records (before)', len(df))
         df.set_index(keys='odt_id', inplace=True, verify_integrity=True)
 
-        # remove rows without an item's category
-        df = df.dropna(subset=['odt_category_id'])
-        df = df.dropna(subset=['odt_touched_at'])
+        # warn rows without odt_category_id?
+        if (training and df['odt_category_id'].isnull().sum() > 0):
+            logger.warning("OutOfStock.preprocess_data - %d records with null 'odt_category_id'", df['odt_category_id'].isna().sum())
+            df = df.dropna(subset=['odt_category_id'])
+
+        # remove rows without odt_touched_at
+        if (df['odt_touched_at'].isnull().sum()):
+            logger.warning("OutOfStock.preprocess_data - %d records with null 'odt_touched_at'", df['odt_touched_at'].isnull().sum())
 
         # disable warning on chained assignments below...
         # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
         pd.options.mode.chained_assignment = None
 
         # expand product categories to 3 levels: main, sub and category
-        df['dyn_main_category_id'] = df.apply(lambda row: s24_get_category_id(int(row['odt_category_id']), 0), axis=1) 
-        df['dyn_sub_category_id'] = df.apply(lambda row: s24_get_category_id(int(row['odt_category_id']), 1), axis=1) 
-        df['dyn_category_id'] = df.apply(lambda row: s24_get_category_id(int(row['odt_category_id']), 2), axis=1) 
+        df['dyn_main_category_id'] = df.apply(lambda row: self._get_category_id(row, 0), axis=1) 
+        df['dyn_sub_category_id'] = df.apply(lambda row: self._get_category_id(row, 1), axis=1) 
+        df['dyn_category_id'] = df.apply(lambda row: self._get_category_id(row, 2), axis=1) 
 
-        if self.debug:
-            df['dyn_category_slug'] = df.apply(lambda row: s24_get_category_slug(int(row['odt_category_id']), 0), axis=1) 
-            df['dyn_sub_category_slug'] = df.apply(lambda row: s24_get_category_slug(int(row['odt_category_id']), 1), axis=1) 
-            df['dyn_category_slug'] = df.apply(lambda row: s24_get_category_slug(int(row['odt_category_id']), 2), axis=1) 
+        # df['dyn_category_slug'] = df.apply(lambda row: self._get_category_slug(row, 0), axis=1) 
+        # df['dyn_sub_category_slug'] = df.apply(lambda row: self._get_category_slug(row, 1), axis=1) 
+        # df['dyn_category_slug'] = df.apply(lambda row: self._get_category_slug(row, 2), axis=1) 
 
 	    # prezzo considerando price se variable_weight è zero oppure price_per_type se variable_weight è 1
 	    # sql: ((price*(1-variable_weight))+(variable_weight*price_per_type)) item_price, 
@@ -78,20 +129,9 @@ class OutOfStockModel(analitico.models.TabularClassifierModel):
 	    # sql: ((((price*(1-variable_weight))+(variable_weight*price_per_type)) + surcharge_fixed) / ((price*(1-variable_weight))+(variable_weight*price_per_type))) 'item_promo', 
         df['dyn_price_promo'] = df.apply(lambda row: self._get_price_promo(row), axis=1)
 
-        # remove items that are outliers in terms of time elapsed        
-        #df = df[df['elapsed_sec'] < 8 * 60]
-        
         # for now we will treat this problem as a regression issue, later as a classification
-        df['dyn_purchased'] = df.apply(lambda row: 1 if row['odt_status'] == 'PURCHASED' else 0, axis=1) 
+        df['dyn_purchased'] = df.apply(lambda row: 'PURCHASED' if row['odt_status'] == 'PURCHASED' else 'NOT_PURCHASED', axis=1) 
 
-        if self.debug:
-            df.to_csv('~/out-of-stock-augmented.csv')
-
-        # if we remove items where the courier had to replace item or
-        # call the customer we get a higher score. however, if we leave
-        # this field in we have more records. also, the system learns to
-        # differentiate elapsed time based on status and we will only place
-        # predictions for status == PURCHASED which are easier to predict
-        #
-        # df = df[df['status'] == 'PURCHASED']
-        return df
+        logger.info('OutOfStock.preprocess_data - %d records (after)', len(df))
+        # superclass will apply categorical types, augment timestamps, etc
+        return super().preprocess_data(df, training, results)
