@@ -2,6 +2,7 @@
 # Copyright (C) 2018 by Analitico.ai. All rights reserved.
 
 import time
+import numpy as np
 import pandas as pd
 import json
 import logging
@@ -47,7 +48,10 @@ _it_holidays = holidays.Italy()
 
 def timestamp_to_time(ts: str, ts_format="%Y-%m-%d %H:%M:%S") -> time.struct_time:
     """ Converts a timestamp string in the given format to a time object """
-    return time.strptime(ts, ts_format)
+    try:
+        return time.strptime(ts, ts_format)
+    except TypeError:
+        return None
 
 
 def timestamp_to_secs(ts: str, ts_format="%Y-%m-%d %H:%M:%S") -> float:
@@ -61,7 +65,7 @@ def timestamp_diff_secs(ts1, ts2):
     return t1 - t2
 
 
-def augment_timestamp_column(df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
+def augment_timestamp_columnOLD(df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
     """ Expand a timestamp column into a number of separate columns
         with the year, month [1,12], hour [0,23], minute [0,59], 
         weekday [0,6] and day of the year [1,366]. The name of the 
@@ -77,6 +81,39 @@ def augment_timestamp_column(df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:
     df[col+'_yearday'] = df[col].map(lambda ts: timestamp_to_time(ts).tm_yday) #.astype(CategoricalDtype(range(1,366),ordered=True))
     df[col+'_holyday'] = df[col].map(lambda ts: int(ts[:10] in _it_holidays))
     return df   
+
+
+def augment_timestamp_column(df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
+    """ Expand a timestamp column into a number of separate columns
+        with the year, month [1,12], hour [0,23], minute [0,59], 
+        weekday [0,6] and day of the year [1,366]. The name of the 
+        new columns follows the name of the original column with
+        the _year, _month, _hour, _min, _wday and _yday suffixes appended. """
+    # https://docs.python.org/3/library/time.html#module-time
+
+    # use empty string for categorical values when value is not known
+    df[col + '_year'] = '' 
+    df[col + '_month'] = ''
+    df[col + '_day'] = ''
+    df[col + '_hour'] = ''
+    df[col + '_min'] = ''
+    df[col + '_weekday'] = ''
+    df[col + '_yearday'] = ''
+    df[col + '_holyday'] = ''
+
+    for idx, row in df.iterrows():
+        t = timestamp_to_time(row[col], ts_format)
+        if t:
+            df.at[idx, col+'_year'] = t.tm_year
+            df.at[idx, col+'_month'] = t.tm_mon
+            df.at[idx, col+'_day'] = t.tm_mday #.astype(CategoricalDtype(range(1,31),ordered=True))
+            df.at[idx, col+'_hour'] = t.tm_hour
+            df.at[idx, col+'_min'] = t.tm_min
+            df.at[idx, col+'_weekday'] = t.tm_wday #.astype(CategoricalDtype(range(0,6),ordered=True))
+            df.at[idx, col+'_yearday'] = t.tm_yday #.astype(CategoricalDtype(range(1,366),ordered=True))
+            df.at[idx, col+'_holyday'] = int(row[col][:10] in _it_holidays)
+    return df
+
 
 
 def dataframe_to_catpool(df: pd.DataFrame, features, categorical_features=None, timestamp_features=None, label_feature=None):
