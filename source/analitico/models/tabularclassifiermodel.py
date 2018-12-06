@@ -49,29 +49,21 @@ class TabularClassifierModel(TabularModel):
         logger.info('TabularClassifierModel - project_id: %s' % self.project_id)
 
 
-    def create_model(self, iterations, learning_rate):
+    def create_model(self, iterations=None, learning_rate=None):
         """ Creates a CatBoostClassifier configured as requested """
-        logger.info('TabularClassifierMode.create_model - creating CatBoostClassifier with iterations: %d, learning_rate: %f', iterations, learning_rate)
-#        return CatBoostClassifier(iterations=iterations, learning_rate=learning_rate, loss_function='Logloss')
-        return CatBoostClassifier(iterations=iterations, learning_rate=learning_rate, loss_function='MultiClass')
+        logger.info('TabularClassifierMode.create_model - creating CatBoostClassifier')
+        return CatBoostClassifier(iterations=iterations, learning_rate=learning_rate, loss_function='MultiClass') # ccould be Logloss for binary
 
 
     def preprocess_data(self, df, training=False, results=None):
         """ Called before data is augmented and used for training """
-        # convert category labels to numbers
-        label = self.get_label()
         if training:
             # when training, store categories in results, encode as numbers
+            label = self.get_label()
             df[label] = df[label].astype('category')
             label_classes = list(df[label].cat.categories)
             results['data']['classes'] = label_classes
             df[label] = df[label].cat.codes
-        else:
-            # for inference, retrieve categories from training, encode as numbers
-            label_classes = self.training['data']['classes']
-            df[label] = df[label].astype('category', label_classes)
-            df[label] = df[label].cat.codes
-        # let superclass complete processing
         return super().preprocess_data(df, training, results)
 
 
@@ -130,98 +122,43 @@ class TabularClassifierModel(TabularModel):
     # inference
     #
 
-
-    def JUSTCODEscore_training(self, model, test_df, test_pool, test_labels, test_filename, results):
-        """ Scores the results of this training for the CatBoostClassifier model """
-
-        # Add scoring to the results of this training. There are many metrics available:
-        # https://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics
-
-
-        # make the prediction using the resulting model
-
-        # array of arrays with probability of each class for each sample
-        p1 = model.predict(test_pool, prediction_type='Probability') # array di array di probabilità numero strano        
-
-        # array with array of 1 item with class index of each sample        
-        p2 = model.predict(test_pool, prediction_type='Class') # array di array da 1 elemento
-                
-        # array of arrays with raw probability of each class for each sample
-        # p3 = model.predict(test_pool, prediction_type='RawFormulaVal') # array di array di probabilità numero strano
-
-
-
-        y_pred = list(model.predict(test_pool))
-
-
-        # same as calling model.predict(..., prediction_type='Probability')
-        # array of arrays with probability of each class for each sample
-        y_probabilities = model.predict_proba(test_pool, verbose=True)
-        
-        X_categories = results['data']['label_categories']
-        X_categories_codes = list(range(0,len(X_categories)))       
-
-       # y_categories = list(test_labels.astype('category').cat.categories)
-        y_true = list(test_labels)
-
-        # loss metrics on test set
-        scores = results['data']['scores'] = {}
-        scores['accuracy_score'] = round(sklearn.metrics.accuracy_score(y_true, y_pred), 5)
-
-        # calculate precision of score for each label class
-        scores['precision_score_weighted'] = sklearn.metrics.precision_score(y_true, y_pred, average='weighted')
-        scores['precision_score'] = []
-        ps = sklearn.metrics.precision_score(y_true, y_pred, average=None)
-        for idx, val in enumerate(X_categories):
-            scores['precision_score'].append((val, ps[idx]))
-
-        scores['log_loss'] = sklearn.metrics.log_loss(y_true, y_probabilities, labels=X_categories_codes)
-
-
-        # superclass will save test.csv
-        super().score_training(model, test_df, test_pool, test_labels, test_filename, results)
-
-
-
-
-
-
-
     def predict(self, data, debug=False):
         """ Runs a model, returns predictions """
-
-        results = { "meta": {} }
-        results["meta"]["project_id"] = self.project_id
-        
-        if debug:
-            results["meta"]["settings"] = self.settings
-
         # request can be for a single prediction or an array of records to predict
         if type(data) is dict: data = [data]
-        
-        # read features from configuration file
-        features = get_dict_dot(self.settings, 'features.all')
-        categorical_features = get_dict_dot(self.settings, 'features.categorical')
-        timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
 
+        results = { 'meta': {} }
+        results['meta']['project_id'] = self.project_id        
+        if debug:
+            results['data'] = data
+            results['settings'] = self.settings
+            results['training'] = self.training
+        
         # initialize data pool to be tested from json params
-        df = pd.DataFrame(data)
-        pool, _ = dataframe_to_catpool(df, features, categorical_features, timestamp_features)
+        y_df = pd.DataFrame(data)
+        y_df, _, categorical_idx = self.preprocess_data(y_df, training=False, results=None)
+        y_pool = Pool(y_df, cat_features=categorical_idx)
 
         # create model object from stored model file if not cached
-        if self.model is None:
-            loading_on = time_ms()
-            model_url = get_dict_dot(self.training, 'data.assets.model_url')
-            model_filename = analitico.storage.download_file(model_url)
-            model = CatBoostRegressor()
-            model.load_model(model_filename)
-            self.model = model
-            results["meta"]["loading_ms"] = time_ms(loading_on)
+        loading_on = time_ms()
+        model_url = get_dict_dot(self.training, 'data.assets.model_url')
+        model_filename = analitico.storage.download_file(model_url)
+        model = self.create_model()
+        model.load_model(model_filename)
+        results['meta']['loading_ms'] = time_ms(loading_on)
 
-        predictions = self.model.predict(pool)
-        predictions = np.around(predictions, decimals=3)
+        # predict class and probabilities of each class
+        y_predictions = model.predict(y_pool, prediction_type='Class') # array di array of 1 element with class index
+        y_probabilities = model.predict(y_pool, prediction_type='Probability') # array of array of probabilities
+        y_classes = self.training['data']['classes'] # list of possible classes
 
-        results["data"] = {
-            "predictions": list(predictions)
-        }
+        # create predictions with assigned class and probabilities
+        results['predictions'] = []
+        for i in range(0, len(data)):
+            results['predictions'].append({
+                'class': y_classes[int(y_predictions[i][0])],
+                'probability': {
+                    y_classes[j]: y_probabilities[i][j] for j in range(0, len(y_classes))
+                }
+            })
         return results
