@@ -40,6 +40,18 @@
             "django": true
         },
         {
+            "name": "Python: Trainer",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/source/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "trainer",
+                "trn_vpVjGYKENMw0"
+            ],
+            "django": true
+        },
+        {
             "name": "Python: Django migrate",
             "type": "python",
             "request": "launch",
