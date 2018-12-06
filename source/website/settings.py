@@ -173,14 +173,18 @@ REST_FRAMEWORK = {
 # Sentry/Django documentation
 # https://docs.sentry.io/clients/python/integrations/django/
 
+# See logs here:
+# https://sentry.io/analiticoai/python/
+
 sentry_sdk.init("https://3cc8a3cf05e140a9bef3946e24756dc5@sentry.io/1336917")
 
 RAVEN_CONFIG = {
     'dsn': 'https://3cc8a3cf05e140a9bef3946e24756dc5:30ab9adb8199489a962d94566cd746bc@sentry.io/1336917',
     # If you are using git, you can also automatically configure the
     # release based on the git info.
-    'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
-#    'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
+#   'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
+#   'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
+    'release': 'v0.11',
 }
 
 LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
