@@ -16,9 +16,11 @@ import pandas as pd
 import numpy as np
 import tempfile
 import copy
+import multiprocessing
 
 import analitico.storage
 
+from joblib import Parallel, delayed
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
@@ -38,6 +40,9 @@ from analitico.models.analiticomodel import AnaliticoModel
 ## TabularModel
 ##
 
+# number of records per chunk when we preprocess them in parallel
+PARALLEL_PREPROCESS_CHUNK_SIZE = 5000
+
 class TabularModel(AnaliticoModel):
 
     def __init__(self, settings):
@@ -46,6 +51,9 @@ class TabularModel(AnaliticoModel):
 
     # cached model
     model = None
+
+    # True if model can be preprocessed in parallel using all cores
+    parallel = True
 
     #
     # training
@@ -65,7 +73,7 @@ class TabularModel(AnaliticoModel):
 
     def preprocess_data(self, df, training=False, results=None):
         """ Preprocess data before it's used to train the model """
-
+        logger.info('TabularModel.preprocess_data')
         features = get_dict_dot(self.settings, 'features.all')
         categorical_features = get_dict_dot(self.settings, 'features.categorical')
         timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
@@ -79,7 +87,7 @@ class TabularModel(AnaliticoModel):
                 logger.warning('TabularModel.preprocess_data - training data has %s rows without %s label', rows - len(df), label_feature)
 
         categorical_features = categorical_features.copy()
-        df = df.copy()
+
         # save labels column
         df_labels = df[label_feature] if label_feature in df.columns else None
         # reorder columns, drop unused 
@@ -105,12 +113,27 @@ class TabularModel(AnaliticoModel):
 
         if self.debug:
             path = os.path.expanduser('~/' + self.project_id + '-preprocessed.csv')
-            logger.info('OutOfStock.preprocess_data - writing %s', path)
+            logger.info('TabularModel.preprocess_data - writing %s', path)
             df.to_csv(path)
 
         # indexes of columns with categorical features
         categorical_idx = [df.columns.get_loc(c) for c in df.columns if c in categorical_features]
         return df, df_labels, categorical_idx
+
+
+    def preprocess_data_parallel(self, df, training=False, results=None):
+        """ Split preprocessing in chunks and perform using all cores """
+
+        chunk_dfs = [df[i:i+PARALLEL_PREPROCESS_CHUNK_SIZE] for i in range(0, df.shape[0], PARALLEL_PREPROCESS_CHUNK_SIZE)]
+
+        results = Parallel(n_jobs=multiprocessing.cpu_count())(
+            delayed(self.preprocess_data)(chunk_df, training, ) for chunk_df in chunk_dfs)
+        print('\n')
+
+        augmented_data = []
+        for result in results:
+            for item in result:
+                augmented_data.append(item)
 
 
     def create_model(self, iterations, learning_rate):
@@ -140,7 +163,11 @@ class TabularModel(AnaliticoModel):
 
     def train(self, training_id, upload=True) -> dict:
         """ Trains model with given data (or data configured in settins) and returns training results """
-        temp_dir = tempfile.TemporaryDirectory()
+        training_dir = os.path.join(tempfile.gettempdir(), training_id)
+        if not os.path.isdir(training_dir):
+            os.mkdir(training_dir)
+        logger.info('TabularModel.train - training_id: %s, training_dir: %s', training_id, training_dir)
+
         try:
             started_on = time_ms()
             results = { 'data': {}, 'meta': {} }
@@ -165,9 +192,17 @@ class TabularModel(AnaliticoModel):
             records['source'] = len(df)
             logger.info('TabularModel.train - loaded %d rows in %d ms', records['source'], meta['loading_ms'])
 
+            if self.debug:
+                # save a sample of the data as it was received for training
+                sample_df = df.tail(100)
+                sample_df_filename = os.path.join(training_dir, self.project_id + '-sample.json')
+                sample_df.to_json(sample_df_filename, orient='records')
+                logger.info('TabularModel.train - saved sample of input records to %s', sample_df_filename)
+
             # DEBUG MAX 10,000 ROWS
             if self.debug:
-                df = df.tail(10000)
+#                df = df.tail(3000000).copy()
+                df = df.tail(5000).copy()
                 logger.warning('TabularModel.train - debug enabled, shrinking to %d rows', len(df))
 
             # filter outliers, calculate dynamic fields, augment timestamps, etc
@@ -206,6 +241,9 @@ class TabularModel(AnaliticoModel):
             train_pool = Pool(train_df, train_labels, cat_features=categorical_idx)
             test_pool = Pool(test_df, test_labels, cat_features=categorical_idx)
 
+            # release
+            df = None
+
             # create a CatBoostRegressor or CatBoostClassifier
             iterations = get_dict_dot(self.settings, 'iterations', 50)
             learning_rate = get_dict_dot(self.settings, 'learning_rate', 1)
@@ -217,9 +255,9 @@ class TabularModel(AnaliticoModel):
             model.fit(train_pool, eval_set=test_pool)
 
             # where training files should be saved
-            model_filename = os.path.join(temp_dir.name, 'model.cbm')
-            test_filename = os.path.join(temp_dir.name, 'test.csv')
-            results_filename = os.path.join(temp_dir.name, 'results.json')
+            model_filename = os.path.join(training_dir, 'model.cbm')
+            test_filename = os.path.join(training_dir, 'test.csv')
+            results_filename = os.path.join(training_dir, 'results.json')
             assets = data['assets'] = {}
             assets['model_path'] = model_filename
             assets['test_path'] = test_filename
@@ -244,9 +282,10 @@ class TabularModel(AnaliticoModel):
             meta['total_ms'] = time_ms(started_on)
             save_json(results, results_filename, indent=4)
             
-            if False and upload:
+            if upload:
                 # upload model, results, predictions
                 blobprefix = 'training/' + training_id + '/'
+                logger.info('TabularModel.train - uploading assets to %s', blobprefix)
                 assets['model_url'] = analitico.storage.upload_file(blobprefix + 'model.cbm', model_filename)
                 assets['model_size'] = os.path.getsize(model_filename)
                 assets['test_url'] = analitico.storage.upload_file(blobprefix + 'test.csv', test_filename)
@@ -256,6 +295,7 @@ class TabularModel(AnaliticoModel):
                 meta['total_ms'] = time_ms(started_on) # include uploads
                 save_json(results, results_filename, indent=4)
                 assets['training_url'] = analitico.storage.upload_file(blobprefix + 'training.json', results_filename)
+                logger.info('TabularModel.train - uploaded assets')
 
             self.training = results
             return results
