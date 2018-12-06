@@ -17,11 +17,15 @@ import numpy as np
 import tempfile
 import copy
 
+import collections, numpy
+
 import analitico.storage
+
+import sklearn.metrics
 
 from datetime import datetime
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error, log_loss, accuracy_score
 from catboost import Pool, CatBoostRegressor, CatBoostClassifier
 from pandas.api.types import CategoricalDtype
 from pathlib import Path
@@ -32,208 +36,156 @@ from rest_framework.exceptions import ParseError
 # subset of rows used for quick training while developing
 _training_sample = None # eg: 5000 for quick run, None for all
 
-from analitico.models.analiticomodel import AnaliticoModel
+from analitico.models.tabularmodel import TabularModel
 
 ##
 ## TabularClassifierModel
 ##
 
-class TabularClassifierModel(AnaliticoModel):
-
-    # feature columns that should be considered for training
-    def get_features(self):
-        return get_dict_dot(self.settings, 'features.all')
-    features = property(get_features)
-
-    # label column
-    def get_label(self):
-        return get_dict_dot(self.settings, 'features.label')
-    label = property(get_label)
-
-    # Model used for predictions
-    model: CatBoostRegressor = None
+class TabularClassifierModel(TabularModel):
 
     def __init__(self, settings):
         super().__init__(settings)
-        logger.info('TabularRegressorModel: %s' % self.project_id)
-
-    #
-    # training
-    #
-
-    def _train_preprocess_records(self, df):
-        """ This method is called after data is loaded but before it is augmented and used for training """
-        return df
+        logger.info('TabularClassifierModel - project_id: %s' % self.project_id)
 
 
-    def _train_catboost_regressor(self, train_df, test_df, results):
-        # read features from configuration file
-        features = get_dict_dot(self.settings, 'features.all')
-        categorical_features = get_dict_dot(self.settings, 'features.categorical')
-        timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
-        label_feature = get_dict_dot(self.settings, 'features.label')
+    def create_model(self, iterations, learning_rate):
+        """ Creates a CatBoostClassifier configured as requested """
+        logger.info('TabularClassifierMode.create_model - creating CatBoostClassifier with iterations: %d, learning_rate: %f', iterations, learning_rate)
+#        return CatBoostClassifier(iterations=iterations, learning_rate=learning_rate, loss_function='Logloss')
+        return CatBoostClassifier(iterations=iterations, learning_rate=learning_rate, loss_function='MultiClass')
 
-        meta = results['meta']
 
-        # initialize data pools
-        preprocessing_on = time_ms()
-        logger.info('processing training data...')
-        train_pool, _ = dataframe_to_catpool(train_df, features, categorical_features, timestamp_features, label_feature)
-        logger.info('processing test data...')
-        test_pool, test_labels = dataframe_to_catpool(test_df, features, categorical_features, timestamp_features, label_feature)
-        meta['processing_ms'] = time_ms(preprocessing_on)
-        logger.info('processed %d ms' % meta['processing_ms'])
+    def preprocess_data(self, df, training=False, results=None):
+        """ Called before data is augmented and used for training """
+        # convert category labels to numbers
+        label = self.get_label()
+        if training:
+            # when training, store categories in results, encode as numbers
+            df[label] = df[label].astype('category')
+            label_classes = list(df[label].cat.categories)
+            results['data']['classes'] = label_classes
+            df[label] = df[label].cat.codes
+        else:
+            # for inference, retrieve categories from training, encode as numbers
+            label_classes = self.training['data']['classes']
+            df[label] = df[label].astype('category', label_classes)
+            df[label] = df[label].cat.codes
+        # let superclass complete processing
+        return super().preprocess_data(df, training, results)
 
-        total_iterations = get_dict_dot(self.settings, 'iterations', 50)
-        learning_rate = get_dict_dot(self.settings, 'learning_rate', 1)
 
-        # create model with training parameters 
-        model = CatBoostClassifier(iterations=total_iterations, learning_rate=learning_rate, depth=8, loss_function='Logloss')
-
-        # train the model
-        logger.info('training...')
-        training_on = time_ms()
-        model.fit(train_pool, eval_set=test_pool)
-        meta['total_iterations'] = total_iterations
-        meta['best_iteration'] = model.get_best_iteration()
-        meta['learning_rate'] = learning_rate
-        meta['training_ms'] = time_ms(training_on)
-        logger.info('trained %d ms' % meta['training_ms'])
-
-        # make the prediction using the resulting model
-        test_predictions = model.predict(test_pool)
-
-        # Get predicted probabilities for each class
-        test_probabilities = model.predict_proba(test_pool)
-
-        # Get predicted RawFormulaVal
-        test_raw = model.predict(test_pool, prediction_type='RawFormulaVal')
-
-        # loss metrics on test set
+    def score_training(self, model, test_df, test_pool, test_labels, test_filename, results):
+        """ Scores the results of this training for the CatBoostClassifier model """
+        # There are many metrics available:
+        # https://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics
         scores = results['data']['scores'] = {}
-        scores['median_abs_error'] = round(median_absolute_error(test_predictions, test_labels), 5)
-        scores['mean_abs_error'] = round(mean_absolute_error(test_predictions, test_labels), 5)
-        scores['sqrt_mean_squared_error'] = round(np.sqrt(mean_squared_error(test_predictions, test_labels)), 5)
-        return model, test_labels, test_predictions
 
+        train_classes = results['data']['classes'] # the classes (actual strings)
+        train_classes_codes = list(range(0,len(train_classes))) # the codes, eg: 0, 1, 2...
 
-    def train(self, training_id, upload=True) -> dict:
-        """ Trains model with given data (or data configured in settins) and returns training results """
-        temp_dir = tempfile.TemporaryDirectory()
-        try:
-            started_on = time_ms()
-            results = { 'data': {}, 'meta': {} }
-            data = results['data']
-            meta = results['meta']
-            data['project_id'] = self.project_id
-            data['training_id'] = training_id
+        test_true = list(test_labels) # test true labels
+        test_preds = model.predict(test_pool, prediction_type='Class') # prediction for each test sample
+        test_probs = model.predict_proba(test_pool, verbose=True) # probability for each class for each sample
+        
+        # Log loss, aka logistic loss or cross-entropy loss.
+        scores['log_loss'] = round(sklearn.metrics.log_loss(test_true, test_probs, labels=train_classes_codes), 5)
 
-            # load csv data from results of query joining multiple tables in source database
-            logger.info('loading data...')    
-            loading_on = time_ms()
-            data_url = get_dict_dot(self.settings, 'training_data.url')
-            data_filename = analitico.storage.download_file(data_url) # cached
-            df = pd.read_csv(data_filename, low_memory=False)
-            meta['loading_ms'] = time_ms(loading_on)
-            logger.info('loaded %d ms' % meta['loading_ms'])
-            
-            if self.debug:
-                df = df.tail(50000)
+        # In multilabel classification, this function computes subset accuracy: 
+        # the set of labels predicted for a sample must exactly match the corresponding set of labels in y_true.
+        scores['accuracy_score'] = round(sklearn.metrics.accuracy_score(test_true, test_preds), 5)
 
-            records = data['records'] = {}
-            records['source'] = len(df)
+        # The precision is the ratio tp / (tp + fp) where tp is the number of true positives 
+        # and fp the number of false positives. The precision is intuitively the ability 
+        # of the classifier not to label as positive a sample that is negative.
+        # The best value is 1 and the worst value is 0.
+        scores['precision_score_micro'] = round(sklearn.metrics.precision_score(test_true, test_preds, average='micro'), 5)
+        scores['precision_score_macro'] = round(sklearn.metrics.precision_score(test_true, test_preds, average='macro'), 5)
+        scores['precision_score_weighted'] = round(sklearn.metrics.precision_score(test_true, test_preds, average='weighted'), 5)
 
-            # DEBUG ONLY
-            if _training_sample:
-                logger.warning('Cutting rows down to %s for quicker debugging, disable in production', _training_sample)
-                df = df.head(_training_sample)
+        # The recall is the ratio tp / (tp + fn) where tp is the number of true positives 
+        # and fn the number of false negatives. The recall is intuitively the ability 
+        # of the classifier to find all the positive samples.
+        scores['recall_score_micro'] = round(sklearn.metrics.recall_score(test_true, test_preds, average='micro'), 5)
+        scores['recall_score_macro'] = round(sklearn.metrics.recall_score(test_true, test_preds, average='macro'), 5)
+        scores['recall_score_weighted'] = round(sklearn.metrics.recall_score(test_true, test_preds, average='weighted'), 5)
 
-            # filter outliers, etc
-            df = self._train_preprocess_records(df)
+        # Report precision and recall for each of the classes
+        scores['classes'] = {}
+        count = collections.Counter(test_true)
+        precision_scores = sklearn.metrics.precision_score(test_true, test_preds, average=None)
+        recall_scores = sklearn.metrics.recall_score(test_true, test_preds, average=None)
+        for idx, val in enumerate(train_classes):
+            scores['classes'][val] = {
+                'count': count[idx],
+                'precision': round(precision_scores[idx], 5),
+                'recall': round(recall_scores[idx], 5)
+            }
 
-            # remove rows without labels
-            label_feature = get_dict_dot(self.settings, 'features.label')
-            df = df.dropna(subset=[label_feature])
-            records['total'] = len(df)
+        # superclass will save test.csv
+        super().score_training(model, test_df, test_pool, test_labels, test_filename, results)
 
-            # TODO: decide this from settings variable
-            chronological = get_dict_dot(self.settings, 'chronological', False)
-            test_size = 0.10
-
-            # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html
-
-            if chronological:
-                # test set if from the last rows (chronological order)
-                logger.info('chronological test set')
-                test_rows = int(len(df) * test_size)
-                test_df = df[-test_rows:]
-                train_df = df[:-test_rows]
-            else:
-                # test set if from a random assortment of rows
-                logger.info('random test set')
-                train_df, test_df = train_test_split(df, test_size=0.05, random_state=42)
-
-            # separate rows between training and testing set
-            records['training'] = len(train_df)
-            records['test'] = len(test_df)
-
-            # create model with training parameters 
-            model, test_labels, test_predictions = self._train_catboost_regressor(train_df, test_df, results)
-
-            # catboost can tell which features weigh more heavily on the predictions
-            feature_importance = model.get_feature_importance(prettified=True)
-            data['features_importance'] = {}
-            for label, importance in feature_importance:
-                data['features_importance'][label] = round(importance, 5)
-
-            # output test set with predictions
-            test_df = test_df.copy()
-            test_df[label_feature] = test_labels
-            # move label to the end for easier reading
-            cols = list(test_df.columns.values)
-            cols.pop(cols.index(label_feature))
-            test_df = test_df[cols+[label_feature]]
-            test_df['prediction'] = test_predictions
-
-            model_fname = os.path.join(temp_dir.name, 'model.cbm')
-            test_fname = os.path.join(temp_dir.name, 'test.csv')
-            results_fname = os.path.join(temp_dir.name, 'results.json')
-
-            assets = data['assets'] = {}
-            assets['model_path'] = model_fname
-            assets['test_path'] = test_fname
-            assets['training_path'] = results_fname
-
-            model.save_model(model_fname)
-            test_df.to_csv(test_fname)
-
-            meta['total_ms'] = time_ms(started_on)
-            save_json(results, results_fname, indent=4)
-            
-            if False and upload:
-                # upload model, results, predictions
-                blobprefix = 'training/' + training_id + '/'
-                assets['model_url'] = analitico.storage.upload_file(blobprefix + 'model.cbm', model_fname)
-                assets['model_size'] = os.path.getsize(model_fname)
-                assets['test_url'] = analitico.storage.upload_file(blobprefix + 'test.csv', test_fname)
-                assets['test_size'] = os.path.getsize(test_fname)
-                # update with assets urls saving to storage
-                assets['training_url'] = assets['model_url'].replace('model.cbm', 'training.json')
-                meta['total_ms'] = time_ms(started_on) # include uploads
-                save_json(results, results_fname, indent=4)
-                assets['training_url'] = analitico.storage.upload_file(blobprefix + 'training.json', results_fname)
-
-            self.training = results
-            return results
-
-        except Exception as exc:
-            logger.error(exc)
-            temp_dir.cleanup()
-            raise
 
     #
     # inference
     #
+
+
+    def JUSTCODEscore_training(self, model, test_df, test_pool, test_labels, test_filename, results):
+        """ Scores the results of this training for the CatBoostClassifier model """
+
+        # Add scoring to the results of this training. There are many metrics available:
+        # https://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics
+
+
+        # make the prediction using the resulting model
+
+        # array of arrays with probability of each class for each sample
+        p1 = model.predict(test_pool, prediction_type='Probability') # array di array di probabilità numero strano        
+
+        # array with array of 1 item with class index of each sample        
+        p2 = model.predict(test_pool, prediction_type='Class') # array di array da 1 elemento
+                
+        # array of arrays with raw probability of each class for each sample
+        # p3 = model.predict(test_pool, prediction_type='RawFormulaVal') # array di array di probabilità numero strano
+
+
+
+        y_pred = list(model.predict(test_pool))
+
+
+        # same as calling model.predict(..., prediction_type='Probability')
+        # array of arrays with probability of each class for each sample
+        y_probabilities = model.predict_proba(test_pool, verbose=True)
+        
+        X_categories = results['data']['label_categories']
+        X_categories_codes = list(range(0,len(X_categories)))       
+
+       # y_categories = list(test_labels.astype('category').cat.categories)
+        y_true = list(test_labels)
+
+        # loss metrics on test set
+        scores = results['data']['scores'] = {}
+        scores['accuracy_score'] = round(sklearn.metrics.accuracy_score(y_true, y_pred), 5)
+
+        # calculate precision of score for each label class
+        scores['precision_score_weighted'] = sklearn.metrics.precision_score(y_true, y_pred, average='weighted')
+        scores['precision_score'] = []
+        ps = sklearn.metrics.precision_score(y_true, y_pred, average=None)
+        for idx, val in enumerate(X_categories):
+            scores['precision_score'].append((val, ps[idx]))
+
+        scores['log_loss'] = sklearn.metrics.log_loss(y_true, y_probabilities, labels=X_categories_codes)
+
+
+        # superclass will save test.csv
+        super().score_training(model, test_df, test_pool, test_labels, test_filename, results)
+
+
+
+
+
+
 
     def predict(self, data, debug=False):
         """ Runs a model, returns predictions """
