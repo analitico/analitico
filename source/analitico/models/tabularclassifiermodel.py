@@ -123,7 +123,7 @@ class TabularClassifierModel(TabularModel):
     #
 
     def predict(self, data, debug=False):
-        """ Runs a model, returns predictions """
+        """ Runs model, returns predictions """
         # request can be for a single prediction or an array of records to predict
         if type(data) is dict: data = [data]
 
