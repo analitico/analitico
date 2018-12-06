@@ -1,40 +1,29 @@
 
-# Implements machine learning classes for
-# regression and classification problems.
-# Handles storage of settings, configurations,
-# training batches, predictions, APIs, etc.
+# Implements base class for tabular regressor and 
+# classification models using CatBoost as an engine
 #
 # Copyright (C) 2018 by Analitico.ai
 # All rights reserved
 
 import os
 import os.path
-import time
-import json
-import datetime
 import pandas as pd
 import numpy as np
 import tempfile
-import copy
 import multiprocessing
 
 import analitico.storage
 
 from joblib import Parallel, delayed
-from datetime import datetime
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
-from catboost import Pool, CatBoostRegressor, CatBoostClassifier
-from pandas.api.types import CategoricalDtype
-from pathlib import Path
+from catboost import Pool
 
+from analitico.models import AnaliticoModel
 from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger, get_dict_dot
-from rest_framework.exceptions import ParseError
 
 # subset of rows used for quick training while developing
 _training_sample = None # eg: 5000 for quick run, None for all
 
-from analitico.models.analiticomodel import AnaliticoModel
 
 ##
 ## TabularModel
@@ -47,7 +36,7 @@ class TabularModel(AnaliticoModel):
 
     def __init__(self, settings):
         super().__init__(settings)
-        logger.info('TabularModel - project_id: %s' % self.project_id)
+        logger.info('TabularModel - project_id: %s', self.project_id)
 
     # cached model
     model = None
@@ -111,7 +100,7 @@ class TabularModel(AnaliticoModel):
                 categorical_features.append(timestamp_feature + '_yearday')
                 categorical_features.append(timestamp_feature + '_holiday')
 
-        if self.debug:
+        if training and self.debug:
             path = os.path.expanduser('~/' + self.project_id + '-preprocessed.csv')
             logger.info('TabularModel.preprocess_data - writing %s', path)
             df.to_csv(path)
@@ -136,7 +125,7 @@ class TabularModel(AnaliticoModel):
                 augmented_data.append(item)
 
 
-    def create_model(self, iterations, learning_rate):
+    def create_model(self, iterations=None, learning_rate=None):
         """ Creates actual CatBoostClassifier or CatBoostRegressor model in subclass """
         raise NotImplementedError()
 
@@ -155,10 +144,6 @@ class TabularModel(AnaliticoModel):
         test_df = test_df[cols+[label_feature]]
         test_df['prediction'] = test_predictions
         test_df.to_csv(test_filename)
-
-
-    def score_prediction(self):
-        pass
 
 
     def train(self, training_id, upload=True) -> dict:
@@ -199,10 +184,10 @@ class TabularModel(AnaliticoModel):
                 sample_df.to_json(sample_df_filename, orient='records')
                 logger.info('TabularModel.train - saved sample of input records to %s', sample_df_filename)
 
-            # DEBUG MAX 10,000 ROWS
-            if self.debug:
-#                df = df.tail(3000000).copy()
-                df = df.tail(5000).copy()
+            # DEBUG ONLY: CUT NUMBER OF ROW TO SPEED UP
+            tail_records = 5000
+            if self.debug and len(df) > tail_records:
+                df = df.tail(tail_records).copy()
                 logger.warning('TabularModel.train - debug enabled, shrinking to %d rows', len(df))
 
             # filter outliers, calculate dynamic fields, augment timestamps, etc
@@ -270,7 +255,7 @@ class TabularModel(AnaliticoModel):
             meta['best_iteration'] = model.get_best_iteration()
             meta['learning_rate'] = learning_rate
             meta['training_ms'] = time_ms(training_on)
-            logger.info('TabularModel.train - trained model in %d ms' % meta['training_ms'])
+            logger.info('TabularModel.train - trained model in %d ms', meta['training_ms'])
 
             # catboost can tell which features weigh more heavily on the predictions
             feature_importance = model.get_feature_importance(prettified=True)
@@ -302,7 +287,7 @@ class TabularModel(AnaliticoModel):
 
         except Exception as exc:
             logger.error(exc)
-            temp_dir.cleanup()
+            training_dir.cleanup()
             raise
 
     #
@@ -310,40 +295,4 @@ class TabularModel(AnaliticoModel):
     #
 
     def predict(self, data, debug=False):
-        """ Runs a model, returns predictions """
-
-        results = { "meta": {} }
-        results["meta"]["project_id"] = self.project_id
-        
-        if debug:
-            results["meta"]["settings"] = self.settings
-
-        # request can be for a single prediction or an array of records to predict
-        if type(data) is dict: data = [data]
-        
-        # read features from configuration file
-        features = get_dict_dot(self.settings, 'features.all')
-        categorical_features = get_dict_dot(self.settings, 'features.categorical')
-        timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
-
-        # initialize data pool to be tested from json params
-        df = pd.DataFrame(data)
-        pool, _ = dataframe_to_catpool(df, features, categorical_features, timestamp_features)
-
-        # create model object from stored model file if not cached
-        if self.model is None:
-            loading_on = time_ms()
-            model_url = get_dict_dot(self.training, 'data.assets.model_url')
-            model_filename = analitico.storage.download_file(model_url)
-            model = CatBoostRegressor()
-            model.load_model(model_filename)
-            self.model = model
-            results["meta"]["loading_ms"] = time_ms(loading_on)
-
-        predictions = self.model.predict(pool)
-        predictions = np.around(predictions, decimals=3)
-
-        results["data"] = {
-            "predictions": list(predictions)
-        }
-        return results
+        raise NotImplementedError() # implement in subclass
