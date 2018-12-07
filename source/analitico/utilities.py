@@ -166,7 +166,7 @@ def get_dict_dot(d:dict, key:str, default=None):
             if value:
                 if len(split) == 1:
                     return value
-                return get_dict_dot(value, key[len(split[0])+1:])
+                return get_dict_dot(value, key[len(split[0])+1:], default)
     except KeyError:
         pass
     return default
