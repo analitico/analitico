@@ -4,12 +4,11 @@
 import unittest
 import pandas as pd
 
-from analitico.storage import storage_open
-from analitico.utilities import save_json, time_ms
+from analitico.storage import download_file
+from analitico.utilities import save_json, time_ms, logger
 
 # csv file with category table from s24 database
-CATEGORY_CSV_PATH = 'data/s24/training/category.csv'
-CATEGORY_JSON_PATH = 'data/s24/training/category.json'
+CATEGORY_CSV_URL = 'https://storage.googleapis.com/data.analitico.ai/data/s24/training/category.csv'
 
 ##
 ## PRIVATE METHODS
@@ -25,8 +24,8 @@ def _prepare():
     if _categories is None:
         # load categories table and keep cached will read
         # categories.csv from local file system or google cloud storage
-        with storage_open(CATEGORY_CSV_PATH) as categories_file:
-            df = pd.read_csv(categories_file)
+        categories_filename = download_file(CATEGORY_CSV_URL)
+        df = pd.read_csv(categories_filename)
         df.set_index('id')
 
         _categories = {}
@@ -47,8 +46,8 @@ def _prepare():
             _categories[row[0]] = [l0_row, l1_row, row.tolist()]
 
         # save results as json for debugging
-        # save_json(_categories, CATEGORY_JSON_PATH)
-        print("s24.categories: loaded in %d ms" % time_ms(started_on))
+        if time_ms(started_on) > 500:
+            logger.warning("s24.categories - loaded in %d ms", time_ms(started_on))
 
 ##
 ## PUBLIC METHODS
@@ -62,7 +61,6 @@ def s24_get_category(id: int, depth=0) -> (id, str, str):
             cat = _categories[id][depth]
             if cat:
                 return cat[:3]
-        # return _categories[id][depth][:3]
     except TypeError: 
         pass    
     return None
@@ -72,7 +70,6 @@ def s24_get_category_id(id: int, depth=0) -> int:
     try: 
         cat = s24_get_category(id, depth)
         return cat[0] if cat else None
-        # return s24_get_category(id, depth)[0]
     except TypeError: 
         pass    
     return None
@@ -82,7 +79,6 @@ def s24_get_category_name(id: int, depth=0) -> str:
     try: 
         cat = s24_get_category(id, depth)
         return cat[1] if cat else None
-        # return s24_get_category(id, depth)[1] 
     except TypeError: 
         pass
     return None
@@ -91,8 +87,7 @@ def s24_get_category_slug(id: int, depth=0) -> str:
     """ Returns the url slug of the category at given depth (0-main, 1-sub, 2-category) """
     try: 
         cat = s24_get_category(id, depth)
-        return cat[1] if cat else None
-        # return s24_get_category(id, depth)[2] 
+        return cat[2] if cat else None
     except TypeError: 
         pass    
     return None
