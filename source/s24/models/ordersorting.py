@@ -46,12 +46,6 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
     will be quicker to shop using a travelling salesman approach.
     """
 
-    # cached catboost model
-    model = None
-
-    def __init__(self, settings):
-        super().__init__(settings)
-
     #
     # training
     #
@@ -136,7 +130,7 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
         # speeding up augmentation substantially (eg: laptop has 12 cores)
         # https://joblib.readthedocs.io/en/latest/parallel.html
 
-        parallel = True
+        parallel = False
 
         if not parallel:
             # process all records at once (mostly single-thread)
@@ -175,17 +169,18 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
         return augmented_df
 
 
-    def _train_preprocess_records(self, df):
+    def preprocess_data(self, df, training=False, results=None):
         """ Remove outliers and sort dataset before it's used for training """
-        df = super()._train_preprocess_records(df)
-
-        # remove rows without an item's category
-        df = df.dropna(subset=['category_id'])
+        if training:
+            # remove rows without an item's category
+            df = df.dropna(subset=['category_id'])
 
         # augment data, create extended dataframe
         df = self._train_augment_records(df)
-        # remove items that are outliers in terms of time elapsed        
-        df = df[df['elapsed_sec'] < 8 * 60]
+
+        if training:
+            # remove items that are outliers in terms of time elapsed        
+            df = df[df['elapsed_sec'] < 8 * 60]
         
         # if we remove items where the courier had to replace item or
         # call the customer we get a higher score. however, if we leave
@@ -194,7 +189,7 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
         # predictions for status == PURCHASED which are easier to predict
         #
         # df = df[df['status'] == 'PURCHASED']
-        return df
+        return super().preprocess_data(df, training, results)
 
     #
     # predicting
@@ -234,7 +229,7 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
         return _distance_callback
 
 
-    def predict(self, data, debug=False):
+    def predict(self, data):
         """ Takes an order with item details and sorts them so it's quicker to shop """
 
         started_on = time_ms()
@@ -271,17 +266,13 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
         # https://developers.google.com/optimization/routing/tsp
         # https://developers.google.com/optimization/routing/vrp
 
-        # TODO cache model using weak pointer? check if model was updated?
-        if not self.model:
-            # create model to predict run times between items
-            loading_on = time_ms()
-            self.model = catboost.CatBoostRegressor()
-
-            model_url = get_dict_dot(self.training, 'data.assets.model_url')
-            model_filename = analitico.storage.download_file(model_url)
-
-            self.model.load_model(model_filename)
-            meta['loading_ms'] = time_ms(loading_on)
+        # create model to predict run times between items
+        loading_on = time_ms()
+        model = catboost.CatBoostRegressor()
+        model_url = get_dict_dot(self.training, 'data.assets.model_url')
+        model_filename = analitico.storage.download_file(model_url)
+        model.load_model(model_filename)
+        meta['loading_ms'] = time_ms(loading_on)
 
         # traveling salesman goes from entrance to cashier's nodes
         # https://developers.google.com/optimization/routing/routing_tasks#arbitrary_start
@@ -300,7 +291,7 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
 
         # the distance callback will estimate the distance in seconds between items of certain
         # categories using the pretrained model that includes store info and pickig info
-        dist_callback = self._create_distance_callback(store_ref_id, store_name, self.model, categories, meta)
+        dist_callback = self._create_distance_callback(store_ref_id, store_name, model, categories, meta)
         routing.SetArcCostEvaluatorOfAllVehicles(dist_callback)
 
         # solve the problem
