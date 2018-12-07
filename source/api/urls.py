@@ -21,7 +21,7 @@ def handle_ping(request):
 app_name = 'api'
 urlpatterns = [
 
-    url('ping', handle_ping),
+    path('ping', handle_ping),
 
     path('project/<str:project_id>/', api.views.handle_prj),
     path('project/<str:project_id>/training', api.views.handle_prj_training),

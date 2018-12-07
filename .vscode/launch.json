@@ -30,6 +30,7 @@
             "name": "Python: Django",
             "type": "python",
             "request": "launch",
+            "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
             "args": [
@@ -40,14 +41,29 @@
             "django": true
         },
         {
+            "name": "Python: Django test",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/source",
+            "program": "${workspaceFolder}/source/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "test",
+                "-v",
+                "2"
+            ],
+            "django": true
+        },
+        {
             "name": "Python: Trainer",
             "type": "python",
             "request": "launch",
+            "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
             "args": [
                 "trainer",
-                "trn_KXgfopXS8EKI"
+                "trn_c8C9o5BSKrps"
             ],
             "django": true
         },
@@ -55,6 +71,7 @@
             "name": "Python: Django migrate",
             "type": "python",
             "request": "launch",
+            "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
             "args": [
