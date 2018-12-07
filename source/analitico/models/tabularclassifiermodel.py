@@ -125,17 +125,15 @@ class TabularClassifierModel(TabularModel):
 
     def predict(self, data):
         """ Runs model, returns predictions """
-        # request can be for a single prediction or an array of records to predict
-        if type(data) is dict: data = [data]
-
         results = { 'data': {}, 'meta': {} }
+        if type(data) is dict: data = [data] # could be single prediction or array
         
-        # initialize data pool to be tested from json params
+        # initialize data pool to be tested
         y_df = pd.DataFrame(data)
-        y_df, _, categorical_idx = self.preprocess_data(y_df, training=False)
+        y_df, _, categorical_idx = self.preprocess_data(y_df)
         y_pool = Pool(y_df, cat_features=categorical_idx)
 
-        # create model object from stored model file if not cached
+        # create model object from stored file
         loading_on = time_ms()
         model_url = get_dict_dot(self.training, 'data.assets.model_url')
         model_filename = analitico.storage.download_file(model_url)
