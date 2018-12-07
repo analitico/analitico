@@ -18,6 +18,7 @@ import tempfile
 import copy
 
 import analitico.storage
+import sklearn.metrics
 
 from datetime import datetime
 from sklearn.model_selection import train_test_split
@@ -52,9 +53,6 @@ class TabularRegressorModel(TabularModel):
         return get_dict_dot(self.settings, 'features.label')
     label = property(get_label)
 
-    # Model used for predictions
-    model: CatBoostRegressor = None
-
     def __init__(self, settings):
         super().__init__(settings)
         logger.info('TabularRegressorModel - project_id: %s' % self.project_id)
@@ -63,25 +61,22 @@ class TabularRegressorModel(TabularModel):
     # training
     #
 
-    def create_model(self, iterations, learning_rate):
+    def create_model(self):
         """ Creates a CatBoostRegressor configured as requested """
-        return CatBoostRegressor(iterations=iterations, learning_rate=learning_rate, depth=8, loss_function='Logloss')
+        iterations = self.get_setting('parameters.iterations', 50)
+        learning_rate = self.get_setting('parameters.learning_rate', 1)
+        return CatBoostRegressor(iterations=iterations, learning_rate=learning_rate, depth=8)
 
 
-    def preprocess_data(self, df, training=False):
-        """ This method is called after data is loaded but before it is used for training """
-        return super().preprocess_data(df, training)
+    def preprocess_data(self, df, training=False, results=None):
+        """ Called before data is used for training or inference """
+        return super().preprocess_data(df, training, results)
 
 
     def score_training(self, model, test_df, test_pool, test_labels, test_filename, results):
         """ Scores the results of this training for the CatBoostClassifier model """
         # make the prediction using the resulting model
         test_predictions = model.predict(test_pool)
-
-        # Get predicted probabilities for each class
-        #test_probabilities = model.predict_proba(test_pool)
-        # Get predicted RawFormulaVal
-        #test_raw = model.predict(test_pool, prediction_type='RawFormulaVal')
 
         # loss metrics on test set
         scores = results['data']['scores'] = {}
@@ -105,40 +100,27 @@ class TabularRegressorModel(TabularModel):
     # inference
     #
 
-    def predict(self, data, debug=False):
-        """ Runs a model, returns predictions """
-
-        results = { "meta": {} }
-        results["meta"]["project_id"] = self.project_id
+    def predict(self, data):
+        """ Runs model, returns predictions """
+        results = { 'data': {}, 'meta': {} }
+        if type(data) is dict: data = [data] # could be single prediction or array
         
-        if debug:
-            results["meta"]["settings"] = self.settings
+        # initialize data pool to be tested
+        y_df = pd.DataFrame(data)
+        y_df, _, categorical_idx = self.preprocess_data(y_df)
+        y_pool = Pool(y_df, cat_features=categorical_idx)
 
-        # request can be for a single prediction or an array of records to predict
-        if type(data) is dict: data = [data]
-        
-        # read features from configuration file
-        features = get_dict_dot(self.settings, 'features.all')
-        categorical_features = get_dict_dot(self.settings, 'features.categorical')
-        timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
+        # create model object from stored file
+        loading_on = time_ms()
+        model_url = get_dict_dot(self.training, 'data.assets.model_url')
+        model_filename = analitico.storage.download_file(model_url)
+        model = self.create_model()
+        model.load_model(model_filename)
+        results['meta']['loading_ms'] = time_ms(loading_on)
 
-        # initialize data pool to be tested from json params
-        df = pd.DataFrame(data)
-        pool, _ = dataframe_to_catpool(df, features, categorical_features, timestamp_features)
-
-        # create model object from stored model file if not cached
-        if self.model is None:
-            loading_on = time_ms()
-            model_url = get_dict_dot(self.training, 'data.assets.model_url')
-            model_filename = analitico.storage.download_file(model_url)
-            model = CatBoostRegressor()
-            model.load_model(model_filename)
-            self.model = model
-            results["meta"]["loading_ms"] = time_ms(loading_on)
-
-        predictions = self.model.predict(pool)
+        # create predictions with assigned class and probabilities
+        predictions = model.predict(y_pool)
         predictions = np.around(predictions, decimals=3)
-
         results["data"] = {
             "predictions": list(predictions)
         }
