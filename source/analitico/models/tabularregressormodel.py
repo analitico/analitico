@@ -1,47 +1,20 @@
 
-# Implements machine learning classes for
-# regression and classification problems.
-# Handles storage of settings, configurations,
-# training batches, predictions, APIs, etc.
-#
+# Regression on tabular data with CatBoostRegressor
 # Copyright (C) 2018 by Analitico.ai
 # All rights reserved
 
-import os
-import os.path
-import time
-import json
-import datetime
+import catboost
 import pandas as pd
 import numpy as np
-import tempfile
-import copy
-
-import analitico.storage
 import sklearn.metrics
 
-from datetime import datetime
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
-from catboost import Pool, CatBoostRegressor, CatBoostClassifier
-from pandas.api.types import CategoricalDtype
-from pathlib import Path
+import analitico.storage
 
-import analitico.models
-
-from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger, get_dict_dot
-from rest_framework.exceptions import ParseError
-
-# subset of rows used for quick training while developing
-_training_sample = None # eg: 5000 for quick run, None for all
-
-from analitico.models import TabularModel
-
-##
-## TabularRegressorModel
-##
+from analitico.models.tabularmodel import TabularModel
+from analitico.utilities import time_ms, logger, get_dict_dot
 
 class TabularRegressorModel(TabularModel):
+    """ Implements regression on tabular data using CatBoostRegressor """
 
     # feature columns that should be considered for training
     def get_features(self):
@@ -55,7 +28,7 @@ class TabularRegressorModel(TabularModel):
 
     def __init__(self, settings):
         super().__init__(settings)
-        logger.info('TabularRegressorModel - project_id: %s' % self.project_id)
+        logger.info('TabularRegressorModel - project_id: %s', self.project_id)
 
     #
     # training
@@ -65,12 +38,7 @@ class TabularRegressorModel(TabularModel):
         """ Creates a CatBoostRegressor configured as requested """
         iterations = self.get_setting('parameters.iterations', 50)
         learning_rate = self.get_setting('parameters.learning_rate', 1)
-        return CatBoostRegressor(iterations=iterations, learning_rate=learning_rate, depth=8)
-
-
-    def preprocess_data(self, df, training=False, results=None):
-        """ Called before data is used for training or inference """
-        return super().preprocess_data(df, training, results)
+        return catboost.CatBoostRegressor(iterations=iterations, learning_rate=learning_rate, depth=8)
 
 
     def score_training(self, model, test_df, test_pool, test_labels, test_filename, results):
@@ -80,9 +48,9 @@ class TabularRegressorModel(TabularModel):
 
         # loss metrics on test set
         scores = results['data']['scores'] = {}
-        scores['median_abs_error'] = round(median_absolute_error(test_predictions, test_labels), 5)
-        scores['mean_abs_error'] = round(mean_absolute_error(test_predictions, test_labels), 5)
-        scores['sqrt_mean_squared_error'] = round(np.sqrt(mean_squared_error(test_predictions, test_labels)), 5)
+        scores['median_abs_error'] = round(sklearn.metrics.median_absolute_error(test_predictions, test_labels), 5)
+        scores['mean_abs_error'] = round(sklearn.metrics.mean_absolute_error(test_predictions, test_labels), 5)
+        scores['sqrt_mean_squared_error'] = round(np.sqrt(sklearn.metrics.mean_squared_error(test_predictions, test_labels)), 5)
 
         # output test set with predictions
         # after moving label to the end for easier reading
@@ -103,12 +71,12 @@ class TabularRegressorModel(TabularModel):
     def predict(self, data):
         """ Runs model, returns predictions """
         results = { 'data': {}, 'meta': {} }
-        if type(data) is dict: data = [data] # could be single prediction or array
+        if isinstance(data, dict): data = [data] # could be single prediction or array
         
         # initialize data pool to be tested
         y_df = pd.DataFrame(data)
         y_df, _, categorical_idx = self.preprocess_data(y_df)
-        y_pool = Pool(y_df, cat_features=categorical_idx)
+        y_pool = catboost.Pool(y_df, cat_features=categorical_idx)
 
         # create model object from stored file
         loading_on = time_ms()
