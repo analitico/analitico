@@ -20,7 +20,7 @@ from sklearn.model_selection import train_test_split
 from catboost import Pool, CatBoost
 
 from analitico.models import AnaliticoModel
-from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger, get_dict_dot
+from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger
 
 # number of records per chunk when we preprocess them in parallel
 PARALLEL_PREPROCESS_CHUNK_SIZE = 5000
@@ -41,23 +41,23 @@ class TabularModel(AnaliticoModel):
 
     def get_features(self):
         """ Feature columns that should be considered for training """
-        return get_dict_dot(self.settings, 'features.all')
+        return self.get_setting('features.all')
     features = property(get_features)
 
 
     def get_label(self):
         """ Label column """
-        return get_dict_dot(self.settings, 'features.label')
+        return self.get_setting('features.label')
     label = property(get_label)
 
 
     def preprocess_data(self, df, training=False, results=None):
         """ Preprocess data before it's used to train the model """
         logger.info('TabularModel.preprocess_data')
-        features = get_dict_dot(self.settings, 'features.all')
-        categorical_features = get_dict_dot(self.settings, 'features.categorical')
-        timestamp_features = get_dict_dot(self.settings, 'features.timestamp')
-        label_feature = get_dict_dot(self.settings, 'features.label')
+        features = self.get_setting('features.all')
+        categorical_features = self.get_setting('features.categorical')
+        timestamp_features = self.get_setting('features.timestamp')
+        label_feature = self.get_setting('features.label')
 
         # do we have rows without labels? if so, remove and warn
         if training:
@@ -167,7 +167,7 @@ class TabularModel(AnaliticoModel):
 
             # load csv data from results of query joining multiple tables in source database
             loading_on = time_ms()
-            data_url = get_dict_dot(self.settings, 'training_data.url')
+            data_url = self.get_setting('training_data.url')
             logger.info('TabularModel.train - loading %s', data_url)    
 
             data_filename = analitico.storage.download_file(data_url) # cached
@@ -220,7 +220,7 @@ class TabularModel(AnaliticoModel):
             else:
                 # test set if from a random assortment of rows
                 logger.info('TabularModel.train - random test set split')
-                train_df, train_labels, test_df, test_labels = train_test_split(df, df_labels, test_size=0.10, random_state=42)
+                train_df, test_df, train_labels, test_labels = train_test_split(df, df_labels, test_size=0.10, random_state=42)
 
             # separate rows between training and testing set
             records['training'] = len(train_df)
