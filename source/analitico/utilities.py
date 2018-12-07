@@ -160,7 +160,7 @@ def dataframe_to_catpool(df: pd.DataFrame, features, categorical_features=None, 
 def get_dict_dot(d:dict, key:str, default=None):
     """ Gets an entry from a dictionary using dot notation key, eg: this.that.something """
     try:
-        if d and key:
+        if isinstance(d, dict) and key:
             split = key.split('.')
             value = d.get(split[0])
             if value:
