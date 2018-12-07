@@ -287,7 +287,6 @@ class TabularModel(AnaliticoModel):
 
         except Exception as exc:
             logger.error(exc)
-            training_dir.cleanup()
             raise
 
     #
