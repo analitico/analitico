@@ -179,14 +179,14 @@ class TabularModel(AnaliticoModel):
 
             if self.debug:
                 # save a sample of the data as it was received for training
-                sample_df = df.tail(100)
+                sample_df = df.tail(5000)
                 sample_df_filename = os.path.join(training_dir, self.project_id + '-sample.json')
                 sample_df.to_json(sample_df_filename, orient='records')
                 logger.info('TabularModel.train - saved sample of input records to %s', sample_df_filename)
 
             # DEBUG ONLY: CUT NUMBER OF ROW TO SPEED UP
-            tail_records = 5000
-            if self.debug and len(df) > tail_records:
+            tail_records = 2500000
+            if False and self.debug and len(df) > tail_records:
                 df = df.tail(tail_records).copy()
                 logger.warning('TabularModel.train - debug enabled, shrinking to %d rows', len(df))
 
