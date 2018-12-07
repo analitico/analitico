@@ -185,8 +185,8 @@ class TabularModel(AnaliticoModel):
                 logger.info('TabularModel.train - saved sample of input records to %s', sample_df_filename)
 
             # DEBUG ONLY: CUT NUMBER OF ROW TO SPEED UP
-            tail_records = 2500000
-            if False and self.debug and len(df) > tail_records:
+            tail_records = get_dict_dot(self.settings, 'tail_records', None)
+            if (tail_records > 0) and (len(df) > tail_records):
                 df = df.tail(tail_records).copy()
                 logger.warning('TabularModel.train - debug enabled, shrinking to %d rows', len(df))
 

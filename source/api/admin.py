@@ -57,5 +57,5 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Training)
 class TrainingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'project_id', 'is_active', 'records', 'rmse', 'created_at')
+    list_display = ('id', 'project_id', 'status', 'is_active', 'records', 'rmse', 'created_at')
     ordering = ('created_at',) 
