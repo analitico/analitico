@@ -189,7 +189,7 @@ class TabularModel(AnaliticoModel):
 
             # DEBUG ONLY: CUT NUMBER OF ROW TO SPEED UP
             tail = self.get_setting('parameters.tail', None)
-            if (tail > 0) and (len(df) > tail):
+            if tail and (len(df) > tail):
                 df = df.tail(tail).copy()
                 logger.warning('TabularModel.train - debug enabled, shrinking to %d tail rows', len(df))
 
@@ -204,8 +204,8 @@ class TabularModel(AnaliticoModel):
             logger.info('TabularModel.train - preprocessed to %d rows in %d ms', records['total'], meta['processing_ms'])
 
             # decide how to create test set from settings variable
-            chronological = get_dict_dot(self.settings, 'chronological', False)
-            test_size = 0.10
+            chronological = self.get_setting('chronological', False)
+            test_size = self.get_setting('parameters.test_size', 0.10)
 
             # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html
 
@@ -243,6 +243,7 @@ class TabularModel(AnaliticoModel):
             model_filename = os.path.join(training_dir, 'model.cbm')
             test_filename = os.path.join(training_dir, 'test.csv')
             results_filename = os.path.join(training_dir, 'results.json')
+            
             assets = data['assets'] = {}
             assets['model_path'] = model_filename
             assets['test_path'] = test_filename
