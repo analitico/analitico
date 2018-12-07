@@ -11,35 +11,26 @@ import pandas as pd
 import numpy as np
 import tempfile
 import multiprocessing
+import catboost
 
 import analitico.storage
 
 from joblib import Parallel, delayed
 from sklearn.model_selection import train_test_split
-from catboost import Pool
+from catboost import Pool, CatBoost
 
 from analitico.models import AnaliticoModel
 from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger, get_dict_dot
-
-# subset of rows used for quick training while developing
-_training_sample = None # eg: 5000 for quick run, None for all
-
-
-##
-## TabularModel
-##
 
 # number of records per chunk when we preprocess them in parallel
 PARALLEL_PREPROCESS_CHUNK_SIZE = 5000
 
 class TabularModel(AnaliticoModel):
+    """ Base model for tabular data processing with CatBoost gradient boosting """
 
     def __init__(self, settings):
         super().__init__(settings)
         logger.info('TabularModel - project_id: %s', self.project_id)
-
-    # cached model
-    model = None
 
     # True if model can be preprocessed in parallel using all cores
     parallel = True
@@ -125,17 +116,29 @@ class TabularModel(AnaliticoModel):
                 augmented_data.append(item)
 
 
-    def create_model(self, iterations=None, learning_rate=None):
+    def create_model(self):
         """ Creates actual CatBoostClassifier or CatBoostRegressor model in subclass """
         raise NotImplementedError()
 
 
-    def score_training(self, model, test_df, test_pool, test_labels, test_filename, results):
+    def score_training(self, model:CatBoost, test_df, test_pool, test_labels, test_filename, results):
         """ Scores the results of this training for the CatBoostClassifier model """
+
+        params = results['data']['parameters'] = {}
+        for key, value in model.get_params().items():
+            params[key] = value
+        params['best_iteration'] = model.get_best_iteration()
+        params['best_score'] = model.get_best_score()
+
+        # catboost can tell which features weigh more heavily on the predictions
+        features_importance = results['data']['features_importance'] = {}
+        for label, importance in model.get_feature_importance(prettified=True):
+            features_importance[label] = round(importance, 5)
+        
         # make the prediction using the resulting model
-        test_predictions = model.predict(test_pool)
         # output test set with predictions
         # after moving label to the end for easier reading
+        test_predictions = model.predict(test_pool)
         label_feature = self.get_label()
         test_df = test_df.copy()
         test_df[label_feature] = test_labels
@@ -146,7 +149,7 @@ class TabularModel(AnaliticoModel):
         test_df.to_csv(test_filename)
 
 
-    def train(self, training_id, upload=True) -> dict:
+    def train(self, training_id) -> dict:
         """ Trains model with given data (or data configured in settins) and returns training results """
         training_dir = os.path.join(tempfile.gettempdir(), training_id)
         if not os.path.isdir(training_dir):
@@ -185,10 +188,10 @@ class TabularModel(AnaliticoModel):
                 logger.info('TabularModel.train - saved sample of input records to %s', sample_df_filename)
 
             # DEBUG ONLY: CUT NUMBER OF ROW TO SPEED UP
-            tail_records = get_dict_dot(self.settings, 'tail_records', None)
-            if (tail_records > 0) and (len(df) > tail_records):
-                df = df.tail(tail_records).copy()
-                logger.warning('TabularModel.train - debug enabled, shrinking to %d rows', len(df))
+            tail = self.get_setting('parameters.tail', None)
+            if (tail > 0) and (len(df) > tail):
+                df = df.tail(tail).copy()
+                logger.warning('TabularModel.train - debug enabled, shrinking to %d tail rows', len(df))
 
             # filter outliers, calculate dynamic fields, augment timestamps, etc
             # then reorder the dataframe and keep only the columns that really matter
@@ -229,15 +232,12 @@ class TabularModel(AnaliticoModel):
             # release
             df = None
 
-            # create a CatBoostRegressor or CatBoostClassifier
-            iterations = get_dict_dot(self.settings, 'iterations', 50)
-            learning_rate = get_dict_dot(self.settings, 'learning_rate', 1)
-            model = self.create_model(iterations, learning_rate)
-
             # train the model
             logger.info('TabularModel.train - training model...')
             training_on = time_ms()
+            model = self.create_model()
             model.fit(train_pool, eval_set=test_pool)
+            meta['training_ms'] = time_ms(training_on)
 
             # where training files should be saved
             model_filename = os.path.join(training_dir, 'model.cbm')
@@ -251,23 +251,11 @@ class TabularModel(AnaliticoModel):
             # score test set, add related metrics to results
             self.score_training(model, test_df, test_pool, test_labels, test_filename, results)
 
-            meta['total_iterations'] = iterations
-            meta['best_iteration'] = model.get_best_iteration()
-            meta['learning_rate'] = learning_rate
-            meta['training_ms'] = time_ms(training_on)
-            logger.info('TabularModel.train - trained model in %d ms', meta['training_ms'])
-
-            # catboost can tell which features weigh more heavily on the predictions
-            feature_importance = model.get_feature_importance(prettified=True)
-            data['features_importance'] = {}
-            for label, importance in feature_importance:
-                data['features_importance'][label] = round(importance, 5)
-
             model.save_model(model_filename)
             meta['total_ms'] = time_ms(started_on)
             save_json(results, results_filename, indent=4)
             
-            if upload:
+            if self.upload:
                 # upload model, results, predictions
                 blobprefix = 'training/' + training_id + '/'
                 logger.info('TabularModel.train - uploading assets to %s', blobprefix)
@@ -293,5 +281,6 @@ class TabularModel(AnaliticoModel):
     # inference
     #
 
-    def predict(self, data, debug=False):
-        raise NotImplementedError() # implement in subclass
+    def predict(self, data):
+        """ Predicts results for given data (implemented in subclass) """
+        raise NotImplementedError() 

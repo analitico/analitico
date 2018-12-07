@@ -1,61 +1,36 @@
 
-# Implements machine learning classes for
-# regression and classification problems.
-# Handles storage of settings, configurations,
-# training batches, predictions, APIs, etc.
-#
-# Copyright (C) 2018 by Analitico.ai
-# All rights reserved
-
-import os
-import os.path
-import time
-import json
-import datetime
-import pandas as pd
-import numpy as np
-import tempfile
-import copy
-
-import analitico.storage
-
-from datetime import datetime
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
-from catboost import Pool, CatBoostRegressor, CatBoostClassifier
-from pandas.api.types import CategoricalDtype
-from pathlib import Path
-
-from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger, get_dict_dot
-from rest_framework.exceptions import ParseError
-
-# subset of rows used for quick training while developing
-_training_sample = None # eg: 5000 for quick run, None for all
-
-
-##
-## AnaliticoModel
-##
+from analitico.utilities import get_dict_dot
 
 class AnaliticoModel:
+    """ Base class for machine learning models """
+
+    # Unique project id used for tracking, directories, access, billing, eg: s24-order-sorting
+    project_id:str = None
 
     # Project settings    
     settings: dict = None
 
-    # training information (as returned by previous call to train)
+    # Training information (as returned by previous call to train)
     training:dict = None
 
-    # project id used for tracking, directories, access, billing
-    project_id:str = None
-
-    # true if we're debugging (add extra info, etc)
+    # True if we're debugging (add extra info, etc)
     debug:bool = True
 
-    def __init__(self, settings:dict):
-        self.settings = settings
-        self.project_id = settings.get('project_id')
+    # True if results should be uploaded after training
+    upload:bool = True
 
-    def train(self, training_id, upload=True) -> dict:
+    def __init__(self, settings:dict):
+        self.project_id = settings.get('project_id')
+        self.settings = settings
+
+    def get_setting(self, key, default=None):
+        """ Returns setting value expressed in dotted notation or default value, eg: data.assets.model_url """
+        if not self.settings:
+            return default
+        value = get_dict_dot(self.settings, 'request.' + key)
+        return value if value else get_dict_dot(self.settings, key, default)
+
+    def train(self, training_id) -> dict:
         """ Trains machine learning model and returns a dictionary with the training's results """
         raise NotImplementedError()
 

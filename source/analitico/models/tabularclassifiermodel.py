@@ -49,9 +49,11 @@ class TabularClassifierModel(TabularModel):
         logger.info('TabularClassifierModel - project_id: %s' % self.project_id)
 
 
-    def create_model(self, iterations=None, learning_rate=None):
+    def create_model(self):
         """ Creates a CatBoostClassifier configured as requested """
         logger.info('TabularClassifierMode.create_model - creating CatBoostClassifier')
+        iterations = self.get_setting('parameters.iterations', 50)
+        learning_rate = self.get_setting('parameters.learning_rate', 1)
         return CatBoostClassifier(iterations=iterations, learning_rate=learning_rate, loss_function='MultiClass') # ccould be Logloss for binary
 
 
@@ -103,17 +105,16 @@ class TabularClassifierModel(TabularModel):
         scores['recall_score_weighted'] = round(sklearn.metrics.recall_score(test_true, test_preds, average='weighted'), 5)
 
         # Report precision and recall for each of the classes
-        scores['classes'] = {}
+        scores['classes_scores'] = {}
         count = collections.Counter(test_true)
         precision_scores = sklearn.metrics.precision_score(test_true, test_preds, average=None)
         recall_scores = sklearn.metrics.recall_score(test_true, test_preds, average=None)
         for idx, val in enumerate(train_classes):
-            scores['classes'][val] = {
+            scores['classes_scores'][val] = {
                 'count': count[idx],
                 'precision': round(precision_scores[idx], 5),
                 'recall': round(recall_scores[idx], 5)
             }
-
         # superclass will save test.csv
         super().score_training(model, test_df, test_pool, test_labels, test_filename, results)
 
@@ -122,21 +123,16 @@ class TabularClassifierModel(TabularModel):
     # inference
     #
 
-    def predict(self, data, debug=False):
+    def predict(self, data):
         """ Runs model, returns predictions """
         # request can be for a single prediction or an array of records to predict
         if type(data) is dict: data = [data]
 
-        results = { 'meta': {} }
-        results['meta']['project_id'] = self.project_id        
-        if debug:
-            results['data'] = data
-            results['settings'] = self.settings
-            results['training'] = self.training
+        results = { 'data': {}, 'meta': {} }
         
         # initialize data pool to be tested from json params
         y_df = pd.DataFrame(data)
-        y_df, _, categorical_idx = self.preprocess_data(y_df, training=False, results=None)
+        y_df, _, categorical_idx = self.preprocess_data(y_df, training=False)
         y_pool = Pool(y_df, cat_features=categorical_idx)
 
         # create model object from stored model file if not cached
@@ -153,9 +149,9 @@ class TabularClassifierModel(TabularModel):
         y_classes = self.training['data']['classes'] # list of possible classes
 
         # create predictions with assigned class and probabilities
-        results['predictions'] = []
+        preds = results['data']['predictions'] = []
         for i in range(0, len(data)):
-            results['predictions'].append({
+            preds.append({
                 'class': y_classes[int(y_predictions[i][0])],
                 'probability': {
                     y_classes[j]: y_probabilities[i][j] for j in range(0, len(y_classes))
