@@ -11,12 +11,6 @@ from django.core.management.base import BaseCommand, CommandError
 # Writing custom django-admin commands
 # https://docs.djangoproject.com/en/2.1/howto/custom-management-commands/
 
-# Training.status:
-STATUS_CREATED = 'Created'
-STATUS_PROCESSING = 'Processing'
-STATUS_COMPLETED = 'Completed'
-STATUS_FAILED = 'Failed'
-
 class Command(BaseCommand):
     """ A django command used to run training jobs, either any pending ones or those specifically indicated """
 
@@ -31,15 +25,18 @@ class Command(BaseCommand):
             if training_id:
                 training = Training.objects.get(pk=training_id)
             else:
-                # TODO find a job that's waiting
-                return
+                pending = Training.objects.filter(status=Training.STATUS_CREATED)
+                if pending.count() < 1:
+                    logger.info('Trainer.trainJob - no pending jobs')
+                    return
+                training = pending[0]
         except Training.DoesNotExist:
             raise CommandError('Training "%s" does not exist' % training_id)
 
         try:
             # update current status so other trainers won't get this job
             logger.info('Trainer.trainJob - training_id: %s, started', training_id)
-            training.status = STATUS_PROCESSING
+            training.status = Training.STATUS_PROCESSING
             training.save()
 
             # create model, apply requested settings
@@ -53,7 +50,7 @@ class Command(BaseCommand):
 
             # save results, mark as done
             training.results = results
-            training.status = STATUS_COMPLETED
+            training.status = Training.STATUS_COMPLETED
             training.save()
             logger.info('Trainer.trainJob - training_id: %s, completed', training_id)
 
@@ -61,7 +58,7 @@ class Command(BaseCommand):
 
         except Exception as exc:
             logger.error(exc)
-            training.status = STATUS_FAILED
+            training.status = Training.STATUS_FAILED
             training.save()
         return training
 
