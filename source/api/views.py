@@ -16,7 +16,6 @@ from analitico.utilities import logger
 from api.utilities import time_ms, api_get_parameter, api_check_authorization
 
 import s24.models
-import s24.ordersorting
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -31,7 +30,7 @@ MODELS = {
     # model to estimate s24 order time    
     's24-order-time-model': s24.models.OrderTimeModel,
     # model to sort s24 orders based on supermarket layout    
-    's24-order-sorting-model': s24.ordersorting.OrderSortingModel,
+    's24-order-sorting-model': s24.models.OrderSortingModel,
     # model to predict if items may be out of stock    
     's24-out-of-stock-model': s24.models.OutOfStockModel,
 }
