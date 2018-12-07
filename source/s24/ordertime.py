@@ -13,12 +13,12 @@ class OrderTimeModel(analitico.models.TabularRegressorModel):
 
     def __init__(self, settings):
         super().__init__(settings)
-        analitico.utilities.logger.info('OrderTimeModel.__init__')
+        analitico.utilities.logger.info('OrderTimeModel')
 
-    def _train_preprocess_records(self, df):
+    def preprocess_data(self, df, training=False, results=None):
         """ Remove outliers and sort dataset before it's used for training """
-        df = super()._train_preprocess_records(df)
-        analitico.utilities.logger.info('OrderTimeModel.train_filter_records')
-        df = df[(df['total_min'] is not None) and (df['total_min'] < 120)]
-        df = df.sort_values(by=['order_deliver_at_start'], ascending=True)
-        return df
+        if training:
+            analitico.utilities.logger.info('OrderTimeModel.preprocess_data')
+            df = df[(df['total_min'] is not None) and (df['total_min'] < 120)]
+            df = df.sort_values(by=['order_deliver_at_start'], ascending=True)
+        return super().preprocess_data(df, training, results)
