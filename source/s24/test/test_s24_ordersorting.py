@@ -1,6 +1,7 @@
-import unittest
+
 import json
 
+from django.test import TestCase
 from analitico.utilities import read_json
 from s24.ordersorting import s24_sort_order
 
@@ -10,7 +11,7 @@ MARTINELLI_ORDER_PATH = 'data/s24/test/order-sorting-martinelli.json'
 ESSELUNGA_VR_ORDER_PATH = 'data/s24/test/order-sorting-esselunga-vr.json'
 ESSELUNGA_MI_ORDER_PATH = 'data/s24/test/order-sorting-esselunga-mi.json'
 
-class Test_s24_OrderSorting(unittest.TestCase):
+class Test_s24_OrderSorting(TestCase):
 
     def test_sort_order(self):
         order = read_json(FAMILA_ORDER_PATH)
@@ -65,9 +66,3 @@ class Test_s24_OrderSorting(unittest.TestCase):
         esselunga_vr_index = self.get_item_index(ESSELUNGA_VR_ORDER_PATH, 'Zucchine')
         self.assertLessEqual(esselunga_vr_index, 20) # verdure in testa?
         # 15, cannato?
-
-
-
-if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(Test_s24_OrderSorting)
-    unittest.TextTestRunner(verbosity=2).run(suite)

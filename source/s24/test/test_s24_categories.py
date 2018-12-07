@@ -1,8 +1,9 @@
-import unittest
+
+from django.test import TestCase
 
 from s24.categories import s24_get_category, s24_get_category_id, s24_get_category_slug
 
-class TestSupermercatoCategories(unittest.TestCase):
+class TestSupermercatoCategories(TestCase):
 
     def test_get_category(self):
         # Pelati e Passate
@@ -79,10 +80,3 @@ class TestSupermercatoCategories(unittest.TestCase):
     def test_get_category_missing_id(self):
         category_id = s24_get_category_id(-20) # -20 is not a valid id
         self.assertIsNone(category_id)
-
-
-if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestSupermercatoCategories)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-    
