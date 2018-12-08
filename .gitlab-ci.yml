@@ -46,7 +46,7 @@ deploy-staging:
   script:
     - export SSHPASS=$WWW_PASS 
     # sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
-    - sshpass -e rsync -avzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
+    - sshpass -e rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py test"
