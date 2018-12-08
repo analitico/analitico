@@ -33,7 +33,7 @@ test:
     # Create virtual environment
     - python3 -m venv venv
     - source venv/bin/activate
-    - pip install -r requirements.txt
+    - pip3 install -r requirements.txt
     # Prepare Django, run tests
     - cd source
     - ./manage.py collectstatic --noinput
@@ -48,8 +48,8 @@ deploy-staging:
     - export SSHPASS=$WWW_PASS 
     - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
-    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; ./manage collectstatic --noinput"
-    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; ./manage test"
+    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; ./manage.py collectstatic --noinput"
+    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; ./manage.py test"
 
 deploy-production:
   stage: deploy
