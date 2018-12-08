@@ -15,8 +15,8 @@ before_script:
   # Update environment
   - apt-get update -qq
   - apt-get install -y -qq python3-venv
+  - apt-get install -y -qq python3-pip
   - apt-get install -y -qq sshpass
-  - sshpass -V
 
 stages:
   - test
@@ -47,8 +47,9 @@ deploy-staging:
     # Upload github repo to staging
     - export SSHPASS=$WWW_PASS 
     - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
-    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip install -r requirements.txt"
+    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; ./manage collectstatic --noinput"
+    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; ./manage test"
 
 deploy-production:
   stage: deploy
