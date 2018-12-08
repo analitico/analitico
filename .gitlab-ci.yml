@@ -13,6 +13,7 @@ services:
 
 before_script:
   - apt-get update -qq
+  - apt-get install python3-venv
   - apt-get install -y -qq sshpass
   - sshpass -V
   - python3 -V
