@@ -17,6 +17,12 @@ before_script:
   - apt-get install -y -qq python3-venv
   - apt-get install -y -qq python3-pip
   - apt-get install -y -qq sshpass
+  # https://docs.gitlab.com/ee/ci/ssh_keys/
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - echo "$ID_WWW" | tr -d '\r' | ssh-add - > /dev/null
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
 
 stages:
   - test
@@ -29,6 +35,7 @@ cache:
 
 test:
   stage: test
+  when: manual
   script:
     # Create virtual environment
     - python3 -m venv venv
@@ -55,9 +62,6 @@ deploy-staging:
     - cd ..
     # Deploy to s2.analitico.ai
     - export SSHPASS=$WWW_PASS 
-    - echo $ID_WWW > id_www
-    - echo $ID_WWW_PUB > id_www.pub    
-    - ssh-add id_www
     - rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
