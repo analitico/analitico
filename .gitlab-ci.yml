@@ -44,8 +44,17 @@ deploy-staging:
   only:
     - master
   script:
+    # Create virtual environment
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - pip3 install -r requirements.txt
+    # Prepare Django, run tests
+    - cd source
+    - ./manage.py collectstatic --noinput
+    - ./manage.py test
+    - cd ..
+    # Deploy to s2.analitico.ai
     - export SSHPASS=$WWW_PASS 
-    # sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
     - sshpass -e rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
