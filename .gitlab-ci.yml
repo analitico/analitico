@@ -48,7 +48,7 @@ deploy-staging:
     - cp requirements.txt -t source
     # copy files to production server using scp, password provided by sshpass
     - sshpass -V
-    - export SSHPASS=$WWW_USER_PASS 
+    - export SSHPASS=$WWW_PASS 
     - echo $SSHPASS
     - sshpass -e ssh www@s2.analitico.ai ls
     - sshpass -p $WWW_USER_PASS scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico2
