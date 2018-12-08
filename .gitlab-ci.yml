@@ -39,8 +39,8 @@ deploy-staging:
     - gcloud config set project $GCP_PROJECT_ID
     # Deploy to Google Functions
     - cp requirements.txt -t source
-    - #gcloud functions deploy s24-order-sorting-staging --entry-point handle_s24_order_sorting_staging --source source --runtime python37 --trigger-http --region europe-west1
-    - #gcloud functions deploy staging --entry-point handle_api_staging --source source --runtime python37 --trigger-http --region europe-west1
+    # gcloud functions deploy s24-order-sorting-staging --entry-point handle_s24_order_sorting_staging --source source --runtime python37 --trigger-http --region europe-west1
+    # gcloud functions deploy staging --entry-point handle_api_staging --source source --runtime python37 --trigger-http --region europe-west1
     
 deploy-production:
   stage: deploy
@@ -55,5 +55,5 @@ deploy-production:
     - gcloud config set project $GCP_PROJECT_ID
     # Deploy to Google Functions
     - cp requirements.txt -t source
-    - #gcloud functions deploy s24-order-sorting --entry-point handle_s24_order_sorting --source source --runtime python37 --trigger-http --region europe-west1
-    - #gcloud functions deploy v1 --entry-point handle_api --source source --runtime python37 --trigger-http --region europe-west1
+    # gcloud functions deploy s24-order-sorting --entry-point handle_s24_order_sorting --source source --runtime python37 --trigger-http --region europe-west1
+    # gcloud functions deploy v1 --entry-point handle_api --source source --runtime python37 --trigger-http --region europe-west1
