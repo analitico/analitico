@@ -1,12 +1,18 @@
 
 image: continuumio/miniconda3:latest
 
+# GitLab Build and Deploy to a Server via SSH
+# https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
+
 variables:
   GCP_PROJECT_ID: analitico-api
   GCP_ZONE: europe-west1
 
 services:
 - docker:dind
+
+before_script:
+ - apt-get update -qq && apt-get install -y -qq sshpass
 
 stages:
   - test
@@ -30,6 +36,7 @@ test:
 
 deploy-staging:
   stage: deploy
+  when: manual
   image: google/cloud-sdk:latest
   only:
     - master
@@ -40,9 +47,12 @@ deploy-staging:
     - gcloud config set project $GCP_PROJECT_ID
     # Deploy to Google Functions
     - cp requirements.txt -t source
-    # gcloud functions deploy s24-order-sorting-staging --entry-point handle_s24_order_sorting_staging --source source --runtime python37 --trigger-http --region europe-west1
-    # gcloud functions deploy staging --entry-point handle_api_staging --source source --runtime python37 --trigger-http --region europe-west1
-    
+    # copy files to production server using scp, password provided by sshpass
+    - sshpass -V
+    - export SSHPASS=$WWW_USER_PASS 
+    - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico2
+
+
 deploy-production:
   stage: deploy
   when: manual
