@@ -23,7 +23,7 @@ test:
     # Install tools then run all unit tests
     - python3 -V
     - python3 -m venv venv
-    - python3 venv/bin/activate
+    - source venv/bin/activate
     - pip install -r requirements.txt
     - python3 manage.py test
 
