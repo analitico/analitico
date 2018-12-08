@@ -44,7 +44,6 @@ cache:
 
 test:
   stage: test
-  image: google/cloud-sdk:latest
   script:
     - cd source
     - ./manage.py test
