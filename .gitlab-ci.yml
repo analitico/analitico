@@ -17,16 +17,6 @@ before_script:
   - apt-get install -y -qq python3-venv
   - apt-get install -y -qq sshpass
   - sshpass -V
-  # Create python virtual environment, configure it
-  - python3 -V
-  - python3 -m venv venv
-  - source venv/bin/activate
-  - pip install -r requirements.txt
-  - cd source
-  # Prepare django static content
-  - ./manage.py test
-  - ./manage.py collectstatic --noinput
-  - cd ..
 
 stages:
   - test
@@ -40,7 +30,13 @@ cache:
 test:
   stage: test
   script:
+    # Create virtual environment
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - pip install -r requirements.txt
+    # Prepare Django, run tests
     - cd source
+    - ./manage.py collectstatic --noinput
     - ./manage.py test
 
 deploy-staging:
@@ -48,9 +44,11 @@ deploy-staging:
   only:
     - master
   script:
+    # Upload github repo to staging
     - export SSHPASS=$WWW_PASS 
     - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
-
+    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip install -r requirements.txt"
+    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; ./manage collectstatic --noinput"
 
 deploy-production:
   stage: deploy
