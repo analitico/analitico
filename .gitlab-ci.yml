@@ -1,0 +1,58 @@
+
+image: continuumio/miniconda3:latest
+
+variables:
+  GCP_PROJECT_ID: analitico-api
+  GCP_ZONE: europe-west1
+
+services:
+- docker:dind
+
+stages:
+  - test
+  - build
+  - deploy
+
+cache:
+  paths:
+    - pip-cache
+
+test:
+  stage: test
+  script:
+    # Install tools then run all unit tests
+    - pip install -r requirements.txt
+    - python3 -V
+    - python3 venv/bin/activate
+    - python3 manage.py test
+
+deploy-staging:
+  stage: deploy
+  image: google/cloud-sdk:latest
+  only:
+    - master
+  script:
+    # Authenticate using the service account stored here: https://gitlab.com/groups/{YOUR_GITLAB_PROJECT}/-/settings/ci_cd
+    - echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+    # Deploy to Google Functions
+    - cp requirements.txt -t source
+    - gcloud functions deploy s24-order-sorting-staging --entry-point handle_s24_order_sorting_staging --source source --runtime python37 --trigger-http --region europe-west1
+    - gcloud functions deploy staging --entry-point handle_api_staging --source source --runtime python37 --trigger-http --region europe-west1
+    
+deploy-production:
+  stage: deploy
+  when: manual
+  image: google/cloud-sdk:latest
+  only:
+    - master
+  script:
+    # Authenticate using the service account stored here: https://gitlab.com/groups/{YOUR_GITLAB_PROJECT}/-/settings/ci_cd
+    - echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+    # Deploy to Google Functions
+    - cp requirements.txt -t source
+    - gcloud functions deploy s24-order-sorting --entry-point handle_s24_order_sorting --source source --runtime python37 --trigger-http --region europe-west1
+    - gcloud functions deploy v1 --entry-point handle_api --source source --runtime python37 --trigger-http --region europe-west1
