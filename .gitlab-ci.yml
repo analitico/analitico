@@ -19,7 +19,7 @@ before_script:
   - gcloud config set project $GCP_PROJECT_ID
   # Update environment
   - apt-get update -qq
-  - apt-get install python3-venv
+  - apt-get install -y -qq python3-venv
   - apt-get install -y -qq sshpass
   - sshpass -V
   # Create python virtual environment, configure it
