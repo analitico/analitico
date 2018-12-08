@@ -12,11 +12,6 @@ services:
 - docker:dind
 
 before_script:
-  # Authenticate using the service account stored here: 
-  # https://gitlab.com/groups/{YOUR_GITLAB_PROJECT}/-/settings/ci_cd
-  - echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-  - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
-  - gcloud config set project $GCP_PROJECT_ID
   # Update environment
   - apt-get update -qq
   - apt-get install -y -qq python3-venv
@@ -50,7 +45,6 @@ test:
 
 deploy-staging:
   stage: deploy
-  image: google/cloud-sdk:latest
   only:
     - master
   script:
