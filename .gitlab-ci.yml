@@ -12,7 +12,13 @@ services:
 - docker:dind
 
 before_script:
- - apt-get update -qq && apt-get install -y -qq sshpass
+  - apt-get update -qq
+  - apt-get install -y -qq sshpass
+  - sshpass -V
+  - python3 -V
+  - python3 -m venv venv
+  - source venv/bin/activate
+  - pip install -r requirements.txt
 
 stages:
   - test
@@ -25,12 +31,8 @@ cache:
 
 test:
   stage: test
+  image: google/cloud-sdk:latest
   script:
-    # Install tools then run all unit tests
-    - python3 -V
-    - python3 -m venv venv
-    - source venv/bin/activate
-    - pip install -r requirements.txt
     - cd source
     - python3 manage.py test
 
@@ -40,16 +42,8 @@ deploy-staging:
   only:
     - master
   script:
-    # Authenticate using the service account stored here: https://gitlab.com/groups/{YOUR_GITLAB_PROJECT}/-/settings/ci_cd
-    - echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
-    - gcloud config set project $GCP_PROJECT_ID
-    # Deploy to Google Functions
-    - cp requirements.txt -t source
-    # copy files to production server using scp, password provided by sshpass
-    - sshpass -V
     - export SSHPASS=$WWW_PASS 
-    - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico2
+    - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
 
 
 deploy-production:
