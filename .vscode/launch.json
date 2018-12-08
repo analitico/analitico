@@ -30,7 +30,7 @@
             "name": "Python: Django",
             "type": "python",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/source",
             "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
             "args": [
