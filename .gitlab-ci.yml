@@ -55,7 +55,9 @@ deploy-staging:
     - cd ..
     # Deploy to s2.analitico.ai
     - export SSHPASS=$WWW_PASS 
-    - sshpass -e rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
+    - echo $ID_WWW > ~/.ssh/id_www
+    - echo $ID_WWW_PUB > ~/.ssh/id_www.pub    
+    - rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py test"
