@@ -44,12 +44,16 @@ deploy-staging:
   only:
     - master
   script:
-    # Upload github repo to staging
     - export SSHPASS=$WWW_PASS 
-    - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
+    # sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
+    - sshpass -e rsync -avzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
     - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py test"
+    # TODO python3 manage.py migrate
+    # TODO sudo systemctl restart gunicorn_analitico
+
+rsync -avzh --stats --progress analitico www@s2.analitico.ai:/home/www/analitico
 
 deploy-production:
   stage: deploy
