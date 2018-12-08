@@ -49,7 +49,7 @@ deploy-staging:
     # copy files to production server using scp, password provided by sshpass
     - sshpass -V
     - export SSHPASS=$WWW_USER_PASS 
-    - sshpass -e ssh www@s2.analitico.ai ls
+    - sshpass -p paperino ssh www@s2.analitico.ai ls
     - sshpass -p $WWW_USER_PASS scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico2
     - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico2
 
