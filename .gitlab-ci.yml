@@ -29,7 +29,8 @@ before_script:
   - pip install -r requirements.txt
   - cd source
   # Prepare django static content
-  - python3 manage.py collectstatic --noinput
+  - ./manage.py test
+  - ./manage.py collectstatic --noinput
   - cd ..
 
 stages:
@@ -46,7 +47,7 @@ test:
   image: google/cloud-sdk:latest
   script:
     - cd source
-    - python3 manage.py test
+    - ./manage.py test
 
 deploy-staging:
   stage: deploy

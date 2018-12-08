@@ -8,7 +8,7 @@ class AnaliticoModel:
     project_id:str = None
 
     # Project settings    
-    settings: dict = None
+    settings:dict = None
 
     # Training information (as returned by previous call to train)
     training:dict = None
