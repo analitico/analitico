@@ -53,8 +53,6 @@ deploy-staging:
     # TODO python3 manage.py migrate
     # TODO sudo systemctl restart gunicorn_analitico
 
-rsync -avzh --stats --progress analitico www@s2.analitico.ai:/home/www/analitico
-
 deploy-production:
   stage: deploy
   when: manual
