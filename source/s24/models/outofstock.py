@@ -94,19 +94,32 @@ class OutOfStockModel(analitico.models.TabularClassifierModel):
         return None
 
 
+    def _aggregate_find_rate(self, group, min_count=5):
+        f1 = { 'dyn_purchased': ['sum', 'count', 'mean'] }
+        group = group.agg(f1)
+        # group = group.sort_values(('dyn_purchased', 'sum'), ascending=False)
+        # group = group[group[('dyn_purchased', 'sum')] > min_count] # minimum number of purchased
+        return pd.DataFrame(group)
+
+
     def preprocess_data(self, df, training=False, results=None):
         """ Remove outliers and sort dataset before it's used for training or just calculate dynamic fields before inference """
         logger.info('OutOfStock.preprocess_data - %d records (before)', len(df))
         df.set_index(keys='odt_id', inplace=True, verify_integrity=True)
 
-        # warn rows without odt_category_id?
-        if (training and df['odt_category_id'].isnull().sum() > 0):
-            logger.warning("OutOfStock.preprocess_data - %d records with null 'odt_category_id'", df['odt_category_id'].isna().sum())
-            df = df.dropna(subset=['odt_category_id'])
-
-        # remove rows without odt_touched_at
-        if (df['odt_touched_at'].isnull().sum()):
-            logger.warning("OutOfStock.preprocess_data - %d records with null 'odt_touched_at'", df['odt_touched_at'].isnull().sum())
+        if training:
+            # remove rows without odt_category_id
+            if (df['odt_category_id'].isnull().sum() > 0):
+                logger.warning("OutOfStock.preprocess_data - %d records with null 'odt_category_id'", df['odt_category_id'].isna().sum())
+                df = df.dropna(subset=['odt_category_id'])
+            # remove rows without odt_touched_at
+            if (df['odt_touched_at'].isnull().sum() > 0):
+                logger.warning("OutOfStock.preprocess_data - %d records with null 'odt_touched_at'", df['odt_touched_at'].isnull().sum())
+                df = df.dropna(subset=['odt_touched_at'])
+            # remove rows without odt_ean
+            if (df['odt_ean'].isnull().sum() > 0):
+                logger.warning("OutOfStock.preprocess_data - %d records with null 'odt_ean'", df['odt_ean'].isnull().sum())
+                df = df.dropna(subset=['odt_ean'])
 
         # disable warning on chained assignments below...
         # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
@@ -116,6 +129,18 @@ class OutOfStockModel(analitico.models.TabularClassifierModel):
         df['dyn_main_category_id'] = df.apply(lambda row: self._get_category_id(row, 0), axis=1) 
         df['dyn_sub_category_id'] = df.apply(lambda row: self._get_category_id(row, 1), axis=1) 
         df['dyn_category_id'] = df.apply(lambda row: self._get_category_id(row, 2), axis=1) 
+
+        # create time series
+        if training:
+            df['dyn_purchased'] = df.apply(lambda row: 1 if row['odt_status'] == 'PURCHASED' else 0, axis=1) 
+
+            fr_by_ean = self._aggregate_find_rate(df.groupby(['odt_ean']))
+            fr_by_category_id = self._aggregate_find_rate(df.groupby(['dyn_category_id']))
+            fr_by_store_id = self._aggregate_find_rate(df.groupby(['store_id']))
+
+            df['dyn_findrate_by_ean'] = df.apply(lambda row: float(fr_by_ean.loc[[row['odt_ean']], ('dyn_purchased', 'mean')]), axis=1)
+            df['dyn_findrate_by_category_id'] = df.apply(lambda row: float(fr_by_category_id.loc[[row['dyn_category_id']], ('dyn_purchased', 'mean')]), axis=1)
+            df['dyn_findrate_by_store_id'] = df.apply(lambda row: float(fr_by_ean.loc[[row['store_id']], ('dyn_purchased', 'mean')]), axis=1)
 
         # df['dyn_category_slug'] = df.apply(lambda row: self._get_category_slug(row, 0), axis=1) 
         # df['dyn_sub_category_slug'] = df.apply(lambda row: self._get_category_slug(row, 1), axis=1) 
