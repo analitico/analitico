@@ -104,6 +104,11 @@ class TabularClassifierModel(TabularModel):
         scores['recall_score_macro'] = round(sklearn.metrics.recall_score(test_true, test_preds, average='macro'), 5)
         scores['recall_score_weighted'] = round(sklearn.metrics.recall_score(test_true, test_preds, average='weighted'), 5)
 
+        logger.info('TabularClassifier.score_training - log_loss: %f', scores['log_loss'])
+        logger.info('TabularClassifier.score_training - accuracy_score: %f', scores['accuracy_score'])
+        logger.info('TabularClassifier.score_training - precision_score_micro: %f', scores['precision_score_micro'])
+        logger.info('TabularClassifier.score_training - precision_score_macro: %f', scores['precision_score_macro'])
+
         # Report precision and recall for each of the classes
         scores['classes_scores'] = {}
         count = collections.Counter(test_true)
