@@ -51,6 +51,17 @@ class TabularModel(AnaliticoModel):
     label = property(get_label)
 
 
+    def read_data(self, data_url):
+        """ Reads data from remote url .csv file into a pandas dataframe """
+        # TODO specify types from settings for loading
+        # https://stackoverflow.com/questions/24251219/pandas-read-csv-low-memory-and-dtype-options
+        logger.info('TabularModel.read_data - data_url: %s', data_url)
+        datatypes = self.get_setting('training_data.datatypes', None)
+        data_filename = analitico.storage.download_file(data_url) # cached
+        df = pd.read_csv(data_filename, low_memory=(datatypes is None), dtype=datatypes)
+        return df
+
+
     def preprocess_data(self, df, training=False, results=None):
         """ Preprocess data before it's used to train the model """
         logger.info('TabularModel.preprocess_data')
@@ -73,9 +84,9 @@ class TabularModel(AnaliticoModel):
         # reorder columns, drop unused 
         df = df[features]
 
-        for categorical_feature in categorical_features:
-            df[categorical_feature].astype(str)
-            df = df.fillna(value={ categorical_feature: '' })
+        for cat in categorical_features:
+            df[cat] = df[cat].astype(str)
+            df = df.fillna(value={ cat: '' })
 
         # augment timestamps
         if timestamp_features is not None:
@@ -131,9 +142,11 @@ class TabularModel(AnaliticoModel):
         params['best_score'] = model.get_best_score()
 
         # catboost can tell which features weigh more heavily on the predictions
+        logger.info('TabularModel.score_training - features importance:')
         features_importance = results['data']['features_importance'] = {}
         for label, importance in model.get_feature_importance(prettified=True):
             features_importance[label] = round(importance, 5)
+            logger.info('%24s: %8.4f', label, importance)
         
         # make the prediction using the resulting model
         # output test set with predictions
@@ -168,13 +181,7 @@ class TabularModel(AnaliticoModel):
             # load csv data from results of query joining multiple tables in source database
             loading_on = time_ms()
             data_url = self.get_setting('training_data.url')
-            logger.info('TabularModel.train - loading %s', data_url)    
-
-            data_filename = analitico.storage.download_file(data_url) # cached
-            df = pd.read_csv(data_filename, low_memory=False)
-            # TODO specify types from settings for loading
-            # https://stackoverflow.com/questions/24251219/pandas-read-csv-low-memory-and-dtype-options
-
+            df = self.read_data(data_url)
             meta['loading_ms'] = time_ms(loading_on)            
             records = data['records'] = {}
             records['source'] = len(df)
