@@ -23,7 +23,7 @@ before_script:
   - echo "$ID_WWW" | tr -d '\r' | ssh-add - > /dev/null
   - mkdir -p ~/.ssh
   - chmod 700 ~/.ssh
-
+ 
 stages:
   - test
   - build
@@ -35,7 +35,6 @@ cache:
 
 test:
   stage: test
-  when: manual
   script:
     # Create virtual environment
     - python3 -m venv venv
@@ -62,10 +61,12 @@ deploy-staging:
     - cd ..
     # Deploy to s2.analitico.ai
     - export SSHPASS=$WWW_PASS 
-    - rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
-    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
-    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
-    - sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py test"
+    - sshpass -e scp -o stricthostkeychecking=no -r . www@s2.analitico.ai:/home/www/analitico
+    # TODO figure out how to fix rsync via ssh, needs to install keys properly
+    # rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
+    # sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
+    # sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
+    # sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py test"
     # TODO python3 manage.py migrate
     # TODO sudo systemctl restart gunicorn_analitico
 
