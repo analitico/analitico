@@ -26,7 +26,8 @@ urlpatterns = [
     path('project/<str:project_id>/', api.views.handle_prj),
     path('project/<str:project_id>/training', api.views.handle_prj_training),
     path('project/<str:project_id>/inference', api.views.handle_prj_inference),
+    path('project/<str:project_id>/upload/<str:path>', api.views.handle_prj_upload),
 
     path('training/<str:training_id>', api.views.handle_trn),
-    path('training/<str:training_id>/activate', api.views.handle_trn_activate),
+    path('training/<str:training_id>/activate', api.views.handle_trn_activate)
 ]

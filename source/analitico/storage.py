@@ -16,6 +16,9 @@ from rest_framework.exceptions import APIException, NotFound
 from google.cloud import storage
 from pathlib import Path
 
+import google.cloud.storage
+import google.cloud.storage.blob
+
 # internals for operations on google cloud storage
 # https://googleapis.github.io/google-cloud-python/latest/storage/blobs.html
 # https://gcloud-python.readthedocs.io/en/latest/storage/blobs.html
@@ -43,7 +46,7 @@ def _gcs_get_client():
             raise APIException('Cloud credentials missing')
 
 
-def _get_bucket(bucket_id):
+def _get_bucket(bucket_id=BUCKET):
     client = _gcs_get_client()
     return client.get_bucket(bucket_id)
 
@@ -149,6 +152,16 @@ def storage_cache(storage_path, file_path=None, ttl_sec=CACHE_TTL_SEC) -> str:
 ##
 ## v2
 ##
+
+def upload_authorization(blobname):
+    """ Obtains a signed url that can be used to upload a file to the given pathname """
+    bucket = _get_bucket()
+    blob = google.cloud.storage.blob.Blob(blobname, bucket)
+    upload_url = blob.create_resumable_upload_session()
+    return { 
+        'url': STORAGE_URL_PREFIX + blobname,
+        'upload_url': upload_url
+    }
 
 
 def upload_file(blobname, filename):

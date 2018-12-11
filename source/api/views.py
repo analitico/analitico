@@ -1,5 +1,8 @@
 
+import os.path
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.text import slugify
 
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -151,6 +154,16 @@ def handle_prj_inference(request: Request, project_id: str) -> Response:
     return Response(results)
 
 
+@api_view(['PUT'])
+def handle_prj_upload(request: Request, project_id:str, path: str) -> Response:
+    """ Uploads an asset related to a project or gets upload keys to upload directly to google storage """
+    logger.info('handle_prj_upload - project_id: %s, path: %s', project_id, path)
+    api_check_authorization(request, project_id)
+    name, ext = os.path.splitext(path)
+    blobname = 'uploads/' + project_id + '/' + slugify(name) + '.' + slugify(ext)
+    response = analitico.storage.upload_authorization(blobname)
+    return Response(response)
+
 ##
 ## Training APIs (list, activate)
 ##
@@ -176,3 +189,8 @@ def handle_trn_activate(request: Request, training_id: str) -> Response:
         return training_response(training)
     except ObjectDoesNotExist:
         raise NotFound('Training ' + training_id + ' was not found')
+
+##
+## Data uploads
+##
+
