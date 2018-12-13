@@ -28,7 +28,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY = '111&xe5+tyf29&&%t!jk9-v)!v07gc%0ha4*4#8e+rfd@7i80#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -218,11 +218,13 @@ logging.config.dictConfig({
         # root logger
         '': {
             'level': 'WARNING',
-            'handlers': ['console', 'sentry'],
+            'handlers': ['console'],
+            #'handlers': ['console', 'sentry'],
         },
         'analitico': {
             'level': LOGLEVEL,
-            'handlers': ['console', 'sentry'],
+            'handlers': ['console'],
+            # 'handlers': ['console', 'sentry'],
             # required to avoid double logging with root logger
             'propagate': False,
         },
