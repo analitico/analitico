@@ -17,8 +17,9 @@ import raven
 import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print('BASE_DIR: ' + BASE_DIR)
+#BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -27,13 +28,7 @@ print('BASE_DIR: ' + BASE_DIR)
 SECRET_KEY = '111&xe5+tyf29&&%t!jk9-v)!v07gc%0ha4*4#8e+rfd@7i80#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-<<<<<<< HEAD
-DEBUG = True
-=======
 DEBUG = False
-if DEBUG:
-    print("SECURITY WARNING: don't run with debug turned on in production!")
->>>>>>> 3afa7de85639ed6201d9f7d1377e8243845b70a6
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -59,12 +54,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'raven.contrib.django.raven_compat',
 
-    'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.staticfiles'
 ]
 
 MIDDLEWARE = [
@@ -152,16 +147,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
-
-STATICFILES_DIRS = [
-    '/var/www/static/',
-]
-
-if DEBUG:
-    print('STATIC_ROOT: ' + STATIC_ROOT)
-else:
-    print('STATIC_ROOT: not serving static files')
+STATIC_ROOT = "static/"
 
 # TODO better mechanism for auth tokens
 # https://github.com/James1345/django-rest-knox

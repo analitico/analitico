@@ -44,14 +44,21 @@ def api_save_call(request=None, results=None, status=200) -> Call:
     return call
 
 
+def item_or_first(item):
+    """ If item is a list of one just unpack and return, otherwise keep list """
+    if isinstance(item, list) and len(item) == 1:
+        return item[0]
+    return item
+
+
 def api_exception_handler(exc: Exception, context) -> Response:
     """ Call REST framework's default exception handler first, to get the standard error response. """
     # it's not a coding error if we raised it and handled it correctly
     if isinstance(exc, APIException):
         return Response({ 'error': {
             'status': exc.status_code,
-            'code': exc.get_codes(),
-            'detail': exc.detail
+            'code': item_or_first(exc.get_codes()),
+            'detail': item_or_first(exc.detail)
         }}, exc.status_code)
     # other exceptions may be things we didn't foresee so report as 500
     logger.error(exc)
