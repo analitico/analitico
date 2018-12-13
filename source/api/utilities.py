@@ -46,25 +46,21 @@ def api_save_call(request=None, results=None, status=200) -> Call:
 
 def api_exception_handler(exc: Exception, context) -> Response:
     """ Call REST framework's default exception handler first, to get the standard error response. """
+    # it's not a coding error if we raised it and handled it correctly
+    if isinstance(exc, APIException):
+        return Response({ 'error': {
+            'status': exc.status_code,
+            'code': exc.get_codes(),
+            'detail': exc.detail
+        }}, exc.status_code)
+    # other exceptions may be things we didn't foresee so report as 500
     logger.error(exc)
-    response = exception_handler(exc, context)
-    if not response:
-        return Response({
-            'errors': [{
-                'status': 500,
-                'code': type(exc).__name__,
-                'detail': repr(exc)
-            }]
-        }, 500)
-
-    response.data = {
-        'errors': [{
-            'status': str(response.status_code),
-            'code': response.status_text,
-            'detail': response.data.get('detail')
-        }]
-    }
-    return response
+    #response = exception_handler(exc, context)
+    return Response({ 'error': {
+        'status': 500,
+        'code': type(exc).__name__,
+        'detail': repr(exc)
+    }}, 500)
 
 
 def api_get_parameter(request: Request, parameter: str) -> str:

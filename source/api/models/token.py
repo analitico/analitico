@@ -35,9 +35,13 @@ class Token(models.Model):
     # time when token was created
     created_at = models.DateTimeField(_("Created"), auto_now_add=True)
 
-    class Meta:
-        # ensure each user has unique token names
-        unique_together = (('user', 'name'),)
+    # email address of the owner of this token
+    @property
+    def email(self):
+        return self.user.email
+    @email.setter
+    def email(self, email):
+        self.user = User.objects.get(pk=email)
 
     def __str__(self):
         return self.key

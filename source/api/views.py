@@ -27,6 +27,9 @@ import s24.models
 # https://www.django-rest-framework.org/topics/browsable-api/
 
 
+# https://www.django-rest-framework.org/topics/documenting-your-api/
+# https://www.django-rest-framework.org/api-guide/viewsets/
+
 MODELS = {
     # generic regressor from tabular data
     'tabular-regressor-model': analitico.models.TabularRegressorModel,
