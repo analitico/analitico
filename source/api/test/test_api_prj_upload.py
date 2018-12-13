@@ -4,6 +4,9 @@ from rest_framework.test import APITestCase
 
 import api.models
 
+# conflicts with django's dynamically generated model.objects
+# pylint: disable=no-member
+
 class ProjectUploadApiTests(APITestCase):
 
     def setUp(self):
@@ -31,13 +34,13 @@ class ProjectUploadApiTests(APITestCase):
         response = self.client.post('/api/v1/project/up-prj-001/upload/test001.csv', format='json')
         self.assertEqual(response.status_code, 405)
         error = response.data['errors'][0]
-        self.assertEqual(error.status, 405)
+        self.assertEqual(int(error['status']), 405)
 
     def test_api_upload_no_get(self):
         response = self.client.get('/api/v1/project/up-prj-001/upload/test001.csv', format='json')
         self.assertEqual(response.status_code, 405)
         error = response.data['errors'][0]
-        self.assertEqual(error.status, 405)
+        self.assertEqual(int(error['status']), 405)
 
     def test_api_404(self):
         response = self.client.post('/api/v1/fake_endpoint', { 'test1': 'value1', 'test2': 'value2' }, format='json')
