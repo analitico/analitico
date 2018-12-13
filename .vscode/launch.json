@@ -33,6 +33,8 @@
             "cwd": "${workspaceFolder}/source",
             "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
+            "debugOptions": [ "Django"],
+            "envPath": "${workspaceFolder}/source/dev.env",
             "args": [
                 "runserver",
                 "--noreload",

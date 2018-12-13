@@ -30,6 +30,20 @@ class AnaliticoModel:
         value = get_dict_dot(self.settings, 'request.' + key)
         return value if value else get_dict_dot(self.settings, key, default)
 
+    ##
+    ## utility methods
+    ##
+
+    def upload_asset(name, asset):
+        pass
+
+    def download_asset(name):
+        pass
+
+    ##
+    ## main methods
+    ##
+
     def train(self, training_id) -> dict:
         """ Trains machine learning model and returns a dictionary with the training's results """
         raise NotImplementedError()
