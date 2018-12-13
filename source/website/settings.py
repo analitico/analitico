@@ -147,7 +147,13 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATIC_ROOT = "static/"
+#STATIC_ROOT = "static/"
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+    '/var/www/static/',
+    '/home/gionata/analitico/source/static/',
+]
 
 # TODO better mechanism for auth tokens
 # https://github.com/James1345/django-rest-knox
