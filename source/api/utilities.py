@@ -3,6 +3,8 @@ import datetime
 import random
 import string
 
+import django.http
+
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
@@ -62,6 +64,12 @@ def api_exception_handler(exc: Exception, context) -> Response:
             'code': item_or_first(exc.get_codes()),
             'detail': item_or_first(exc.detail)
         }}, exc.status_code)
+    if isinstance(exc, django.http.Http404):
+        return Response({ 'error': {
+            'status': '404',
+            'code': 'Not Found',
+            'detail': exc.args[0] if len(exc.args) > 0 else None
+        }}, 404)
     # other exceptions may be things we didn't foresee so report as 500
     logger.error(exc)
     #response = exception_handler(exc, context)
