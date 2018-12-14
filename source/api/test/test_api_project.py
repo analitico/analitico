@@ -37,5 +37,5 @@ class ProjectsApiTests(APITestCase):
         response = self.client.get('/api/v1/project/fake-id/', format='json')
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.reason_phrase, 'Not Found')
-        self.assertEqual(response.data['errors'][0]['status'], '404')
+        self.assertEqual(response.data['error']['status'], '404')
 

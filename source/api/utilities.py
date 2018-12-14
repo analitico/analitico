@@ -56,7 +56,9 @@ def api_exception_handler(exc: Exception, context) -> Response:
     # it's not a coding error if we raised it and handled it correctly
     if isinstance(exc, APIException):
         return Response({ 'error': {
-            'status': exc.status_code,
+            # why is status a string and not just an integer? see specs
+            # https://jsonapi.org/format/#errors
+            'status': str(exc.status_code),
             'code': item_or_first(exc.get_codes()),
             'detail': item_or_first(exc.detail)
         }}, exc.status_code)
@@ -64,7 +66,7 @@ def api_exception_handler(exc: Exception, context) -> Response:
     logger.error(exc)
     #response = exception_handler(exc, context)
     return Response({ 'error': {
-        'status': 500,
+        'status': '500',
         'code': type(exc).__name__,
         'detail': repr(exc)
     }}, 500)
