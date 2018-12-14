@@ -22,7 +22,29 @@ class TokenSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
 
 
-class TokenViewSet(viewsets.ViewSet):
+class TokenViewSet(viewsets.ModelViewSet):
+    """ List, detail, create, update and delete API authorization tokens. """
+    serializer_class = TokenSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Token.objects.filter(user=self.request.user)
+
+    def update(self, request, pk=None):
+        """ Update token (note that key and user cannot be changed) """
+        return self.partial_update(request, pk)
+
+    def partial_update(self, request, pk=None):
+        """ Partial updates field by field """
+        token = get_object_or_404(self.get_queryset(), pk=pk)
+        token.name = request.data.get('name')
+        token.save()        
+        serializer = TokenSerializer(token)
+        return Response(serializer.data)
+
+
+
+class TokenViewSet2(viewsets.ViewSet):
     """ List, detail, create, update and delete API authorization tokens. """
 
     def _tokens(self, request):
