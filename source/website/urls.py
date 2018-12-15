@@ -15,18 +15,26 @@ class IndexView(TemplateView):
 
 urlpatterns = [
 
-    path('api/v1/', include('api.urls')),
-    #path('api/v1/', include(api_router.urls)),
-
     path('polls/', include('polls.urls')),
     path('admin/', admin.site.urls),
 
     # home page served from template, named for reverse lookup
-    path('', IndexView.as_view(), name='index')
+    path('', IndexView.as_view(), name='index'),
+
+    # add API endpoints
+    path('api/v1/', include('api.urls')),
 ]
 
-# service used to retrieve tokens
+# add service used to retrieve tokens
 from rest_framework.authtoken import views
 urlpatterns += [
     url(r'^api-token-auth/', views.obtain_auth_token)
+]
+
+# API documentation site
+# https://www.django-rest-framework.org/topics/documenting-your-api/
+# https://www.django-rest-framework.org/api-guide/schemas/
+from rest_framework.documentation import include_docs_urls
+urlpatterns += [
+    path('api/v1/docs/', include_docs_urls(title='Analitico API'))
 ]
