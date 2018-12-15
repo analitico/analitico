@@ -40,7 +40,7 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
-    list_display = ('key', 'user', 'name', 'created_at')
+    list_display = ('id', 'user', 'name', 'created_at')
     ordering = ('user', 'name', 'created_at') 
 
 

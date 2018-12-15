@@ -3,26 +3,45 @@
 # pylint: disable=no-member
 
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext as _
 
 from rest_framework import serializers
+from rest_framework import status
 from rest_framework import viewsets
+from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from api.models import Token
 
+# Django ViewSet
+# 
 
-class TokenSerializer(serializers.Serializer):
+# Django Serializers
+# https://www.django-rest-framework.org/api-guide/serializers/
+
+class TokenSerializer(serializers.ModelSerializer):
     """ Serializer for API authorization tokens. """
-    key = serializers.SlugField()
-    name = serializers.SlugField()
-    
-    # Email address of token's owner
-    email = serializers.EmailField()
-    """ Email address of token owner """
 
-    created_at = serializers.DateTimeField()
-    """ Token creation timestamp. """
+    class Meta:
+        model = Token
+        fields = ('id', 'name', 'email', 'created_at')
+
+    # Use this method for the custom field
+    def _user(self):
+        request = getattr(self.context, 'request', None)
+        if request:
+            return request.user
+
+    def validate_key(self, value):
+        """ Check that token starts with tok_ """
+        if value[:4] != 'tok_':
+            raise serializers.ValidationError(_('Token key should start with tok_'))
+        return value
+
+    def create(self, validated_data):
+        """ Create and return a new Token instance, given the validated data """
+        return Token.objects.create(**validated_data)
 
 
 class TokenViewSet(viewsets.ModelViewSet):
@@ -45,12 +64,13 @@ class TokenViewSet(viewsets.ModelViewSet):
             return Token.objects.all()
         return Token.objects.filter(user=self.request.user)
 
-    def partial_update(self, request, pk=None):
-        token = get_object_or_404(self.get_queryset(), pk=pk)
-        token.name = request.data.get('name')
-        token.save()        
-        serializer = TokenSerializer(token)
-        return Response(serializer.data)
-
-    def update(self, request, pk=None):
-        return self.partial_update(request, pk)
+    def create(self, request):
+        serializer = TokenSerializer(data=request.data)
+        if serializer.is_valid():
+            token = Token(pk=serializer.validated_data['id'])
+            token.name = serializer.validated_data['name']
+            token.user = request.user
+            token.save()
+            serializer = TokenSerializer(token)
+            return Response(serializer.data, status=201)
+        raise exceptions.ValidationError(serializer.errors)

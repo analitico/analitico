@@ -24,7 +24,7 @@ class Token(models.Model):
     """ Token for bearer token authorization model. """
 
     # token
-    key = models.SlugField(_("Key"), max_length=32, primary_key=True, default=generate_token_id)
+    id = models.SlugField(_("Id"), max_length=32, primary_key=True, default=generate_token_id)
 
     # a single user can have zero, one or more tokens
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='User', blank=True, null=True)
@@ -38,11 +38,14 @@ class Token(models.Model):
     # email address of the owner of this token
     @property
     def email(self):
-        return self.user.email
+        return self.user.email if self.user else None
     @email.setter
     def email(self, email):
-        self.user = User.objects.get(pk=email)
+        self.user = User.objects.get(email=email)
+
+    class Meta:
+        ordering = ('created_at',)
 
     def __str__(self):
-        return self.key
+        return self.id
 
