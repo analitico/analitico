@@ -15,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from api.models import Token
 
 # Django ViewSet
-# 
+# https://www.django-rest-framework.org/api-guide/viewsets/
 
 # Django Serializers
 # https://www.django-rest-framework.org/api-guide/serializers/

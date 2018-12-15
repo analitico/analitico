@@ -14,15 +14,14 @@ class IndexView(TemplateView):
     template_name = 'index.html'
 
 urlpatterns = [
-
-    path('polls/', include('polls.urls')),
-    path('admin/', admin.site.urls),
-
     # home page served from template, named for reverse lookup
     path('', IndexView.as_view(), name='index'),
 
-    # add API endpoints
-    path('api/v1/', include('api.urls')),
+    # API endpoints
+    path('api/v1/', include('api.urls'), name='api'),
+
+    # backoffice
+    path('admin/', admin.site.urls, name='admin'),
 ]
 
 # add service used to retrieve tokens
@@ -36,5 +35,5 @@ urlpatterns += [
 # https://www.django-rest-framework.org/api-guide/schemas/
 from rest_framework.documentation import include_docs_urls
 urlpatterns += [
-    path('api/v1/docs/', include_docs_urls(title='Analitico API'))
+    path('api/v1/docs/', include_docs_urls(title='Analitico API'), name='docs')
 ]
