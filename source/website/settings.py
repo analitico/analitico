@@ -46,7 +46,6 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     'api',
-    'polls',
     's24',
     'website',
 
