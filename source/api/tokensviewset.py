@@ -68,7 +68,8 @@ class TokenViewSet(viewsets.ModelViewSet):
         serializer = TokenSerializer(data=request.data)
         if serializer.is_valid():
             token = Token(pk=serializer.validated_data['id'])
-            token.name = serializer.validated_data['name']
+            if 'name' in serializer.validated_data:
+                token.name = serializer.validated_data['name']
             token.user = request.user
             token.save()
             serializer = TokenSerializer(token)
