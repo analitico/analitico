@@ -12,7 +12,7 @@ from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from api.models import Token
+from api.models import Project
 
 # Django ViewSet
 # https://www.django-rest-framework.org/api-guide/viewsets/
@@ -20,36 +20,17 @@ from api.models import Token
 # Django Serializers
 # https://www.django-rest-framework.org/api-guide/serializers/
 
-class TokenSerializer(serializers.ModelSerializer):
+class ProjectSerializer(serializers.ModelSerializer):
     """ Serializer for API authorization tokens. """
 
     class Meta:
-        model = Token
-        fields = ('id', 'name', 'user', 'created_at')
+        model = Project
+        fields = ('id', 'settings', 'notes', 'created_at')
 
-    id = serializers.SlugField(help_text=_("Token's unique id."))
-    name = serializers.SlugField(help_text=_("Token's name can be used to track its usage (eg: mobile, web, server)."), required=False)
-    user = serializers.EmailField(source='user.email', help_text=_('User that owns the token.'), required=False)
-    created_at = serializers.DateTimeField(label=_('Created'), help_text=_('Date and time when token was created.'), required=False)
-
-    # Use this method for the custom field
-    def _user(self):
-        request = getattr(self.context, 'request', None)
-        if request:
-            return request.user
-
-    def validate_key(self, value):
-        """ Check that token starts with tok_ """
-        if value[:4] != 'tok_':
-            raise serializers.ValidationError(_('Token key should start with tok_'))
-        return value
-
-    def create(self, validated_data):
-        """ Create and return a new Token instance, given the validated data """
-        return Token.objects.create(**validated_data)
+    settings = serializers.JSONField(help_text=_('Project settings including metadata, model type, training parameters, etc...'), required=False)
 
 
-class TokenViewSet(viewsets.ModelViewSet):
+class ProjectViewSet(viewsets.ModelViewSet):
     """ 
     List, detail, create, update and delete API auth tokens. 
     
@@ -61,22 +42,25 @@ class TokenViewSet(viewsets.ModelViewSet):
     delete: Delete an API auth token.
     """
     
-    serializer_class = TokenSerializer
+    serializer_class = ProjectSerializer
     permission_classes = [IsAuthenticated]
+
+    help_text='help text viewset'
+    label ='viewset label'
 
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Token.objects.all()
-        return Token.objects.filter(user=self.request.user)
+            return Project.objects.all()
+        return Project.objects.filter(user=self.request.user)
 
     def create(self, request):
-        serializer = TokenSerializer(data=request.data)
+        serializer = ProjectSerializer(data=request.data)
         if serializer.is_valid():
-            token = Token(pk=serializer.validated_data['id'])
+            token = Project(pk=serializer.validated_data['id'])
             if 'name' in serializer.validated_data:
                 token.name = serializer.validated_data['name']
             token.user = request.user
             token.save()
-            serializer = TokenSerializer(token)
+            serializer = ProjectSerializer(token)
             return Response(serializer.data, status=201)
         raise exceptions.ValidationError(serializer.errors)
