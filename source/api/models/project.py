@@ -17,6 +17,13 @@ class Project(models.Model):
     # Owner of this model
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, verbose_name='Owner of this project', blank=True, null=True)
 
+    @property
+    def user(self):
+        return self.owner
+    @user.setter
+    def user(self, user):
+        self.owner = user
+
     # Group that has access to this model
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, verbose_name='Group that has access to this project', blank=True, null=True)
 
