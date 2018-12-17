@@ -61,7 +61,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.is_superuser:
             return Project.objects.all()
-        return Project.objects.filter(user=self.request.user)
+        return Project.objects.filter(owner=self.request.user)
 
     def create(self, request):
         serializer = ProjectSerializer(data=request.data)

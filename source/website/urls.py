@@ -16,7 +16,7 @@ import api.urls
 # https://github.com/axnsan12/drf-yasg/
 schema_view = get_schema_view(
    openapi.Info(
-      title="Analitico API",
+      title='Analitico API',
       default_version='v1',
       description=api.urls.description,
       terms_of_service="https://analitico.ai/",
