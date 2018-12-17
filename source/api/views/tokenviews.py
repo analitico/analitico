@@ -9,10 +9,13 @@ from rest_framework import serializers
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework import exceptions
+from rest_framework import pagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from api.models import Token
+
+import api.pagination
 
 # Django ViewSet
 # https://www.django-rest-framework.org/api-guide/viewsets/
@@ -29,8 +32,8 @@ class TokenSerializer(serializers.ModelSerializer):
 
     id = serializers.SlugField(help_text=_("Unique id."))
     name = serializers.SlugField(help_text=_("Name used to track token usage (eg: testing, mobile, web, server, etc)."), required=False)
-    user = serializers.EmailField(source='user.email', help_text=_('User that owns the token.'), required=False)
-    created_at = serializers.DateTimeField(label=_('Created'), help_text=_('Date and time when token was created.'), required=False)
+    user = serializers.EmailField(source='user.email', help_text=_('User that owns the token.'), required=False, read_only=True)
+    created_at = serializers.DateTimeField(label=_('Created'), help_text=_('Date and time when token was created.'), required=False, read_only=True)
 
     def validate_key(self, value):
         """ Check that token starts with tok_ """
