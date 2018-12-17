@@ -27,16 +27,10 @@ class TokenSerializer(serializers.ModelSerializer):
         model = Token
         fields = ('id', 'name', 'user', 'created_at')
 
-    id = serializers.SlugField(help_text=_("Token's unique id."))
-    name = serializers.SlugField(help_text=_("Token's name can be used to track its usage (eg: mobile, web, server)."), required=False)
+    id = serializers.SlugField(help_text=_("Unique id."))
+    name = serializers.SlugField(help_text=_("Name used to track token usage (eg: testing, mobile, web, server, etc)."), required=False)
     user = serializers.EmailField(source='user.email', help_text=_('User that owns the token.'), required=False)
     created_at = serializers.DateTimeField(label=_('Created'), help_text=_('Date and time when token was created.'), required=False)
-
-    # Use this method for the custom field
-    def _user(self):
-        request = getattr(self.context, 'request', None)
-        if request:
-            return request.user
 
     def validate_key(self, value):
         """ Check that token starts with tok_ """

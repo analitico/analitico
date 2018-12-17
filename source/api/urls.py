@@ -5,8 +5,7 @@ from django.urls import path
 from rest_framework import routers
 
 import api.views
-import api.tokensviewset
-import api.projectsviewset
+
 
 app_name = 'api'
 
@@ -16,8 +15,8 @@ with open(description_filename) as f:
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.SimpleRouter()
-router.register('projects', api.projectsviewset.ProjectViewSet, basename='project')
-router.register('tokens', api.tokensviewset.TokenViewSet, basename='token')
+router.register('projects', api.views.ProjectViewSet, basename='project')
+router.register('tokens', api.views.TokenViewSet, basename='token')
 
 urlpatterns = router.urls + [
     

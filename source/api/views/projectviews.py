@@ -21,25 +21,35 @@ from api.models import Project
 # https://www.django-rest-framework.org/api-guide/serializers/
 
 class ProjectSerializer(serializers.ModelSerializer):
-    """ Serializer for API authorization tokens. """
+    """ Serializer for machine learning projects. """
 
     class Meta:
         model = Project
-        fields = ('id', 'settings', 'notes', 'created_at')
+        fields = ('id', 'user', 'group', 'settings', 'training_id', 'notes', 'created_at', 'updated_at')
+
+    id = serializers.SlugField(help_text=_("Unique id."))
+    user = serializers.EmailField(source='owner.email', help_text=_('User that owns the project.'), required=False)
+    group = serializers.CharField(source='group.name', help_text=_('Project notes (markdown)'), required=False)
 
     settings = serializers.JSONField(help_text=_('Project settings including metadata, model type, training parameters, etc...'), required=False)
+    training_id = serializers.SlugField(help_text=_("Training session currently used for inference."), required=False)
+    notes = serializers.CharField(help_text=_('Project notes (markdown)'), required=False)
+
+    created_at = serializers.DateTimeField(label=_('Created'), help_text=_('Date and time when project was created.'), required=False)
+    updated_at = serializers.DateTimeField(label=_('Updated'), help_text=_('Date and time when project was last updated.'), required=False)
+
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
     """ 
-    List, detail, create, update and delete API auth tokens. 
+    List, detail, create, update and delete machine learning projects. 
     
-    retrieve: Retrieve a specific API auth token.
-    list: Retrieve a list of API auth tokens for the user.
-    create: Create a new API auth token for the user.
-    update: Modify a previously created API auth token (eg: change its name).
-    partial_update: Modify a previously created API auth token (eg: change its name).
-    delete: Delete an API auth token.
+    retrieve: Retrieve a specific project.
+    list: Retrieve a list of projects for the user.
+    create: Create a new project for the user.
+    update: Update a previously created project.
+    partial_update: Modify a previously created project.
+    delete: Delete a project.
     """
     
     serializer_class = ProjectSerializer
