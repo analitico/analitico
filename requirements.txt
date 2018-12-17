@@ -7,7 +7,7 @@ catboost==0.11.1
 certifi==2018.8.24
 cffi==1.11.5
 chardet==3.0.4
-coreapi==2.3.3
+click==6.7
 coreschema==0.0.4
 cryptography==2.4.2
 decorator==4.3.0
@@ -15,9 +15,12 @@ defusedxml==0.5.0
 Django==2.1.3
 django-filter==2.0.0
 djangorestframework==3.9.0
+djangorestframework-jsonapi==2.6.0
 dodgy==0.1.9
+drf-yasg==1.11.1
 entrypoints==0.2.3
 enum34==1.1.6
+flex==6.13.2
 google-api-core==1.5.2
 google-auth==1.6.1
 google-cloud==0.34.0
@@ -28,6 +31,7 @@ googleapis-common-protos==1.5.5
 gunicorn==19.9.0
 holidays==0.9.8
 idna==2.7
+inflection==0.3.1
 ipykernel==5.1.0
 ipython==7.2.0
 ipython-genutils==0.2.0
@@ -37,6 +41,7 @@ jedi==0.13.1
 Jinja2==2.10
 joblib==0.13.0
 jsonfield==2.0.2
+jsonpointer==1.14
 jsonschema==2.6.0
 jupyter-client==5.2.3
 jupyter-core==4.4.0
@@ -84,8 +89,10 @@ pyzmq==17.1.2
 raven==6.9.0
 requests==2.20.1
 requirements-detector==0.6
+rfc3987==1.3.8
 rope==0.11.0
 rsa==4.0
+ruamel.yaml==0.15.81
 scikit-learn==0.20.0
 scipy==1.1.0
 Send2Trash==1.5.0
@@ -93,12 +100,15 @@ sentry-sdk==0.6.0
 setoptconf==0.2.0
 six==1.11.0
 snowballstemmer==1.2.1
+strict-rfc3339==0.7
+swagger-spec-validator==2.4.1
 terminado==0.8.1
 testpath==0.4.2
 tornado==5.1.1
 traitlets==4.3.2
 uritemplate==3.0.0
 urllib3==1.24.1
+validate-email==1.3
 wcwidth==0.1.7
 webencodings==0.5.1
 wrapt==1.10.11

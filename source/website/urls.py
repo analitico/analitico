@@ -1,29 +1,42 @@
 
-import api.urls
-
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
-from rest_framework.documentation import include_docs_urls
+from django.conf.urls import url
+
+from rest_framework import permissions
+
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+import api.urls
+
+# API documentation
+# https://github.com/axnsan12/drf-yasg/
+schema_view = get_schema_view(
+   openapi.Info(
+      title="Analitico API",
+      default_version='v1',
+      description=api.urls.description,
+      terms_of_service="https://analitico.ai/",
+      contact=openapi.Contact(email="support@analitico.ai"),
+      license=openapi.License(name="GPLv3", url='https://www.gnu.org/licenses/quick-guide-gplv3.en.html'),
+   ),
+   validators=['flex', 'ssv'],
+   public=True,
+   permission_classes=(permissions.AllowAny,),
+)
 
 # urlpatterns list routes URLs to views:
 # https://docs.djangoproject.com/en/2.1/topics/http/urls/
-
-# API endpoints
 urlpatterns = [
-    path('api/v1/', include('api.urls'), name='api')
-]
-
-# API documentation
-urlpatterns += [
-    path('api/v1/docs/', include_docs_urls(title=_('Analitico API'), description=api.urls.description, patterns=urlpatterns))
-    # https://www.django-rest-framework.org/topics/documenting-your-api/
-    # https://www.django-rest-framework.org/api-guide/schemas/
-]
-
-# website and backoffice
-urlpatterns += [
     path('', TemplateView.as_view(template_name='index.html'), name='index'),
-    path('admin/', admin.site.urls, name='admin')
+    path('admin/', admin.site.urls, name='admin'),
+    path('api/v1/', include('api.urls'), name='api'),
+
+    url(r'^api/v1/docs', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
+    url(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    url(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
