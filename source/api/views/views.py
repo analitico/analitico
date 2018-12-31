@@ -101,13 +101,6 @@ def training_response(training):
 ## Project APIs (list, train and generate inferences on models)
 ##
 
-@api_view(['GET', 'POST'])
-def handle_prj(request: Request, project_id: str) -> Response:
-    """ Returns project settings for the given project_id """
-    logger.info('handle_prj - project_id: %s', project_id)
-    project, _ = get_project_model(project_id)
-    return project_response(project)
-
 
 @api_view(['GET', 'POST'])
 def handle_prj_training(request: Request, project_id: str) -> Response:
