@@ -61,8 +61,8 @@ def api_exception_handler(exc: Exception, context) -> Response:
             # why is status a string and not just an integer? see specs
             # https://jsonapi.org/format/#errors
             'status': str(exc.status_code),
-            'code': item_or_first(exc.get_codes()),
-            'detail': item_or_first(exc.detail)
+            'code': exc.default_code,
+            'detail': exc.default_detail
         }}, exc.status_code)
     if isinstance(exc, django.http.Http404):
         return Response({ 'error': {
