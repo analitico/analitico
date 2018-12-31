@@ -67,19 +67,6 @@ def get_project_model(project_id: str) -> (api.models.Project, analitico.models.
         raise NotFound('Model for ' + project_id + ' was not found')
 
 
-def project_response(project):
-    """ Return an API Response containing the given Project """
-    return Response({
-        'data': {
-            'project_id': project.id,
-            'training_id': project.training_id,
-            'settings': project.settings,
-            'notes': project.notes,
-            'created_at': project.created_at,
-            'updated_at': project.updated_at
-        }
-    })
-
 
 def training_response(training):
     """ Return an API Response containing the given Training """
@@ -185,8 +172,4 @@ def handle_trn_activate(request: Request, training_id: str) -> Response:
         return training_response(training)
     except ObjectDoesNotExist:
         raise NotFound('Training ' + training_id + ' was not found')
-
-##
-## Data uploads
-##
 

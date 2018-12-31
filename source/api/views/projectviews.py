@@ -9,10 +9,67 @@ from rest_framework import serializers
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework import exceptions
+
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 
 from api.models import Project
+
+
+
+import os.path
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.text import slugify
+
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.exceptions import NotFound, ParseError
+
+import analitico.models
+import analitico.utilities
+import analitico.storage
+import api.models
+import api.utilities
+
+from analitico.utilities import logger
+from api.utilities import time_ms, api_get_parameter, api_check_authorization
+
+import s24.models
+
+
+import os.path
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.text import slugify
+
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.exceptions import NotFound, ParseError
+
+import analitico.models
+import analitico.utilities
+import analitico.storage
+import api.models
+import api.utilities
+
+from analitico.utilities import logger
+from api.utilities import time_ms, api_get_parameter, api_check_authorization
+
+import s24.models
+
+import api.views
+import api.views.views
+
+
+
+
+
+
+
 
 # Django ViewSet
 # https://www.django-rest-framework.org/api-guide/viewsets/
@@ -74,3 +131,31 @@ class ProjectViewSet(viewsets.ModelViewSet):
             serializer = ProjectSerializer(token)
             return Response(serializer.data, status=201)
         raise exceptions.ValidationError(serializer.errors)
+
+    @action(detail=True, methods=['get', 'post'])
+    def inference(self, request, pk=None):
+        """ Run inference on a given project id using its active trained model """
+        project_id = pk
+        logger.info('handle_prj_inference - project_id: %s', project_id)
+        started_on = time_ms()
+        api_check_authorization(request, project_id)
+
+        # retrieve project, model and active training session
+        project, model = api.views.views.get_project_model(project_id)
+        training = api.models.Training.objects.get(pk=project.training_id) if project.training_id else None
+
+        if not project.training_id:
+            raise NotFound('Project ' + project_id + ' has not been trained yet.')
+
+        model.settings = training.settings
+        model.training = training.results
+
+        request_data = api_get_parameter(request, 'data')
+        if request_data is None:
+            raise ParseError("API call should include 'data' field (see documentation).")
+
+        results = model.predict(request_data)
+        results['meta']['total_ms'] = time_ms(started_on)
+
+        api.utilities.api_save_call(request, results)
+        return Response(results)
