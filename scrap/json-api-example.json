@@ -1,0 +1,62 @@
+{
+  "links": {
+    "first": "http://127.0.0.1:8000/api/v1/tokens/?page=1",
+    "last": "http://127.0.0.1:8000/api/v1/tokens/?page=1",
+    "next": null,
+    "prev": null
+  },
+  "data": [
+    {
+      "type": "Token",
+      "id": "tok_N8jbjA6UNqsQ",
+      "attributes": {
+        "name": "production",
+        "user": "gmettifogo@analitico.ai",
+        "created_at": "2018-12-01T15:08:01.055026+01:00"
+      }
+    },
+    {
+      "type": "Token",
+      "id": "tok_5HdPbMoX7abq",
+      "attributes": {
+        "name": "testing",
+        "user": "gmettifogo@analitico.ai",
+        "created_at": "2018-12-02T17:22:15.759881+01:00"
+      }
+    },
+    {
+      "type": "Token",
+      "id": "tok_0ee8CuwLRE6n_s24",
+      "attributes": {
+        "name": "testing",
+        "user": "marco@supermercato24.it",
+        "created_at": "2018-12-03T15:31:15.010795+01:00"
+      }
+    },
+    {
+      "type": "Token",
+      "id": "tok_prova_007",
+      "attributes": {
+        "name": "",
+        "user": "gmettifogo@analitico.ai",
+        "created_at": "2018-12-17T18:29:17.477169+01:00"
+      }
+    },
+    {
+      "type": "Token",
+      "id": "tok_prova_008",
+      "attributes": {
+        "name": "prova_008",
+        "user": "gmettifogo@analitico.ai",
+        "created_at": "2018-12-17T18:30:31.742771+01:00"
+      }
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "page": 1,
+      "pages": 1,
+      "count": 5
+    }
+  }
+}
