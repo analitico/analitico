@@ -1,8 +1,10 @@
 
+import api.test
+
 from django.test import TestCase
 from rest_framework.test import APITestCase
 
-class PingApiTests(APITestCase):
+class PingApiTests(api.test.APITestCase):
 
     def OFFtest_api_ping(self):
         response = self.client.post('/api/v1/ping', { 'test1': 'value1', 'test2': 'value2' }, format='json')
