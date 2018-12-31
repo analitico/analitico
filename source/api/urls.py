@@ -20,7 +20,6 @@ router.register('tokens', api.views.TokenViewSet, basename='token')
 
 urlpatterns = router.urls + [
     
-    path('project/<str:project_id>/', api.views.handle_prj),
     path('project/<str:project_id>/training', api.views.handle_prj_training),
     path('project/<str:project_id>/inference', api.views.handle_prj_inference),
     path('project/<str:project_id>/upload/<str:path>', api.views.handle_prj_upload),
