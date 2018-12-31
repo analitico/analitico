@@ -16,5 +16,15 @@ class SwaggerApiTests(APITestCase):
         self.assertEqual(data['info']['title'], 'Analitico API')
         self.assertEqual(data['info']['contact']['email'], 'support@analitico.ai')
         self.assertEqual(data['basePath'], '/api/v1')
-        self.assertEqual(data['consumes'][0], 'application/vnd.api+json')
-        self.assertEqual(data['produces'][0], 'application/vnd.api+json')
+        self.assertEqual(data['consumes'][0], 'application/json')
+        self.assertEqual(data['produces'][0], 'application/json')
+
+
+    def test_api_swagger_ui(self):
+        """ Check swagger UI page with API documentation """
+        url = reverse('api-docs')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_text, 'OK')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<title>Analitico API</title>')
