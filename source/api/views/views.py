@@ -109,34 +109,6 @@ def handle_prj_training(request: Request, project_id: str) -> Response:
         raise NotFound('Project ' + project_id + ' could not be found')
 
 
-@api_view(['GET', 'POST'])
-def handle_prj_inference(request: Request, project_id: str) -> Response:
-    """ Run inference on a given project id using its active trained model """
-    logger.info('handle_prj_inference - project_id: %s', project_id)
-    started_on = time_ms()
-    api_check_authorization(request, project_id)
-
-    # retrieve project, model and active training session
-    project, model = get_project_model(project_id)
-    training = api.models.Training.objects.get(pk=project.training_id) if project.training_id else None
-
-    if not project.training_id:
-        raise NotFound('Project ' + project_id + ' has not been trained yet.')
-
-    model.settings = training.settings
-    model.training = training.results
-
-    request_data = api_get_parameter(request, 'data')
-    if request_data is None:
-        raise ParseError("API call should include 'data' field (see documentation).")
-
-    results = model.predict(request_data)
-    results['meta']['total_ms'] = time_ms(started_on)
-
-    api.utilities.api_save_call(request, results)
-    return Response(results)
-
-
 @api_view(['PUT'])
 def handle_prj_upload(request: Request, project_id:str, path: str) -> Response:
     """ Uploads an asset related to a project or gets upload keys to upload directly to google storage """

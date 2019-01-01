@@ -12,7 +12,6 @@ class JSONRenderer(rest_framework.renderers.JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         # change 'results' to 'data' to be more json:api-ish
         results = data.pop('results', None)
-        data = {
-            'data': results if results is not None else data
-        }
+        if results is not None:
+            data = { 'data': results }
         return super().render(data, accepted_media_type, renderer_context)

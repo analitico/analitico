@@ -62,7 +62,7 @@ def api_exception_handler(exc: Exception, context) -> Response:
             # https://jsonapi.org/format/#errors
             'status': str(exc.status_code),
             'code': exc.default_code,
-            'detail': exc.default_detail
+            'detail': str(exc) # could return exc.default_detail if no details
         }}, exc.status_code)
     if isinstance(exc, django.http.Http404):
         return Response({ 'error': {
@@ -126,5 +126,3 @@ def api_wrapper(method, request, **kwargs) -> {}:
         # TODO: track errors in Google Analytics
 
     return Response(results)
-
-
