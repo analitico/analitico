@@ -8,6 +8,7 @@ certifi==2018.8.24
 cffi==1.11.5
 chardet==3.0.4
 click==6.7
+coreapi==2.3.3
 coreschema==0.0.4
 cryptography==2.4.2
 decorator==4.3.0
@@ -64,6 +65,7 @@ parso==0.3.1
 pep8-naming==0.4.1
 pexpect==4.6.0
 pickleshare==0.7.5
+pkg-resources==0.0.0
 prometheus-client==0.5.0
 prompt-toolkit==2.0.7
 prospector==1.1.6.2
@@ -106,6 +108,7 @@ terminado==0.8.1
 testpath==0.4.2
 tornado==5.1.1
 traitlets==4.3.2
+typed-ast==1.1.1
 uritemplate==3.0.0
 urllib3==1.24.1
 validate-email==1.3
