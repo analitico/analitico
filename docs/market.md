@@ -26,3 +26,5 @@ https://www.crunchbase.com/organization/datascience-inc
 Python client library to access datasets, etc with token  
 https://github.com/Azure/Azure-MachineLearning-ClientLibrary-Python
 
+So, what do you want to find out?  
+https://azuremlsimpleds.azurewebsites.net/simpleds/
