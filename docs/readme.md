@@ -52,3 +52,15 @@ Workspace
 
 Ideas:
     - For notebooks could use Colocation with custom SDK keys and code that access platform contents
+
+
+##
+## BigML
+##
+
+dashboard
+
+organization
+  https://bigml.com/dashboard/organization/acmeinc
+  Organizations allow several users to work on the same projects, 
+  using the same Dashboard, but at different levels of privileges
