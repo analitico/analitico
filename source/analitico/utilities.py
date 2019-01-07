@@ -170,3 +170,16 @@ def get_dict_dot(d:dict, key:str, default=None):
     except KeyError:
         pass
     return default
+
+
+def set_dict_dot(d:dict, key:str, value=None):
+    """ Sets an entry from a dictionary using dot notation key, eg: this.that.something """
+    if isinstance(d, dict) and key:
+        split = key.split('.')
+        subkey = split[0]
+        if len(split) == 1:
+            d[subkey] = value
+            return
+        if not (subkey in d):
+            d[subkey] = None
+        set_dict_dot(d[subkey], key[len(subkey)+1:], value)
