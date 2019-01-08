@@ -30,16 +30,6 @@ import s24.models
 # https://www.django-rest-framework.org/topics/documenting-your-api/
 # https://www.django-rest-framework.org/api-guide/viewsets/
 
-MODELS = {
-    # generic regressor from tabular data
-    'tabular-regressor-model': analitico.models.TabularRegressorModel,
-    # model to estimate s24 order time    
-    's24-order-time-model': s24.models.OrderTimeModel,
-    # model to sort s24 orders based on supermarket layout    
-    's24-order-sorting-model': s24.models.OrderSortingModel,
-    # model to predict if items may be out of stock    
-    's24-out-of-stock-model': s24.models.OutOfStockModel,
-}
 
 ##
 ## Utility methods
@@ -51,20 +41,6 @@ def get_request_data_and_query(request):
         data[key] = value if len(value) != 1 else value[0]
     return data
 
-
-def get_project_model(project_id: str) -> (api.models.Project, analitico.models.AnaliticoModel):
-    """ Returns an initialized model for the given project """
-    try:
-        project = api.models.Project.objects.get(pk=project_id)
-        settings = project.settings
-        # TODO check access permissions
-        try:
-            return project, MODELS[settings['model_id']](settings)
-        except Exception:
-            pass
-        return project, MODELS[project_id + '-model'](settings)
-    except ObjectDoesNotExist:
-        raise NotFound('Model for ' + project_id + ' was not found')
 
 
 
@@ -118,6 +94,7 @@ def handle_prj_upload(request: Request, project_id:str, path: str) -> Response:
     blobname = 'uploads/' + project_id + '/' + slugify(name) + '.' + slugify(ext)
     response = analitico.storage.upload_authorization(blobname)
     return Response(response)
+
 
 ##
 ## Training APIs (list, activate)

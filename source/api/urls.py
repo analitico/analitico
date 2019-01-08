@@ -15,8 +15,13 @@ with open(description_filename) as f:
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.SimpleRouter()
-router.register('projects', api.views.ProjectViewSet, basename='project')
+
+router.register('workspaces', api.views.WorkspaceViewSet, basename='workspace')
+router.register('datasets', api.views.DatasetViewSet, basename='dataset')
+
 router.register('tokens', api.views.TokenViewSet, basename='token')
+router.register('projects', api.views.ProjectViewSet, basename='project')
+router.register('trainings', api.views.TrainingViewSet, basename='training')
 
 urlpatterns = router.urls + [
     

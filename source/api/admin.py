@@ -5,12 +5,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import ugettext_lazy as _
 
-from .models import User
-from .models import Token
-from .models import Call
-
-from .models import Project
-from .models import Training
+from .models import User, Token, Call, Project, Training
+from .models import Workspace, Dataset, Recipe
 
 # TODO customize admin site
 # https://stackoverflow.com/questions/4938491/django-admin-change-header-django-administration-text/24983231#24983231
@@ -41,13 +37,13 @@ class UserAdmin(DjangoUserAdmin):
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'name', 'created_at')
-    ordering = ('user', 'name', 'created_at') 
+    ordering = ('user', 'name', '-created_at') 
 
 
 @admin.register(Call)
 class ApiCallAdmin(admin.ModelAdmin):
     list_display = ('id', 'token', 'created_at')   
-    ordering = ('created_at',) 
+    ordering = ('-created_at',) 
 
 
 @admin.register(Project)
@@ -58,4 +54,31 @@ class ProjectAdmin(admin.ModelAdmin):
 @admin.register(Training)
 class TrainingAdmin(admin.ModelAdmin):
     list_display = ('id', 'project_id', 'status', 'is_active', 'records', 'rmse', 'created_at')
-    ordering = ('created_at',) 
+    ordering = ('-updated_at',) 
+
+#
+# Items
+#
+
+@admin.register(Workspace)
+class WorkspaceAdmin(admin.ModelAdmin):
+    fields = ('id', 'user', 'group', 'title', 'description', 'attributes')
+    list_display = ('id', 'user', 'group', 'title', 'description', 'notes', 'created_at', 'updated_at', 'attributes')
+    search_fields = ('id', 'user', 'group', 'title', 'description', 'attributes')
+    ordering = ('-updated_at',) 
+
+
+@admin.register(Dataset)
+class DatasetAdmin(admin.ModelAdmin):
+    fields = ('id', 'workspace', 'title', 'description', 'attributes')
+    list_display = ('id', 'workspace', 'title', 'description', 'notes', 'created_at', 'updated_at', 'attributes')
+    search_fields = ('id', 'title', 'description', 'attributes')
+    ordering = ('-updated_at',) 
+
+
+@admin.register(Recipe)
+class RecipeAdmin(admin.ModelAdmin):
+    fields = ('id', 'workspace', 'title', 'description', 'attributes')
+    list_display = ('id', 'workspace', 'title', 'description', 'notes', 'created_at', 'updated_at', 'attributes')
+    search_fields = ('id', 'title', 'description', 'attributes')
+    ordering = ('-updated_at',) 
