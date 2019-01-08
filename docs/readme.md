@@ -74,3 +74,7 @@ organization
 ##
 
 https://themes.getbootstrap.com/product/hyper-responsive-admin-dashboard-template/
+
+AngularJS vs React
+https://appinventiv.com/blog/react-vs-angular
+https://www.gatsbyjs.org/
