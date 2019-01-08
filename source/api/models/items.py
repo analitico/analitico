@@ -11,10 +11,10 @@ from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
 
 WORKSPACE_PREFIX = 'ws_'
-PROJECT_PREFIX   = 'prj_'
+PROJECT_PREFIX   = 'pj_'
 DATASET_PREFIX   = 'ds_'
 RECIPE_PREFIX    = 'rx_'
-MODEL_PREFIX     = 'mdl_'
+MODEL_PREFIX     = 'ml_'
 
 # Most of these models have similar functionality and attributes so the most logical thing
 # would be to implement an abstract Model and then inherit for all the concrete subclasses.
