@@ -62,6 +62,7 @@ def api_exception_handler(exc: Exception, context) -> Response:
             # https://jsonapi.org/format/#errors
             'status': str(exc.status_code),
             'code': exc.default_code,
+            # TODO could check to see how to return error details passed as args[] with specificic per-parameter message for example when validating data
             'detail': str(exc) # could return exc.default_detail if no details
         }}, exc.status_code)
     if isinstance(exc, django.http.Http404):
