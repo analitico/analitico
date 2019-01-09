@@ -61,6 +61,12 @@ class SerializerMixin():
     def to_internal_value(self, data):        
         """ Convert dictionary to internal representation (all unknown fields go into json) """
 
+        # If this payload is in json:api format it will have a 'data'
+        # element which contains the actual payload. If in json format
+        # it will just have a regular dictionary with the data directly in it
+        if 'data' in data:
+            data = data['data']
+
         # works with input in json:api style (attributes) or flat json
         attributes = data.pop('attributes') if 'attributes' in data else data.copy()
 
@@ -99,24 +105,48 @@ class WorkspaceSerializer(SerializerMixin, serializers.ModelSerializer):
         """ Creates a workspace and assigns it to the currently authenticated user and the requested group (if any) """
 
         groupname = get_dict_dot(validated_data, 'group.name')
-        validated_data.pop('user') # ignore and use authenticated user instead
-        validated_data.pop('group') # pop and check if user belongs to group
+        
+        if 'user' in validated_data: validated_data.pop('user') # ignore and use authenticated user instead
+        if 'group' in validated_data: validated_data.pop('group') # pop and check if user belongs to group
 
         workspace = Workspace(**validated_data)
         workspace.user = self.context['request'].user
 
-        try:
-            group = workspace.user.groups.get(name=groupname)
-            workspace.group = group
-        except ObjectDoesNotExist:
-            raise serializers.ValidationError({
-                'group': _('The specified group does not exist or the user does not belong to the group.')
-            })
-            # TODO figure out why the payload in the exception above is flattened when the error is reported
-            # raise exceptions.ValidationError(_('The specified group does not exist or the user does not belong to the group.'))
+        if groupname:
+            try:
+                group = workspace.user.groups.get(name=groupname)
+                workspace.group = group
+            except ObjectDoesNotExist:
+                raise serializers.ValidationError({
+                    'group': _('The specified group does not exist or the user does not belong to the group.')
+                })
+                # TODO figure out why the payload in the exception above is flattened when the error is reported
+                # raise exceptions.ValidationError(_('The specified group does not exist or the user does not belong to the group.'))
 
         workspace.save()
         return workspace
+
+
+    def update(self, instance, validated_data):
+        """ Update item even partially and with unknown 'attributes' keys. """
+
+        # 'id' is immutable
+        # 'type' is immutable
+        # TODO should 'user' and 'group' be updateable?
+
+        if 'id' in validated_data:
+            instance.id = validated_data['id']
+        if 'title' in validated_data:
+            instance.title = validated_data['title']
+        if 'description' in validated_data:
+            instance.description = validated_data['description']
+        if 'attributes' in validated_data:
+            for (key, value) in validated_data['attributes'].items():
+                # TODO we should consider validating attributes against a fixed schema
+                instance.set_attribute(key, value)
+
+        instance.save()
+        return instance
 
 
 ##
@@ -165,7 +195,7 @@ class WorkspaceViewSet(ViewSetMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.is_superuser:
             return Workspace.objects.all()
-        return Workspace.objects.filter(workspace__user=self.request.user)
+        return Workspace.objects.filter(user=self.request.user)
 
 
 
