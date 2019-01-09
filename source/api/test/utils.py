@@ -11,14 +11,16 @@ from api.models import Project, Token, Call, User
 class APITestCase(rest_framework.test.APITestCase):
     """ Base class for testing analitico APIs """
 
-    def setUp(self):
-        """ Prepare test users with test auth tokens """
-
+    def setup_basics(self):
         self.user1 = User.objects.create_user(email='user1@analitico.ai')
         self.user2 = User.objects.create_user(email='user2@analitico.ai')
-
         self.token1 = Token.objects.create(pk='tok_user1', user=self.user1)
         self.token2 = Token.objects.create(pk='tok_user2', user=self.user2)
+
+
+    def setUp(self):
+        """ Prepare test users with test auth tokens """
+        self.setup_basics()
 
 
     def auth_token(self, token=None):
