@@ -10,22 +10,23 @@ from django.utils.translation import ugettext_lazy as _
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
 
-WORKSPACE_PREFIX = 'ws_'
-PROJECT_PREFIX   = 'pj_'
-DATASET_PREFIX   = 'ds_'
-RECIPE_PREFIX    = 'rx_'
-MODEL_PREFIX     = 'ml_'
+WORKSPACE_PREFIX = 'ws_' # workspace with rights and one or more projects and other resources
+DATASET_PREFIX   = 'ds_' # dataset source, filters, etc
+RECIPE_PREFIX    = 'rx_' # machine learning recipe (an experiment with modules, code, etc) 
+MODEL_PREFIX     = 'ml_' # trained machine learning model (not a django model)
+SERVICE_PREFIX   = 'ws_' # webservice used to deploy predictive services from models
+
 
 # Most of these models have similar functionality and attributes so the most logical thing
 # would be to implement an abstract Model and then inherit for all the concrete subclasses.
-# However for some reason, probably a bug, the json field does not work properly in the 
-# admin interface if it belongs to super. Since the fields are not too many I decided to
-# build a mixing for the shared features and just copy the fields in each model.
+# However for some reason, probably a django bug, the json field does not work properly in the 
+# admin interface if it belongs to a superclass. Since the fields are not too many I decided to
+# build a mixin for the shared features and just copy the fields manually in each model, not DRY but works.
 # The reason for using a json dictionary instead of changing the schema with every new feature
-# is that it requires less work and fewer migrations and it lets old and new code coexist on 
-# the same SQL server without having too many operational headaches. 
+# is that it requires less code and fewer migrations and it lets old and new code coexist on 
+# the same SQL server without having too many operational headaches. This is similar to a NoSQL approach.
 
-class ModelMixin():
+class AttributesMixin():
 
     # defined in subclass
     id = None
@@ -71,7 +72,7 @@ class ModelMixin():
 def generate_workspace_id():
     return WORKSPACE_PREFIX + get_random_string()
 
-class Workspace(ModelMixin, models.Model):
+class Workspace(AttributesMixin, models.Model):
     """ A workspace can contain multiple projects, datasets, models, access rights, web services, etc """
 
     # Unique id has a type prefix + random string
@@ -106,7 +107,7 @@ class Workspace(ModelMixin, models.Model):
 def generate_dataset_id():
     return DATASET_PREFIX + get_random_string()
 
-class Dataset(ModelMixin, models.Model):
+class Dataset(AttributesMixin, models.Model):
     """ A dataset contains a data source description, its metadata and its data """
 
     # Unique id has a type prefix + random string
@@ -146,11 +147,77 @@ class Dataset(ModelMixin, models.Model):
 def generate_recipe_id():
     return RECIPE_PREFIX + get_random_string()
 
-class Recipe(ModelMixin, models.Model):
+class Recipe(AttributesMixin, models.Model):
     """ A dataset contains a data source description, its metadata and its data """
 
     # Unique id has a type prefix + random string
     id = models.SlugField(primary_key=True, default=generate_recipe_id, verbose_name=_('Id')) 
+
+    # Model is always owned by one and only one workspace
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+
+    # Title is text only, does not need to be unique, just descriptive
+    title = models.TextField(blank=True, verbose_name=_('Title'))
+
+    # Description (markdown supported)
+    description = models.TextField(blank=True, verbose_name=_('Description'))
+
+    # Time when created
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created'))
+
+    # Time when last updated
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Updated'))
+
+    # Additional attributes are stored as json (used by AttributesMixin)
+    attributes = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, blank=True, null=True, verbose_name=_('Attributes'))
+
+
+##
+## Model - a trained machine learning model (not model in the sense of Django db model)
+##
+
+def generate_model_id():
+    return MODEL_PREFIX + get_random_string()
+
+class Model(AttributesMixin, models.Model):
+    """ A trained machine learning model which can be used for inferences """
+
+    # Unique id has a type prefix + random string
+    id = models.SlugField(primary_key=True, default=generate_model_id, verbose_name=_('Id')) 
+
+    # Model is always owned by one and only one workspace
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+
+    # Title is text only, does not need to be unique, just descriptive
+    title = models.TextField(blank=True, verbose_name=_('Title'))
+
+    # Description (markdown supported)
+    description = models.TextField(blank=True, verbose_name=_('Description'))
+
+    # Time when created
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created'))
+
+    # Time when last updated
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Updated'))
+
+    # Additional attributes are stored as json (used by AttributesMixin)
+    attributes = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, blank=True, null=True, verbose_name=_('Attributes'))
+
+
+
+
+##
+## Service - webservice used to deploy predictive services from models
+##
+
+def generate_service_id():
+    return SERVICE_PREFIX + get_random_string()
+
+class Service(AttributesMixin, models.Model):
+    """ A webservice used to deploy predictive services from models """
+
+    # Unique id has a type prefix + random string
+    id = models.SlugField(primary_key=True, default=generate_service_id, verbose_name=_('Id')) 
 
     # Model is always owned by one and only one workspace
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
