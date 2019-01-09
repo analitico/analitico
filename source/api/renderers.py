@@ -11,7 +11,7 @@ class JSONRenderer(rest_framework.renderers.JSONRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         # change results to { 'data': results } to be more json:api-ish
-        if not 'error' in data and not 'data' in data:
+        if data and (not 'error' in data) and (not 'data' in data):
             data = {
                 'data': data
             }
