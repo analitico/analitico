@@ -47,7 +47,9 @@ class AttributesMixin():
     def set_attribute(self, key, value):
         if not self.attributes:
             self.attributes = collections.OrderedDict()
-        set_dict_dot(self.attributes, key, value)
+        attributes = self.attributes
+        set_dict_dot(attributes, key, value)
+        self.attributes = attributes # need to assign or it won't save() it...
 
     @property
     def notes(self):
