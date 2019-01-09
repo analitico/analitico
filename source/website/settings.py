@@ -14,20 +14,25 @@ import sentry_sdk
 import raven
 import sys
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = False
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 # Project is always started with currenct directory in /analitico/source/
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
+## Some settings like passwords, keys, etc are private and should not be in the git repo.
+## These are stored in a separate private-settings.py file which is loaded at runtime
+## and added to the settings above. This also makes it easier to have separate development
+## settings vs production settings, etc. A blank template is available and can be customized.
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '111&xe5+tyf29&&%t!jk9-v)!v07gc%0ha4*4#8e+rfd@7i80#'
+# customize from settings_secrets.template.py as needed
+from .settings_secrets import *
+#from .settings_secrets_dev import *
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
 
+# List of domains serving the app, can be customized as needed
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
@@ -40,8 +45,8 @@ ALLOWED_HOSTS = [
     '159.69.242.143'        # s5.analitico.ai
 ]
 
-# Application definition
 
+# Application definition
 INSTALLED_APPS = [
     'api',
     's24',
@@ -90,31 +95,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'website.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-# https://dev.mysql.com/doc/connector-python/en/connector-python-django-backend.html
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': 'ai',
-        'USER': 'analitico',
-        'PASSWORD': '4eRwg67hj',
-        'HOST': 's1.analitico.ai',
-        'PORT': '3306',
- 
-#       'PASSWORD': 'xxx',
-#       'HOST': '127.0.0.1',
-    }
-}
 
 if 'test' in sys.argv or 'test_coverage' in sys.argv: # Covers regular testing and django-coverage
     DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
-
-# TODO use environment variable or external file to hide password:
-#   'OPTIONS': {
-#     'read_default_file': '/etc/mysql/my.cnf',
-#   }
 
 
 # User substitution
@@ -155,6 +138,8 @@ STATIC_ROOT = "static/"
 # TODO better mechanism for auth tokens
 # https://github.com/James1345/django-rest-knox
 
+APPEND_SLASH = False
+
 REST_FRAMEWORK = {
 
     # custom exception handler reports exception with specific formatting
@@ -175,7 +160,7 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
 #       'rest_framework_json_api.renderers.JSONRenderer',
 #       'rest_framework.renderers.JSONRenderer',
-        'api.renderers.JSONRenderer',
+        'api.renderers.JSONRenderer', # jsonapi but simplified
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
 
@@ -193,8 +178,9 @@ REST_FRAMEWORK = {
         'filter[search]',
     
     'TEST_REQUEST_RENDERER_CLASSES': (
-#           'rest_framework_json_api.renderers.JSONRenderer',
-            'rest_framework.renderers.JSONRenderer',
+#       'rest_framework_json_api.renderers.JSONRenderer',
+#       'rest_framework.renderers.JSONRenderer',
+        'api.renderers.JSONRenderer', # jsonapi but simplified
         ),
     
     'TEST_REQUEST_DEFAULT_FORMAT': 

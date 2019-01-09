@@ -10,3 +10,4 @@ _*.pyx
 venv
 
 /source/django
+source/website/settings_secrets.py
