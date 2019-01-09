@@ -2,10 +2,15 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "/home/gionata/github/analitico-ops"
+		},
+		{
+			"path": "/home/gionata/github/analitico-private"
 		}
 	],
 	"settings": {
-		"python.venvPath": "~/envs",
 		"python.pythonPath": "venv/bin/python"
 	}
 }
