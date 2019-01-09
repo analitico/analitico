@@ -54,7 +54,8 @@
                 "-v",
                 "2"
             ],
-            "django": true
+            "django": true,
+            "debugStdLib": true
         },
         {
             "name": "Python: Trainer",
