@@ -1,33 +1,62 @@
 
+import os
+
 from django.test import TestCase
+from django.urls import reverse
 from rest_framework.test import APITestCase
-from api.models import Token, Call, User
+from analitico.utilities import read_json
 
 import api.models
+import api.test
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
-class ItemsTests(APITestCase):
+ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/assets/'
+
+class ItemsTests(api.test.APITestCase):
+
+    def read_json_asset(self, path):
+        abs_path = os.path.join(ASSETS_PATH, path)
+        return read_json(abs_path)
+
+
+    def get_item(self, item_type, item_id, token=None):
+        url = reverse('api:' + item_type + '-detail', args=(item_id,))
+        self.auth_token(self.token1)
+        response = self.client.get(url, format='json')
+        self.assertIsNotNone(response.data)
+        return response.data
+
+
+    def patch_item(self, item_type, item_id, item, token=None):
+        url = reverse('api:' + item_type + '-detail', args=(item_id,))
+        self.auth_token(self.token1)
+        response = self.client.patch(url, item, format='json')
+        return response.data
+
+
+    def upload_items(self, endpoint, prefix):
+        for path in os.listdir(ASSETS_PATH):
+            if path.startswith(prefix):
+                item = self.read_json_asset(path)
+                self.auth_token(self.token1)
+                response = self.client.post(endpoint, { 'data': item }, format='json')
+                self.assertIsNotNone(response.data)
+
+                created_item = response.data
+                self.assertEqual(item['id'], created_item['id'])
+                self.assertEqual(item['type'], created_item['type'])
+                self.assertEqual(item['attributes']['title'], created_item['attributes']['title'])
+                self.assertEqual(item['attributes']['description'], created_item['attributes']['description'])
+
 
     def setUp(self):
-        try:
-            self.user1 = User.objects.create_user(email='uploader1@analitico.ai')
-            self.user2 = User.objects.create_user(email='uploader2@analitico.ai')
+        self.setup_basics()
+        try: 
+            url = reverse('api:workspace-list')
+            self.upload_items(url, api.models.WORKSPACE_PREFIX)
 
-            self.token1 = Token.objects.create(pk='tok_uploader1', user=self.user1)
-            self.token1.user = self.user1
-            self.token1.save()
-            self.token2 = Token.objects.create(pk='tok_uploader2')
-            self.token2.user = self.user2
-            self.token2.save()
-
-            self.prj1 = api.models.Project.objects.create(pk='up-prj-001')
-            self.prj1.owner = self.user1
-            self.prj1.save()
-            self.prj2 = api.models.Project.objects.create(pk='up-prj-002')
-            self.prj2.owner = self.user2
-            self.prj2.save()
         except Exception as exc:
             print(exc)
             raise exc
@@ -49,4 +78,56 @@ class ItemsTests(APITestCase):
 
         item = api.models.Service()
         self.assertTrue(item.id.startswith(api.models.SERVICE_PREFIX))
+
+
+    ##
+    ## Workspace
+    ##
+
+    def test_workspace_get(self):
+        item = self.get_item('workspace', 'ws_001', self.token1)
+        self.assertEqual(item['id'], 'ws_001')
+        self.assertEqual(item['attributes']['title'], 'This is the title')
+        self.assertEqual(item['attributes']['description'], 'This is the description')
+
+
+    def test_workspace_patch_title(self):
+        item = self.get_item('workspace', 'ws_001', self.token1)
+        self.assertEqual(item['id'], 'ws_001')
+        self.assertEqual(item['attributes']['title'], 'This is the title')
+        self.assertEqual(item['attributes']['description'], 'This is the description')
+
+        patch = {
+            'data': {
+                'id': 'ws_001',
+                'attributes': {
+                    'title': 'This is the patched title'
+                }
+            }
+        }
+        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
+        self.assertEqual(patch_item['attributes']['title'], 'This is the patched title')
+        self.assertEqual(patch_item['attributes']['description'], 'This is the description')
+
+
+
+    def test_workspace_patch_made_up_attribute(self):
+        item = self.get_item('workspace', 'ws_001', self.token1)
+        self.assertEqual(item['id'], 'ws_001')
+        self.assertEqual(item['attributes']['title'], 'This is the title')
+        self.assertEqual(item['attributes']['description'], 'This is the description')
+        self.assertFalse('made_up_attribute' in item['attributes'])
+
+        patch = {
+            'data': {
+                'id': 'ws_001',
+                'attributes': {
+                    'made_up_attribute': 'This is a made up attribute'
+                }
+            }
+        }
+        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
+        self.assertEqual(patch_item['attributes']['title'], 'This is the title')
+        self.assertEqual(patch_item['attributes']['description'], 'This is the description')
+        self.assertEqual(patch_item['attributes']['made_up_attribute'], 'This is a made up attribute')
 
