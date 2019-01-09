@@ -1,0 +1,10 @@
+{
+    "type": "workspace",
+    "id": "ws_002",
+    "attributes": {
+        "user": "user2@analitico.ai",
+        "title": "This is the title",
+        "description": "This is the description",
+        "notes": "Some notes here"
+    }
+}
