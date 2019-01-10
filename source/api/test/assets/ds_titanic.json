@@ -11,16 +11,16 @@
             "url": "https://storage.googleapis.com/public.analitico.ai/data/titanic/train.csv",
             "columns": [
                 { "name": "PassengerId", "type": "numeric", "index": true },
-                { "name": "Survived", "type": "categorical", "label": true },
-                { "name": "Pclass", "type": "text" },
+                { "name": "Survived", "type": "categorical", "label": true, "notes": "Survival: 0 = No, 1 = Yes" },
+                { "name": "Pclass", "type": "text", "notes": "Ticket class 1 = 1st, 2 = 2nd, 3 = 3rd. A proxy for socio-economic status (SES): 1st = Upper, 2nd = Middle, 3rd = Lower" },
                 { "name": "Sex", "type": "categorical" },
-                { "name": "Age", "type": "numeric" },
-                { "name": "SibSp", "type": "categorical" },
-                { "name": "Parch", "type": "categorical" },
-                { "name": "Ticket", "type": "text" },
+                { "name": "Age", "type": "numeric", "notes": "Age is fractional if less than 1. If the age is estimated, is it in the form of xx.5" },
+                { "name": "SibSp", "type": "categorical", "notes": "The dataset defines family relations in this way...\nSibling = brother, sister, stepbrother, stepsister\nSpouse = husband, wife (mistresses and fiancés were ignored)" },
+                { "name": "Parch", "type": "categorical", "notes": "The dataset defines family relations in this way...\nParent = mother, father\nChild = daughter, son, stepdaughter, stepson\nSome children travelled only with a nanny, therefore parch=0 for them." },
+                { "name": "Ticket", "type": "text", "notes": "Ticket number fare" },
                 { "name": "Fare", "type": "numerical" },
-                { "name": "Cabin", "type": "categorical" },
-                { "name": "Embarked", "type": "categorical" }
+                { "name": "Cabin", "type": "categorical", "notes": "Cabin number" },
+                { "name": "Embarked", "type": "categorical", "notes": "Port of Embarkation C = Cherbourg, Q = Queenstown, S = Southampton" }
             ]
         }
     }
