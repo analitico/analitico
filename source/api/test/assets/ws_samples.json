@@ -1,0 +1,10 @@
+{
+    "type": "workspace",
+    "id": "ws_samples",
+    "attributes": {
+        "user": "user1@analitico.ai",
+        "title": "Samples",
+        "description": "A collection of samples recipes",
+        "notes": "Some notes here"
+    }
+}

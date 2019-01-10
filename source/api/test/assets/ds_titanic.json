@@ -1,0 +1,27 @@
+{
+    "type": "dataset",
+    "id": "ds_titanic",
+    "attributes": {
+        "workspace": "ws_samples",
+        "title": "Kaggle - Titanic training dataset (train.csv)",
+        "description": "https://www.kaggle.com/c/titanic",
+        "notes": "",
+        "source": {
+            "type": "csv",
+            "url": "https://storage.googleapis.com/public.analitico.ai/data/titanic/train.csv",
+            "columns": [
+                { "name": "PassengerId", "type": "numeric", "index": true },
+                { "name": "Survived", "type": "categorical", "label": true },
+                { "name": "Pclass", "type": "text" },
+                { "name": "Sex", "type": "categorical" },
+                { "name": "Age", "type": "numeric" },
+                { "name": "SibSp", "type": "categorical" },
+                { "name": "Parch", "type": "categorical" },
+                { "name": "Ticket", "type": "text" },
+                { "name": "Fare", "type": "numerical" },
+                { "name": "Cabin", "type": "categorical" },
+                { "name": "Embarked", "type": "categorical" }
+            ]
+        }
+    }
+}

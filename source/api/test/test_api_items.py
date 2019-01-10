@@ -76,6 +76,9 @@ class ItemsTests(api.test.APITestCase):
             url = reverse('api:workspace-list')
             self.upload_items(url, api.models.WORKSPACE_PREFIX)
 
+            url = reverse('api:dataset-list')
+            self.upload_items(url, api.models.DATASET_PREFIX)
+
         except Exception as exc:
             print(exc)
             raise exc
@@ -287,6 +290,17 @@ class ItemsTests(api.test.APITestCase):
         # ws_002 is owned by user2@analitico.ai but user1 is an admin so he should be able to delete it
         item = self.delete_item('workspace', 'ws_002', token=self.token1, status_code=status.HTTP_204_NO_CONTENT)
         self.assertIsNone(item)
+
+
+    ##
+    ## Workspace
+    ##
+
+    def test_workspace_get_titanic(self):
+        item = self.get_item('dataset', 'ds_titanic', self.token1)
+        self.assertEqual(item['id'], 'ds_titanic')
+        self.assertEqual(item['attributes']['title'], 'Kaggle - Titanic training dataset (train.csv)')
+        self.assertEqual(item['attributes']['description'], 'https://www.kaggle.com/c/titanic')
 
 
 
