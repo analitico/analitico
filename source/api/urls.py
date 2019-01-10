@@ -14,7 +14,7 @@ with open(description_filename) as f:
     description = f.read()
 
 # Routers provide an easy way of automatically determining the URL conf.
-router = routers.SimpleRouter()
+router = routers.SimpleRouter(trailing_slash=False)
 
 router.register('workspaces', api.views.WorkspaceViewSet, basename='workspace')
 router.register('datasets', api.views.DatasetViewSet, basename='dataset')

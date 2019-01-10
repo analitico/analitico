@@ -28,7 +28,7 @@ class ProjectsApiTests(api.test.APITestCase):
 
     def test_project_api_with_existing_project(self):
         self.auth_token(self.token1)
-        response = self.client.get('/api/v1/projects/test-project1/', format='json')
+        response = self.client.get('/api/v1/projects/test-project1', format='json')
         self.assertIsNotNone(response.data)
         settings = response.data['settings']
         self.assertIsNotNone(settings)
@@ -38,7 +38,7 @@ class ProjectsApiTests(api.test.APITestCase):
 
     def test_project_api_with_existing_project_no_token(self):
         self.auth_token()
-        response = self.client.get('/api/v1/projects/s24-order-time/', format='json')
+        response = self.client.get('/api/v1/projects/s24-order-time', format='json')
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.status_text, 'Unauthorized')
         self.assertEqual(response.data['error']['code'], 'not_authenticated')
@@ -46,7 +46,7 @@ class ProjectsApiTests(api.test.APITestCase):
 
     def test_project_api_with_missing_project(self):
         self.auth_token(self.token1)
-        response = self.client.get('/api/v1/projects/fake-id/', format='json')
+        response = self.client.get('/api/v1/projects/fake-id', format='json')
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.reason_phrase, 'Not Found')
         self.assertEqual(response.data['error']['code'], 'Not Found')
@@ -55,7 +55,7 @@ class ProjectsApiTests(api.test.APITestCase):
 
     def test_project_api_with_missing_project_no_token(self):
         self.auth_token()
-        response = self.client.get('/api/v1/projects/fake-id/', format='json')
+        response = self.client.get('/api/v1/projects/fake-id', format='json')
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.reason_phrase, 'Unauthorized')
         self.assertEqual(response.data['error']['code'], 'not_authenticated')
