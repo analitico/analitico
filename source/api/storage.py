@@ -2,15 +2,14 @@
 import django.conf
 
 from rest_framework.exceptions import NotFound
-
 from pprint import pprint
 
 import libcloud
 import libcloud.storage.base
 import libcloud.storage.types
+import libcloud.storage.drivers.google_storage
 
-from libcloud.storage.drivers.google_storage import GoogleStorageDriver
-
+# Storage options are configured from json blobs looking like this:
 # {
 #   "driver": "google-storage",
 #   "container": "data.analitico.ai",
@@ -21,6 +20,9 @@ from libcloud.storage.drivers.google_storage import GoogleStorageDriver
 #     "project": "analitico-api"
 #   }
 # }
+
+# Apache Libcloud
+# https://libcloud.apache.org
 
 # Storage base APIs
 # https://libcloud.readthedocs.io/en/latest/storage/api.html
@@ -53,11 +55,16 @@ class Storage():
         """ Creates a storage object from a settings dictionary or from default settings if None passed. """
         if settings is None:
             settings = django.conf.settings.ANALITICO_STORAGE
+        if settings['credentials'] is None and settings['driver'] == django.conf.settings.ANALITICO_STORAGE['driver']:
+            settings['credentials'] = django.conf.settings.ANALITICO_STORAGE['credentials']
+
         driver = settings['driver']
         credentials = settings['credentials']
 
         if driver == 'google-storage':
-            return Storage(settings, GoogleStorageDriver(**credentials))
+            driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
+            return Storage(settings, driver)
+            
         # TODO add other cloud providers as we need them
 
         raise NotFound("Storage driver '" + driver + "' was not found.")
