@@ -1,6 +1,7 @@
 
 import os
 
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -293,17 +294,42 @@ class ItemsTests(api.test.APITestCase):
 
 
     ##
-    ## Workspace
+    ## Workspace storage
     ##
 
-    def test_workspace_get_titanic(self):
+    def test_workspace_storage_gcs(self):
+        try:
+            import api.storage
+            import datetime
+            import tempfile
+
+            storage = api.storage.Storage.factory(None)
+            with tempfile.NamedTemporaryFile("w") as tmp1:
+                txt1 = 'Testing cloud storage on ' + datetime.datetime.now().isoformat()
+                tmp1.write(txt1)
+                tmp1.seek(0)
+
+                obj = storage.driver.upload_object(tmp1.name, storage.container, 'test/testing.txt')
+                with tempfile.NamedTemporaryFile("w") as tmp2:
+                    storage.driver.download_object(obj, tmp2.name, overwrite_existing=True)
+                    with open(tmp2.name, "r") as tmp2r:
+                        txt2 = tmp2r.read()
+                        self.assertEqual(txt1, txt2)
+
+        except Exception as exc:
+            raise exc
+
+
+    def test_workspace_storage_gcs2(self):
+        item = self.get_item('workspace', 'ws_storage_gcs', token=self.token1)
+
+
+    ##
+    ## Dataset
+    ##
+
+    def test_dataset_get_titanic(self):
         item = self.get_item('dataset', 'ds_titanic', self.token1)
         self.assertEqual(item['id'], 'ds_titanic')
         self.assertEqual(item['attributes']['title'], 'Kaggle - Titanic training dataset (train.csv)')
         self.assertEqual(item['attributes']['description'], 'https://www.kaggle.com/c/titanic')
-
-
-
-
-
-
