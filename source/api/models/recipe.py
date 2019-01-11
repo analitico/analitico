@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
-from .items import AttributesMixin
+from .items import ItemsMixin
 from .workspace import Workspace
 
 #
@@ -21,7 +21,7 @@ RECIPE_PREFIX = 'rx_' # machine learning recipe (an experiment with modules, cod
 def generate_recipe_id():
     return RECIPE_PREFIX + get_random_string()
 
-class Recipe(AttributesMixin, models.Model):
+class Recipe(ItemsMixin, models.Model):
     """ A dataset contains a data source description, its metadata and its data """
 
     # Unique id has a type prefix + random string

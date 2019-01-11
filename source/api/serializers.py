@@ -16,7 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ParseError
 
-from api.models import AttributesMixin, Workspace, Dataset, Recipe
+from api.models import ItemsMixin, Workspace, Dataset, Recipe
 from analitico.utilities import logger, get_dict_dot
 from api.utilities import time_ms, api_get_parameter, api_check_authorization
 

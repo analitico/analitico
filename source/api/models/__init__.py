@@ -8,7 +8,7 @@ from .project import Project
 from .training import Training
 
 # These models share common structure and functionality via mixin
-from .items import AttributesMixin
+from .items import ItemsMixin
 from .workspace import Workspace, WORKSPACE_PREFIX
 from .dataset import Dataset, DATASET_PREFIX
 from .recipe import Recipe, RECIPE_PREFIX

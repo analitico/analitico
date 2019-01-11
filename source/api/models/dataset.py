@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
-from .items import AttributesMixin
+from .items import ItemsMixin
 from .workspace import Workspace
 
 ##
@@ -21,7 +21,7 @@ DATASET_PREFIX   = 'ds_' # dataset source, filters, etc
 def generate_dataset_id():
     return DATASET_PREFIX + get_random_string()
 
-class Dataset(AttributesMixin, models.Model):
+class Dataset(ItemsMixin, models.Model):
     """ A dataset contains a data source description, its metadata and its data """
 
     # Unique id has a type prefix + random string

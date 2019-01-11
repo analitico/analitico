@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
-from .items import AttributesMixin
+from .items import ItemsMixin
 
 ##
 ## Workspace - A workspace contains projects, datasets, programs, access rights, etc...
@@ -20,7 +20,7 @@ WORKSPACE_PREFIX = 'ws_' # workspace with rights and one or more projects and ot
 def generate_workspace_id():
     return WORKSPACE_PREFIX + get_random_string()
 
-class Workspace(AttributesMixin, models.Model):
+class Workspace(ItemsMixin, models.Model):
     """ A workspace can contain multiple projects, datasets, models, access rights, web services, etc """
 
     # Unique id has a type prefix + random string

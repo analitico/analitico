@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated')),
                 ('attributes', jsonfield.fields.JSONField(blank=True, null=True, verbose_name='Attributes')),
             ],
-            bases=(api.models.items.AttributesMixin, models.Model),
+            bases=(api.models.items.ItemsMixin, models.Model),
         ),
         migrations.CreateModel(
             name='Model',
@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated')),
                 ('attributes', jsonfield.fields.JSONField(blank=True, null=True, verbose_name='Attributes')),
             ],
-            bases=(api.models.items.AttributesMixin, models.Model),
+            bases=(api.models.items.ItemsMixin, models.Model),
         ),
         migrations.CreateModel(
             name='Recipe',
@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated')),
                 ('attributes', jsonfield.fields.JSONField(blank=True, null=True, verbose_name='Attributes')),
             ],
-            bases=(api.models.items.AttributesMixin, models.Model),
+            bases=(api.models.items.ItemsMixin, models.Model),
         ),
         migrations.CreateModel(
             name='Service',
@@ -66,7 +66,7 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated')),
                 ('attributes', jsonfield.fields.JSONField(blank=True, null=True, verbose_name='Attributes')),
             ],
-            bases=(api.models.items.AttributesMixin, models.Model),
+            bases=(api.models.items.ItemsMixin, models.Model),
         ),
         migrations.CreateModel(
             name='Workspace',
@@ -80,7 +80,7 @@ class Migration(migrations.Migration):
                 ('group', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='auth.Group', verbose_name='Group')),
                 ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='User')),
             ],
-            bases=(api.models.items.AttributesMixin, models.Model),
+            bases=(api.models.items.ItemsMixin, models.Model),
         ),
         migrations.AddField(
             model_name='service',

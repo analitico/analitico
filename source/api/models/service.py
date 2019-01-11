@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
-from .items import AttributesMixin
+from .items import ItemsMixin
 from .workspace import Workspace
 
 ##
@@ -21,7 +21,7 @@ SERVICE_PREFIX = 'ws_' # webservice used to deploy predictive services from mode
 def generate_service_id():
     return SERVICE_PREFIX + get_random_string()
 
-class Service(AttributesMixin, models.Model):
+class Service(ItemsMixin, models.Model):
     """ A webservice used to deploy predictive services from models """
 
     # Unique id has a type prefix + random string

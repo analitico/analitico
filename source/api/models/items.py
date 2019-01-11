@@ -19,10 +19,13 @@ from .user import User
 # is that it requires less code and fewer migrations and it lets old and new code coexist on 
 # the same SQL server without having too many operational headaches. This is similar to a NoSQL approach.
 
-class AttributesMixin():
+class ItemsMixin():
 
-    # defined in subclass
+    # Item's unique id (has prefix with item's type, eg: ws_xxx, defined in subclass)
     id = None
+
+    # Workspace that owns this item (or None for workspace itself, defined in subclass)
+    workspace = None
 
     @property
     def type(self):
