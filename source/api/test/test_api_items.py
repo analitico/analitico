@@ -297,7 +297,7 @@ class ItemsTests(api.test.APITestCase):
     ## Workspace storage
     ##
 
-    def test_workspace_storage_gcs(self):
+    def test_workspace_storage(self):
         try:
             import api.storage
             import datetime
@@ -315,7 +315,6 @@ class ItemsTests(api.test.APITestCase):
                     with open(tmp2.name, "r") as tmp2r:
                         txt2 = tmp2r.read()
                         self.assertEqual(txt1, txt2)
-
         except Exception as exc:
             raise exc
 
