@@ -9,7 +9,7 @@
         "storage": {
             "driver": "google-storage",
             "container": "test.analitico.ai",
-            "notes": "credentials block is missing so defaults will be used instead"
+            "notes": "credentials are missing so defaults will be used instead"
         }
     }
 }
