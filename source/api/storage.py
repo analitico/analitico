@@ -56,7 +56,7 @@ class Storage():
         """ Creates a storage object from a settings dictionary or from default settings if None passed. """
         if settings is None:
             settings = django.conf.settings.ANALITICO_STORAGE
-        if settings['credentials'] is None and settings['driver'] == django.conf.settings.ANALITICO_STORAGE['driver']:
+        if 'credentials' not in settings and settings['driver'] == django.conf.settings.ANALITICO_STORAGE['driver']:
             settings['credentials'] = django.conf.settings.ANALITICO_STORAGE['credentials']
 
         driver = settings['driver']
