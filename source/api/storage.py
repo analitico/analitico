@@ -50,6 +50,7 @@ class Storage():
         except libcloud.storage.types.ContainerDoesNotExistError:
             self.container = driver.create_container(settings['container'])            
 
+
     @staticmethod
     def factory(settings: dict):
         """ Creates a storage object from a settings dictionary or from default settings if None passed. """
@@ -70,3 +71,20 @@ class Storage():
         # TODO add other cloud providers as we need them
         raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
 
+
+    def upload_object(self, file_path, object_name, extra=None, headers=None):
+        """ 
+        Upload an object currently located on a disk. 
+        https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.upload_object
+        """
+        upload_obj = self.driver.upload_object(file_path, self.container, object_name, extra, headers)
+        return upload_obj
+
+
+    def upload_object_via_stream(self, iterator, object_name, extra=None, headers=None):
+        """
+        Upload an object using an iterator.
+        https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.upload_object_via_stream
+        """
+        upload_obj = self.driver.upload_object_via_stream(iterator, self.container, object_name, extra, headers)
+        return upload_obj

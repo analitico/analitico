@@ -61,3 +61,29 @@ class AssetsTests(api.test.APITestCase):
     def test_workspace_storage_gcs2(self):
         item = self.get_item('workspace', 'ws_storage_gcs', token=self.token1)
 
+
+    ##
+    ## Assets
+    ##
+
+    def test_asset_upload(self):
+        try:
+            self.auth_token(self.token1)
+
+            # detail=True
+            #url = reverse('api:workspace-pippo', args=('ws_storage_gcs',))
+
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'reverse-dog1.jpg'))
+
+            #url = reverse('api:workspace-pippo')
+            #url = reverse('api:workspace-azione', args=('ws_storage_gcs',))
+            #url = reverse('api:workspace-detail', args=('ws_storage_gcs',))
+
+            image_path = os.path.join(ASSETS_PATH, 'image_dog1.jpg')
+            with open(image_path) as image_file:
+                response = self.client.post(url, { 'name': 'dog1.jpg', 'attachment': image_file }, content_type='image/jpg')
+#                response = self.client.post(url, { 'name': 'dog1.jpg', 'attachment': image_file })
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        except Exception as exc:
+            raise exc

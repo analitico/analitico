@@ -1,11 +1,19 @@
 
 import collections
+import datetime
 import jsonfield
+import os.path
+
+import django.core.files
 
 from django.contrib.auth.models import Group
 from django.db import models
+from django.utils.text import slugify
+from django.utils.timezone import now
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
+
+import api.storage
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
@@ -61,6 +69,62 @@ class ItemsMixin():
     #@property
     #def settings(self):
     #    return self.get_json('settings')
+
+    ## 
+    ## Assets
+    ##
+
+    @property
+    def storage(self) -> api.storage.Storage:
+        settings = (self.workspace if self.workspace else self).get_attribute('storage')
+        return api.storage.Storage.factory(settings)
+
+
+    @property
+    def assets(self) -> [dict]:
+        assets = self.get_attribute('assets')
+        return assets if assets else []
+
+
+    def _get_asset_from_id(self, asset_id) -> dict:
+        for asset in self.assets:
+            if asset['id'] == asset_id:
+                return asset
+        return None
+
+
+    def _get_asset_path_from_name(self, asset_name=None) -> str:
+        if self.workspace:
+            return 'workspaces/' + self.workspace.id + '/' + self.type + 's/' + self.id + '/assets/' + asset_name
+        return 'workspaces/' + self.id + '/assets/' + asset_name
+        
+
+    def upload_asset_via_stream(self, iterator, asset_name, size=0, content_type=None) -> dict:
+        """ Uploads an asset to this item's storage and returns the assets description. """
+
+        asset_parts = os.path.splitext(asset_name)
+        asset_id = slugify(asset_parts[0]) + asset_parts[1]
+        asset_path = self._get_asset_path_from_name(asset_id)
+        asset_obj = self.storage.upload_object_via_stream(iterator, asset_path, extra={ 'content_type': content_type })
+
+        assets = self.assets
+        if not assets: assets = []
+
+        asset = self._get_asset_from_id(asset_id)
+        if not asset: 
+            asset = { 'id': asset_id }
+            assets.append(asset)
+
+        asset['created_at'] = now().isoformat()
+        asset['filename'] = asset_name
+        asset['path'] = asset_path
+        asset['hash'] = asset_obj.hash
+        asset['size'] = max(size,asset_obj.size)
+        asset['content_type'] = content_type
+
+        self.set_attribute('assets', assets)
+        return asset
+
 
     def __str__(self):
         return self.type + ': ' + self.id
