@@ -180,11 +180,12 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_RENDERER_CLASSES': (
 #       'rest_framework_json_api.renderers.JSONRenderer',
 #       'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.MultiPartRenderer',
         'api.renderers.JSONRenderer', # jsonapi but simplified
         ),
     
     'TEST_REQUEST_DEFAULT_FORMAT': 
-        'vnd.api+json',
+        'json',
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'api.authentication.BearerAuthentication',
