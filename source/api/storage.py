@@ -50,7 +50,7 @@ class Storage():
         except libcloud.storage.types.ContainerDoesNotExistError:
             self.container = driver.create_container(settings['container'])            
 
-
+    @staticmethod
     def factory(settings: dict):
         """ Creates a storage object from a settings dictionary or from default settings if None passed. """
         if settings is None:
@@ -60,13 +60,13 @@ class Storage():
 
         driver = settings['driver']
         credentials = settings['credentials']
+        assert driver
+        assert credentials
 
         if driver == 'google-storage':
             driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
             return Storage(settings, driver)
             
         # TODO add other cloud providers as we need them
-
-        raise NotFound("Storage driver '" + driver + "' was not found.")
-    factory = staticmethod(factory)
+        raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
 
