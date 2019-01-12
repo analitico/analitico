@@ -99,13 +99,15 @@ class ItemsMixin():
         return 'workspaces/' + self.id + '/assets/' + asset_name
         
 
-    def upload_asset_via_stream(self, iterator, asset_name, size=0, content_type=None) -> dict:
+    def upload_asset_via_stream(self, iterator, asset_id, size=0, content_type=None, filename=None) -> dict:
         """ Uploads an asset to this item's storage and returns the assets description. """
 
-        asset_parts = os.path.splitext(asset_name)
+        asset_parts = os.path.splitext(asset_id)
         asset_id = slugify(asset_parts[0]) + asset_parts[1]
         asset_path = self._get_asset_path_from_name(asset_id)
-        asset_obj = self.storage.upload_object_via_stream(iterator, asset_path, extra={ 'content_type': content_type })
+
+        asset_storage = self.storage
+        asset_obj = asset_storage.upload_object_via_stream(iterator, asset_path, extra={ 'content_type': content_type })
 
         assets = self.assets
         if not assets: assets = []
@@ -116,11 +118,11 @@ class ItemsMixin():
             assets.append(asset)
 
         asset['created_at'] = now().isoformat()
-        asset['filename'] = asset_name
+        asset['filename'] = filename
         asset['path'] = asset_path
         asset['hash'] = asset_obj.hash
-        asset['size'] = max(size,asset_obj.size)
         asset['content_type'] = content_type
+        asset['size'] = max(size,asset_obj.size)
 
         self.set_attribute('assets', assets)
         return asset

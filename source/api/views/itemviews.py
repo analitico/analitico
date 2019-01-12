@@ -18,6 +18,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 
+
 from api.models import ItemsMixin, Workspace, Dataset, Recipe
 from analitico.utilities import logger, get_dict_dot
 from api.utilities import time_ms, api_get_parameter, api_check_authorization
@@ -59,26 +60,40 @@ class ItemViewSetMixin():
         return Response(item.assets)
 
 
-    @action(methods=['post', 'put'], detail=True, url_name='asset-detail', url_path='assets/(?P<filename>[-\w.]{0,256})$')
-    def upload_asset(self, request, pk, filename=None):
-        """ Uploads one or more assets to this item's storage using direct upload or a multipart form with a number of files in it. Returns list of uploaded assets. """
+    @action(methods=['post', 'put'], detail=True, url_name='asset-detail', url_path='assets/(?P<asset_id>[-\w.]{0,256})$')
+    def upload_asset(self, request, pk, asset_id=None):
+        """ Uploads one or more assets to this item's storage, returns list of uploaded assets. Supports direct upload and multipart forms. """
         item = self.get_object()
         assets = []
 
+        # one or more files have been uploaded using a multipart form or
+        # a single file has been posted with a Content-Disposition header
+        # indicating the original filename
         if request.FILES:
             for upload in request.FILES.values():
                 content_type = upload.content_type
-                if upload.charset:
+                # only text/* needs charset attributes
+                # https://www.w3.org/International/articles/http-charset/index
+                if content_type.startswith('text/') and upload.charset:
                     content_type = content_type + '; charset=' + upload.charset
 
-                asset_name = filename if filename and len(request.FILES) < 2 else upload.name
-                # TODO when uploading a file (not a multipart for with a file inside) the line below fails on upload.file.file
-                asset_obj = item.upload_asset_via_stream(upload.file.file, asset_name, size=upload.size, content_type=content_type)
+                if not asset_id or len(request.FILES) > 1:
+                    asset_id = upload.name 
+                asset_obj = item.upload_asset_via_stream(iter(upload), asset_id, size=upload.size, content_type=content_type, filename=upload.name)
                 assets.append(asset_obj)
+
+        # simple upload without a Content-Disposition header. filename is unknown
+        else:
+            asset_obj = item.upload_asset_via_stream(iter(request.stream), asset_id, content_type=request.content_type, filename=asset_id)
+            assets.append(asset_obj)
 
         item.save()
         return Response(assets, status=rest_framework.status.HTTP_201_CREATED)
 
+    def download_asset(self, request, pk, asset_id):
+        item = self.get_object_or_404(pk)
+        # https://andrewbrookins.com/django/how-does-djangos-streaminghttpresponse-work-exactly/
+        return Response('tdb')
 
 ##
 ## WorkspaceViewSet - list, detail, post and update workspaces
