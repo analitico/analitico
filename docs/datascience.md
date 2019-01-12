@@ -20,3 +20,13 @@ https://medium.com/usf-msds/choosing-the-right-metric-for-evaluating-machine-lea
 
 AutoKeras: The Killer of Google’s AutoML  
 https://towardsdatascience.com/autokeras-the-killer-of-googles-automl-9e84c552a319
+
+Google Cloud AutoML  
+https://cloud.google.com/automl/
+
+##
+## Papers
+##
+
+Learning Transferable Architectures for Scalable Image Recognition  
+https://arxiv.org/abs/1707.07012
