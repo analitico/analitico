@@ -75,7 +75,6 @@ class AssetsTests(api.test.APITestCase):
 
         asset_path = os.path.join(ASSETS_PATH, asset_name)
         asset_size = os.path.getsize(asset_path)
-
         with open(asset_path, 'rb') as asset_file:
 
             asset_data = asset_file.read()
@@ -87,24 +86,48 @@ class AssetsTests(api.test.APITestCase):
             self.auth_token(token if token else self.token1)
             response = self.client.post(url, data, format='multipart')
             self.assertEqual(response.status_code, status_code)
-            self.assertEqual(len(response.data), 1)        
 
-            data = response.data[0]
-            self.assertEqual(data['content_type'], content_type)
-            self.assertEqual(data['filename'], asset_name)
-            self.assertEqual(data['size'], asset_size)
+            if (status_code == status.HTTP_201_CREATED):
+                self.assertEqual(len(response.data), 1)        
+                data = response.data[0]
+                self.assertEqual(data['content_type'], content_type)
+                self.assertEqual(data['filename'], asset_name)
+                self.assertEqual(data['size'], asset_size)
             return response
 
 
-    def test_asset_upload(self):
+    def test_asset_upload_matching_name(self):
         try:
-            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'url-dog2.jpg')) # this name has priority
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'image_dog1.jpg')) # asset_id matches filename
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+            data = response.data[0]
+
+            self.assertEqual(data['id'], 'image_dog1.jpg')
+            self.assertEqual(data['path'], 'workspaces/ws_storage_gcs/assets/image_dog1.jpg')
+            self.assertEqual(data['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_upload_with_asset_id(self):
+        """ Asset id should take precedence over filename when picking where to store asset """
+        try:
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'url-dog2.jpg')) # asset_id has priority
             response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
             data = response.data[0]
 
             self.assertEqual(data['id'], 'url-dog2.jpg')
             self.assertEqual(data['path'], 'workspaces/ws_storage_gcs/assets/url-dog2.jpg')
             self.assertEqual(data['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
+        except Exception as exc:
+            raise exc
 
+
+    def test_asset_upload_with_asset_id_slugified(self):
+        """ Asset id with invalid chars should not be found """
+        try:
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'GOOD')) # won't reverse with invalid chars...
+            url = url.replace('GOOD', 'ur$£"l-dOg_2.jpg') # ...replace with invalid chars
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', status_code=status.HTTP_404_NOT_FOUND)
         except Exception as exc:
             raise exc
