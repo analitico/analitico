@@ -1,9 +1,14 @@
 
 import os
+import os.path
 
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
+
+import django.core.files
+from django.core.files.uploadedfile import SimpleUploadedFile
+
 from rest_framework import status
 from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
@@ -66,24 +71,40 @@ class AssetsTests(api.test.APITestCase):
     ## Assets
     ##
 
+    def _upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
+
+        asset_path = os.path.join(ASSETS_PATH, asset_name)
+        asset_size = os.path.getsize(asset_path)
+
+        with open(asset_path, 'rb') as asset_file:
+
+            asset_data = asset_file.read()
+            asset_uploaded = SimpleUploadedFile(asset_name, asset_data, content_type)
+
+            data = {
+                'file': asset_uploaded
+            }
+            self.auth_token(token if token else self.token1)
+            response = self.client.post(url, data, format='multipart')
+            self.assertEqual(response.status_code, status_code)
+            self.assertEqual(len(response.data), 1)        
+
+            data = response.data[0]
+            self.assertEqual(data['content_type'], content_type)
+            self.assertEqual(data['filename'], asset_name)
+            self.assertEqual(data['size'], asset_size)
+            return response
+
+
     def test_asset_upload(self):
         try:
-            self.auth_token(self.token1)
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'url-dog2.jpg')) # this name has priority
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+            data = response.data[0]
 
-            # detail=True
-            #url = reverse('api:workspace-pippo', args=('ws_storage_gcs',))
+            self.assertEqual(data['id'], 'url-dog2.jpg')
+            self.assertEqual(data['path'], 'workspaces/ws_storage_gcs/assets/url-dog2.jpg')
+            self.assertEqual(data['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
 
-            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'reverse-dog1.jpg'))
-
-            #url = reverse('api:workspace-pippo')
-            #url = reverse('api:workspace-azione', args=('ws_storage_gcs',))
-            #url = reverse('api:workspace-detail', args=('ws_storage_gcs',))
-
-            image_path = os.path.join(ASSETS_PATH, 'image_dog1.jpg')
-            with open(image_path) as image_file:
-                response = self.client.post(url, { 'name': 'dog1.jpg', 'attachment': image_file }, content_type='image/jpg')
-#                response = self.client.post(url, { 'name': 'dog1.jpg', 'attachment': image_file })
-                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        
         except Exception as exc:
             raise exc
