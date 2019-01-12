@@ -19,6 +19,9 @@ from .user import User
 # is that it requires less code and fewer migrations and it lets old and new code coexist on 
 # the same SQL server without having too many operational headaches. This is similar to a NoSQL approach.
 
+# Interesting read: Modeling Polymorphism in Django With Python
+# https://realpython.com/modeling-polymorphism-django-python/
+
 class ItemsMixin():
 
     # Item's unique id (has prefix with item's type, eg: ws_xxx, defined in subclass)
