@@ -17,3 +17,6 @@ Esempio: (0.10)^2 + (1-0.10)^2 = 0,82 = 82%
 
 
 https://medium.com/usf-msds/choosing-the-right-metric-for-evaluating-machine-learning-models-part-2-86d5649a5428
+
+AutoKeras: The Killer of Google’s AutoML  
+https://towardsdatascience.com/autokeras-the-killer-of-googles-automl-9e84c552a319
