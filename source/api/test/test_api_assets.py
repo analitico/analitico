@@ -42,6 +42,7 @@ class AssetsTests(api.test.APITestCase):
     ##
 
     def test_workspace_storage(self):
+        """ Test basic file storage credentials retrieval and file upload """
         try:
             import api.storage
             import datetime
@@ -72,7 +73,7 @@ class AssetsTests(api.test.APITestCase):
     ##
 
     def _upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
-
+        """ Uploads a single asset to given url service, performs basic checks """
         asset_path = os.path.join(ASSETS_PATH, asset_name)
         asset_size = os.path.getsize(asset_path)
         with open(asset_path, 'rb') as asset_file:
@@ -97,6 +98,7 @@ class AssetsTests(api.test.APITestCase):
 
 
     def test_asset_upload_matching_name(self):
+        """ Test simple upload of image asset """
         try:
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'image_dog1.jpg')) # asset_id matches filename
             response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
@@ -110,7 +112,7 @@ class AssetsTests(api.test.APITestCase):
 
 
     def test_asset_upload_with_asset_id(self):
-        """ Asset id should take precedence over filename when picking where to store asset """
+        """ Test asset id from URL taking precedence over filename """
         try:
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'url-dog2.jpg')) # asset_id has priority
             response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
@@ -124,10 +126,50 @@ class AssetsTests(api.test.APITestCase):
 
 
     def test_asset_upload_with_asset_id_slugified(self):
-        """ Asset id with invalid chars should not be found """
+        """ Test asset id with invalid characters (should not be found) """
         try:
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'GOOD')) # won't reverse with invalid chars...
             url = url.replace('GOOD', 'ur$£"l-dOg_2.jpg') # ...replace with invalid chars
-            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', status_code=status.HTTP_404_NOT_FOUND)
+            self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', status_code=status.HTTP_404_NOT_FOUND)
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_upload_multiple_files(self):
+        """ Test multipart encoding to upload multiple files at once """
+        try:
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', ''))
+
+            path1 = os.path.join(ASSETS_PATH, 'image_dog1.jpg')
+            path2 = os.path.join(ASSETS_PATH, 'image_dog2.png')
+            path3 = os.path.join(ASSETS_PATH, 'image_dog3.webp')
+
+            file1 = open(path1, 'rb')
+            file2 = open(path2, 'rb')
+            file3 = open(path3, 'rb')
+
+            data = {
+                'file1': SimpleUploadedFile('image_dog1.jpg', file1.read(), 'image/jpeg'),
+                'file2': SimpleUploadedFile('image_dog2.png', file2.read(), 'image/png'),
+                'file3': SimpleUploadedFile('image_dog3.webp', file3.read(), 'image/webp')
+            }
+
+            self.auth_token(self.token1)
+            response = self.client.post(url, data, format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(len(response.data), 3)
+
+            self.assertEqual(response.data[0]['id'], 'image_dog1.jpg')
+            self.assertEqual(response.data[1]['id'], 'image_dog2.png')
+            self.assertEqual(response.data[2]['id'], 'image_dog3.webp')
+
+            self.assertEqual(response.data[0]['content_type'], 'image/jpeg')
+            self.assertEqual(response.data[1]['content_type'], 'image/png')
+            self.assertEqual(response.data[2]['content_type'], 'image/webp')
+
+            self.assertEqual(response.data[0]['size'], os.path.getsize(path1))
+            self.assertEqual(response.data[1]['size'], os.path.getsize(path2))
+            self.assertEqual(response.data[2]['size'], os.path.getsize(path3))
+
         except Exception as exc:
             raise exc
