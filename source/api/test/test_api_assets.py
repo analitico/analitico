@@ -1,4 +1,5 @@
 
+import io
 import os
 import os.path
 
@@ -31,6 +32,8 @@ class AssetsTests(api.test.APITestCase):
         url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'oh-my-dog.jpg'))
         response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
         self.assertEqual(response.data[0]['id'], 'oh-my-dog.jpg')
+        self.assertEqual(response.data[0]['path'], 'workspaces/ws_storage_gcs/assets/oh-my-dog.jpg')
+        self.assertEqual(response.data[0]['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
         return url, response
 
 
@@ -202,6 +205,28 @@ class AssetsTests(api.test.APITestCase):
             self.assertTrue(isinstance(response2, StreamingHttpResponse)) # we want the server to be streaming contents which is better for large files
             self.assertEqual(response2['ETag'], '"a9f659efd070f3e5b121a54edd8b13d0"') # etag is fixed and depends on file contents, not upload time
             self.assertEqual(response2['Content-Type'], 'image/jpeg')
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_download_check_contents(self):
+        """ Test upload and download with contents verification """
+        try:
+            dog_path = os.path.join(ASSETS_PATH, 'image_dog1.jpg')
+            with open(dog_path, 'rb') as dog_file:
+                dog_content = dog_file.read()
+
+            url, _ = self._upload_dog()
+
+            # dowload the same asset and compare data byte by byte
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertTrue(isinstance(response, StreamingHttpResponse))
+
+            response_content = b"".join(response.streaming_content)
+
+            self.assertEqual(len(dog_content), len(response_content))
+            self.assertEqual(dog_content, response_content)
         except Exception as exc:
             raise exc
 
