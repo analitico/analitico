@@ -86,5 +86,14 @@ class Storage():
         Upload an object using an iterator.
         https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.upload_object_via_stream
         """
-        upload_obj = self.driver.upload_object_via_stream(iterator, self.container, object_name, extra, headers)
-        return upload_obj
+        storage_obj = self.driver.upload_object_via_stream(iterator, self.container, object_name, extra, headers)
+        return storage_obj
+
+
+    def download_object_via_stream(self, object_name, chunk_size=None):
+        """
+        Returns an storage object and the iterator which can be used to download it from storage.
+        https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.download_object_as_stream
+        """
+        storage_obj = self.driver.get_object(self.container.name, object_name)
+        return storage_obj, self.driver.download_object_as_stream(storage_obj, chunk_size)
