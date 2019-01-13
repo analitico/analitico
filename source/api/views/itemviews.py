@@ -3,11 +3,13 @@
 # pylint: disable=no-member
 
 import collections
+import email.utils as eut
 
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.core.exceptions import ObjectDoesNotExist
 from django.http.response import StreamingHttpResponse
+from django.utils.http import parse_http_date_safe, http_date
 
 import rest_framework
 
@@ -82,16 +84,42 @@ class ItemViewSetMixin():
     def _asset_download(self, request, pk, asset_id):
         """ Downloads an assets content. """
         item = self.get_object()
+
+        # We could use the item's hash as an etag and avoid talking to storage
+        # at all if the If-None-Match header matches the etag. However if for
+        # whatever reason the asset was modified on the server and our information
+        # is out of sync we would skip the download. So we always retrieve the
+        # streaming iterator and the latest etag for the cloud asset, then we
+        # check the http headers to see if we can skip the download.
         asset, asset_stream = item.download_asset_as_stream(asset_id)
+
+        # ?format=json if client wants the assets information, not the asset itself
+        # ....
+
+        # if cloud storage provides an etag (optional) let's use that, otherwise the hash will do
+        etag = asset['etag'] if 'etag' in asset else '"' + asset['hash'] + '"'
+        last_modified = parse_http_date_safe(asset['last_modified']) if 'last_modified' in asset else None
 
         # if content has not changed cut the response short and avoid streaming data
         # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
-        # if 'etag' in asset and request.etag == asset['etag']:
-        #    return Response(status=status.HTTP_304_NOT_MODIFIED)
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+
+        is_304 = 'HTTP_IF_NONE_MATCH' in request.META and request.META['HTTP_IF_NONE_MATCH'] == etag
+        if not is_304 and last_modified and 'HTTP_IF_MODIFIED_SINCE' in request.META:
+            if_modified_since = parse_http_date_safe(request.META['HTTP_IF_MODIFIED_SINCE'])
+            is_304 = if_modified_since >= last_modified
+
+        if is_304:
+            response = Response(status=status.HTTP_304_NOT_MODIFIED, content_type=asset['content_type'])
+            if last_modified: response['Last-Modified'] = http_date(last_modified)
+            response['ETag'] = etag
+            return response
 
         response = StreamingHttpResponse(asset_stream, content_type=asset['content_type'])
-        if 'etag' in asset: response['etag'] = asset['etag']
-        if 'last_modified' in asset: response['last_modified'] = asset['last_modified']
+        if last_modified: response['Last-Modified'] = http_date(last_modified)
+        if int(asset['size']) > 0: response['Content-Length'] = str(asset['size'])
+        response['ETag'] = etag
         return response
 
 

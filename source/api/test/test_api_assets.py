@@ -6,7 +6,9 @@ from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from django.http.response import StreamingHttpResponse
+from django.utils.dateparse import parse_datetime
 
+import django.utils.http
 import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -23,6 +25,14 @@ import api.test
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/assets/'
 
 class AssetsTests(api.test.APITestCase):
+
+    def _upload_dog(self):
+        """ The same dog image is used in a number of tests """
+        url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'oh-my-dog.jpg'))
+        response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+        self.assertEqual(response.data[0]['id'], 'oh-my-dog.jpg')
+        return url, response
+
 
     def setUp(self):
         self.setup_basics()
@@ -181,17 +191,131 @@ class AssetsTests(api.test.APITestCase):
         try:
             # upload an image to storage
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'download1.jpg'))
-            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
-            self.assertEqual(response.data[0]['id'], 'download1.jpg')
-            self.assertEqual(response.data[0]['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
+            response1 = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+            self.assertEqual(response1.data[0]['id'], 'download1.jpg')
+            self.assertEqual(response1.data[0]['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
 
             # now dowload the same asset
             self.auth_token(self.token1)            
-            response = self.client.get(url)
+            response2 = self.client.get(url)
+            self.assertEqual(response2.status_code, status.HTTP_200_OK) # we did not indicate caching or etag tags so content should be returned
+            self.assertTrue(isinstance(response2, StreamingHttpResponse)) # we want the server to be streaming contents which is better for large files
+            self.assertEqual(response2['ETag'], '"a9f659efd070f3e5b121a54edd8b13d0"') # etag is fixed and depends on file contents, not upload time
+            self.assertEqual(response2['Content-Type'], 'image/jpeg')
+        except Exception as exc:
+            raise exc
 
-            self.assertEqual(response.status_code, status.HTTP_200_OK) # we did not indicate caching or etag tags so content should be returned
-            self.assertTrue(isinstance(response, StreamingHttpResponse)) # we want the server to be streaming contents which is better for large files
-            self.assertEqual(response['etag'], '"a9f659efd070f3e5b121a54edd8b13d0"') # etag is fixed and depends on file contents, not upload time
+
+    def test_parse_datetime(self):
+        dt1 = django.utils.http.parse_http_date('Sun, 13 Jan 2019 04:07:44 GMT')
+        dt2 = django.utils.http.parse_http_date('Sun, 13 Jan 2019 16:07:44 GMT')
+        self.assertIsNotNone(dt1)
+        self.assertIsNotNone(dt2)
+        self.assertLessEqual(dt1, dt2)
+
+        dt1 = django.utils.http.parse_http_date('Sun, 13 Jan 2019 16:07:44 GMT')
+        dt2 = django.utils.http.parse_http_date('Sun, 13 Jan 2019 16:07:44 GMT')
+        self.assertIsNotNone(dt1)
+        self.assertIsNotNone(dt2)
+        self.assertEqual(dt1, dt2)
+ 
+
+    def test_asset_download_if_none_match(self):
+        """ Test downloading an asset with etag specified """
+        try:
+            # upload an image to storage
+            url, _ = self._upload_dog()
+
+            # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+            headers = {
+                'HTTP_IF_NONE_MATCH': '"a9f659efd070f3e5b121a54edd8b13d0"'
+            }
+            response2 = self.client.get(url, **headers)
+            self.assertEqual(response2.status_code, status.HTTP_304_NOT_MODIFIED) # etag matches so asset should not be returned
+            self.assertEqual(response2.content_type, 'image/jpeg')
+            self.assertEqual(response2['ETag'], '"a9f659efd070f3e5b121a54edd8b13d0"') # etag is fixed and depends on file contents, not upload time
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_download_if_none_match_wrong_etag(self):
+        """ Test downloading an asset with the wrong etag specified """
+        try:
+            # upload an image to storage
+            url, _ = self._upload_dog()
+
+            # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+            headers = {
+                'HTTP_IF_NONE_MATCH': '"WRONGETAG"'
+            }
+            response2 = self.client.get(url, **headers)
+            self.assertEqual(response2.status_code, status.HTTP_200_OK) # we gave the wrong etag so asset should be returned
+            self.assertEqual(response2['Content-Type'], 'image/jpeg')
+            self.assertEqual(response2['ETag'], '"a9f659efd070f3e5b121a54edd8b13d0"') # correct etag should be returned
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_download_if_modified_since(self):
+        """ Test downloading an asset with last modification date specified """
+        try:
+            # upload an image to storage
+            url, _ = self._upload_dog()
+
+            # plain get with no caching instructions
+            response2 = self.client.get(url)
+            self.assertIsNotNone(response2['last-modified'])
+
+            # now ask for download but only if newer than our modification date
+            headers = {
+                'HTTP_IF_MODIFIED_SINCE': response2['last-modified']
+            }
+            response3 = self.client.get(url, **headers)
+            self.assertEqual(response3.status_code, status.HTTP_304_NOT_MODIFIED)
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_download_if_modified_since_earlier(self):
+        """ Test downloading an asset while pretending we have an older copy on the client """
+        try:
+            # upload an image to storage
+            url, _ = self._upload_dog()
+
+            # plain get with no caching instructions
+            response2 = self.client.get(url)
+            self.assertIsNotNone(response2['last-modified'])
+            last_modified = django.utils.http.parse_http_date(response2['last-modified'])
+            last_modified -= 60 * 60 # pretend our copy is 1 hour older
+
+            headers = {
+                # ask for download but only if newer than our modification date
+                'HTTP_IF_MODIFIED_SINCE': django.utils.http.http_date(last_modified)
+            }
+            response3 = self.client.get(url, **headers)
+            self.assertEqual(response3.status_code, status.HTTP_200_OK)
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_download_if_modified_since_later(self):
+        """ Test downloading an asset while pretending we have a newer copy on the client """
+        try:
+            # upload an image to storage
+            url, _ = self._upload_dog()
+
+            # plain get with no caching instructions
+            response2 = self.client.get(url)
+            self.assertIsNotNone(response2['last-modified'])
+            last_modified = django.utils.http.parse_http_date(response2['last-modified'])
+            last_modified += 60 * 60 # pretend our copy is 1 hour newer than the server's
+
+            headers = {
+                # ask for download but only if newer than our modification date
+                'HTTP_IF_MODIFIED_SINCE': django.utils.http.http_date(last_modified)
+            }
+            response3 = self.client.get(url, **headers)
+            self.assertEqual(response3.status_code, status.HTTP_304_NOT_MODIFIED)
         except Exception as exc:
             raise exc
 
