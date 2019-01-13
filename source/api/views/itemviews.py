@@ -7,17 +7,16 @@ import collections
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.core.exceptions import ObjectDoesNotExist
+from django.http.response import StreamingHttpResponse
 
 import rest_framework
-from rest_framework import serializers
-from rest_framework import exceptions
-from rest_framework import viewsets
+
+from rest_framework import serializers, exceptions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, ParseError
+from rest_framework.exceptions import NotFound, ParseError, MethodNotAllowed
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
-
 
 from api.models import ItemsMixin, Workspace, Dataset, Recipe
 from analitico.utilities import logger, get_dict_dot
@@ -43,25 +42,14 @@ import api.serializers
 
 class ItemViewSetMixin():
 
-#    parser_classes = (JSONParser, MultiPartParser, FileUploadParser, )
+    # Parse most calls in JSON but also support multipart uploads and forms as well as raw uploads
     parser_classes = (JSONParser, MultiPartParser, FileUploadParser, )
-
-    @action(methods=['post', 'put'], detail=False, url_path='prova002/(?P<pk2>[^/.]+)$')
-    def prova002(self, request, pk=None, pk2=None):
-        return Response({ 'filename': pk2 })
 
     ##
     ## Assets - listing, uploading, downloading, deleting
     ##
 
-    @action(methods=['get'], detail=True, url_name='asset-list', url_path='assets')
-    def assets(self, request, pk):
-        item = self.get_object()
-        return Response(item.assets)
-
-
-    @action(methods=['post', 'put'], detail=True, url_name='asset-detail', url_path='assets/(?P<asset_id>[-\w.]{0,256})$')
-    def upload_asset(self, request, pk, asset_id=None):
+    def _asset_upload(self, request, pk, asset_id):
         """ Uploads one or more assets to this item's storage, returns list of uploaded assets. Supports direct upload and multipart forms. """
         item = self.get_object()
         assets = []
@@ -90,10 +78,45 @@ class ItemViewSetMixin():
         item.save()
         return Response(assets, status=rest_framework.status.HTTP_201_CREATED)
 
-    def download_asset(self, request, pk, asset_id):
-        item = self.get_object_or_404(pk)
-        # https://andrewbrookins.com/django/how-does-djangos-streaminghttpresponse-work-exactly/
-        return Response('tdb')
+
+    def _asset_download(self, request, pk, asset_id):
+        """ Downloads an assets content. """
+        item = self.get_object()
+        asset, asset_stream = item.download_asset_as_stream(asset_id)
+
+        # if content has not changed cut the response short and avoid streaming data
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
+        # if 'etag' in asset and request.etag == asset['etag']:
+        #    return Response(status=status.HTTP_304_NOT_MODIFIED)
+
+        response = StreamingHttpResponse(asset_stream, content_type=asset['content_type'])
+        if 'etag' in asset: response['etag'] = asset['etag']
+        if 'last_modified' in asset: response['last_modified'] = asset['last_modified']
+        return response
+
+
+    def _asset_delete(self, request, pk, asset_id):
+        raise MethodNotAllowed('DELETE')
+
+
+    @action(methods=['get'], detail=True, url_name='asset-list', url_path='assets')
+    def assets(self, request, pk):
+        """ Returns a listing of all assets associated with this item. """
+        item = self.get_object()
+        return Response(item.assets)
+
+
+    @action(methods=['get', 'post', 'put', 'delete'], detail=True, url_name='asset-detail', url_path=r'assets/(?P<asset_id>[-\w.]{0,256})$')
+    def asset(self, request, pk, asset_id=None):
+        """ Upload, update, download or delete a file asset associated with this item. Supports both direct upload and multipart forms. """
+        if request.method == 'POST' or request.method == 'PUT':
+            return self._asset_upload(request, pk, asset_id)
+        if request.method == 'GET':
+            return self._asset_download(request, pk, asset_id)
+        if request.method == 'DELETE':
+            return self._asset_delete(request, pk, asset_id)
+        raise MethodNotAllowed(request.method)
+
 
 ##
 ## WorkspaceViewSet - list, detail, post and update workspaces

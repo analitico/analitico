@@ -5,6 +5,7 @@ import os.path
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
+from django.http.response import StreamingHttpResponse
 
 import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -173,3 +174,24 @@ class AssetsTests(api.test.APITestCase):
 
         except Exception as exc:
             raise exc
+
+
+    def test_asset_download(self):
+        """ Test simple upload and download of image asset """
+        try:
+            # upload an image to storage
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'download1.jpg'))
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+            self.assertEqual(response.data[0]['id'], 'download1.jpg')
+            self.assertEqual(response.data[0]['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
+
+            # now dowload the same asset
+            self.auth_token(self.token1)            
+            response = self.client.get(url)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK) # we did not indicate caching or etag tags so content should be returned
+            self.assertTrue(isinstance(response, StreamingHttpResponse)) # we want the server to be streaming contents which is better for large files
+            self.assertEqual(response['etag'], '"a9f659efd070f3e5b121a54edd8b13d0"') # etag is fixed and depends on file contents, not upload time
+        except Exception as exc:
+            raise exc
+

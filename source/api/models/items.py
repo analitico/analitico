@@ -13,6 +13,8 @@ from django.utils.timezone import now
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
 
+import rest_framework.exceptions
+
 import api.storage
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
@@ -66,9 +68,6 @@ class ItemsMixin():
     def notes(self, notes):
         self.set_attribute('notes', notes)
 
-    #@property
-    #def settings(self):
-    #    return self.get_json('settings')
 
     ## 
     ## Assets
@@ -101,7 +100,6 @@ class ItemsMixin():
 
     def upload_asset_via_stream(self, iterator, asset_id, size=0, content_type=None, filename=None) -> dict:
         """ Uploads an asset to this item's storage and returns the assets description. """
-
         asset_parts = os.path.splitext(asset_id)
         asset_id = slugify(asset_parts[0]) + asset_parts[1]
         asset_path = self._get_asset_path_from_name(asset_id)
@@ -126,6 +124,23 @@ class ItemsMixin():
 
         self.set_attribute('assets', assets)
         return asset
+
+
+    def download_asset_as_stream(self, asset_id):
+        """ Returns the asset with the given id along with a stream that can be used to download it from storage. """
+        asset = self._get_asset_from_id(asset_id)
+        if not asset:
+            detail = __class__ + ': ' + self.id + ' does not contain asset_id: ' + asset_id
+            raise rest_framework.exceptions.NotFound(detail)
+        asset_storage = self.storage
+        storage_obj, storage_stream = asset_storage.download_object_via_stream(asset['path'])
+
+        # update asset with information from storage like etag that can improve browser caching
+        if 'etag' in storage_obj.extra: asset['etag'] = storage_obj.extra['etag']
+        if 'last_modified' in storage_obj.extra: asset['last_modified'] = storage_obj.extra['last_modified']
+        asset['size'] = storage_obj.size
+        asset['hash'] = storage_obj.hash
+        return asset, storage_stream
 
 
     def __str__(self):
