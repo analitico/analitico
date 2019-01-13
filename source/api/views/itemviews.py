@@ -93,9 +93,6 @@ class ItemViewSetMixin():
         # check the http headers to see if we can skip the download.
         asset, asset_stream = item.download_asset_as_stream(asset_id)
 
-        # ?format=json if client wants the assets information, not the asset itself
-        # ....
-
         # if cloud storage provides an etag (optional) let's use that, otherwise the hash will do
         etag = asset['etag'] if 'etag' in asset else '"' + asset['hash'] + '"'
         last_modified = parse_http_date_safe(asset['last_modified']) if 'last_modified' in asset else None
@@ -144,6 +141,14 @@ class ItemViewSetMixin():
         if request.method == 'DELETE':
             return self._asset_delete(request, pk, asset_id)
         raise MethodNotAllowed(request.method)
+
+    # TODO make asset_id portion of regex mandatory
+    @action(methods=['get'], detail=True, url_name='asset-detail-json', url_path=r'assets/(?P<asset_id>[-\w.]{0,256})/json$')
+    def asset_detail_json(self, request, pk, asset_id=None):
+        """ Returns an asset's details as json. """
+        item = self.get_object()
+        asset, _ = item.download_asset_as_stream(asset_id)
+        return Response(asset)
 
 
 ##

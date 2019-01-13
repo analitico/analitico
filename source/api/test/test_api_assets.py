@@ -344,3 +344,24 @@ class AssetsTests(api.test.APITestCase):
         except Exception as exc:
             raise exc
 
+
+    def test_asset_download_asset_json(self):
+        """ Test downloading an asset's details as json """
+        try:
+            # upload then download json details
+            url, _ = self._upload_dog()
+            response = self.client.get(url + '/json')
+            self.assertEqual(response['Content-Type'], 'application/json')
+            self.assertIsNotNone(response.data)
+
+            data = response.data
+            self.assertEqual(data['content_type'], 'image/jpeg')
+            self.assertEqual(data['etag'], '"a9f659efd070f3e5b121a54edd8b13d0"')
+            self.assertEqual(data['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
+            self.assertEqual(data['filename'], 'image_dog1.jpg')
+            self.assertEqual(data['id'], 'oh-my-dog.jpg')
+            self.assertEqual(data['path'], 'workspaces/ws_storage_gcs/assets/oh-my-dog.jpg')
+            self.assertEqual(data['size'], '49038')
+        except Exception as exc:
+            raise exc
+
