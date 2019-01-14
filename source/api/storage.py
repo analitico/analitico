@@ -97,3 +97,12 @@ class Storage():
         """
         storage_obj = self.driver.get_object(self.container.name, object_name)
         return storage_obj, self.driver.download_object_as_stream(storage_obj, chunk_size)
+
+
+    def delete_object(self, object_name):
+        """
+        Deletes a storage object, returns true if successfull.
+        https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.delete_object
+        """
+        storage_obj = self.driver.get_object(self.container.name, object_name)
+        return self.driver.delete_object(storage_obj)

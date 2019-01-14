@@ -13,7 +13,8 @@ from django.utils.timezone import now
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
 
-import rest_framework.exceptions
+from rest_framework import status
+from rest_framework.exceptions import APIException, NotFound
 
 import api.storage
 
@@ -85,10 +86,13 @@ class ItemsMixin():
         return assets if assets else []
 
 
-    def _get_asset_from_id(self, asset_id) -> dict:
+    def _get_asset_from_id(self, asset_id, raise404=False) -> dict:
         for asset in self.assets:
             if asset['id'] == asset_id:
                 return asset
+        if raise404:
+            detail = type(self).__name__ + ': ' + self.id + ' does not contain asset_id: ' + asset_id
+            raise NotFound(detail)
         return None
 
 
@@ -128,10 +132,7 @@ class ItemsMixin():
 
     def download_asset_as_stream(self, asset_id):
         """ Returns the asset with the given id along with a stream that can be used to download it from storage. """
-        asset = self._get_asset_from_id(asset_id)
-        if not asset:
-            detail = __class__ + ': ' + self.id + ' does not contain asset_id: ' + asset_id
-            raise rest_framework.exceptions.NotFound(detail)
+        asset = self._get_asset_from_id(asset_id, raise404=True)
         asset_storage = self.storage
         storage_obj, storage_stream = asset_storage.download_object_via_stream(asset['path'])
 
@@ -141,6 +142,25 @@ class ItemsMixin():
         asset['size'] = storage_obj.size
         asset['hash'] = storage_obj.hash
         return asset, storage_stream
+
+
+    def delete_asset(self, asset_id):
+        """ Deletes asset with given asset_id and returns its details. Will raise NotFound if asset_id is invalid. """
+        assets = self.assets
+        asset = self._get_asset_from_id(asset_id, raise404=True)
+
+        storage = self.storage
+        deleted = storage.delete_object(asset['path'])
+
+        if not deleted:
+            # TODO if object cannot deleted it may be better to leave orphan in storage and proceed to deleting from assets?
+            logger.error('ItemsMixin.delete_asset - cannot delete asset: ' + asset['path'])
+            detail = 'Could not delete asset from storage, try again later.'
+            raise APIException(detail=detail, code=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        assets.remove(asset)
+        self.set_attribute('assets', assets)
+        return asset
 
 
     def __str__(self):

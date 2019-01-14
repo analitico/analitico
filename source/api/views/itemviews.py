@@ -121,7 +121,11 @@ class ItemViewSetMixin():
 
 
     def _asset_delete(self, request, pk, asset_id):
-        raise MethodNotAllowed('DELETE')
+        """ Delete asset with given asset_id then return HTTP 204 (No Content). """
+        item = self.get_object()
+        item.delete_asset(asset_id)
+        item.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
     @action(methods=['get'], detail=True, url_name='asset-list', url_path='assets')

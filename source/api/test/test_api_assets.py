@@ -27,6 +27,31 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/assets/'
 
 class AssetsTests(api.test.APITestCase):
 
+    def _upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
+        """ Uploads a single asset to given url service, performs basic checks """
+        asset_path = os.path.join(ASSETS_PATH, asset_name)
+        asset_size = os.path.getsize(asset_path)
+        with open(asset_path, 'rb') as asset_file:
+
+            asset_data = asset_file.read()
+            asset_uploaded = SimpleUploadedFile(asset_name, asset_data, content_type)
+
+            data = {
+                'file': asset_uploaded
+            }
+            self.auth_token(token if token else self.token1)
+            response = self.client.post(url, data, format='multipart')
+            self.assertEqual(response.status_code, status_code)
+
+            if (status_code == status.HTTP_201_CREATED):
+                self.assertEqual(len(response.data), 1)        
+                data = response.data[0]
+                self.assertEqual(data['content_type'], content_type)
+                self.assertEqual(data['filename'], asset_name)
+                self.assertEqual(data['size'], asset_size)
+            return response
+
+
     def _upload_dog(self):
         """ The same dog image is used in a number of tests """
         url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'oh-my-dog.jpg'))
@@ -85,31 +110,6 @@ class AssetsTests(api.test.APITestCase):
     ##
     ## Assets
     ##
-
-    def _upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
-        """ Uploads a single asset to given url service, performs basic checks """
-        asset_path = os.path.join(ASSETS_PATH, asset_name)
-        asset_size = os.path.getsize(asset_path)
-        with open(asset_path, 'rb') as asset_file:
-
-            asset_data = asset_file.read()
-            asset_uploaded = SimpleUploadedFile(asset_name, asset_data, content_type)
-
-            data = {
-                'file': asset_uploaded
-            }
-            self.auth_token(token if token else self.token1)
-            response = self.client.post(url, data, format='multipart')
-            self.assertEqual(response.status_code, status_code)
-
-            if (status_code == status.HTTP_201_CREATED):
-                self.assertEqual(len(response.data), 1)        
-                data = response.data[0]
-                self.assertEqual(data['content_type'], content_type)
-                self.assertEqual(data['filename'], asset_name)
-                self.assertEqual(data['size'], asset_size)
-            return response
-
 
     def test_asset_upload_matching_name(self):
         """ Test simple upload of image asset """
@@ -205,6 +205,41 @@ class AssetsTests(api.test.APITestCase):
             self.assertTrue(isinstance(response2, StreamingHttpResponse)) # we want the server to be streaming contents which is better for large files
             self.assertEqual(response2['ETag'], '"a9f659efd070f3e5b121a54edd8b13d0"') # etag is fixed and depends on file contents, not upload time
             self.assertEqual(response2['Content-Type'], 'image/jpeg')
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_download_not_found_404(self):
+        """ Test simple upload and download with bogus asset_id """
+        try:
+            # asset was never uploaded
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'oh-my-missing-dog.jpg'))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+            self.assertTrue('oh-my-missing-dog.jpg' in response.data['error']['detail'])
+            self.assertEqual(response.data['error']['status'], '404')
+            self.assertEqual(response.data['error']['code'], 'not_found')
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_download_no_authorization_404(self):
+        """ Test upload and download with wrong credentials """
+        try:
+            url, _ = self._upload_dog()
+
+            # dowload the asset with the wrong token
+            self.auth_token(self.token2)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+            self.assertEqual(response.data['error']['status'], '404')
+            self.assertIsNotNone(response.data['error']['code'])
+            self.assertIsNotNone(response.data['error']['detail'])
+
+            # dowload the same asset with the right token
+            self.auth_token(self.token1)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
         except Exception as exc:
             raise exc
 
@@ -362,6 +397,36 @@ class AssetsTests(api.test.APITestCase):
             self.assertEqual(data['id'], 'oh-my-dog.jpg')
             self.assertEqual(data['path'], 'workspaces/ws_storage_gcs/assets/oh-my-dog.jpg')
             self.assertEqual(data['size'], '49038')
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_delete(self):
+        """ Test uploading then deleting an asset. """
+        try:
+            url, _ = self._upload_dog()
+
+            response1 = self.client.delete(url)
+            self.assertEqual(response1.status_code, status.HTTP_204_NO_CONTENT) # deleted
+
+            response2 = self.client.delete(url)
+            self.assertEqual(response2.status_code, status.HTTP_404_NOT_FOUND) # no longer there
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_delete_no_authorization_404(self):
+        """ Test uploading then deleting an asset with the wrong credentials. """
+        try:
+            url, _ = self._upload_dog()
+
+            self.auth_token(self.token2) # wrong credentials
+            response1 = self.client.delete(url)
+            self.assertEqual(response1.status_code, status.HTTP_404_NOT_FOUND) # should not delete
+
+            self.auth_token(self.token1) # correct credentials
+            response2 = self.client.get(url)
+            self.assertEqual(response2.status_code, status.HTTP_200_OK) # asset is still there
         except Exception as exc:
             raise exc
 
