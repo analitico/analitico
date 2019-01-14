@@ -66,7 +66,6 @@ parso==0.3.1
 pep8-naming==0.4.1
 pexpect==4.6.0
 pickleshare==0.7.5
-pkg-resources==0.0.0
 prometheus-client==0.5.0
 prompt-toolkit==2.0.7
 prospector==1.1.6.2
