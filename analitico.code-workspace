@@ -11,6 +11,9 @@
 		}
 	],
 	"settings": {
-		"python.pythonPath": "venv/bin/python"
+		"python.pythonPath": "venv/bin/python",
+		"files.watcherExclude": {
+			"frontend/node_modules/**": true
+		}
 	}
 }
