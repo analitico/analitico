@@ -1,0 +1,34 @@
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #drawer class="sidenav" fixedInViewport="true"
+      [attr.role]="dialog"
+      [mode]="over"
+      [opened]="false">
+    <mat-toolbar (click)="drawer.close()"> 
+      <span class="ao-logo ao-logo-font ao-side-nav-logo">
+        <a routerLink="/">analitico<sup>ai</sup></a>
+      </span>
+    </mat-toolbar>
+    <mat-nav-list (click)="drawer.close()">
+      <a mat-list-item routerLink="/login" routerLinkActive="active">Login</a>
+      <a mat-list-item routerLink="" routerLinkActive="active">Link 2</a>
+      <a mat-list-item routerLink="" routerLinkActive="active">Link 3</a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button
+        type="button"
+        aria-label="Toggle sidenav"
+        mat-icon-button
+        (click)="drawer.toggle()">
+        <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+      </button>
+      <span class="ao-logo ao-logo-font ao-main-nav-logo">
+        <a routerLink="/">analitico<sup>ai</sup></a>
+      </span>
+      <div class="ao-spacer"></div>
+      <a mat-mini-fab routerLink="/profile">G</a>
+    </mat-toolbar>
+    <ng-content (click)="drawer.close()"></ng-content>
+  </mat-sidenav-content>
+</mat-sidenav-container>
