@@ -19,7 +19,8 @@ DEBUG = False
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 # Project is always started with currenct directory in /analitico/source/
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# base directory is the one where manage.py is also found
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 ## Some settings like passwords, keys, etc are private and should not be in the git repo.
@@ -128,8 +129,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
-
 STATIC_ROOT = "static/"
+
+STATICFILES_DIRS = [
+    # also include static files generated for angular frontend app
+    os.path.join(BASE_DIR, "../app/dist/")
+]
 
 ###
 ### REST Framework
