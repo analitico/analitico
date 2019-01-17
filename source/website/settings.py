@@ -1,6 +1,11 @@
 """
 Django settings for analitico.ai
 
+Some settings like passwords, keys, etc are private and should not be in the git repo.
+These are stored in a separate environment variables which are loaded at runtime.
+This also makes it easier to have separate development settings vs production settings, etc. 
+A blank template is available and can be customized, see 
+
 For more information on this file, see
 https://docs.djangoproject.com/en/2.1/topics/settings/
 
@@ -15,7 +20,7 @@ import raven
 import sys
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ['ANALITICO_DEBUG'] == 'True'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 # Project is always started with currenct directory in /analitico/source/
@@ -23,14 +28,52 @@ DEBUG = False
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-## Some settings like passwords, keys, etc are private and should not be in the git repo.
-## These are stored in a separate private-settings.py file which is loaded at runtime
-## and added to the settings above. This also makes it easier to have separate development
-## settings vs production settings, etc. A blank template is available and can be customized.
 
-# customize from settings_secrets.template.py as needed
-from .settings_secrets import *
-#from .settings_secrets_dev import *
+# These file contains only those settings that need to remain
+# private and cannot be checked in to the main repository. 
+# The CD/CI chain will deploy this file directly on the servers.
+# This also allows devs to direct the app to their own database.
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ['ANALITICO_SECRET_KEY']
+
+# MySQL database
+DATABASES = {
+    'default': {
+        'ENGINE': 'mysql.connector.django',
+        'PORT': '3306',
+        'HOST': os.environ['ANALITICO_MYSQL_HOST'],
+        'NAME': os.environ['ANALITICO_MYSQL_NAME'],
+        'USER': os.environ['ANALITICO_MYSQL_USER'],
+        'PASSWORD': os.environ['ANALITICO_MYSQL_PASSWORD']
+    }
+}
+
+if 'test' in sys.argv or 'test_coverage' in sys.argv: # Covers regular testing and django-coverage
+    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
+
+
+# We are keeping file storage cloud independent so that we can use whichever
+# cloud makes the most sense and also give customers an option to bring their own
+# cloud storage configuration. Each workspace can have its own configuration which
+# is used for all assets belonging to the workspace and its children. If the workspace
+# does not have a storage configured, the following configuration is used as a default.
+
+ANALITICO_STORAGE = {
+    "driver": "google-storage",
+    "container": "data.analitico.ai",
+    "basepath": "",
+    "credentials": {
+        "key": os.environ['ANALITICO_GCS_KEY'],
+        "secret": os.environ['ANALITICO_GCS_SECRET'],
+        "project": os.environ['ANALITICO_GCS_PROJECT']
+    }
+}
+
+
+# Special storage for regular testing and django-coverage
+if 'test' in sys.argv or 'test_coverage' in sys.argv: 
+    ANALITICO_STORAGE['container'] = 'test.analitico.ai'
 
 
 # List of domains serving the app, can be customized as needed
@@ -95,10 +138,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'website.wsgi.application'
-
-
-if 'test' in sys.argv or 'test_coverage' in sys.argv: # Covers regular testing and django-coverage
-    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
 
 
 # User substitution
