@@ -23,4 +23,8 @@ export class AoGlobalStateStore extends Store<AoGlobalState> {
     getProperty(propertyName: string) {
         return this.state.properties[propertyName];
     }
+
+    subscribe(func) {
+        return this.state$.subscribe(func);
+    }
 }

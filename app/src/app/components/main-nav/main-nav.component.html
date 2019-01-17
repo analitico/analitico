@@ -20,7 +20,7 @@
                 <a routerLink="/">analitico<sup>ai</sup></a>
             </span>
             <div class="ao-spacer"></div>
-            <a mat-mini-fab routerLink="/profile">G</a>
+            <a mat-mini-fab routerLink="/profile">{{ userInitial }}</a>
         </mat-toolbar>
         <ng-content (click)="drawer.close()"></ng-content>
     </mat-sidenav-content>
