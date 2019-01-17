@@ -9,10 +9,11 @@ import {
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
     MatCardModule, MatInputModule
 } from '@angular/material';
-import { MainNavComponent } from './main-nav/main-nav.component';
+import { MainNavComponent } from './components/main-nav/main-nav.component';
 import { LayoutModule } from '@angular/cdk/layout';
-import { AoLoginComponent } from './ao-login/ao-login.component';
+import { AoLoginComponent } from './components/ao-login/ao-login.component';
 import { FormsModule } from '@angular/forms';
+import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-state-store.service';
 
 @NgModule({
     declarations: [
@@ -34,7 +35,7 @@ import { FormsModule } from '@angular/forms';
         MatInputModule,
         FormsModule
     ],
-    providers: [],
+    providers: [AoGlobalStateStore],
     bootstrap: [AppComponent]
 })
 export class AppModule { }
