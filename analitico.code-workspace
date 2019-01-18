@@ -14,6 +14,11 @@
 		"python.pythonPath": "venv/bin/python",
 		"files.watcherExclude": {
 			"frontend/node_modules/**": true
+		},
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/.ipynb_checkpoints": true,
+			"**/venv": true
 		}
 	}
 }
