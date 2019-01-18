@@ -1,4 +1,6 @@
 
+## THIS MODEL IS OBSOLETE AND WILL SOON BE REMOVED
+
 import collections
 import jsonfield
 

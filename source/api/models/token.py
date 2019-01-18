@@ -1,30 +1,27 @@
+import collections
+import jsonfield
 
+from django.contrib.auth.models import Group
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.crypto import get_random_string
 
-import rest_framework.authtoken.models
-
-import binascii
-import os
-
-from django.conf import settings
-from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
-
+from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
 
-def generate_token_id():
-    from django.utils.crypto import get_random_string
-    return 'tok_' + get_random_string()
+##
+## Token
+##
 
+TOKEN_PREFIX   = 'tok_'
+
+def generate_token_id():
+    return TOKEN_PREFIX + get_random_string()
 
 class Token(models.Model):
     """ Token for bearer token authorization model. """
 
     # token
-    id = models.SlugField(_("Id"), max_length=32, primary_key=True, default=generate_token_id)
+    id = models.SlugField(max_length=32, primary_key=True, default=generate_token_id)
 
     # a single user can have zero, one or more tokens
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='User', blank=True, null=True)
@@ -32,8 +29,14 @@ class Token(models.Model):
     # token name can be used to distinguish tokens, eg: mobile, web, server
     name = models.SlugField(blank=True)
 
-    # time when token was created
-    created_at = models.DateTimeField(_("Created"), auto_now_add=True)
+    # Time when created
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created')
+
+    # Time when last updated
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Updated')
+
+    # Additional attributes are stored as json (used by AttributesMixin)
+    attributes = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, blank=True, null=True)
 
     # email address of the owner of this token
     @property
@@ -48,4 +51,3 @@ class Token(models.Model):
 
     def __str__(self):
         return self.id
-

@@ -36,8 +36,8 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'name', 'created_at')
-    ordering = ('user', 'name', '-created_at') 
+    list_display = ('id', 'email', 'name', 'created_at')
+    ordering = ('workspace__user__email', 'name', '-created_at') 
 
 
 @admin.register(Call)
@@ -46,15 +46,10 @@ class ApiCallAdmin(admin.ModelAdmin):
     ordering = ('-created_at',) 
 
 
-@admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Training)
-class TrainingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'project_id', 'status', 'is_active', 'records', 'rmse', 'created_at')
-    ordering = ('-updated_at',) 
+#@admin.register(Training)
+#class TrainingAdmin(admin.ModelAdmin):
+#    list_display = ('id', 'project_id', 'status', 'is_active', 'records', 'rmse', 'created_at')
+#    ordering = ('-updated_at',) 
 
 #
 # Items
