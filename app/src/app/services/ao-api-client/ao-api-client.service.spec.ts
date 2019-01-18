@@ -16,7 +16,7 @@ describe('AoApiClientService', () => {
 
     it('should get data', (done) => {
         const service: AoApiClientService = TestBed.get(AoApiClientService);
-        service.get('http://localhost:3000/author')
+        service.get('../../api.test.json')
             .then((data: any) => {
                 expect(data.length === 2);
                 done();
