@@ -54,23 +54,25 @@ class Storage():
     @staticmethod
     def factory(settings: dict):
         """ Creates a storage object from a settings dictionary or from default settings if None passed. """
-        if settings is None:
-            settings = django.conf.settings.ANALITICO_STORAGE
-        if 'credentials' not in settings and settings['driver'] == django.conf.settings.ANALITICO_STORAGE['driver']:
-            settings['credentials'] = django.conf.settings.ANALITICO_STORAGE['credentials']
+        try:
+            if settings is None:
+                settings = django.conf.settings.ANALITICO_STORAGE
+            if 'credentials' not in settings and settings['driver'] == django.conf.settings.ANALITICO_STORAGE['driver']:
+                settings['credentials'] = django.conf.settings.ANALITICO_STORAGE['credentials']
 
-        driver = settings['driver']
-        credentials = settings['credentials']
-        assert driver
-        assert credentials
+            driver = settings['driver']
+            credentials = settings['credentials']
+            assert driver
+            assert credentials
 
-        if driver == 'google-storage':
-            driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
-            return Storage(settings, driver)
-            
-        # TODO add other cloud providers as we need them
-        raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
-
+            if driver == 'google-storage':
+                driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
+                return Storage(settings, driver)
+                
+            # TODO add other cloud providers as we need them
+            raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
+        except Exception as exc:
+            raise exc
 
     def upload_object(self, file_path, object_name, extra=None, headers=None):
         """ 

@@ -19,310 +19,313 @@ import sentry_sdk
 import raven
 import sys
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ['ANALITICO_DEBUG'] == 'True'
+from rest_framework.exceptions import APIException
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-# Project is always started with currenct directory in /analitico/source/
-# base directory is the one where manage.py is also found
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
 
+    # SECURITY WARNING: don't run with debug turned on in production!
+    DEBUG = os.environ['ANALITICO_DEBUG'] == 'True'
 
+    # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+    # Project is always started with currenct directory in /analitico/source/
+    # base directory is the one where manage.py is also found
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# These file contains only those settings that need to remain
-# private and cannot be checked in to the main repository. 
-# The CD/CI chain will deploy this file directly on the servers.
-# This also allows devs to direct the app to their own database.
+    # SECURITY WARNING: keep the secret key used in production secret!
+    SECRET_KEY = os.environ['ANALITICO_SECRET_KEY']
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['ANALITICO_SECRET_KEY']
-
-# MySQL database
-DATABASES = {
-    'default': {
-        'ENGINE': 'mysql.connector.django',
-        'PORT': '3306',
-        'HOST': os.environ['ANALITICO_MYSQL_HOST'],
-        'NAME': os.environ['ANALITICO_MYSQL_NAME'],
-        'USER': os.environ['ANALITICO_MYSQL_USER'],
-        'PASSWORD': os.environ['ANALITICO_MYSQL_PASSWORD']
-    }
-}
-
-if 'test' in sys.argv or 'test_coverage' in sys.argv: # Covers regular testing and django-coverage
-    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
-
-
-# We are keeping file storage cloud independent so that we can use whichever
-# cloud makes the most sense and also give customers an option to bring their own
-# cloud storage configuration. Each workspace can have its own configuration which
-# is used for all assets belonging to the workspace and its children. If the workspace
-# does not have a storage configured, the following configuration is used as a default.
-
-ANALITICO_STORAGE = {
-    "driver": "google-storage",
-    "container": "data.analitico.ai",
-    "basepath": "",
-    "credentials": {
-        "key": os.environ['ANALITICO_GCS_KEY'],
-        "secret": os.environ['ANALITICO_GCS_SECRET'],
-        "project": os.environ['ANALITICO_GCS_PROJECT']
-    }
-}
-
-
-# Special storage for regular testing and django-coverage
-if 'test' in sys.argv or 'test_coverage' in sys.argv: 
-    ANALITICO_STORAGE['container'] = 'test.analitico.ai'
-
-
-# List of domains serving the app, can be customized as needed
-ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-
-    'analitico.ai',         # main domain
-    '.analitico.ai',        # any subdomain
-
-    '138.201.196.111',      # s1.analitico.ai
-    '78.46.46.165',         # s2.analitico.ai
-    '159.69.242.143'        # s5.analitico.ai
-]
-
-
-# Application definition
-INSTALLED_APPS = [
-    'api',
-    's24',
-    'website',
-
-    'gunicorn',
-    'rest_framework',    
-    'drf_yasg', # openapi schema generator
-    'raven.contrib.django.raven_compat',
-
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles'
-]
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-ROOT_URLCONF = 'website.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'website.wsgi.application'
-
-
-# User substitution
-# https://docs.djangoproject.com/en/1.11/topics/auth/customizing/#auth-custom-user
-AUTH_USER_MODEL = 'api.User'
-
-# Password validation
-# https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
-AUTH_PASSWORD_VALIDATORS = [
-    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator' },
-    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator' },
-    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator' },
-    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator' }
-]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/2.1/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Europe/Rome'
-USE_I18N = True
-USE_L10N = True
-USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.1/howto/static-files/
-
-STATIC_URL = '/static/'
-STATIC_ROOT = "static/"
-
-STATICFILES_DIRS = [
-    # also include static files generated for angular frontend app
-    os.path.join(BASE_DIR, "../app/dist/")
-]
-
-###
-### REST Framework
-###
-
-# TODO better mechanism for auth tokens
-# https://github.com/James1345/django-rest-knox
-
-APPEND_SLASH = False
-
-REST_FRAMEWORK = {
-
-    # custom exception handler reports exception with specific formatting
-    'EXCEPTION_HANDLER': 
-        'api.utilities.api_exception_handler',
-#       'rest_framework_json_api.exceptions.exception_handler',
-
-    'DEFAULT_PAGINATION_CLASS':
-        'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
-
-    'DEFAULT_PARSER_CLASSES': (
-#       'rest_framework_json_api.parsers.JSONParser',
-        'rest_framework.parsers.JSONParser',
-        'rest_framework.parsers.FormParser',
-        'rest_framework.parsers.MultiPartParser'
-    ),
-
-    'DEFAULT_RENDERER_CLASSES': (
-#       'rest_framework_json_api.renderers.JSONRenderer',
-#       'rest_framework.renderers.JSONRenderer',
-        'api.renderers.JSONRenderer', # jsonapi but simplified
-        'rest_framework.renderers.BrowsableAPIRenderer',
-    ),
-
-    'DEFAULT_METADATA_CLASS': 
-        'rest_framework_json_api.metadata.JSONAPIMetadata',
-    
-    'DEFAULT_FILTER_BACKENDS': (
-        'rest_framework_json_api.filters.QueryParameterValidationFilter',
-        'rest_framework_json_api.filters.OrderingFilter',
-        'rest_framework_json_api.django_filters.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-    ),
-    
-    'SEARCH_PARAM': 
-        'filter[search]',
-    
-    'TEST_REQUEST_RENDERER_CLASSES': (
-#       'rest_framework_json_api.renderers.JSONRenderer',
-#       'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.MultiPartRenderer',
-        'api.renderers.JSONRenderer', # jsonapi but simplified
-        ),
-    
-    'TEST_REQUEST_DEFAULT_FORMAT': 
-        'json',
-
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'api.authentication.BearerAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-    ),
-
-    # Use Django's standard `django.contrib.auth` permissions,
-    # or allow read-only access for unauthenticated users.
-    'DEFAULT_PERMISSION_CLASSES': [
-        # 'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication'
-    ]
-}
-
-# Django Swagger documentation settings
-# https://django-rest-swagger.readthedocs.io/en/latest/settings/
-SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'basic': {
-            'description': 'Authorize using credentials from analitico.ai',
-            'type': 'basic'
-        },
-        # Support authentication with API tokens
-        'token': {
-            'description': "Authorize using an 'Authorization: Bearer tok_xxx' header.",
-            'type': 'apiKey',
-            'in': 'header',
-            'name': 'Authorization'
+    # MySQL database
+    DATABASES = {
+        'default': {
+            'ENGINE': 'mysql.connector.django',
+            'PORT': '3306',
+            'HOST': os.environ['ANALITICO_MYSQL_HOST'],
+            'NAME': os.environ['ANALITICO_MYSQL_NAME'],
+            'USER': os.environ['ANALITICO_MYSQL_USER'],
+            'PASSWORD': os.environ['ANALITICO_MYSQL_PASSWORD']
         }
     }
-}
 
-###
-### Logging
-###
+    if 'test' in sys.argv or 'test_coverage' in sys.argv: # Covers regular testing and django-coverage
+        DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
 
-# Examples of logging configuration:
-# https://lincolnloop.com/blog/django-logging-right-way/
 
-# Sentry/Django documentation
-# https://docs.sentry.io/clients/python/integrations/django/
+    # We are keeping file storage cloud independent so that we can use whichever
+    # cloud makes the most sense and also give customers an option to bring their own
+    # cloud storage configuration. Each workspace can have its own configuration which
+    # is used for all assets belonging to the workspace and its children. If the workspace
+    # does not have a storage configured, the following configuration is used as a default.
 
-# See logs here:
-# https://sentry.io/analiticoai/python/
+    ANALITICO_STORAGE = {
+        "driver": "google-storage",
+        "container": "data.analitico.ai",
+        "basepath": "",
+        "credentials": {
+            "key": os.environ['ANALITICO_GCS_KEY'],
+            "secret": os.environ['ANALITICO_GCS_SECRET'],
+            "project": os.environ['ANALITICO_GCS_PROJECT']
+        }
+    }
 
-sentry_sdk.init("https://3cc8a3cf05e140a9bef3946e24756dc5@sentry.io/1336917")
 
-RAVEN_CONFIG = {
-    'dsn': 'https://3cc8a3cf05e140a9bef3946e24756dc5:30ab9adb8199489a962d94566cd746bc@sentry.io/1336917',
-    # If you are using git, you can also automatically configure the
-    # release based on the git info.
-#   'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
-#   'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
-    'release': 'v0.11',
-}
+    # Special storage for regular testing and django-coverage
+    if 'test' in sys.argv or 'test_coverage' in sys.argv: 
+        ANALITICO_STORAGE['container'] = 'test.analitico.ai'
 
-LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 
-LOGGING_CONFIG = None
-logging.config.dictConfig({
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'console': {
-            # exact format is not important, this is the minimum information
-            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    # List of domains serving the app, can be customized as needed
+    ALLOWED_HOSTS = [
+        '127.0.0.1',
+        'localhost',
+
+        'analitico.ai',         # main domain
+        '.analitico.ai',        # any subdomain
+
+        '138.201.196.111',      # s1.analitico.ai
+        '78.46.46.165',         # s2.analitico.ai
+        '159.69.242.143'        # s5.analitico.ai
+    ]
+
+
+    # Application definition
+    INSTALLED_APPS = [
+        'api',
+        's24',
+        'website',
+
+        'gunicorn',
+        'rest_framework',    
+        'drf_yasg', # openapi schema generator
+        'raven.contrib.django.raven_compat',
+
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles'
+    ]
+
+    MIDDLEWARE = [
+        'django.middleware.security.SecurityMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.common.CommonMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware',
+        'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    ]
+
+    ROOT_URLCONF = 'website.urls'
+
+    TEMPLATES = [
+        {
+            'BACKEND': 'django.template.backends.django.DjangoTemplates',
+            'DIRS': [],
+            'APP_DIRS': True,
+            'OPTIONS': {
+                'context_processors': [
+                    'django.template.context_processors.debug',
+                    'django.template.context_processors.request',
+                    'django.contrib.auth.context_processors.auth',
+                    'django.contrib.messages.context_processors.messages',
+                ],
+            },
         },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'console',
+    ]
+
+    WSGI_APPLICATION = 'website.wsgi.application'
+
+
+    # User substitution
+    # https://docs.djangoproject.com/en/1.11/topics/auth/customizing/#auth-custom-user
+    AUTH_USER_MODEL = 'api.User'
+
+    # Password validation
+    # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
+    AUTH_PASSWORD_VALIDATORS = [
+        { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator' },
+        { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator' },
+        { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator' },
+        { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator' }
+    ]
+
+
+    # Internationalization
+    # https://docs.djangoproject.com/en/2.1/topics/i18n/
+
+    LANGUAGE_CODE = 'en-us'
+    TIME_ZONE = 'Europe/Rome'
+    USE_I18N = True
+    USE_L10N = True
+    USE_TZ = True
+
+
+    # Static files (CSS, JavaScript, Images)
+    # https://docs.djangoproject.com/en/2.1/howto/static-files/
+
+    STATIC_URL = '/static/'
+    STATIC_ROOT = "static/"
+
+    STATICFILES_DIRS = [
+        # also include static files generated for angular frontend app
+        os.path.join(BASE_DIR, "../app/dist/")
+    ]
+
+    ###
+    ### REST Framework
+    ###
+
+    # TODO better mechanism for auth tokens
+    # https://github.com/James1345/django-rest-knox
+
+    APPEND_SLASH = False
+
+    REST_FRAMEWORK = {
+
+        # custom exception handler reports exception with specific formatting
+        'EXCEPTION_HANDLER': 
+            'api.utilities.api_exception_handler',
+    #       'rest_framework_json_api.exceptions.exception_handler',
+
+        'DEFAULT_PAGINATION_CLASS':
+            'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
+
+        'DEFAULT_PARSER_CLASSES': (
+    #       'rest_framework_json_api.parsers.JSONParser',
+            'rest_framework.parsers.JSONParser',
+            'rest_framework.parsers.FormParser',
+            'rest_framework.parsers.MultiPartParser'
+        ),
+
+        'DEFAULT_RENDERER_CLASSES': (
+    #       'rest_framework_json_api.renderers.JSONRenderer',
+    #       'rest_framework.renderers.JSONRenderer',
+            'api.renderers.JSONRenderer', # jsonapi but simplified
+            'rest_framework.renderers.BrowsableAPIRenderer',
+        ),
+
+        'DEFAULT_METADATA_CLASS': 
+            'rest_framework_json_api.metadata.JSONAPIMetadata',
+        
+        'DEFAULT_FILTER_BACKENDS': (
+            'rest_framework_json_api.filters.QueryParameterValidationFilter',
+            'rest_framework_json_api.filters.OrderingFilter',
+            'rest_framework_json_api.django_filters.DjangoFilterBackend',
+            'rest_framework.filters.SearchFilter',
+        ),
+        
+        'SEARCH_PARAM': 
+            'filter[search]',
+        
+        'TEST_REQUEST_RENDERER_CLASSES': (
+    #       'rest_framework_json_api.renderers.JSONRenderer',
+    #       'rest_framework.renderers.JSONRenderer',
+            'rest_framework.renderers.MultiPartRenderer',
+            'api.renderers.JSONRenderer', # jsonapi but simplified
+            ),
+        
+        'TEST_REQUEST_DEFAULT_FORMAT': 
+            'json',
+
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'api.authentication.BearerAuthentication',
+            'rest_framework.authentication.SessionAuthentication',
+            'rest_framework.authentication.BasicAuthentication',
+        ),
+
+        # Use Django's standard `django.contrib.auth` permissions,
+        # or allow read-only access for unauthenticated users.
+        'DEFAULT_PERMISSION_CLASSES': [
+            # 'rest_framework.authentication.BasicAuthentication',
+            # 'rest_framework.authentication.SessionAuthentication'
+        ]
+    }
+
+    # Django Swagger documentation settings
+    # https://django-rest-swagger.readthedocs.io/en/latest/settings/
+    SWAGGER_SETTINGS = {
+        'SECURITY_DEFINITIONS': {
+            'basic': {
+                'description': 'Authorize using credentials from analitico.ai',
+                'type': 'basic'
+            },
+            # Support authentication with API tokens
+            'token': {
+                'description': "Authorize using an 'Authorization: Bearer tok_xxx' header.",
+                'type': 'apiKey',
+                'in': 'header',
+                'name': 'Authorization'
+            }
+        }
+    }
+
+    ###
+    ### Logging
+    ###
+
+    # Examples of logging configuration:
+    # https://lincolnloop.com/blog/django-logging-right-way/
+
+    # Sentry/Django documentation
+    # https://docs.sentry.io/clients/python/integrations/django/
+
+    # See logs here:
+    # https://sentry.io/analiticoai/python/
+
+    sentry_sdk.init("https://3cc8a3cf05e140a9bef3946e24756dc5@sentry.io/1336917")
+
+    RAVEN_CONFIG = {
+        'dsn': 'https://3cc8a3cf05e140a9bef3946e24756dc5:30ab9adb8199489a962d94566cd746bc@sentry.io/1336917',
+        # If you are using git, you can also automatically configure the
+        # release based on the git info.
+    #   'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
+    #   'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
+        'release': 'v0.11',
+    }
+
+    LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
+
+    LOGGING_CONFIG = None
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'console': {
+                # exact format is not important, this is the minimum information
+                'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+            },
         },
-        # Add Handler for Sentry for `warning` and above
-        'sentry': {
-            'level': 'WARNING',
-            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'console',
+            },
+            # Add Handler for Sentry for `warning` and above
+            'sentry': {
+                'level': 'WARNING',
+                'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+            },
         },
-    },
-    'loggers': {
-        # root logger
-        '': {
-            'level': 'WARNING',
-            'handlers': ['console'],
-            #'handlers': ['console', 'sentry'],
+        'loggers': {
+            # root logger
+            '': {
+                'level': 'WARNING',
+                'handlers': ['console'],
+                #'handlers': ['console', 'sentry'],
+            },
+            'analitico': {
+                'level': LOGLEVEL,
+                'handlers': ['console'],
+                # 'handlers': ['console', 'sentry'],
+                # required to avoid double logging with root logger
+                'propagate': False,
+            },
         },
-        'analitico': {
-            'level': LOGLEVEL,
-            'handlers': ['console'],
-            # 'handlers': ['console', 'sentry'],
-            # required to avoid double logging with root logger
-            'propagate': False,
-        },
-    },
-})
+    })
+
+
+except KeyError as exc:
+    detail = 'settings.py - Configuration error, did you forget to declare ' + exc.args[0] + ' as an environment variable?'
+    sys.stderr.write(detail)
+    sys.exit(1) # error
