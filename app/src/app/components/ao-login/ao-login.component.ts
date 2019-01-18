@@ -18,13 +18,13 @@ export class AoLoginComponent implements OnInit {
     }
 
     login() {
-        this.apiClient.get('/author2')
-        .then((data: any) => {
-            console.log(data);
+        this.apiClient.post('/login', { username: this.username, password: this.password })
+        .then((response: any) => {
+            // notify to global state the user profile
+            this.globalState.setProperty('user', response.data);
         })
         .catch((error: any) => {
             console.error('Login error');
         });
-        this.globalState.setProperty('user', { username: this.username });
     }
 }
