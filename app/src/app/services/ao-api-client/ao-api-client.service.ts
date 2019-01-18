@@ -39,6 +39,32 @@ export class AoApiClientService {
         });
     }
 
+    put(url: string, body: any, options?: any): any {
+        return new Promise((resolve, reject) => {
+            this.http.put(environment.apiUrl + url, body, options)
+                .subscribe(
+                    response => {
+                        this.parseResponse(response, resolve);
+                    },
+                    err => {
+                        this.handleError(err, reject);
+                    });
+        });
+    }
+
+    delete(url: string, options?: any): any {
+        return new Promise((resolve, reject) => {
+            this.http.delete(environment.apiUrl + url, options)
+                .subscribe(
+                    response => {
+                        this.parseResponse(response, resolve);
+                    },
+                    err => {
+                        this.handleError(err, reject);
+                    });
+        });
+    }
+
     private parseResponse(response: any, resolve: any): void {
         // console.log(response);
         resolve(response);
