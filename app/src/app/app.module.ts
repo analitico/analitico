@@ -14,6 +14,8 @@ import { LayoutModule } from '@angular/cdk/layout';
 import { AoLoginComponent } from './components/ao-login/ao-login.component';
 import { FormsModule } from '@angular/forms';
 import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-state-store.service';
+import { HttpClientModule } from '@angular/common/http';
+import { AoApiClientService } from './services/ao-api-client/ao-api-client.service';
 
 @NgModule({
     declarations: [
@@ -23,6 +25,7 @@ import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-s
     ],
     imports: [
         BrowserModule,
+        HttpClientModule,
         AppRoutingModule,
         BrowserAnimationsModule,
         MatSidenavModule,
@@ -35,7 +38,7 @@ import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-s
         MatInputModule,
         FormsModule
     ],
-    providers: [AoGlobalStateStore],
+    providers: [AoGlobalStateStore, AoApiClientService],
     bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -17,6 +17,7 @@ import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-gl
 export class MainNavComponent implements OnInit, OnDestroy {
 
     userInitial: string;
+    userBadgeIconUrl: string;
     globalStateObserverSubscription: any; // keeps reference of observer subscription for cleanup
     isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
         .pipe(
