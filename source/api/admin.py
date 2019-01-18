@@ -37,7 +37,7 @@ class UserAdmin(DjangoUserAdmin):
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
     list_display = ('id', 'email', 'name', 'created_at')
-    ordering = ('workspace__user__email', 'name', '-created_at') 
+    ordering = ('name', '-created_at') 
 
 
 @admin.register(Call)
