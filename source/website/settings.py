@@ -101,9 +101,19 @@ try:
         'django.contrib.admin',
         'django.contrib.auth',
         'django.contrib.contenttypes',
-        'django.contrib.sessions',
         'django.contrib.messages',
-        'django.contrib.staticfiles'
+        'django.contrib.sessions',
+        'django.contrib.staticfiles',
+        'django.contrib.sites',
+
+        'allauth',
+        'allauth.account',
+        'allauth.socialaccount',
+        # include the providers you want to enable...
+        # https://django-allauth.readthedocs.io/en/latest/installation.html
+        'allauth.socialaccount.providers.google',
+        'allauth.socialaccount.providers.github',
+        'allauth.socialaccount.providers.windowslive',
     ]
 
     MIDDLEWARE = [
@@ -149,6 +159,69 @@ try:
         { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator' },
         { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator' }
     ]
+
+    AUTHENTICATION_BACKENDS = (
+        # Needed to login by username in Django admin, regardless of `allauth`
+        'django.contrib.auth.backends.ModelBackend',
+
+        # `allauth` specific authentication methods, such as login by e-mail
+        'allauth.account.auth_backends.AuthenticationBackend',
+    )
+
+    # Must match the site configured in /admin/sites/
+    SITE_ID = 1
+
+    ##
+    ## Social Authentication and Accounts
+    ##
+    
+    # Configurations:
+    # https://django-allauth.readthedocs.io/en/latest/configuration.html
+
+    # Use custom user model that has email instead of username
+    ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+    ACCOUNT_USER_MODEL_EMAIL_FIELD='email'
+    ACCOUNT_EMAIL_REQUIRED = True
+    ACCOUNT_USERNAME_REQUIRED = False
+    ACCOUNT_AUTHENTICATION_METHOD = 'email'
+    
+    ACCOUNT_PRESERVE_USERNAME_CASING=False
+
+    SOCIALACCOUNT_PROVIDERS = {
+        'google': {
+            'SCOPE': [
+                'profile',
+                'email', # email is a requirement
+            ],
+            'AUTH_PARAMS': {
+                'access_type': 'online',
+            }
+        }
+    }
+
+    LOGIN_REDIRECT_URL = 'lab'
+
+    ##
+    ## Email sender (configured in environment variables)
+    ##
+
+    # Using a paid SendGrid service account:
+    # https://sendgrid.com/docs/for-developers/sending-email/django/
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ.get('ANALITICO_EMAIL_HOST', None)
+    EMAIL_HOST_USER = os.environ.get('ANALITICO_EMAIL_HOST_USER', None)
+    EMAIL_HOST_PASSWORD = os.environ.get('ANALITICO_EMAIL_HOST_PASSWORD', None)
+    EMAIL_PORT = os.environ.get('ANALITICO_EMAIL_HOST_PORT', 587)
+    EMAIL_USE_TLS = os.environ.get('ANALITICO_EMAIL_HOST_TLS', True)
+
+    # Simple setup using a Gmail account (SMTP needs to be excplicitely authorized):
+    # https://medium.com/@_christopher/how-to-send-emails-with-python-django-through-google-smtp-server-for-free-22ea6ea0fb8e
+    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # EMAIL_HOST = 'smtp.gmail.com'
+    # EMAIL_USE_TLS = True
+    # EMAIL_PORT = 587
+    # EMAIL_HOST_USER = 'xxx@gmail.com'
+    # EMAIL_HOST_PASSWORD = 'xxx'
 
 
     # Internationalization

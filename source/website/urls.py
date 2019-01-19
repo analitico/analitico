@@ -2,16 +2,12 @@
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
-from django.utils.translation import gettext as _
 from django.conf.urls import url
-from django.conf import settings
-from django.conf.urls.static import static
-
-from rest_framework import permissions
-
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from rest_framework import permissions
 
+import website.views
 import api.urls
 
 # API documentation
@@ -33,14 +29,19 @@ schema_view = get_schema_view(
 # urlpatterns list routes URLs to views:
 # https://docs.djangoproject.com/en/2.1/topics/http/urls/
 urlpatterns = [
+
    # static home page from template
    path('', TemplateView.as_view(template_name='index.html'), name='index'),   
 
-   # angular frontend application (any path under /app)
-   # url(r'^app.*', TemplateView.as_view(template_name="app.html"), name="app"),
+   # allauth urls related to login, logout, changing passwords, support for social login with github, google, etc
+   path('accounts/', include('allauth.urls')),
 
    # django admin site
    path('admin/', admin.site.urls, name='admin'),
+
+   # angular frontend application (any path under /lab)
+   path('lab', website.views.lab, name='lab'), # placeholder
+   # url(r'^lab.*', TemplateView.as_view(template_name="lab.html"), name="lab"),
 
    # REST APIs
    path('api/v1/', include('api.urls'), name='api'),
@@ -51,6 +52,6 @@ urlpatterns = [
    url(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
    url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-
+   # page used to test templates, etc
+   path('pippo', website.views.pippo, name='pippo'), # test page
+] 
