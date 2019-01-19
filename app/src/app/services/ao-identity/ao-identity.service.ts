@@ -18,12 +18,17 @@ export class AoIdentityService {
      * Load current user profile and notify to global state
      */
     getUserProfile(): void {
-        this.apiClient.get('/profile')
-        .then((response: any) => {
-            // notify to global state the user profile
-            this.globalState.setProperty('user', response.data);
-        })
-        .catch((error: any) => {
-        });
+        this.apiClient.get('/user')
+            .then((response: any) => {
+                if (response.status === 301) {
+                    // user is not logged, and the server redirect to the login page
+                    const location = response.headers.get('Location');
+                    return window.location.href = location;
+                }
+                // notify to global state the user profile
+                this.globalState.setProperty('user', response.data);
+            })
+            .catch((error: any) => {
+            });
     }
 }
