@@ -66,9 +66,12 @@ class Storage():
             assert credentials
 
             if driver == 'google-storage':
-                driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
-                return Storage(settings, driver)
-                
+                try:
+                    driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
+                    return Storage(settings, driver)
+                except ValueError as exc:
+                    raise Exception('Storage.factory - could not login to Google Cloud Storage, please check environment variables ANALITICO_GCS_KEY and ANALITICO_GCS_SECRET to make sure they are valid', exc)
+
             # TODO add other cloud providers as we need them
             raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
         except Exception as exc:
