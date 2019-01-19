@@ -40,7 +40,8 @@
                 "--noreload",
                 "--nothreading"
             ],
-            "django": true
+            "django": true,
+            "debugStdLib": true
         },
         {
             "name": "Python: Django test",
