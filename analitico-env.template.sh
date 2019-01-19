@@ -28,3 +28,8 @@ export ANALITICO_MYSQL_PASSWORD="xxx"
 export ANALITICO_GCS_KEY="xxx@xxx.com"
 export ANALITICO_GCS_SECRET=$"-----BEGIN PRIVATE KEY-----\nxxx\n-----END PRIVATE KEY-----\n"
 export ANALITICO_GCS_PROJECT="xxx"
+
+# Example of SendGrid configuration for sending emails
+export ANALITICO_EMAIL_HOST="smtp.sendgrid.net"
+export ANALITICO_EMAIL_HOST_USER = 'xxx'
+export ANALITICO_EMAIL_HOST_PASSWORD = 'xxx'
