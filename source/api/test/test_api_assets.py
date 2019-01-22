@@ -39,7 +39,8 @@ class AssetsTests(api.test.APITestCase):
             data = {
                 'file': asset_uploaded
             }
-            self.auth_token(token if token else self.token1)
+            # no token means no authentication, not use default token
+            self.auth_token(token)
             response = self.client.post(url, data, format='multipart')
             self.assertEqual(response.status_code, status_code)
 
@@ -55,7 +56,7 @@ class AssetsTests(api.test.APITestCase):
     def _upload_dog(self):
         """ The same dog image is used in a number of tests """
         url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'oh-my-dog.jpg'))
-        response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+        response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', token=self.token1)
         self.assertEqual(response.data[0]['id'], 'oh-my-dog.jpg')
         self.assertEqual(response.data[0]['path'], 'workspaces/ws_storage_gcs/assets/oh-my-dog.jpg')
         self.assertEqual(response.data[0]['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
@@ -115,7 +116,7 @@ class AssetsTests(api.test.APITestCase):
         """ Test simple upload of image asset """
         try:
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'image_dog1.jpg')) # asset_id matches filename
-            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', token=self.token1)
             data = response.data[0]
 
             self.assertEqual(data['id'], 'image_dog1.jpg')
@@ -129,7 +130,7 @@ class AssetsTests(api.test.APITestCase):
         """ Test asset id from URL taking precedence over filename """
         try:
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'url-dog2.jpg')) # asset_id has priority
-            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', token=self.token1)
             data = response.data[0]
 
             self.assertEqual(data['id'], 'url-dog2.jpg')
@@ -144,7 +145,7 @@ class AssetsTests(api.test.APITestCase):
         try:
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'GOOD')) # won't reverse with invalid chars...
             url = url.replace('GOOD', 'ur$£"l-dOg_2.jpg') # ...replace with invalid chars
-            self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', status_code=status.HTTP_404_NOT_FOUND)
+            self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', token=self.token1, status_code=status.HTTP_404_NOT_FOUND)
         except Exception as exc:
             raise exc
 
@@ -189,12 +190,30 @@ class AssetsTests(api.test.APITestCase):
             raise exc
 
 
+    def test_asset_upload_wrong_token_404(self):
+        """ Test simple upload of image asset using the wrong token """
+        try:
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'image_dog1.jpg')) # asset_id matches filename
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        except Exception as exc:
+            raise exc
+
+
+    def test_asset_upload_no_token_404(self):
+        """ Test simple upload of image asset using no token """
+        try:
+            url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'image_dog1.jpg')) # asset_id matches filename
+            response = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', token=None, status_code=status.HTTP_404_NOT_FOUND)
+        except Exception as exc:
+            raise exc
+
+
     def test_asset_download(self):
         """ Test simple upload and download of image asset """
         try:
             # upload an image to storage
             url = reverse('api:workspace-asset-detail', args=('ws_storage_gcs', 'download1.jpg'))
-            response1 = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg')
+            response1 = self._upload_file(url, 'image_dog1.jpg', 'image/jpeg', token=self.token1)
             self.assertEqual(response1.data[0]['id'], 'download1.jpg')
             self.assertEqual(response1.data[0]['hash'], 'a9f659efd070f3e5b121a54edd8b13d0')
 
