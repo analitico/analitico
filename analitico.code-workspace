@@ -19,6 +19,8 @@
 			"**/__pycache__": true,
 			"**/.ipynb_checkpoints": true,
 			"**/venv": true
-		}
+		},
+		"python.unitTest.cwd": "source",
+		"python.unitTest.unittestEnabled": true
 	}
 }
