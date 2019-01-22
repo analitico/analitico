@@ -27,4 +27,20 @@
     <mat-card-actions>
         <button mat-raised-button (click)="login()" color="primary">Login</button>
     </mat-card-actions>
+
+    <div [fileUploadInputFor]="fileUploadQueue" class="upload-drop-zone">
+        Just drag and drop files here
+    </div>
+     
+     
+    <div style="width: 500px">
+        <mat-file-upload-queue #fileUploadQueue
+            [fileAlias]="'file'"
+            httpRequestHeaders="X-CSRFToken:{{CSRFToken}}"
+            [httpUrl]="'http://local.analitico.ai/api/v1/datasets/ds_test/assets/'" multiple>
+        
+            <mat-file-upload [file]="file" [id]="i" *ngFor="let file of fileUploadQueue.files; let i = index"></mat-file-upload>
+        </mat-file-upload-queue>
+    </div>
+
 </mat-card>
