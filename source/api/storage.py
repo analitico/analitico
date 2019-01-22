@@ -68,7 +68,7 @@ class Storage():
             if driver == 'google-storage':
                 try:
                     # add newline in case it's lost from the environment variable...
-                    settings['credentials']['secret'] = settings['credentials']['secret'] + '\n'
+                    settings['credentials']['secret'] = settings['credentials']['secret'].replace('{newline}', '\n')
                     driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
                     return Storage(settings, driver)
                 except ValueError as exc:
