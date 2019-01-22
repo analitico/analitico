@@ -16,7 +16,7 @@ import rest_framework
 from rest_framework import serializers, exceptions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import NotFound, ParseError, MethodNotAllowed
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 
@@ -127,14 +127,14 @@ class ItemViewSetMixin():
         item.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
+    @permission_classes((IsAuthenticated, ))
     @action(methods=['get'], detail=True, url_name='asset-list', url_path='assets')
     def assets(self, request, pk):
         """ Returns a listing of all assets associated with this item. """
         item = self.get_object()
         return Response(item.assets)
 
-
+    @permission_classes((IsAuthenticated, ))
     @action(methods=['get', 'post', 'put', 'delete'], detail=True, url_name='asset-detail', url_path=r'assets/(?P<asset_id>[-\w.]{0,256})$')
     def asset(self, request, pk, asset_id=None):
         """ Upload, update, download or delete a file asset associated with this item. Supports both direct upload and multipart forms. """
@@ -147,6 +147,7 @@ class ItemViewSetMixin():
         raise MethodNotAllowed(request.method)
 
     # TODO make asset_id portion of regex mandatory
+    @permission_classes((IsAuthenticated, ))
     @action(methods=['get'], detail=True, url_name='asset-detail-json', url_path=r'assets/(?P<asset_id>[-\w.]{0,256})/json$')
     def asset_detail_json(self, request, pk, asset_id=None):
         """ Returns an asset's details as json. """
@@ -178,10 +179,11 @@ class WorkspaceViewSet(ItemViewSetMixin, viewsets.ModelViewSet):
     label ='viewset label'
 
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            return Workspace.objects.all()
-        return Workspace.objects.filter(user=self.request.user)
-
+        if self.request.user.is_authenticated:
+            if self.request.user.is_superuser:
+                return Workspace.objects.all()
+            return Workspace.objects.filter(user=self.request.user)
+        return Workspace.objects.none()
 
 ##
 ## DatasetViewSet - list, detail, post and update datasets
