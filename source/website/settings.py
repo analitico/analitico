@@ -241,8 +241,8 @@ try:
     STATIC_ROOT = "static/"
 
     STATICFILES_DIRS = [
-        # also include static files generated for angular frontend app
-        os.path.join(BASE_DIR, "../app/dist/")
+        # will also include static files generated for angular frontend app?
+        # os.path.join(BASE_DIR, "../app/dist/")
     ]
 
     ###
