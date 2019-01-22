@@ -36,9 +36,7 @@
             "debugOptions": [ "Django"],
             "envPath": "${workspaceFolder}/source/dev.env",
             "args": [
-                "runserver",
-                "--noreload",
-                "--nothreading"
+                "runserver"
             ],
             "django": true,
             "debugStdLib": true
