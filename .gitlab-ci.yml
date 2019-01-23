@@ -1,5 +1,5 @@
 
-image: registry.gitlab.com/analitico/analitico:b8d7ae548
+image: registry.gitlab.com/analitico/analitico
 
 # GitLab Build and Deploy to a Server via SSH
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
