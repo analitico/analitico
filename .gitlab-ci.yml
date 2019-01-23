@@ -1,5 +1,5 @@
 
-image: docker:latest
+image: registry.gitlab.com/analitico/analitico:latest
 
 # GitLab Build and Deploy to a Server via SSH
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
@@ -43,15 +43,8 @@ build_dev:
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com 
     # run docker
-    - docker run --name temp-analitico -d registry.gitlab.com/analitico/analitico
-    - docker cp /builds/analitico/analitico temp-analitico:/home
-    - docker exec temp-analitico cd /home/analitico
-    - docker exec temp-analitico cd /home/analitico
-    - docker exec temp-analitico python3 -m venv venv
-    - docker exec temp-analitico source venv/bin/activate
-    - docker exec temp-analitico pip3 install -r requirements.txt
-    - docker commit temp-analitico analitico
-    - docker tag analitico $CONTAINER_DEV_IMAGE
+    #- docker commit temp-analitico analitico
+    #- docker tag analitico $CONTAINER_DEV_IMAGE
     #- docker build --pull -t $CONTAINER_DEV_IMAGE .
     # push the image
     - docker push $CONTAINER_DEV_IMAGE
