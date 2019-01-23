@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { AoApiClientService } from './ao-api-client.service';
+import { AoApiClientService } from '../ao-api-client/ao-api-client.service';
 import { HttpClientModule } from '@angular/common/http';
 
 describe('AoApiClientService', () => {

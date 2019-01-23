@@ -8,7 +8,7 @@ import {
     MatSidenavModule,
     MatToolbarModule,
 } from '@angular/material';
-
+import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { MainNavComponent } from './main-nav.component';
 
 describe('MainNavComponent', () => {
@@ -26,7 +26,8 @@ describe('MainNavComponent', () => {
                 MatListModule,
                 MatSidenavModule,
                 MatToolbarModule,
-            ]
+            ],
+            providers: [AoGlobalStateStore]
         }).compileComponents();
     }));
 

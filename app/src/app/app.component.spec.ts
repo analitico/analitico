@@ -3,6 +3,8 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 import { AoLoginComponent } from './components/ao-login/ao-login.component';
 import { MainNavComponent } from './components/main-nav/main-nav.component';
+import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-state-store.service';
+import { AoApiClientService } from './services/ao-api-client/ao-api-client.service';
 import {
     MatCardModule, MatInputModule, MatButtonModule, MatIconModule,
     MatListModule,
@@ -32,6 +34,7 @@ describe('AppComponent', () => {
                 AoLoginComponent,
                 MainNavComponent
             ],
+            providers: [AoGlobalStateStore, AoApiClientService]
         }).compileComponents();
     }));
 

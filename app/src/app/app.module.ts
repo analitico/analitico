@@ -16,7 +16,6 @@ import { FormsModule } from '@angular/forms';
 import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-state-store.service';
 import { HttpClientModule } from '@angular/common/http';
 import { AoApiClientService } from './services/ao-api-client/ao-api-client.service';
-import { MatFileUploadModule } from 'angular-material-fileupload';
 
 @NgModule({
     declarations: [
@@ -37,8 +36,7 @@ import { MatFileUploadModule } from 'angular-material-fileupload';
         MatListModule,
         MatCardModule,
         MatInputModule,
-        FormsModule,
-        MatFileUploadModule
+        FormsModule
     ],
     providers: [AoGlobalStateStore, AoApiClientService],
     bootstrap: [AppComponent]

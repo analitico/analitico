@@ -34,7 +34,9 @@ export class MainNavComponent implements OnInit, OnDestroy {
 
     ngOnDestroy() {
         // unsubscribe to avoid memory leaks
-        this.globalStateObserverSubscription.unsubscribe();
+        if (this.globalStateObserverSubscription) {
+            this.globalStateObserverSubscription.unsubscribe();
+        }
     }
 
     onGlobalStateUpdate() {
