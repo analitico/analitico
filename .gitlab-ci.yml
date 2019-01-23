@@ -44,6 +44,7 @@ build_dev:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # run docker
     - docker run --name temp-analitico registry.gitlab.com/analitico/analitico
+    - docker cp /builds/analitico/analitico temp-analitico:/home
     - docker commit temp-analitico analitico
     - docker tag analitico $CONTAINER_DEV_IMAGE
     #- docker build --pull -t $CONTAINER_DEV_IMAGE .
