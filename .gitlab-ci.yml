@@ -52,6 +52,7 @@ deploy-staging:
   only:
     - master
   script:
+    - cd source
 
 deploy-production:
   stage: deploy
