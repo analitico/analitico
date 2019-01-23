@@ -1,5 +1,5 @@
 
-image: registry.gitlab.com/analitico/analitico:latest
+image: docker:latest
 
 # GitLab Build and Deploy to a Server via SSH
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
@@ -45,7 +45,7 @@ build_dev:
     # run docker
     #- docker commit temp-analitico analitico
     #- docker tag analitico $CONTAINER_DEV_IMAGE
-    #- docker build --pull -t $CONTAINER_DEV_IMAGE .
+    - docker build --pull -t $CONTAINER_DEV_IMAGE .
     # push the image
     - docker push $CONTAINER_DEV_IMAGE
   only:
