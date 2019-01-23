@@ -45,7 +45,7 @@ build_dev:
     # run docker
     - docker run --name temp-analitico registry.gitlab.com/analitico/analitico
     - docker cp /builds/analitico/analitico temp-analitico:/home
-    - docker exec -it temp-analitico
+    - docker exec -it temp-analitico bash
     - cd /home/analitico
     - python3 -m venv venv
     - source venv/bin/activate
