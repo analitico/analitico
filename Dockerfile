@@ -8,5 +8,5 @@ RUN apt install python3.6-dev -y
 RUN apt install python3-venv -y  
 RUN apt install build-essential
 RUN apt install python3-dev -y 
-RUN apt install nginx
+RUN apt install nginx -y
 RUN rm /etc/nginx.conf
