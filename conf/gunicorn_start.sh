@@ -21,7 +21,7 @@ export PYTHONPATH=$DJANGODIR:$PYTHONPATH
 RUNDIR=$(dirname $SOCKFILE)
 test -d $RUNDIR || mkdir -p $RUNDIR
 
-# Start your Django Unicorn. The script it started directly from inside the
+# Start your Django Unicorn. The script is started directly from inside the
 # virtual environment which will activate the environment itself.
 # Programs meant to be run under supervisor should not daemonize themselves 
 # (do not use --daemon)
