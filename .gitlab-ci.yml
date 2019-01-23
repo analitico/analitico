@@ -1,5 +1,5 @@
 
-image: continuumio/miniconda3:latest
+image: registry.gitlab.com/analitico/analitico:b8d7ae548
 
 # GitLab Build and Deploy to a Server via SSH
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
@@ -7,22 +7,10 @@ image: continuumio/miniconda3:latest
 variables:
   GCP_PROJECT_ID: analitico-api
   GCP_ZONE: europe-west1
+  CONTAINER_DEV_IMAGE: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA
 
 services:
 - docker:dind
-
-before_script:
-  # Update environment
-  - apt-get update -qq
-  - apt-get install -y -qq python3-venv
-  - apt-get install -y -qq python3-pip
-  - apt-get install -y -qq sshpass
-  # https://docs.gitlab.com/ee/ci/ssh_keys/
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-  - eval $(ssh-agent -s)
-  - echo "$ID_WWW" | tr -d '\r' | ssh-add - > /dev/null
-  - mkdir -p ~/.ssh
-  - chmod 700 ~/.ssh
  
 stages:
   - test
@@ -32,6 +20,10 @@ stages:
 cache:
   paths:
     - pip-cache
+
+before_script:
+    #- ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/
+    #- nginx
 
 test:
   stage: test
@@ -43,32 +35,23 @@ test:
     # Prepare Django, run tests
     - cd source
     - ./manage.py collectstatic --noinput
-    - ./manage.py test
+    # ./manage.py test
+
+build_dev:
+  stage: build
+  script:
+    # login to registry
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    # push the image
+    - docker push $CONTAINER_DEV_IMAGE
+  only:
+    - master
 
 deploy-staging:
   stage: deploy
   only:
     - master
   script:
-    # Create virtual environment
-    - python3 -m venv venv
-    - source venv/bin/activate
-    - pip3 install -r requirements.txt
-    # Prepare Django, run tests
-    - cd source
-    - ./manage.py collectstatic --noinput
-    - ./manage.py test
-    - cd ..
-    # Deploy to s2.analitico.ai
-    - export SSHPASS=$WWW_PASS 
-    - sshpass -e scp -o stricthostkeychecking=no -r source www@s2.analitico.ai:/home/www/analitico/source
-    # TODO figure out how to fix rsync via ssh, needs to install keys properly
-    # rsync -ae "ssh -p 22" -vzh --stats --progress . www@s2.analitico.ai:/home/www/analitico
-    # sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; pip3 install -r requirements.txt"
-    # sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py collectstatic --noinput"
-    # sshpass -e ssh www@s2.analitico.ai "cd /home/www/analitico; source venv/bin/activate; cd source; python3 manage.py test"
-    # TODO python3 manage.py migrate
-    # TODO sudo systemctl restart gunicorn_analitico
 
 deploy-production:
   stage: deploy
