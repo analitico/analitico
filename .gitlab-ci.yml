@@ -41,15 +41,15 @@ build_dev:
   stage: build
   script:
     # login to registry
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com 
     # run docker
-    - docker run --name temp-analitico registry.gitlab.com/analitico/analitico
+    - docker run --name temp-analitico registry.gitlab.com/analitico/analitico /bin/bash
     - docker cp /builds/analitico/analitico temp-analitico:/home
-    - docker run temp-analitico cd /home/analitico
-    - docker run temp-analitico cd /home/analitico
-    - docker run temp-analitico python3 -m venv venv
-    - docker run temp-analitico source venv/bin/activate
-    - docker run temp-analitico pip3 install -r requirements.txt
+    - docker exec temp-analitico cd /home/analitico
+    - docker exec temp-analitico cd /home/analitico
+    - docker exec temp-analitico python3 -m venv venv
+    - docker exec temp-analitico source venv/bin/activate
+    - docker exec temp-analitico pip3 install -r requirements.txt
     - docker commit temp-analitico analitico
     - docker tag analitico $CONTAINER_DEV_IMAGE
     #- docker build --pull -t $CONTAINER_DEV_IMAGE .
