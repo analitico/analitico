@@ -9,4 +9,4 @@ RUN apt install python3-venv -y
 RUN apt install build-essential
 RUN apt install python3-dev -y 
 RUN apt install nginx -y
-RUN rm /etc/nginx.conf
+RUN rm /etc/nginx/nginx.conf
