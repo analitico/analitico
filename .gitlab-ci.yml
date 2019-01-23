@@ -25,16 +25,16 @@ before_script:
     #- ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/
     #- nginx
 
-test:
-  stage: test
-  script:
+#test:
+#  stage: test
+#  script:
     # Create virtual environment
-    - python3 -m venv venv
-    - source venv/bin/activate
-    - pip3 install -r requirements.txt
+#    - python3 -m venv venv
+#    - source venv/bin/activate
+#    - pip3 install -r requirements.txt
     # Prepare Django, run tests
-    - cd source
-    - ./manage.py collectstatic --noinput
+#    - cd source
+#    - ./manage.py collectstatic --noinput
     # ./manage.py test
 
 build_dev:
