@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-RUN apk update
+RUN apt update
 RUN apt upgrade -y
 RUN apt-get install -y sudo
 RUN apt install python-pip -y
