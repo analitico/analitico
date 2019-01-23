@@ -43,7 +43,7 @@ build_dev:
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com 
     # run docker
-    - docker run --name temp-analitico registry.gitlab.com/analitico/analitico /bin/bash
+    - docker run --name temp-analitico -d registry.gitlab.com/analitico/analitico
     - docker cp /builds/analitico/analitico temp-analitico:/home
     - docker exec temp-analitico cd /home/analitico
     - docker exec temp-analitico cd /home/analitico
