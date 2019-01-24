@@ -2,7 +2,6 @@ FROM registry.gitlab.com/analitico/analitico
 WORKDIR /home
 ADD . ./
 WORKDIR /home/analitico
-CMD [ "/bin/bash" ]
-RUN python3 -m venv venv
-RUN source venv/bin/activate
-RUN pip3 install -r requirements.txt
+RUN /bin/bash -c 'python3 -m venv venv'
+RUN /bin/bash -c 'source venv/bin/activate'
+RUN /bin/bash -c 'pip3 install -r requirements.txt'
