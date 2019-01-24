@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 ##
-## DatasetSource
+## Utilities
 ##
 
 # Map used to convert analitico schema types to pandas
@@ -17,8 +17,9 @@ ANALITICO_TO_PANDAS_TYPES = {
     'category': 'category'
 }
 
-def type_analitico_to_pandas(type: str):
-    return ANALITICO_TO_PANDAS_TYPES[type]
+##
+## DatasetSource
+##
 
 class DatasetSource:
     """ A generic dataset source """
@@ -27,8 +28,6 @@ class DatasetSource:
 
     def __init__(self, **kwargs):
         self.settings = kwargs
-
-
 
     def get_dataframe(**kwargs):
         return None
@@ -41,18 +40,24 @@ class CsvDatasetSource(DatasetSource):
     """ Creates a pandas dataset from a CSV file """
 
     def get_dataframe(self, **kwargs):
+        """ Creates a pandas dataframe from the csv source """
         try:
-            url = self.settings['url']
-
             dtype = None
+            parse_dates = None
 
             if 'schema' in self.settings:
                 schema = self.settings['schema']
                 if 'columns' in schema:
-                    columns = schema['columns']
-                    dtype = { column['name']: ANALITICO_TO_PANDAS_TYPES[column['type']] for column in columns }
+                    dtype = {}
+                    parse_dates = []
+                    for idx, column in enumerate(schema['columns']):
+                        if column['type'] == 'datetime':
+                            parse_dates.append(idx) # ISO8601 dates only
+                        else:
+                            dtype[column['name']] = ANALITICO_TO_PANDAS_TYPES[column['type']]
 
-            return pd.read_csv(url, dtype=dtype, **kwargs)
+            url = self.settings['url']
+            return pd.read_csv(url, dtype=dtype, parse_dates=parse_dates, **kwargs)
         except Exception as exc:
             raise exc
 
@@ -83,16 +88,8 @@ class Dataset:
 ## Factory
 ##   
 
-class DatasetFactory():
-    """ Factory used to create datasets with various methods """
-
-    @staticmethod
-    def from_settings(settings: dict):
-        return Dataset(settings)
-
-    @staticmethod
-    def from_id(dataset_id):
-        return None
+def ds_factory(**kwargs):
+    return Dataset(**kwargs)
 
 
 def ds_source_factory(settings: dict):
@@ -100,8 +97,3 @@ def ds_source_factory(settings: dict):
     if settings['type'] == 'text/csv':
         return CsvDatasetSource(**settings)
     raise NotImplementedError("DatasetSource for type '" + settings['type'] + "' is not implemented.")
-
-
-def ds_dataset_factory(dataset_id: str = None, token: str = None, endpoint: str = None):
-    return Dataset(id = dataset_id)
-

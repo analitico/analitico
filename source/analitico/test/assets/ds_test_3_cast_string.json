@@ -1,0 +1,17 @@
+{
+    "id": "ds_3_cast_string",
+
+    "source": {
+        "type": "text/csv",
+        "url": "{assets}/ds_test_3.csv",
+
+        "schema": {
+            "title": "A test schema forcing the third column to string instead of float",
+            "columns": [
+                { "name": "First", "type": "integer" },
+                { "name": "Second", "type": "string" },
+                { "name": "Third", "type": "string" }
+            ]
+        }
+    }
+}

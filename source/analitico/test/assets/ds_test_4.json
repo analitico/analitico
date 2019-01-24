@@ -1,0 +1,17 @@
+{
+    "id": "ds_4",
+
+    "source": {
+        "type": "text/csv",
+        "url": "{assets}/ds_test_4.csv",
+
+        "schema": {
+            "title": "A test schema forcing the third column to a datetime",
+            "columns": [
+                { "name": "First", "type": "integer" },
+                { "name": "Second", "type": "string" },
+                { "name": "Third", "type": "datetime" }
+            ]
+        }
+    }
+}
