@@ -16,7 +16,7 @@ echo "Running tests"
 ./manage.py test
 
 echo "Link nginx conf"
-sudo ln -s /home/analitico/conf/nginx.conf /etc/nginx/
+sudo ln -s /home/analitico/conf/nginx-ci.conf /etc/nginx/
 
 # TODO: copy SSL certificates
 
