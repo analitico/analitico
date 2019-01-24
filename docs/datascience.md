@@ -1,4 +1,15 @@
 
+# Tips
+
+Iterating over million of rows with yield:  
+https://stackoverflow.com/questions/17444679/reading-a-huge-csv-file?noredirect=1&lq=1  
+
+Benchmarks reading/writing various formats in pandas:  
+http://matthewrocklin.com/blog/work/2015/03/16/Fast-Serialization  
+
+Could use HDF5 for storage of processed pandas datasets:  
+https://www.hdfgroup.org/solutions/hdf5/  
+http://pandas-docs.github.io/pandas-docs-travis/io.html#io-hdf5  
 
 # Binary Classificator vs Weighted Random Classificator
 

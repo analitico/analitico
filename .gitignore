@@ -11,3 +11,6 @@ venv
 
 /source/django
 source/website/settings_secrets.py
+source/.pytest_cache/v/cache/stepwise
+source/.pytest_cache/v/cache/lastfailed
+source/.pytest_cache/v/cache/nodeids
