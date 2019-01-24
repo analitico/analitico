@@ -9,5 +9,6 @@ echo "Building"
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
+cd source
 ./manage.py collectstatic --noinput
 #./manage.py test
