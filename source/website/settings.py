@@ -24,7 +24,7 @@ from rest_framework.exceptions import APIException
 try:
 
     # SECURITY WARNING: don't run with debug turned on in production!
-    DEBUG = os.environ['ANALITICO_DEBUG'] == 'True'
+    DEBUG = os.environ.get('ANALITICO_DEBUG', 'False') == 'True'
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
     # Project is always started with currenct directory in /analitico/source/
@@ -39,8 +39,8 @@ try:
         'default': {
             'ENGINE': 'mysql.connector.django',
             'PORT': '3306',
+            'NAME': os.environ.get('ANALITICO_MYSQL_NAME', 'analitico'),
             'HOST': os.environ['ANALITICO_MYSQL_HOST'],
-            'NAME': os.environ['ANALITICO_MYSQL_NAME'],
             'USER': os.environ['ANALITICO_MYSQL_USER'],
             'PASSWORD': os.environ['ANALITICO_MYSQL_PASSWORD']
         }
@@ -208,7 +208,7 @@ try:
     # Using a paid SendGrid service account:
     # https://sendgrid.com/docs/for-developers/sending-email/django/
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = os.environ.get('ANALITICO_EMAIL_HOST', None)
+    EMAIL_HOST = os.environ.get('ANALITICO_EMAIL_HOST', 'smtp.sendgrid.net')
     EMAIL_HOST_USER = os.environ.get('ANALITICO_EMAIL_HOST_USER', None)
     EMAIL_HOST_PASSWORD = os.environ.get('ANALITICO_EMAIL_HOST_PASSWORD', None)
     EMAIL_PORT = os.environ.get('ANALITICO_EMAIL_HOST_PORT', 587)
