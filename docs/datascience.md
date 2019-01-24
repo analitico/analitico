@@ -1,5 +1,14 @@
 
-# Tips
+##
+## Frameworks
+##
+
+FastText - for multilingual text classification  
+https://fasttext.cc
+
+##
+## Tips
+##
 
 Iterating over million of rows with yield:  
 https://stackoverflow.com/questions/17444679/reading-a-huge-csv-file?noredirect=1&lq=1  
