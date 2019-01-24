@@ -5,11 +5,9 @@
 echo "Building"
 
 # Load injected env
-source analitico-env
-# requirements
+# source analitico-env
+python3 -m venv venv
+source venv/bin/activate
 pip3 install -r requirements.txt
-# static
-./source/manage.py collectstatic --noinput
-# test
-echo "Testing"
-./source/manage.py test
+./manage.py collectstatic --noinput
+#./manage.py test
