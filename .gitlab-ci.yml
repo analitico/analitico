@@ -45,9 +45,8 @@ build_dev:
     # run docker
     #- docker commit temp-analitico analitico
     #- docker tag analitico $CONTAINER_DEV_IMAGE
-    - env > envtest
-    - less envtest
-    - rm envtest
+    - env | grep ANALITICO_ > analitico-env
+    - less analitico-env
     - docker build --pull -t $CONTAINER_DEV_IMAGE .
     # push the image
     - docker push $CONTAINER_DEV_IMAGE
