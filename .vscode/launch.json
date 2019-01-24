@@ -9,8 +9,8 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
+            "cwd": "${workspaceFolder}/source",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
         },
         {
             "name": "Python: Attach",
