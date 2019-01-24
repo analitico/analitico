@@ -21,7 +21,7 @@ sudo ln -s /home/analitico/conf/nginx.conf /etc/nginx/
 # TODO: copy SSL certificates
 
 echo "Start gunicorn"
-exec gunicorn website.wsgi -b unix:/tmp/gunicorn.sock
+exec gunicorn website.wsgi -b unix:/tmp/gunicorn.sock &
 
 echo "Start nginx"
 exec nginx
