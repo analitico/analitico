@@ -13,7 +13,6 @@ services:
 - docker:dind
  
 stages:
-  #- test
   - build
   - deploy
 
@@ -21,34 +20,16 @@ cache:
   paths:
     - pip-cache
 
-before_script:
-    #- ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/
-    #- nginx
-
-#test:
-#  stage: test
-#  script:
-    # Create virtual environment
-#    - python3 -m venv venv
-#    - source venv/bin/activate
-#    - pip3 install -r requirements.txt
-    # Prepare Django, run tests
-#    - cd source
-#    - ./manage.py collectstatic --noinput
-    # ./manage.py test
-
 build_dev:
   stage: build
   script:
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com 
-    # run docker
-    #- docker commit temp-analitico analitico
-    #- docker tag analitico $CONTAINER_DEV_IMAGE
+    # export ANALITICO ENV
     - export -p | grep ANALITICO_ > analitico-env
-    #- less analitico-env
+    # build docker image
     - docker build --pull -t $CONTAINER_DEV_IMAGE .
-    # push the image
+    # push the image to gitlab registry
     - docker push $CONTAINER_DEV_IMAGE
   only:
     - master
