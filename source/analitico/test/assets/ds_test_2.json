@@ -1,0 +1,10 @@
+{
+    "id": "ds_2",
+
+    "source": {
+        "type": "text/csv",
+        "url": "{assets}/ds_test_2.csv"
+    }
+
+    
+}
