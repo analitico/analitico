@@ -7,12 +7,12 @@ source analitico-env
 cd /home/www/analitico
 source venv/bin/activate
 
-
 echo "Start gunicorn"
 cd source
-exec gunicorn website.wsgi -b unix:/tmp/gunicorn.sock
+exec gunicorn website.wsgi -b unix:/tmp/gunicorn.sock &
 
-#echo "Start nginx"
-#exec nginx
-
+echo "Start nginx"
+exec nginx
+echo "Wait"
+wait
 echo "Done"
