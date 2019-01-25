@@ -7,7 +7,6 @@ source analitico-env
 
 echo "Installing requirements"
 source venv/bin/activate
-source ~/.bashrc
 pip3 install -r requirements.txt
 
 cd source
