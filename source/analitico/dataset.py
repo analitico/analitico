@@ -42,11 +42,12 @@ class CsvDatasetSource(DatasetSource):
     def get_dataframe(self, **kwargs):
         """ Creates a pandas dataframe from the csv source """
         try:
+            schema = self.settings.get('schema')
             dtype = None
             parse_dates = None
+            index = None
 
-            if 'schema' in self.settings:
-                schema = self.settings['schema']
+            if schema:
                 if 'columns' in schema:
                     dtype = {}
                     parse_dates = []
@@ -55,9 +56,17 @@ class CsvDatasetSource(DatasetSource):
                             parse_dates.append(idx) # ISO8601 dates only
                         else:
                             dtype[column['name']] = ANALITICO_TO_PANDAS_TYPES[column['type']]
+                        if column.get('index', False):
+                            index = column['name']
 
             url = self.settings['url']
-            return pd.read_csv(url, dtype=dtype, parse_dates=parse_dates, **kwargs)
+            df = pd.read_csv(url, dtype=dtype, parse_dates=parse_dates, **kwargs)
+
+            if index: 
+                # transform specific column with unique values to dataframe index
+                df = df.set_index(index, drop=False)                
+            
+            return df
         except Exception as exc:
             raise exc
 

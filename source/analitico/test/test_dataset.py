@@ -129,7 +129,7 @@ class DatasetTests(unittest.TestCase):
 
 
     def test_dataset_csv5_category_no_schema(self):
-        """ Test reading basic file with categorical data without a schema """
+        """ Test reading categorical data without a schema """
         try:
             df = self.read_dataframe_asset('ds_test_5_category_no_schema.json')
 
@@ -161,7 +161,7 @@ class DatasetTests(unittest.TestCase):
 
 
     def test_dataset_csv5_category_with_schema(self):
-        """ Test reading basic file with categorical data with a schema """
+        """ Test reading categorical data with a schema, check types """
         try:
             df = self.read_dataframe_asset('ds_test_5_category_with_schema.json')
 
@@ -183,28 +183,89 @@ class DatasetTests(unittest.TestCase):
             self.assertEqual(df.dtypes[2], 'category') # slug
             self.assertEqual(df.dtypes[3], 'float') # parent_id
             self.assertEqual(df.dtypes[7], 'bool') # frozen
+        except Exception as exc:
+            raise exc
+
+
+    def test_dataset_csv5_category_check_values(self):
+        """ Test reading categorical data, check values """
+        try:
+            df = self.read_dataframe_asset('ds_test_5_category_with_schema.json')
 
             # Items types
             self.assertEqual(type(df.iloc[0,1]).__name__, 'str') # name
             self.assertEqual(type(df.iloc[0,2]).__name__, 'str') # slug
             self.assertEqual(type(df.iloc[0,3]).__name__, 'float64') # parent_id
+            self.assertEqual(type(df.iloc[0,7]).__name__, 'bool_') # frozen
         except Exception as exc:
             raise exc
 
 
+    def test_dataset_csv5_category_no_index(self):
+        """ Test reading categorical data, check index column """
+        try:
+            df1 = self.read_dataframe_asset('ds_test_5_category_with_schema.json')
+
+            # By default the index column is the row number.
+            # If the dataset has an index or id row it is just like
+            # any other row and is not used to index the pandas dataset
+            self.assertFalse(df1.loc[585, 'frozen'])
+            self.assertNotEqual(df1.loc[585, 'slug'], 'salse-etniche')
+            self.assertFalse(df1.loc[586, 'frozen'])
+            self.assertNotEqual(df1.loc[590, 'slug'], 'aromi-surgelati')
+
+            # Apply the correct index column manually
+            df2 = df1.set_index('id', drop=False)
+            self.assertFalse(df2.loc[585, 'frozen'])
+            self.assertEqual(df2.loc[585, 'slug'], 'salse-etniche')
+            self.assertTrue(df2.loc[590, 'frozen'])
+            self.assertEqual(df2.loc[590, 'slug'], 'aromi-surgelati')
+        except Exception as exc:
+            raise exc
+
+
+    def test_dataset_csv5_category_with_index(self):
+        """ Test reading categorical data, check explicit index column """
+        try:
+            df = self.read_dataframe_asset('ds_test_5_category_with_index.json')
+            self.assertFalse(df.loc[585, 'frozen'])
+            self.assertEqual(df.loc[585, 'slug'], 'salse-etniche')
+            self.assertTrue(df.loc[590, 'frozen'])
+            self.assertEqual(df.loc[590, 'slug'], 'aromi-surgelati')
+        except Exception as exc:
+            raise exc
+
+
+    def test_dataset_csv6_weird_index_no_attr(self):
+        """ Test reading table with 'weird' index column explicitly marked in schema """
+        try:
+            df = self.read_dataframe_asset('ds_test_6_weird_index_no_attr.json')
+            self.assertEqual(df.loc[8, 'slug'], 'pasta-riso-cereali')
+            self.assertEqual(df.loc[27, 'slug'], '2-alt-pasta')
+        except Exception as exc:
+            raise exc
+
+
+    def test_dataset_csv6_weird_index_with_attr(self):
+        """ Test reading table with 'weird' index column explicitly marked in schema """
+        try:
+            df = self.read_dataframe_asset('ds_test_6_weird_index_with_attr.json')
+            self.assertEqual(df.index.name, 'indice')
+            self.assertEqual(df.loc[8, 'slug'], 'pane-pasticceria')
+            self.assertEqual(df.loc[27, 'slug'], 'sughi-scatolame-condimenti')
+            self.assertEqual(df.loc[100598, 'slug'], '2-alt-salumi')
+        except Exception as exc:
+            raise exc
+
     # TODO: test reading number that use . for thousands (eg: en-us, locale)
 
     # TODO: test datetime in localized formats
-
-    # TODO: test index column
 
     # TODO: test missing values in various formats
 
     # TODO: test replacing missing values
 
     # TODO: test reordering columns
-
-    # TODO: test naming the dataframe
 
     # TODO: test generating the schema from the dataframe
 

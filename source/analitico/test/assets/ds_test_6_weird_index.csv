@@ -1,0 +1,68 @@
+name,slug,parent_id,depth,priority,max_weight,frozen,rate,has_ingredients_book,indice
+Carne e Pesce,carne-pesce,NULL,0,54,0,0,NULL,0,1
+Frutta e Verdura,frutta-verdura,NULL,0,56,0,0,NULL,0,3
+Formaggi e Salumi,formaggi-salumi,NULL,0,52,0,0,NULL,0,4
+"Latte, Burro e Yogurt",latte-burro-yogurt,NULL,0,50,0,0,NULL,0,6
+Pane e Pasticceria,pane-pasticceria,NULL,0,48,0,0,NULL,0,8
+Gastronomia,gastronomia,NULL,0,17,0,0,NULL,0,9
+"Caffè, Tè e Zucchero",caffe-te-zucchero,NULL,0,41,0,0,NULL,0,10
+"Colazione, Dolciumi e Snack",colazione-dolciumi-snack,NULL,0,40,0,0,NULL,0,11
+"Pasta, Riso e Cereali",pasta-riso-cereali,NULL,0,46,0,0,NULL,0,12
+Altre categorie...,altro,NULL,0,32,0,0,NULL,0,13
+Surgelati e gelati,surgelati-gelati,NULL,0,39,0,0,NULL,0,15
+"Acqua, Bibite e Alcolici",acqua-bibite-alcolici,NULL,0,38,0,0,NULL,0,16
+Amici Animali,amici-animali,NULL,0,33,0,0,NULL,0,17
+Bimbi e Infanzia,bimbi-infanzia,NULL,0,34,0,0,NULL,0,18
+Igiene e Cura Personale,igiene-cura-personale,NULL,0,37,0,0,NULL,0,19
+Pulizia della casa,pulizia-casa,NULL,0,36,0,0,NULL,0,20
+Accessori casa e cucina,accessori-casa-cucina,NULL,0,35,0,0,NULL,0,21
+Alluminio e Pellicole,alluminio-pellicole,NULL,0,4,0,0,NULL,0,22
+Tessile e Casalinghi,tessile-casalinghi,NULL,0,3,0,0,NULL,0,23
+Deodoranti e Candele,deodoranti-candele,NULL,0,2,0,0,NULL,0,24
+Lampadine e Pile,lampadine-pile,NULL,0,1,0,0,NULL,0,25
+Giardinaggio e Insetticidi,giardinaggio-insetticidi,NULL,0,0,0,0,NULL,0,26
+"Sughi, Scatolame, Condimenti",sughi-scatolame-condimenti,NULL,0,43,0,0,NULL,0,27
+Formaggi,2-alt-formaggi,57,1,4,0,0,NULL,0,100595
+Latte e latticini,2-alt-latte-latticini,57,1,3,0,0,NULL,0,100596
+Dessert e budini,2-alt-dessert-budini,57,1,2,0,0,NULL,0,100597
+Salumi,2-alt-salumi,57,1,1,0,0,NULL,0,100598
+Pasta,2-alt-pasta,58,1,3,0,0,NULL,0,100599
+Riso,2-alt-riso,58,1,2,0,0,NULL,0,100600
+Cereali e legumi,2-alt-cereali-legumi,58,1,1,0,0,NULL,0,100601
+Olio,2-alt-olio,59,1,4,0,0,NULL,0,100602
+"Aromi, spezie e sale",2-alt-aromi-spezie-sale,59,1,3,0,0,NULL,0,100603
+Salse e sughi,2-alt-salse-sughi,59,1,2,0,0,NULL,0,100604
+Sottoli e sottaceti,2-alt-sottoli-sottaceti,59,1,1,0,0,NULL,0,100605
+Caffè Macinato e in grani,2-alt-caffe-macinato-grani,60,1,3,0,0,NULL,0,100606
+"Caffè solubile, Orzo e cacao",2-alt-caffe-solubile-orzo,60,1,2,0,0,NULL,0,100607
+Capsule e cialde,2-alt-capsule-cialde,60,1,1,0,0,NULL,0,100608
+Tè,2-alt-te,61,1,3,0,0,NULL,0,100609
+Infusi,2-alt-infusi,61,1,2,0,0,NULL,0,100610
+Tisane,2-alt-tisane,61,1,1,0,0,NULL,0,100611
+Zucchero,2-alt-zucchero,62,1,4,0,0,NULL,0,100612
+Uova,2-alt-uova,62,1,3,0,0,NULL,0,100613
+Basi e preparati dolci,2-alt-basi-preparati,62,1,2,0,0,NULL,0,100614
+Frutta secca e disidratata,2-alt-frutta-secca,62,1,1,0,0,NULL,0,100615
+Biscotti e pasticceria,2-alt-biscotti-pasticceria,63,1,6,0,0,NULL,0,100616
+Snack dolci,2-alt-snack-dolci,63,1,5,0,0,NULL,0,100617
+Confetture e creme dolci,2-alt-confetture-creme,63,1,4,0,0,NULL,0,100618
+Cioccolato,2-alt-cioccolato,63,1,3,0,0,NULL,0,100619
+Caramelle,2-alt-caramelle,63,1,2,0,0,NULL,0,100620
+Snack salati,2-alt-snack-salati,63,1,1,0,0,NULL,0,100621
+Bevande analcoliche,2-alt-bevande-analcoliche,64,1,3,0,0,NULL,0,100622
+Succhi di frutta,2-alt-succhi-frutta,64,1,2,0,0,NULL,0,100623
+Alcolici,2-alt-alcolici,64,1,1,0,0,NULL,0,100624
+Viso,2-alt-viso,65,1,8,0,0,NULL,0,100625
+Corpo,2-alt-corpo,65,1,7,0,0,NULL,0,100626
+Bagnoschiuma e deodoranti,2-alt-bagnoschiuma-deodoranti,65,1,6,0,0,NULL,0,100627
+Saponi,2-alt-saponi,65,1,5,0,0,NULL,0,100628
+Capelli,2-alt-capelli,65,1,4,0,0,NULL,0,100629
+Igiene Orale,2-alt-igiene-orale,65,1,3,0,0,NULL,0,100630
+Cosmesi per il bimbo,2-alt-cosmesi-bimbo,65,1,2,0,0,NULL,0,100631
+Integratori e vitamine,2-alt-integratori-vitamine,65,1,1,0,0,NULL,0,100632
+Detersivi bucato e bagno,2-alt-detersivi-bucato,66,1,2,0,0,NULL,0,100633
+Detersivi superfici e stoviglie,2-alt-detersivi-superfici,66,1,1,0,0,NULL,0,100634
+Ricorrenze,2-alt-ricorrenze,67,1,1,0,0,NULL,0,100635
+Colombe,second-colombe,30,1,0,0,0,NULL,0,100636
+Lozioni e repellenti,2-lozioni-repellenti,19,1,0,0,0,22,0,100637
+"Minestroni, Zuppe e Vellutate",minestroni-zuppe-vellutate,15,1,0,0,0,NULL,0,100645
