@@ -1,10 +1,13 @@
 #!/bin/bash
-
+# exit if error
+set -e
 # Build and test execution
 echo "Injecting env"
 source analitico-env
+
 echo "Installing requirements"
 source venv/bin/activate
+source ~/.bashrc
 pip3 install -r requirements.txt
 
 cd source
