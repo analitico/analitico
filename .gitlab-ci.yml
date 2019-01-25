@@ -71,7 +71,7 @@ deploy-staging:
 
 deploy-production:
   stage: deploy
-  when: manualless
+  when: manual
   image: google/cloud-sdk:latest
   only:
     - master
