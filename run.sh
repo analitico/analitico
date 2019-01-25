@@ -9,10 +9,11 @@ source venv/bin/activate
 
 echo "Start gunicorn"
 cd source
-exec gunicorn website.wsgi -b unix:/tmp/gunicorn.sock &
+gunicorn website.wsgi -b unix:/tmp/gunicorn.sock &
 
 echo "Start nginx"
-exec nginx
+nginx
 echo "Wait"
+wait
 wait
 echo "Done"
