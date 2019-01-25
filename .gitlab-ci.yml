@@ -39,7 +39,7 @@ deploy-staging:
   only:
     - master
   script:
-    - kubectl apply -f kubernetes.yml
+    - ls
 
 deploy-production:
   stage: deploy
