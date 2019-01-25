@@ -36,6 +36,7 @@ build_dev:
 
 deploy-staging:
   stage: deploy
+  image: ubuntu:18.04
   only:
     - "master"
   environment: staging
