@@ -1,0 +1,8 @@
+{
+    "id": "ds_5",
+
+    "source": {
+        "type": "text/csv",
+        "url": "{assets}/ds_test_5_category.csv"
+    }
+}

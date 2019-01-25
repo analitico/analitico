@@ -94,7 +94,7 @@ class DatasetTests(unittest.TestCase):
             raise exc
 
 
-    def test_dataset_csv4_types_datetime_is8601(self):
+    def test_dataset_csv4_types_datetime_iso8601(self):
         """ Test reading datetime in ISO8601 format """
         try:
             df = self.read_dataframe_asset('ds_test_4.json')
@@ -126,3 +126,90 @@ class DatasetTests(unittest.TestCase):
             # http://support.sas.com/documentation/cdl/en/lrdict/64316/HTML/default/viewer.htm#a003169814.htm
         except Exception as exc:
             raise exc
+
+
+    def test_dataset_csv5_category_no_schema(self):
+        """ Test reading basic file with categorical data without a schema """
+        try:
+            df = self.read_dataframe_asset('ds_test_5_category_no_schema.json')
+
+            self.assertEqual(len(df.columns), 10)
+            self.assertEqual(df.columns[0], 'id')
+            self.assertEqual(df.columns[1], 'name')
+            self.assertEqual(df.columns[2], 'slug')
+            self.assertEqual(df.columns[3], 'parent_id')
+            self.assertEqual(df.columns[4], 'depth')
+            self.assertEqual(df.columns[5], 'priority')
+            self.assertEqual(df.columns[6], 'max_weight')
+            self.assertEqual(df.columns[7], 'frozen')
+            self.assertEqual(df.columns[8], 'rate')
+            self.assertEqual(df.columns[9], 'has_ingredients_book')
+
+            # Column types
+            self.assertEqual(df.dtypes[0], 'int') # id
+            self.assertEqual(df.dtypes[1], 'O') # name
+            self.assertEqual(df.dtypes[2], 'O') # slug
+            self.assertEqual(df.dtypes[3], 'float') # parent_id
+            self.assertEqual(df.dtypes[7], 'int') # frozen
+
+            # Items types
+            self.assertEqual(type(df.iloc[0,1]).__name__, 'str') # name
+            self.assertEqual(type(df.iloc[0,2]).__name__, 'str') # slug
+            self.assertEqual(type(df.iloc[0,3]).__name__, 'float64') # parent_id
+        except Exception as exc:
+            raise exc
+
+
+    def test_dataset_csv5_category_with_schema(self):
+        """ Test reading basic file with categorical data with a schema """
+        try:
+            df = self.read_dataframe_asset('ds_test_5_category_with_schema.json')
+
+            self.assertEqual(len(df.columns), 10)
+            self.assertEqual(df.columns[0], 'id')
+            self.assertEqual(df.columns[1], 'name')
+            self.assertEqual(df.columns[2], 'slug')
+            self.assertEqual(df.columns[3], 'parent_id')
+            self.assertEqual(df.columns[4], 'depth')
+            self.assertEqual(df.columns[5], 'priority')
+            self.assertEqual(df.columns[6], 'max_weight')
+            self.assertEqual(df.columns[7], 'frozen')
+            self.assertEqual(df.columns[8], 'rate')
+            self.assertEqual(df.columns[9], 'has_ingredients_book')
+
+            # Column types
+            self.assertEqual(df.dtypes[0], 'int') # id
+            self.assertEqual(df.dtypes[1], 'category') # name
+            self.assertEqual(df.dtypes[2], 'category') # slug
+            self.assertEqual(df.dtypes[3], 'float') # parent_id
+            self.assertEqual(df.dtypes[7], 'bool') # frozen
+
+            # Items types
+            self.assertEqual(type(df.iloc[0,1]).__name__, 'str') # name
+            self.assertEqual(type(df.iloc[0,2]).__name__, 'str') # slug
+            self.assertEqual(type(df.iloc[0,3]).__name__, 'float64') # parent_id
+        except Exception as exc:
+            raise exc
+
+
+    # TODO: test reading number that use . for thousands (eg: en-us, locale)
+
+    # TODO: test datetime in localized formats
+
+    # TODO: test index column
+
+    # TODO: test missing values in various formats
+
+    # TODO: test replacing missing values
+
+    # TODO: test reordering columns
+
+    # TODO: test naming the dataframe
+
+    # TODO: test generating the schema from the dataframe
+
+    # TODO: test plugins pipeline
+
+    # TODO: test modified values after plugin pipeline
+
+    # TODO: test modified schema after plugin pipeline

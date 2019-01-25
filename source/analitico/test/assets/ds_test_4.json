@@ -6,7 +6,7 @@
         "url": "{assets}/ds_test_4.csv",
 
         "schema": {
-            "title": "A test schema forcing the third column to a datetime",
+            "name": "A test schema used for unit testing",
             "columns": [
                 { "name": "First", "type": "integer" },
                 { "name": "Second", "type": "string" },

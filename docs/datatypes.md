@@ -3,8 +3,8 @@
 
 Analitico supports the following data types:  
 - string / text can be plain, processed, tokenized, collection of items, etc
-- integer / integer numbers (pandas int64)
-- double / floating point numbers (pandas float64)
+- integer / integer numbers (pandas int64, cannot be NA/null)
+- float / floating point numbers (pandas float64, can also be NA/null)
 - boolean / true-false (pandas bool)
 - datetime / date and time (pandas datetime64) 
 - timespan / difference between datetime (pandas timedelta64)
