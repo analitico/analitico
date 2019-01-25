@@ -209,17 +209,15 @@ class DatasetTests(unittest.TestCase):
             # By default the index column is the row number.
             # If the dataset has an index or id row it is just like
             # any other row and is not used to index the pandas dataset
-            self.assertFalse(df1.loc[585, 'frozen'])
-            self.assertNotEqual(df1.loc[585, 'slug'], 'salse-etniche')
-            self.assertFalse(df1.loc[586, 'frozen'])
-            self.assertNotEqual(df1.loc[590, 'slug'], 'aromi-surgelati')
+            self.assertFalse(df1.loc[205, 'frozen'])
+            self.assertEqual(df1.loc[205, 'slug'], 'sughi-pronti-primi-piatti')
+            self.assertEqual(df1.loc[205, 'parent_id'], 100150)
 
             # Apply the correct index column manually
             df2 = df1.set_index('id', drop=False)
-            self.assertFalse(df2.loc[585, 'frozen'])
-            self.assertEqual(df2.loc[585, 'slug'], 'salse-etniche')
-            self.assertTrue(df2.loc[590, 'frozen'])
-            self.assertEqual(df2.loc[590, 'slug'], 'aromi-surgelati')
+            self.assertFalse(df2.loc[205, 'frozen'])
+            self.assertEqual(df2.loc[205, 'slug'], 'carne-tacchino')
+            self.assertEqual(df2.loc[205, 'parent_id'], 100102)
         except Exception as exc:
             raise exc
 
@@ -228,10 +226,9 @@ class DatasetTests(unittest.TestCase):
         """ Test reading categorical data, check explicit index column """
         try:
             df = self.read_dataframe_asset('ds_test_5_category_with_index.json')
-            self.assertFalse(df.loc[585, 'frozen'])
-            self.assertEqual(df.loc[585, 'slug'], 'salse-etniche')
-            self.assertTrue(df.loc[590, 'frozen'])
-            self.assertEqual(df.loc[590, 'slug'], 'aromi-surgelati')
+            self.assertFalse(df.loc[205, 'frozen'])
+            self.assertEqual(df.loc[205, 'slug'], 'carne-tacchino')
+            self.assertEqual(df.loc[205, 'parent_id'], 100102)
         except Exception as exc:
             raise exc
 
