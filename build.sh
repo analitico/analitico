@@ -15,7 +15,7 @@ echo "Build Static"
 ./manage.py collectstatic --noinput
 
 #echo "Running tests"
-#./manage.py test
+./manage.py test
 
 echo "Link nginx conf"
 sudo ln -s /home/www/analitico/conf/nginx-ci.conf /etc/nginx/nginx.conf
