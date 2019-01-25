@@ -4,7 +4,7 @@ set -e
 # Build and test execution
 echo "Injecting env"
 source analitico-env
-#alias python=python3
+alias python=python3
 echo "Installing requirements"
 source venv/bin/activate
 pip3 install -r requirements.txt
