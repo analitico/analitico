@@ -254,6 +254,91 @@ class DatasetTests(unittest.TestCase):
         except Exception as exc:
             raise exc
 
+
+    def test_dataset_csv7_timedelta(self):
+        """ Test timespan to timedelta automatic conversion """
+        try:
+            df = self.read_dataframe_asset('ds_test_7_autoschema.json')
+
+            # index is from column 'indice'
+            self.assertEqual(df.loc[1, 'elapsed'], pd.Timedelta('1 day'))
+            self.assertEqual(df.loc[3, 'elapsed'], pd.Timedelta('2 days'))
+            self.assertEqual(df.loc[4, 'elapsed'], pd.Timedelta('3 days'))
+            self.assertEqual(df.loc[6, 'elapsed'], pd.Timedelta('1 days 06:05:01.00003'))
+        except Exception as exc:
+            raise exc
+
+    def test_dataset_csv7_autoschema(self):
+        """ Test automatically generating an analitico schema from a pandas dataframe """
+        try:
+            df = self.read_dataframe_asset('ds_test_7_autoschema.json')
+            schema = Dataset.generate_schema(df)
+
+            columns = schema['columns']
+            self.assertEqual(len(columns), 12)
+
+            self.assertEqual(columns[0]['name'], 'name')
+            self.assertEqual(columns[0]['type'], 'string')
+            self.assertEqual(columns[1]['name'], 'slug')
+            self.assertEqual(columns[1]['type'], 'category')
+            self.assertEqual(columns[2]['name'], 'parent_id')
+            self.assertEqual(columns[2]['type'], 'float')
+            self.assertEqual(columns[3]['name'], 'depth')
+            self.assertEqual(columns[3]['type'], 'integer')
+            self.assertEqual(columns[4]['name'], 'priority')
+            self.assertEqual(columns[4]['type'], 'integer')
+            self.assertEqual(columns[5]['name'], 'max_weight')
+            self.assertEqual(columns[5]['type'], 'integer')
+            self.assertEqual(columns[6]['name'], 'frozen')
+            self.assertEqual(columns[6]['type'], 'boolean')
+            self.assertEqual(columns[7]['name'], 'rate')
+            self.assertEqual(columns[7]['type'], 'float')
+            self.assertEqual(columns[8]['name'], 'has_ingredients_book')
+            self.assertEqual(columns[8]['type'], 'boolean')
+            self.assertEqual(columns[9]['name'], 'indice')
+            self.assertEqual(columns[9]['type'], 'integer')
+            self.assertEqual(columns[9]['index'], True)
+            self.assertEqual(columns[10]['name'], 'updated_at')
+            self.assertEqual(columns[10]['type'], 'datetime')
+            self.assertEqual(columns[11]['name'], 'elapsed')
+            self.assertEqual(columns[11]['type'], 'timespan')
+        except Exception as exc:
+            raise exc
+
+
+    def test_dataset_csv7_reordering(self):
+        """ Test reordering of columns in the source """
+        try:
+            df = self.read_dataframe_asset('ds_test_7_reordering.json')
+            self.assertEqual(len(df.columns), 12)
+            self.assertEqual(df.columns[0], 'depth')
+            self.assertEqual(df.columns[1], 'elapsed')
+            self.assertEqual(df.columns[2], 'frozen')
+            self.assertEqual(df.columns[3], 'has_ingredients_book')
+            self.assertEqual(df.columns[4], 'indice')
+            self.assertEqual(df.columns[5], 'max_weight')
+            self.assertEqual(df.columns[6], 'name')
+            self.assertEqual(df.columns[7], 'parent_id')
+            self.assertEqual(df.columns[8], 'priority')
+            self.assertEqual(df.columns[9], 'rate')
+            self.assertEqual(df.columns[10], 'slug')
+            self.assertEqual(df.columns[11], 'updated_at')
+        except Exception as exc:
+            raise exc
+
+
+    def test_dataset_csv7_filtering(self):
+        """ Test removing columns in the source """
+        try:
+            df = self.read_dataframe_asset('ds_test_7_filtering.json')
+            self.assertEqual(len(df.columns), 4)
+            self.assertEqual(df.columns[0], 'indice')
+            self.assertEqual(df.columns[1], 'name')
+            self.assertEqual(df.columns[2], 'slug')
+            self.assertEqual(df.columns[3], 'frozen')
+        except Exception as exc:
+            raise exc
+
     # TODO: test reading number that use . for thousands (eg: en-us, locale)
 
     # TODO: test datetime in localized formats
@@ -261,10 +346,6 @@ class DatasetTests(unittest.TestCase):
     # TODO: test missing values in various formats
 
     # TODO: test replacing missing values
-
-    # TODO: test reordering columns
-
-    # TODO: test generating the schema from the dataframe
 
     # TODO: test plugins pipeline
 
