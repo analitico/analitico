@@ -7,7 +7,7 @@ image: docker:latest
 variables:
   GCP_PROJECT_ID: analitico-api
   GCP_ZONE: europe-west1
-  CONTAINER_DEV_IMAGE: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA
+  CONTAINER_DEV_IMAGE: registry.gitlab.com/analitico/analitico:latest
 
 services:
 - docker:dind
@@ -39,7 +39,7 @@ deploy-staging:
   only:
     - master
   script:
-    - cd source
+    - kubectl apply -f kubernetes.yml
 
 deploy-production:
   stage: deploy
