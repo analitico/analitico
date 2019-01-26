@@ -183,3 +183,36 @@ def set_dict_dot(d:dict, key:str, value=None):
         if not (subkey in d):
             d[subkey] = None
         set_dict_dot(d[subkey], key[len(subkey)+1:], value)
+
+
+##
+## Schema
+##
+
+def analitico_to_pandas_type(type: str):
+    """ Converts an analitico data type to the equivalent dtype string for pandas dataframes """
+    try:
+        ANALITICO_TO_PANDAS_TYPES = {
+            'string': 'str',
+            'integer': 'int64',
+            'float': 'float64',
+            'boolean': 'bool',
+            'datetime': 'datetime64',
+            'timespan': 'timedelta64',
+            'category': 'category'
+        }
+        return ANALITICO_TO_PANDAS_TYPES[type]
+    except KeyError as exc:
+        raise KeyError('analitico_to_pandas_type - unknown type: ' + type, exc)
+
+
+def pandas_to_analitico_type(dtype):
+    """ Return the analitico schema data type of a pandas dtype """
+    if dtype == 'int': return 'integer'
+    if dtype == 'float': return 'float'
+    if dtype == 'bool': return 'boolean'
+    if dtype.name == 'category': return 'category' # dtype alone doesn't ==
+    if dtype == 'object': return 'string'
+    if dtype == 'datetime64[ns]': return 'datetime'
+    if dtype == 'timedelta64[ns]': return 'timespan'
+    raise KeyError('_pandas_to_analitico_type - unknown dtype: ' + str(dtype))
