@@ -1,8 +1,11 @@
 
 from abc import ABC, abstractmethod
 
-from .plugin import IPlugin, IPluginEnvironment, PluginException
-from .plugin import CsvDataframeSourcePlugin
+from .plugin import IPlugin
+from .plugin import IPluginEnvironment
+from .plugin import PluginException
+
+from .csvdataframesourceplugin import CsvDataframeSourcePlugin
 
 ##
 ## IPluginFactory
@@ -23,10 +26,15 @@ class PluginFactory(IPluginFactory):
     """ Concrete implementation of analitico plugins factory """
 
     _plugins = {
-        'analitico.plugins.csvdataframesourceplugin': CsvDataframeSourcePlugin
+        CsvDataframeSourcePlugin.Meta.name: CsvDataframeSourcePlugin
     }
 
     def create_plugin(self, name: str, environment: IPluginEnvironment = None, **kwargs):
+        """ 
+        Create a plugin given its name and the environment it will run in.
+        Any additional parameters passed to this method will be passed to the
+        plugin initialization code and will be stored as a plugin setting.
+        """
         if name.lower() in self._plugins:
             return self._plugins[name.lower()](environment=environment, **kwargs)
         raise PluginException('PluginFactory.create_plugin - could not find plugin: ' + name)

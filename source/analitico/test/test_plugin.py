@@ -20,12 +20,6 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/assets'
 class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     """ Unit testing of Plugin functionalities """
 
-    def get_csv_plugin(self, **kwargs):
-        env = PluginEnvironment()
-        return pluginFactory.create_plugin('analitico.plugins.csvdataframesourceplugin', env, **kwargs)
-
-    ## Basics
-
     def test_plugin_basics_settings(self):
         """ Test plugin settings """
         try:
@@ -43,7 +37,7 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     def test_plugin_factory(self):
         try:
             env = PluginEnvironment()
-            plugin = pluginFactory.create_plugin('analitico.plugins.csvdataframesourceplugin', env, param1='value1', param2='value2')
+            plugin = pluginFactory.create_plugin(CsvDataframeSourcePlugin.Meta.name, env, param1='value1', param2='value2')
 
             self.assertEqual(plugin.param1, 'value1')
             self.assertEqual(plugin.param2, 'value2')
@@ -53,7 +47,7 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
             raise exc
 
 
-    def test_plugin_factory(self):
+    def test_plugin_csv_read(self):
         """ Test using csv plugin to read basic csv file """
         csv_url = self.get_asset_path('ds_test_1.csv')
         csv_plugin = self.get_csv_plugin(url=csv_url)
