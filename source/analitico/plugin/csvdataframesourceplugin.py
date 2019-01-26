@@ -1,8 +1,5 @@
 
-import logging
 import pandas
-
-from abc import ABC, abstractmethod
 from analitico.utilities import analitico_to_pandas_type
 from .plugin import IDataframeSourcePlugin, PluginException
 
@@ -16,7 +13,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
     class Meta(IDataframeSourcePlugin.Meta):
         name = 'analitico.plugin.csvdataframesourceplugin'
 
-    def run(self, **kwargs):
+    def process(self, **kwargs):
         """ Creates a pandas dataframe from the csv source """
         try:
             schema = self.settings.get('schema')
@@ -33,7 +30,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
                     if column['type'] == 'datetime':
                         # ISO8601 dates only for now
                         # TODO use converters to apply date patterns #16
-                        parse_dates.append(idx) 
+                        parse_dates.append(idx)
                     elif column['type'] == 'timespan':
                         # timedelta needs to be applied later on or else we will get:
                         # 'the dtype timedelta64 is not supported for parsing'
@@ -45,7 +42,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
 
             url = self.settings.get('url')
             if not url:
-                raise PluginException('URL of csv file cannot be empty.')
+                raise PluginException('URL of csv file cannot be empty.', plugin=self)
             df = pandas.read_csv(url, dtype=dtype, parse_dates=parse_dates, **kwargs)
 
             if index:
@@ -65,5 +62,4 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
 
             return df
         except Exception as exc:
-            self.logger.error('CsvDataframeSourcePlugin.run - %s', str(exc))
-            raise exc
+            raise PluginException('An error occoured while processing ' + url, self, exc)

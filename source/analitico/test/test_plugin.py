@@ -8,7 +8,7 @@ import analitico.plugin
 import analitico.utilities
 
 from analitico.plugin import PluginException, PluginEnvironment
-from analitico.plugin import CsvDataframeSourcePlugin
+from analitico.plugin import CsvDataframeSourcePlugin, CodeDataframePlugin
 from analitico.plugin import pluginFactory
 
 from .utilities import TestUtilitiesMixin
@@ -19,6 +19,8 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/assets'
 
 class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     """ Unit testing of Plugin functionalities """
+
+    env = PluginEnvironment()
 
     def test_plugin_basics_settings(self):
         """ Test plugin settings """
@@ -54,7 +56,42 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
         self.assertTrue(isinstance(csv_plugin, CsvDataframeSourcePlugin))
         self.assertEqual(csv_plugin.url, csv_url)
 
-        df = csv_plugin.run()
+        df = csv_plugin.process()
         self.assertTrue(isinstance(df, pd.DataFrame))
         self.assertIsNotNone(df)
         self.assertEqual(len(df), 3)
+
+
+    def test_plugin_code_dataframe_basic(self):
+        """ Test using csv plugin to applies basic code to a dataframe """
+        csv_url = self.get_asset_path('ds_test_1.csv')
+        csv_plugin = self.get_csv_plugin(url=csv_url)
+
+        df = csv_plugin.process()
+        self.assertEqual(df.loc[0, 'First'], 10)
+
+        # configure plugin to add 2 to all values in the first column of the dataframe
+        code = "df['First'] = df['First'] + 2"
+        transform_plugin = pluginFactory.create_plugin(CodeDataframePlugin.Meta.name, environment=self.env, code=code)
+
+        df = transform_plugin.process(df=df)
+        self.assertEqual(df.loc[0, 'First'], 12)
+
+        df = transform_plugin.process(df=df)
+        self.assertEqual(df.loc[0, 'First'], 14)
+
+
+    def test_plugin_code_dataframe_bug(self):
+        """ Test using csv plugin to applies code with a bug to a dataframe """
+        csv_url = self.get_asset_path('ds_test_1.csv')
+        csv_plugin = self.get_csv_plugin(url=csv_url)
+
+        df = csv_plugin.process()
+        self.assertEqual(df.loc[0, 'First'], 10)
+
+        # refers to df2 which DOES NOT exist
+        code = "df['First'] = df2['First'] + 2"
+        transform_plugin = pluginFactory.create_plugin(CodeDataframePlugin.Meta.name, environment=self.env, code=code)
+
+        with self.assertRaises(PluginException):
+            df = transform_plugin.process(df=df)

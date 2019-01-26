@@ -10,6 +10,7 @@ from .csvdataframesourceplugin import CsvDataframeSourcePlugin
 
 # plugins to process dataframes
 from .plugin import IDataframePlugin
+from .codedataframeplugin import CodeDataframePlugin
 
 # plugin factory
 from .factory import IPluginFactory, pluginFactory
