@@ -7,7 +7,6 @@ source analitico-env
 
 echo "Installing requirements"
 source venv/bin/activate
-source ~/.bashrc
 pip3 install -r requirements.txt
 
 cd source
@@ -16,17 +15,15 @@ echo "Build Static"
 ./manage.py collectstatic --noinput
 
 #echo "Running tests"
-#./manage.py test
+./manage.py test
 
 echo "Link nginx conf"
 sudo ln -s /home/www/analitico/conf/nginx-ci.conf /etc/nginx/nginx.conf
 
 # TODO: copy SSL certificates
-
-echo "Start gunicorn"
-exec gunicorn website.wsgi -b unix:/tmp/gunicorn.sock &
-
-echo "Start nginx"
-exec nginx
-
+mkdir -p /home/www/ssl
+echo "$ANALITICO_STAGING_SSL_CRT" | base64 -d -w0 | tr -d '\r' > /home/www/ssl/analitico.ai.crt
+echo "$ANALITICO_STAGING_SSL_KEY" | base64 -d -w0 | tr -d '\r' > /home/www/ssl/analitico.ai.key
+chmod 600 /home/www/ssl/analitico.ai.key
+chmod 755 /home/www/ssl/analitico.ai.crt
 echo "Done"
