@@ -1,10 +1,10 @@
-
 import pandas
 from .plugin import IDataframePlugin, PluginException
 
 ##
 ## CodeDataframePlugin
 ##
+
 
 class CodeDataframePlugin(IDataframePlugin):
     """
@@ -16,19 +16,22 @@ class CodeDataframePlugin(IDataframePlugin):
     the code therefore it should only run internal code or it will expose a security risk.
     Later on we will create a version of this plugin that uses dockers to isolate the code.
     """
+
     class Meta(IDataframePlugin.Meta):
-        name = 'analitico.plugin.codedataframeplugin'
+        name = "analitico.plugin.codedataframeplugin"
 
     def process_df(self, df, **kwargs) -> pandas.DataFrame:
         """ Apply some python code to the dataframe """
-        code = self.get_setting('code', None)
+        code = self.get_setting("code", None)
         if code:
             try:
                 # TODO plugin should restrict code execution to math, numpy and pandas #17
                 # https://www.programiz.com/python-programming/methods/built-in/exec
                 exec(code)
             except Exception as exc:
-                message = 'An error occoured while executing "{0}": "{1}".'.format(code, exc)
+                message = 'An error occoured while executing "{0}": "{1}".'.format(
+                    code, exc
+                )
                 self.logger.error(message)
                 raise PluginException(message, self, exc)
         return df

@@ -1,4 +1,3 @@
-
 import pandas
 from analitico.utilities import analitico_to_pandas_type
 from .plugin import IDataframeSourcePlugin, PluginException
@@ -7,17 +6,18 @@ from .plugin import IDataframeSourcePlugin, PluginException
 ## CsvDataframeSourcePlugin
 ##
 
+
 class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
     """ A plugin that returns a pandas dataframe from a csv file """
 
     class Meta(IDataframeSourcePlugin.Meta):
-        name = 'analitico.plugin.csvdataframesourceplugin'
+        name = "analitico.plugin.csvdataframesourceplugin"
 
     def process(self, **kwargs):
         """ Creates a pandas dataframe from the csv source """
         try:
-            schema = self.settings.get('schema')
-            columns = schema.get('columns') if schema else None
+            schema = self.settings.get("schema")
+            columns = schema.get("columns") if schema else None
 
             dtype = None
             parse_dates = None
@@ -27,22 +27,22 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
                 dtype = {}
                 parse_dates = []
                 for idx, column in enumerate(columns):
-                    if column['type'] == 'datetime':
+                    if column["type"] == "datetime":
                         # ISO8601 dates only for now
                         # TODO use converters to apply date patterns #16
                         parse_dates.append(idx)
-                    elif column['type'] == 'timespan':
+                    elif column["type"] == "timespan":
                         # timedelta needs to be applied later on or else we will get:
                         # 'the dtype timedelta64 is not supported for parsing'
-                        dtype[column['name']] = 'object'
+                        dtype[column["name"]] = "object"
                     else:
-                        dtype[column['name']] = analitico_to_pandas_type(column['type'])
-                    if column.get('index', False):
-                        index = column['name']
+                        dtype[column["name"]] = analitico_to_pandas_type(column["type"])
+                    if column.get("index", False):
+                        index = column["name"]
 
-            url = self.settings.get('url')
+            url = self.settings.get("url")
             if not url:
-                raise PluginException('URL of csv file cannot be empty.', plugin=self)
+                raise PluginException("URL of csv file cannot be empty.", plugin=self)
             df = pandas.read_csv(url, dtype=dtype, parse_dates=parse_dates, **kwargs)
 
             if index:
@@ -53,13 +53,15 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
                 names = []
                 for column in columns:
                     # check if we need to cast timedelta which we had left as strings
-                    if column['type'] == 'timespan':
-                        name = column['name']
+                    if column["type"] == "timespan":
+                        name = column["name"]
                         df[name] = pandas.to_timedelta(df[name])
-                    names.append(column['name'])
+                    names.append(column["name"])
                 # reorder and filter columns as requested in schema
                 df = df[names]
 
             return df
         except Exception as exc:
-            raise PluginException('An error occoured while processing ' + url, self, exc)
+            raise PluginException(
+                "An error occoured while processing " + url, self, exc
+            )

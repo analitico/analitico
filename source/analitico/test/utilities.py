@@ -16,9 +16,10 @@ from analitico.plugin import CsvDataframeSourcePlugin
 
 # pylint: disable=no-member
 
-ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/assets'
+ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
 
-class TestUtilitiesMixin():
+
+class TestUtilitiesMixin:
     """ Basic unit testing functionality for analitico's tests """
 
     def get_asset_path(self, path):
@@ -26,9 +27,9 @@ class TestUtilitiesMixin():
         return os.path.join(ASSETS_PATH, path)
 
     def read_json_asset(self, path):
-        with open(self.get_asset_path(path), 'r') as f:
+        with open(self.get_asset_path(path), "r") as f:
             text = f.read()
-            text = text.replace('{assets}', ASSETS_PATH)
+            text = text.replace("{assets}", ASSETS_PATH)
             return json.loads(text)
 
     def read_dataset_asset(self, path):
@@ -41,4 +42,6 @@ class TestUtilitiesMixin():
 
     def get_csv_plugin(self, **kwargs):
         env = PluginEnvironment()
-        return pluginFactory.create_plugin(CsvDataframeSourcePlugin.Meta.name, env, **kwargs)
+        return pluginFactory.create_plugin(
+            CsvDataframeSourcePlugin.Meta.name, env, **kwargs
+        )
