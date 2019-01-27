@@ -18,3 +18,9 @@ from .groups import GraphPlugin
 
 # plugin factory
 from .factory import IPluginFactory, factory
+
+# Constants with plugin names
+CSV_DATAFRAME_SOURCE_PLUGIN = CsvDataframeSourcePlugin.Meta.name
+CODE_DATAFRAME_PLUGIN = CodeDataframePlugin.Meta.name
+PIPELINE_PLUGIN = PipelinePlugin.Meta.name
+GRAPH_PLUGIN = GraphPlugin.Meta.name

@@ -14,6 +14,8 @@ from analitico.utilities import read_json, get_dict_dot
 from analitico.plugin import PluginEnvironment, factory
 from analitico.plugin import CsvDataframeSourcePlugin
 
+import analitico.plugin
+
 # pylint: disable=no-member
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
@@ -42,6 +44,5 @@ class TestUtilitiesMixin:
 
     def get_csv_plugin(self, **kwargs):
         env = PluginEnvironment()
-        return factory.create_plugin(
-            CsvDataframeSourcePlugin.Meta.name, env, **kwargs
-        )
+        name = analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN
+        return factory.create_plugin(name, env, **kwargs)

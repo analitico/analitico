@@ -132,14 +132,10 @@ class IDataframePlugin(IPlugin):
         inputs = [{"name": "dataframe", "type": "pandas.DataFrame"}]
         outputs = [{"name": "dataframe", "type": "pandas.DataFrame"}]
 
-    def process_df(self, df, **kwargs) -> pandas.DataFrame:
-        """ Run takes a dataframe as input, process it and return it """
+    def process(self, df, **kwargs) -> pandas.DataFrame:
+        if not "df":
+            raise PluginError("Dataframe was not passed to plugin", plugin=self)
         return df
-
-    def process(self, **kwargs):
-        if "df" not in kwargs:
-            raise PluginError("Dataframe was not passed to run method", plugin=self)
-        return self.process_df(**kwargs)
 
 
 ##
@@ -150,7 +146,11 @@ class IDataframePlugin(IPlugin):
 class IGroupPlugin(IPlugin):
     """ A plugin that groups multiple plugins into a functional block, eg: a processing pipeline or graph workflow. """
 
-    pass
+    plugins = []
+
+    def __init__(self, plugins, **kwargs):
+        super().__init__(**kwargs)
+        self.plugins = plugins
 
 
 ##

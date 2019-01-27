@@ -26,10 +26,11 @@ class CodeDataframePlugin(IDataframePlugin):
     """
 
     class Meta(IDataframePlugin.Meta):
-        name = "analitico.plugin.codedataframeplugin"
+        name = "analitico.plugin.CodeDataframePlugin"
 
-    def process_df(self, df, **kwargs) -> pandas.DataFrame:
+    def process(self, df, **kwargs) -> pandas.DataFrame:
         """ Apply some python code to the dataframe """
+        df = super().process(df=df, **kwargs)
         code = self.get_setting("code", None)
         if code:
             try:

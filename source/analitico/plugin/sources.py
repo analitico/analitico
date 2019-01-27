@@ -18,7 +18,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
     """ A plugin that returns a pandas dataframe from a csv file """
 
     class Meta(IDataframeSourcePlugin.Meta):
-        name = "analitico.plugin.csvsourceplugin"
+        name = "analitico.plugin.CsvDataframeSourcePlugin"
 
     def process(self, **kwargs):
         """ Creates a pandas dataframe from the csv source """

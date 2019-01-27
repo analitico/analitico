@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from .plugin import IPluginEnvironment
-from .sources import CsvDataframeSourcePlugin
-from .transforms import CodeDataframePlugin
+import logging
+
+import analitico.plugin
 
 ##
 ## IPluginFactory
@@ -25,10 +26,19 @@ class IPluginFactory(ABC):
 class PluginFactory(IPluginFactory):
     """ Concrete implementation of analitico plugins factory """
 
-    _plugins = {
-        CsvDataframeSourcePlugin.Meta.name: CsvDataframeSourcePlugin,
-        CodeDataframePlugin.Meta.name: CodeDataframePlugin,
-    }
+    # TODO could register external plugins
+
+    def _get_class_from_fully_qualified_name(self, name, module=None):
+        """ Gets a class from its fully qualified name, eg: package.module.Classhat.something """
+        if name:
+            split = name.split(".")
+            if len(split) > 1:
+                prefix = split[0]
+                name = name[len(split[0]) + 1 :]
+                module = getattr(module, prefix) if module else globals()[prefix]
+                return self._get_class_from_fully_qualified_name(name, module)
+            return getattr(module, split[0])
+        return None
 
     def create_plugin(self, name: str, env: IPluginEnvironment = None, **kwargs):
         """
@@ -36,9 +46,10 @@ class PluginFactory(IPluginFactory):
         Any additional parameters passed to this method will be passed to the
         plugin initialization code and will be stored as a plugin setting.
         """
-        if name.lower() in self._plugins:
-            return self._plugins[name.lower()](env=env, **kwargs)
-        raise Exception("PluginFactory.create_plugin - could not find plugin: " + name)
+        klass = self._get_class_from_fully_qualified_name(name)
+        if not klass:
+            raise KeyError("PluginFactory - can't find plugin: " + name)
+        return (klass)(env=env, **kwargs)
 
 
 # Analitico plugins factory
