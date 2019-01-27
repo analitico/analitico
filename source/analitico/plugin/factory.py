@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from .plugin import IPluginEnvironment
-from .csvdataframesourceplugin import CsvDataframeSourcePlugin
-from .codedataframeplugin import CodeDataframePlugin
+from .sources import CsvDataframeSourcePlugin
+from .transforms import CodeDataframePlugin
 
 ##
 ## IPluginFactory
@@ -30,18 +30,16 @@ class PluginFactory(IPluginFactory):
         CodeDataframePlugin.Meta.name: CodeDataframePlugin,
     }
 
-    def create_plugin(
-        self, name: str, environment: IPluginEnvironment = None, **kwargs
-    ):
+    def create_plugin(self, name: str, env: IPluginEnvironment = None, **kwargs):
         """
         Create a plugin given its name and the environment it will run in.
         Any additional parameters passed to this method will be passed to the
         plugin initialization code and will be stored as a plugin setting.
         """
         if name.lower() in self._plugins:
-            return self._plugins[name.lower()](environment=environment, **kwargs)
+            return self._plugins[name.lower()](env=env, **kwargs)
         raise Exception("PluginFactory.create_plugin - could not find plugin: " + name)
 
 
 # Analitico plugins factory
-pluginFactory: IPluginFactory = PluginFactory()
+factory: IPluginFactory = PluginFactory()

@@ -11,7 +11,7 @@ import analitico.utilities
 
 from analitico.dataset import Dataset, ds_factory
 from analitico.utilities import read_json, get_dict_dot
-from analitico.plugin import PluginEnvironment, pluginFactory
+from analitico.plugin import PluginEnvironment, factory
 from analitico.plugin import CsvDataframeSourcePlugin
 
 # pylint: disable=no-member
@@ -42,6 +42,6 @@ class TestUtilitiesMixin:
 
     def get_csv_plugin(self, **kwargs):
         env = PluginEnvironment()
-        return pluginFactory.create_plugin(
+        return factory.create_plugin(
             CsvDataframeSourcePlugin.Meta.name, env, **kwargs
         )

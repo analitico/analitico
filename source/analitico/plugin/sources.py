@@ -1,6 +1,13 @@
+"""
+Plugins that import dataframes from different sources
+"""
+
+import pandas
+from .plugin import IDataframePlugin, PluginError
+
 import pandas
 from analitico.utilities import analitico_to_pandas_type
-from .plugin import IDataframeSourcePlugin, PluginException
+from .plugin import IDataframeSourcePlugin, PluginError
 
 ##
 ## CsvDataframeSourcePlugin
@@ -11,7 +18,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
     """ A plugin that returns a pandas dataframe from a csv file """
 
     class Meta(IDataframeSourcePlugin.Meta):
-        name = "analitico.plugin.csvdataframesourceplugin"
+        name = "analitico.plugin.csvsourceplugin"
 
     def process(self, **kwargs):
         """ Creates a pandas dataframe from the csv source """
@@ -42,7 +49,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
 
             url = self.settings.get("url")
             if not url:
-                raise PluginException("URL of csv file cannot be empty.", plugin=self)
+                raise PluginError("URL of csv file cannot be empty.", plugin=self)
             df = pandas.read_csv(url, dtype=dtype, parse_dates=parse_dates, **kwargs)
 
             if index:
@@ -59,9 +66,6 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
                     names.append(column["name"])
                 # reorder and filter columns as requested in schema
                 df = df[names]
-
             return df
         except Exception as exc:
-            raise PluginException(
-                "An error occoured while processing " + url, self, exc
-            )
+            raise PluginError("Error while processing " + url, self, exc)

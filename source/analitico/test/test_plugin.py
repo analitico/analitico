@@ -7,9 +7,9 @@ import pandas as pd
 import analitico.plugin
 import analitico.utilities
 
-from analitico.plugin import PluginException, PluginEnvironment
+from analitico.plugin import PluginError, PluginEnvironment
 from analitico.plugin import CsvDataframeSourcePlugin, CodeDataframePlugin
-from analitico.plugin import pluginFactory
+from analitico.plugin import factory
 
 from .utilities import TestUtilitiesMixin
 
@@ -39,12 +39,8 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     def test_plugin_factory(self):
         try:
             env = PluginEnvironment()
-            plugin = pluginFactory.create_plugin(
-                CsvDataframeSourcePlugin.Meta.name,
-                env,
-                param1="value1",
-                param2="value2",
-            )
+            name = CsvDataframeSourcePlugin.Meta.name
+            plugin = factory.create_plugin(name, env, param1="value1", param2="value2")
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
@@ -75,14 +71,13 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
 
         # configure plugin to add 2 to all values in the first column of the dataframe
         code = "df['First'] = df['First'] + 2"
-        transform_plugin = pluginFactory.create_plugin(
-            CodeDataframePlugin.Meta.name, environment=self.env, code=code
-        )
+        plugin_name = CodeDataframePlugin.Meta.name
+        plugin = factory.create_plugin(plugin_name, env=self.env, code=code)
 
-        df = transform_plugin.process(df=df)
+        df = plugin.process(df=df)
         self.assertEqual(df.loc[0, "First"], 12)
 
-        df = transform_plugin.process(df=df)
+        df = plugin.process(df=df)
         self.assertEqual(df.loc[0, "First"], 14)
 
     def test_plugin_code_dataframe_bug(self):
@@ -95,9 +90,8 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
 
         # refers to df2 which DOES NOT exist
         code = "df['First'] = df2['First'] + 2"
-        transform_plugin = pluginFactory.create_plugin(
-            CodeDataframePlugin.Meta.name, environment=self.env, code=code
-        )
+        name = CodeDataframePlugin.Meta.name
+        plugin = factory.create_plugin(name, env=self.env, code=code)
 
-        with self.assertRaises(PluginException):
-            df = transform_plugin.process(df=df)
+        with self.assertRaises(PluginError):
+            df = plugin.process(df=df)

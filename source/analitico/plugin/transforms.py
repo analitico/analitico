@@ -1,5 +1,13 @@
+"""
+Plugins that process, analize and alter dataframes
+"""
+
 import pandas
-from .plugin import IDataframePlugin, PluginException
+from .plugin import IDataframePlugin, PluginError
+
+import pandas
+from analitico.utilities import analitico_to_pandas_type
+from .plugin import IDataframeSourcePlugin, PluginError
 
 ##
 ## CodeDataframePlugin
@@ -29,9 +37,7 @@ class CodeDataframePlugin(IDataframePlugin):
                 # https://www.programiz.com/python-programming/methods/built-in/exec
                 exec(code)
             except Exception as exc:
-                message = 'An error occoured while executing "{0}": "{1}".'.format(
-                    code, exc
-                )
+                message = 'Error while executing "{0}": "{1}".'.format(code, exc)
                 self.logger.error(message)
-                raise PluginException(message, self, exc)
+                raise PluginError(message, self, exc)
         return df
