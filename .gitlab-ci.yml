@@ -11,7 +11,7 @@ variables:
 
 services:
 - docker:dind
- 
+
 stages:
   - build
   - deploy
