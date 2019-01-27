@@ -24,7 +24,7 @@ build_dev:
   stage: build
   script:
     # login to registry
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com 
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # export ANALITICO ENV
     - export -p | grep ANALITICO_ > analitico-env
     # build docker image
