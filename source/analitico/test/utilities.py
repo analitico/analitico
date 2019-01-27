@@ -8,13 +8,10 @@ import pandas as pd
 
 import analitico.dataset
 import analitico.utilities
+import analitico.plugin
 
 from analitico.dataset import Dataset, ds_factory
 from analitico.utilities import read_json, get_dict_dot
-from analitico.plugin import PluginEnvironment, factory
-from analitico.plugin import CsvDataframeSourcePlugin
-
-import analitico.plugin
 
 # pylint: disable=no-member
 
@@ -43,6 +40,5 @@ class TestUtilitiesMixin:
         return ds.get_dataframe()
 
     def get_csv_plugin(self, **kwargs):
-        env = PluginEnvironment()
         name = analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN
-        return factory.create_plugin(name, env, **kwargs)
+        return analitico.plugin.manager.create_plugin(name, **kwargs)

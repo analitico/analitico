@@ -29,13 +29,20 @@ class PipelinePlugin(IGroupPlugin):
     class Meta(IGroupPlugin.Meta):
         name = "analitico.plugin.PipelinePlugin"
 
-    def process(self, **kwargs):
-        """ Process plugins in sequence, return combinined result """
-
+    def process(self, *args, **kwargs):
+        """ Process plugins in sequence, return combinined chained result """
         for plugin in self.plugins:
-            pass
-
-        return None
+            # a plugin can have one or more input parameters and one or more
+            # output parameters. results from a call to the next in the chain
+            # are passed as tuples. when we finally return, if we have a single
+            # result we unpackit, otherwise we return as tuple. this allows
+            # a pipeline of plugins to chain plugins with a variable number of
+            # parameters. each plugin is responsible for validating the type of
+            # its input positional parameters and named parameters.
+            args = plugin.process(*args, **kwargs)
+            if not isinstance(args, tuple):
+                args = (args,)
+        return args if len(args) > 1 else args[0]
 
 
 ##
@@ -48,3 +55,6 @@ class GraphPlugin(IGroupPlugin):
 
     class Meta(IGroupPlugin.Meta):
         name = "analitico.plugin.GraphPlugin"
+
+    def process(self, *args, **kwargs):
+        raise NotImplementedError()

@@ -20,7 +20,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
     class Meta(IDataframeSourcePlugin.Meta):
         name = "analitico.plugin.CsvDataframeSourcePlugin"
 
-    def process(self, **kwargs):
+    def process(self, *args, **kwargs):
         """ Creates a pandas dataframe from the csv source """
         try:
             schema = self.settings.get("schema")
@@ -50,7 +50,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
             url = self.settings.get("url")
             if not url:
                 raise PluginError("URL of csv file cannot be empty.", plugin=self)
-            df = pandas.read_csv(url, dtype=dtype, parse_dates=parse_dates, **kwargs)
+            df = pandas.read_csv(url, dtype=dtype, parse_dates=parse_dates)
 
             if index:
                 # transform specific column with unique values to dataframe index

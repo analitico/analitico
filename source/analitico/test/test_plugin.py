@@ -7,9 +7,10 @@ import pandas as pd
 import analitico.plugin
 import analitico.utilities
 
-from analitico.plugin import PluginError, PluginEnvironment
-from analitico.plugin import CsvDataframeSourcePlugin, CodeDataframePlugin
-from analitico.plugin import factory
+from analitico.plugin import PluginError, manager, PLUGIN_TYPE
+from analitico.plugin import CsvDataframeSourcePlugin, CSV_DATAFRAME_SOURCE_PLUGIN
+from analitico.plugin import CodeDataframePlugin, CODE_DATAFRAME_PLUGIN
+from analitico.plugin import PipelinePlugin, PIPELINE_PLUGIN
 
 from .utilities import TestUtilitiesMixin
 
@@ -21,12 +22,10 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
 class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     """ Unit testing of Plugin functionalities """
 
-    env = PluginEnvironment()
-
     def test_plugin_basics_settings(self):
         """ Test plugin settings """
         try:
-            plugin = CsvDataframeSourcePlugin(param1="value1", param2="value2")
+            plugin = CsvDataframeSourcePlugin(manager=analitico.plugin.manager, param1="value1", param2="value2")
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
@@ -38,9 +37,7 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
 
     def test_plugin_factory(self):
         try:
-            env = PluginEnvironment()
-            name = CsvDataframeSourcePlugin.Meta.name
-            plugin = factory.create_plugin(name, env, param1="value1", param2="value2")
+            plugin = manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, param1="value1", param2="value2")
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
@@ -71,27 +68,85 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
 
         # configure plugin to add 2 to all values in the first column of the dataframe
         code = "df['First'] = df['First'] + 2"
-        plugin_name = CodeDataframePlugin.Meta.name
-        plugin = factory.create_plugin(plugin_name, env=self.env, code=code)
+        plugin = manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
 
-        df = plugin.process(df=df)
+        # dataframe passed as POSITIONAL parameter
+        df = plugin.process(df)
         self.assertEqual(df.loc[0, "First"], 12)
 
-        df = plugin.process(df=df)
+        # dataframe passed as POSITIONAL parameter
+        df = plugin.process(df)
         self.assertEqual(df.loc[0, "First"], 14)
 
     def test_plugin_code_dataframe_bug(self):
         """ Test using csv plugin to applies code with a bug to a dataframe """
         csv_url = self.get_asset_path("ds_test_1.csv")
-        csv_plugin = self.get_csv_plugin(url=csv_url)
+        csv_plugin = manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, url=csv_url)
 
         df = csv_plugin.process()
         self.assertEqual(df.loc[0, "First"], 10)
 
         # refers to df2 which DOES NOT exist
         code = "df['First'] = df2['First'] + 2"
-        name = CodeDataframePlugin.Meta.name
-        plugin = factory.create_plugin(name, env=self.env, code=code)
+        plugin = manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
 
         with self.assertRaises(PluginError):
-            df = plugin.process(df=df)
+            df = plugin.process(df)
+
+    def test_plugin_pipeline(self):
+        """ Test grouping plugins into a multi step pipeline to retrieve and process a dataframe """
+        pipeline_settings = {
+            "type": PLUGIN_TYPE,
+            "name": PIPELINE_PLUGIN,
+            "plugins": [
+                {
+                    "type": PLUGIN_TYPE,
+                    "name": CSV_DATAFRAME_SOURCE_PLUGIN,
+                    "url": self.get_asset_path("ds_test_1.csv")
+                },
+                {
+                    "type": PLUGIN_TYPE,
+                    "name": CODE_DATAFRAME_PLUGIN,
+                    "code": "df['First'] = df['First'] + 2"
+                },
+                {
+                    "type": PLUGIN_TYPE,
+                    "name": CODE_DATAFRAME_PLUGIN,
+                    "code": "df['First'] = df['First'] + 4"
+                },
+                {
+                    "type": PLUGIN_TYPE,
+                    "name": CODE_DATAFRAME_PLUGIN,
+                    "code": "df['First'] = df['First'] + 1"
+                }
+           ]
+        }
+
+        pipeline_plugin = analitico.plugin.manager.create_plugin(**pipeline_settings)
+        self.assertTrue(isinstance(pipeline_plugin, PipelinePlugin))
+
+        # call plugin chain; pass same random parameters just to see that they don't mess up things
+        pipeline_df = pipeline_plugin.process('par1', 'par2', mickey='mouse', minni='pluto')
+        self.assertIsNotNone(pipeline_df)
+        self.assertTrue(isinstance(pipeline_df, pd.DataFrame))
+
+        # plugin chain increased first column by 2 + 4 + 1
+        self.assertEqual(pipeline_df.loc[0, "First"], 17)
+        self.assertEqual(pipeline_df.loc[1, "First"], 27)
+        # second column untouched
+        self.assertEqual(pipeline_df.loc[0, "Second"], 11)
+        self.assertEqual(pipeline_df.loc[1, "Second"], 21)
+
+        # call plugin chain again with some random positional
+        # and named parameters just to see that they don't mess up things
+        # parameters should be passed down the chain of plugins and ignored
+        pipeline_df2 = pipeline_plugin.process('par1', 'par2', mickey='mouse', minni='pluto')
+        self.assertIsNotNone(pipeline_df2)
+        self.assertTrue(isinstance(pipeline_df2, pd.DataFrame))
+
+        # plugin chain increased first column by 2 + 4 + 1
+        self.assertEqual(pipeline_df2.loc[0, "First"], 17)
+        self.assertEqual(pipeline_df2.loc[1, "First"], 27)
+        # second column untouched
+        self.assertEqual(pipeline_df2.loc[0, "Second"], 11)
+        self.assertEqual(pipeline_df2.loc[1, "Second"], 21)
