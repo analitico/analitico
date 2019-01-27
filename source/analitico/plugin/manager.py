@@ -1,7 +1,9 @@
-from abc import ABC, abstractmethod
 from .plugin import IPluginManager, PluginError
-import logging
 
+# We need to import this library here even though we don't 
+# use it directly below because we are instantiating the 
+# plugins by name from globals() and they won't be found if
+# this import is not here.
 import analitico.plugin
 
 ##

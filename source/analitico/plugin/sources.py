@@ -3,9 +3,6 @@ Plugins that import dataframes from different sources
 """
 
 import pandas
-from .plugin import IDataframePlugin, PluginError
-
-import pandas
 from analitico.utilities import analitico_to_pandas_type
 from .plugin import IDataframeSourcePlugin, PluginError
 

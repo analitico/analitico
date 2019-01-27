@@ -5,10 +5,6 @@ Plugins that process, analize and alter dataframes
 import pandas
 from .plugin import IDataframePlugin, PluginError
 
-import pandas
-from analitico.utilities import analitico_to_pandas_type
-from .plugin import IDataframeSourcePlugin, PluginError
-
 ##
 ## CodeDataframePlugin
 ##

@@ -4,12 +4,7 @@ ETL (extract, transform, load) pipeline or a graph used to
 process data and create a machine learning model.
 """
 
-import pandas
-from .plugin import IGroupPlugin, PluginError
-
-import pandas
-from analitico.utilities import analitico_to_pandas_type
-from .plugin import IDataframeSourcePlugin, PluginError
+from .plugin import IGroupPlugin
 
 ##
 ## PipelinePlugin
