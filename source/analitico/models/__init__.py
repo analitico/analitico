@@ -1,4 +1,3 @@
-
 from .analiticomodel import AnaliticoModel
 
 from .tabularmodel import TabularModel
