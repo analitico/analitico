@@ -1,9 +1,9 @@
 {
-    "python.venvPath": "~/envs",
+    "python.venvPath": "${workspaceFolder}",
     "python.unitTest.unittestArgs": [
         "-v",
         "-s",
-        "./source",
+        "${workspaceFolder}/source",
         "-p",
         "test*.py"
     ],
