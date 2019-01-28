@@ -7,7 +7,7 @@ image: docker:latest
 variables:
   GCP_PROJECT_ID: analitico-api
   GCP_ZONE: europe-west1
-  BUILD_IMAGE_URL: registry.gitlab.com/analitico/analitico:latest
+  BUILD_IMAGE_URL: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA
 
 services:
 - docker:dind
@@ -67,7 +67,7 @@ deploy-staging:
     # ssh-keyscan -H $STAGING_SERVER_NAME >> ~/.ssh/known_hosts
   script:
     # pull new docker image and run
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker stop analitico; docker rm analitico; docker pull registry.gitlab.com/analitico/analitico:latest; docker image prune -f; docker run --name=analitico -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:latest ./run.sh"
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker stop analitico; docker rm analitico; docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; docker image prune -f; docker run --name=analitico -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh"
 
 deploy-production:
   stage: deploy
