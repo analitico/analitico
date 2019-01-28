@@ -1,8 +1,13 @@
 {
     "id": "ds_5",
 
-    "source": {
-        "type": "text/csv",
-        "url": "{assets}/ds_test_5_category.csv"
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_5_category.csv"
+        }
     }
 }

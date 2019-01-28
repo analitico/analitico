@@ -1,41 +1,16 @@
 import unittest
-import json
-import os
-import os.path
-import datetime
 
 import pandas as pd
 
-import analitico.dataset
-import analitico.utilities
+from analitico.dataset import Dataset
 
-from analitico.dataset import Dataset, ds_factory
-from analitico.utilities import read_json, get_dict_dot
+from .mixin import TestMixin
 
 # pylint: disable=no-member
 
-ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
 
-
-class DatasetTests(unittest.TestCase):
+class DatasetTests(unittest.TestCase, TestMixin):
     """ Unit testing of Dataset functionality, reading, converting, transforms, saving, etc """
-
-    ## Utilities
-
-    def read_json_asset(self, path):
-        abs_path = os.path.join(ASSETS_PATH, path)
-        with open(abs_path, "r") as f:
-            text = f.read()
-            text = text.replace("{assets}", ASSETS_PATH)
-            return json.loads(text)
-
-    def read_dataset_asset(self, path):
-        json = self.read_json_asset(path)
-        return ds_factory(**json)
-
-    def read_dataframe_asset(self, path):
-        ds = self.read_dataset_asset(path)
-        return ds.get_dataframe()
 
     ## Test creations
 
@@ -46,7 +21,7 @@ class DatasetTests(unittest.TestCase):
             self.assertEqual(ds.id, "ds_1")
 
             df = ds.get_dataframe()
-            self.assertTrue(type(df) is pd.DataFrame)
+            self.assertTrue(isinstance(df, pd.DataFrame))
             self.assertEqual(len(df), 3)
             self.assertEqual(df.columns[0], "First")
             self.assertEqual(df.columns[1], "Second")
@@ -100,10 +75,10 @@ class DatasetTests(unittest.TestCase):
             self.assertEqual(df.dtypes[0], "int64")
             self.assertEqual(df.dtypes[1], "O")
 
-            self.assertTrue(type(df.iloc[0, 2]) is pd.Timestamp)
-            self.assertTrue(type(df.iloc[1, 2]) is pd.Timestamp)
-            self.assertTrue(type(df.iloc[2, 2]) is pd.Timestamp)
-            self.assertTrue(type(df.iloc[3, 2]) is pd.Timestamp)
+            self.assertTrue(isinstance(df.iloc[0, 2], pd.Timestamp))
+            self.assertTrue(isinstance(df.iloc[1, 2], pd.Timestamp))
+            self.assertTrue(isinstance(df.iloc[2, 2], pd.Timestamp))
+            self.assertTrue(isinstance(df.iloc[3, 2], pd.Timestamp))
 
             self.assertEqual(df.iloc[0, 2], pd.Timestamp("2019-01-20 00:00:00"))
             self.assertEqual(df.iloc[1, 2], pd.Timestamp("2019-01-20 16:30:15"))

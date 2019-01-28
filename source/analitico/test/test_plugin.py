@@ -9,17 +9,17 @@ import analitico.utilities
 
 from analitico.plugin import PluginError, manager, PLUGIN_TYPE
 from analitico.plugin import CsvDataframeSourcePlugin, CSV_DATAFRAME_SOURCE_PLUGIN
-from analitico.plugin import CodeDataframePlugin, CODE_DATAFRAME_PLUGIN
+from analitico.plugin import CODE_DATAFRAME_PLUGIN
 from analitico.plugin import PipelinePlugin, PIPELINE_PLUGIN
 
-from .utilities import TestUtilitiesMixin
+from .mixin import TestMixin
 
 # pylint: disable=no-member
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
 
 
-class PluginTests(unittest.TestCase, TestUtilitiesMixin):
+class PluginTests(unittest.TestCase, TestMixin):
     """ Unit testing of Plugin functionalities """
 
     def test_plugin_basics_settings(self):
@@ -53,9 +53,9 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     def test_plugin_csv_read(self):
         """ Test using csv plugin to read basic csv file """
         csv_url = self.get_asset_path("ds_test_1.csv")
-        csv_plugin = self.get_csv_plugin(url=csv_url)
+        csv_plugin = self.get_csv_plugin(source={"url": csv_url})
         self.assertTrue(isinstance(csv_plugin, CsvDataframeSourcePlugin))
-        self.assertEqual(csv_plugin.url, csv_url)
+        self.assertEqual(csv_plugin.get_setting("source.url"), csv_url)
 
         df = csv_plugin.process()
         self.assertTrue(isinstance(df, pd.DataFrame))
@@ -65,7 +65,7 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     def test_plugin_code_dataframe_basic(self):
         """ Test using csv plugin to applies basic code to a dataframe """
         csv_url = self.get_asset_path("ds_test_1.csv")
-        csv_plugin = self.get_csv_plugin(url=csv_url)
+        csv_plugin = self.get_csv_plugin(source={"url": csv_url})
 
         df = csv_plugin.process()
         self.assertEqual(df.loc[0, "First"], 10)
@@ -85,7 +85,9 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     def test_plugin_code_dataframe_bug(self):
         """ Test using csv plugin to applies code with a bug to a dataframe """
         csv_url = self.get_asset_path("ds_test_1.csv")
-        csv_plugin = manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, url=csv_url)
+        csv_plugin = manager.create_plugin(
+            CSV_DATAFRAME_SOURCE_PLUGIN, source={"url": csv_url}
+        )
 
         df = csv_plugin.process()
         self.assertEqual(df.loc[0, "First"], 10)
@@ -106,7 +108,7 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
                 {
                     "type": PLUGIN_TYPE,
                     "name": CSV_DATAFRAME_SOURCE_PLUGIN,
-                    "url": self.get_asset_path("ds_test_1.csv"),
+                    "source": {"url": self.get_asset_path("ds_test_1.csv")},
                 },
                 {
                     "type": PLUGIN_TYPE,

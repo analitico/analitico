@@ -1,3 +1,5 @@
+import analitico.utilities
+
 ##
 ## SettingsMixin
 ##
@@ -32,5 +34,10 @@ class SettingsMixin:
         return self._settings
 
     def get_setting(self, setting, default=None):
-        """ Returns a setting if configured or the given default value if not """
-        return self._settings.get(setting, default)
+        """ 
+        Returns a setting if configured or the given default value if not.
+        You can find the value of hierarchical settings using a dot structure
+        like this.that.setting which will navigate the dictionary of settings
+        to the correct level.
+        """
+        return analitico.utilities.get_dict_dot(self._settings, setting, default)

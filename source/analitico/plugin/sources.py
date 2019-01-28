@@ -20,7 +20,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
     def process(self, *args, **kwargs):
         """ Creates a pandas dataframe from the csv source """
         try:
-            schema = self.settings.get("schema")
+            schema = self.get_setting("source.schema")
             columns = schema.get("columns") if schema else None
 
             dtype = None
@@ -44,7 +44,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
                     if column.get("index", False):
                         index = column["name"]
 
-            url = self.settings.get("url")
+            url = self.get_setting("source.url")
             if not url:
                 raise PluginError("URL of csv file cannot be empty.", plugin=self)
             df = pandas.read_csv(url, dtype=dtype, parse_dates=parse_dates)

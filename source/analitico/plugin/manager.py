@@ -1,7 +1,7 @@
 from .plugin import IPluginManager, PluginError
 
-# We need to import this library here even though we don't 
-# use it directly below because we are instantiating the 
+# We need to import this library here even though we don't
+# use it directly below because we are instantiating the
 # plugins by name from globals() and they won't be found if
 # this import is not here.
 import analitico.plugin

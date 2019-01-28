@@ -2,23 +2,17 @@ import unittest
 import json
 import os
 import os.path
-import datetime
-
-import pandas as pd
 
 import analitico.dataset
 import analitico.utilities
 import analitico.plugin
 
-from analitico.dataset import Dataset, ds_factory
-from analitico.utilities import read_json, get_dict_dot
-
-# pylint: disable=no-member
+from analitico.dataset import Dataset
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
 
 
-class TestUtilitiesMixin:
+class TestMixin:
     """ Basic unit testing functionality for analitico's tests """
 
     def get_asset_path(self, path):
@@ -33,7 +27,7 @@ class TestUtilitiesMixin:
 
     def read_dataset_asset(self, path):
         json = self.read_json_asset(path)
-        return ds_factory(**json)
+        return Dataset(**json)
 
     def read_dataframe_asset(self, path):
         ds = self.read_dataset_asset(path)
