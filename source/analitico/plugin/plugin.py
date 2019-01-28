@@ -5,39 +5,7 @@ from abc import ABC, abstractmethod
 # Design patterns:
 # https://github.com/faif/python-patterns
 
-##
-## SettingsMixin
-##
-
-
-class SettingsMixin:
-    """
-    A simple mixin to implement a class with configurable settings
-
-    When this class or its subclass is initialized it can take any number of named
-    arguments in its constructor, eg: obj = SettingsMixing(setting1='value1', setting2='value2')
-    You can then access these settings using obj.settings1 or by calling obj.get_setting
-    with the name of the setting. The purpose of the mixin is to allow for simple storage,
-    retrieval and persistence of settings in classes without having to know a priori their contents.
-    This comes useful in the case of plugins for example.
-    """
-
-    _settings = {}
-
-    def __init__(self, **kwargs):
-        self._settings = kwargs
-
-    def __getattr__(self, setting):
-        return self._settings.get(setting, None)
-
-    @property
-    def settings(self):
-        return self._settings
-
-    def get_setting(self, setting, default=None):
-        """ Returns a setting if configured or the given default value """
-        return self._settings.get(setting, default)
-
+from analitico.mixin import SettingsMixin
 
 ##
 ## IPluginManager

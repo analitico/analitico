@@ -25,7 +25,9 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
     def test_plugin_basics_settings(self):
         """ Test plugin settings """
         try:
-            plugin = CsvDataframeSourcePlugin(manager=analitico.plugin.manager, param1="value1", param2="value2")
+            plugin = CsvDataframeSourcePlugin(
+                manager=analitico.plugin.manager, param1="value1", param2="value2"
+            )
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
@@ -37,7 +39,9 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
 
     def test_plugin_factory(self):
         try:
-            plugin = manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, param1="value1", param2="value2")
+            plugin = manager.create_plugin(
+                CSV_DATAFRAME_SOURCE_PLUGIN, param1="value1", param2="value2"
+            )
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
@@ -102,31 +106,33 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
                 {
                     "type": PLUGIN_TYPE,
                     "name": CSV_DATAFRAME_SOURCE_PLUGIN,
-                    "url": self.get_asset_path("ds_test_1.csv")
+                    "url": self.get_asset_path("ds_test_1.csv"),
                 },
                 {
                     "type": PLUGIN_TYPE,
                     "name": CODE_DATAFRAME_PLUGIN,
-                    "code": "df['First'] = df['First'] + 2"
+                    "code": "df['First'] = df['First'] + 2",
                 },
                 {
                     "type": PLUGIN_TYPE,
                     "name": CODE_DATAFRAME_PLUGIN,
-                    "code": "df['First'] = df['First'] + 4"
+                    "code": "df['First'] = df['First'] + 4",
                 },
                 {
                     "type": PLUGIN_TYPE,
                     "name": CODE_DATAFRAME_PLUGIN,
-                    "code": "df['First'] = df['First'] + 1"
-                }
-           ]
+                    "code": "df['First'] = df['First'] + 1",
+                },
+            ],
         }
 
         pipeline_plugin = analitico.plugin.manager.create_plugin(**pipeline_settings)
         self.assertTrue(isinstance(pipeline_plugin, PipelinePlugin))
 
         # call plugin chain; pass same random parameters just to see that they don't mess up things
-        pipeline_df = pipeline_plugin.process('par1', 'par2', mickey='mouse', minni='pluto')
+        pipeline_df = pipeline_plugin.process(
+            "par1", "par2", mickey="mouse", minni="pluto"
+        )
         self.assertIsNotNone(pipeline_df)
         self.assertTrue(isinstance(pipeline_df, pd.DataFrame))
 
@@ -140,7 +146,9 @@ class PluginTests(unittest.TestCase, TestUtilitiesMixin):
         # call plugin chain again with some random positional
         # and named parameters just to see that they don't mess up things
         # parameters should be passed down the chain of plugins and ignored
-        pipeline_df2 = pipeline_plugin.process('par1', 'par2', mickey='mouse', minni='pluto')
+        pipeline_df2 = pipeline_plugin.process(
+            "par1", "par2", mickey="mouse", minni="pluto"
+        )
         self.assertIsNotNone(pipeline_df2)
         self.assertTrue(isinstance(pipeline_df2, pd.DataFrame))
 
