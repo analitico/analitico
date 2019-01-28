@@ -1,8 +1,9 @@
 # analitico.ai
 
-This project includes analitico's website, APIs and libraries. A number of experiments, data sources, queries, jupyter notebooks are also available. Large data files and models are stored externally.
+This project includes analitico's website, APIs and libraries. A number of experiments, data sources, queries, jupyter notebooks are also available. Large data files and models are stored externally. 
   
-  
+ <a href="https://github.com/ambv/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+ 
 Environment
 ---
 
