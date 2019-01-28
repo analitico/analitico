@@ -14,8 +14,18 @@ cd source
 echo "Build Static"
 ./manage.py collectstatic --noinput
 
-#echo "Running tests"
+echo "Running python tests"
 ./manage.py test
+
+echo "Install angular modules"
+cd /home/www/analitico/app
+npm install
+
+echo "Execute Angular tests"
+ng test
+
+echo "Build Angular app"
+ng build
 
 echo "Link nginx conf"
 sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
