@@ -46,7 +46,8 @@ try:
         }
     }
 
-    if 'test' in sys.argv or 'test_coverage' in sys.argv: # Covers regular testing and django-coverage
+    # Covers pytest, regular testing and django-coverage
+    if sys.argv[0].endswith('pytest.py') or ('test' in sys.argv) or ('test_coverage' in sys.argv): 
         DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
 
 
