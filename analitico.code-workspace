@@ -21,6 +21,7 @@
 		"files.exclude": {
 			"**/__pycache__": true,
 			"**/.ipynb_checkpoints": true,
+			"**/.pytest_cache": true,
 			"**/venv": true
 		},
 		"python.unitTest.cwd": "source",
