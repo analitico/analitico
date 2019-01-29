@@ -1,3 +1,3 @@
 from .dataset import Dataset
 
-from .mixin import SettingsMixin
+from .mixin import AttributesMixin

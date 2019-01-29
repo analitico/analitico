@@ -32,8 +32,8 @@ class PluginTests(unittest.TestCase, TestMixin):
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
 
-            self.assertEqual(plugin.get_setting("param1"), "value1")
-            self.assertEqual(plugin.get_setting("param2"), "value2")
+            self.assertEqual(plugin.get_attribute("param1"), "value1")
+            self.assertEqual(plugin.get_attribute("param2"), "value2")
         except Exception as exc:
             raise exc
 
@@ -45,8 +45,8 @@ class PluginTests(unittest.TestCase, TestMixin):
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
-            self.assertEqual(plugin.get_setting("param1"), "value1")
-            self.assertEqual(plugin.get_setting("param2"), "value2")
+            self.assertEqual(plugin.get_attribute("param1"), "value1")
+            self.assertEqual(plugin.get_attribute("param2"), "value2")
         except Exception as exc:
             raise exc
 
@@ -55,7 +55,7 @@ class PluginTests(unittest.TestCase, TestMixin):
         csv_url = self.get_asset_path("ds_test_1.csv")
         csv_plugin = self.get_csv_plugin(source={"url": csv_url})
         self.assertTrue(isinstance(csv_plugin, CsvDataframeSourcePlugin))
-        self.assertEqual(csv_plugin.get_setting("source.url"), csv_url)
+        self.assertEqual(csv_plugin.get_attribute("source.url"), csv_url)
 
         df = csv_plugin.process()
         self.assertTrue(isinstance(df, pd.DataFrame))

@@ -63,8 +63,8 @@ class TabularClassifierModel(TabularModel):
     def create_model(self):
         """ Creates a CatBoostClassifier configured as requested """
         logger.info("TabularClassifierMode.create_model - creating CatBoostClassifier")
-        iterations = self.get_setting("parameters.iterations", 50)
-        learning_rate = self.get_setting("parameters.learning_rate", 1)
+        iterations = self.get_attribute("parameters.iterations", 50)
+        learning_rate = self.get_attribute("parameters.learning_rate", 1)
         return CatBoostClassifier(
             iterations=iterations,
             learning_rate=learning_rate,

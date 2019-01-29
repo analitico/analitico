@@ -3,65 +3,65 @@ import unittest
 import analitico.mixin
 
 
-class MyClass1(analitico.mixin.SettingsMixin):
+class MyClass1(analitico.mixin.AttributesMixin):
     """ Class has no __init__ method """
 
     pass
 
 
-class MyClass2(analitico.mixin.SettingsMixin):
+class MyClass2(analitico.mixin.AttributesMixin):
     """ Class with passthrough init method """
 
     mickey = "empty"
 
     def __init__(self, mickey, *args, **kwargs):
-        # here we call super().__init__ correctly and pass down the settings
+        # here we call super().__init__ correctly and pass down the attributes
         super().__init__(*args, **kwargs)
         self.mickey = mickey
 
 
-class MyClass3(analitico.mixin.SettingsMixin):
+class MyClass3(analitico.mixin.AttributesMixin):
     """ Class with no passthrough init method """
 
     mickey = "empty"
 
     def __init__(self, mickey, *args, **kwargs):
-        # here we don't call super().__init__ and loose all settings but mickey's
+        # here we don't call super().__init__ and loose all attributes but mickey's
         self.mickey = mickey
 
 
 class MixinTests(unittest.TestCase):
     """ Unit testing for mixin classes """
 
-    def test_mixin_settings(self):
-        """ Basic basic functionality of SettingsMixin """
+    def test_mixin_attributes(self):
+        """ Basic basic functionality of AttributesMixin """
         obj1 = MyClass1(mickey="smart", goofy="funny", minnie="cute")
 
         self.assertEqual(obj1.mickey, "smart")
         self.assertEqual(obj1.goofy, "funny")
         self.assertEqual(obj1.minnie, "cute")
 
-    def test_mixin_settings_missing_attribute(self):
-        """ Basic missing setting in SettingsMixin """
+    def test_mixin_attributes_missing_attribute(self):
+        """ Basic missing attribute in AttributesMixin """
         obj1 = MyClass1(mickey="smart", goofy="funny", minnie="cute")
 
         with self.assertRaises(AttributeError):
             var1 = obj1.pinocchio
 
-    def test_mixin_settings_init_passthrough(self):
-        """ Basic passthrough initialization of SettingsMixin """
+    def test_mixin_attributes_init_passthrough(self):
+        """ Basic passthrough initialization of AttributesMixin """
         obj1 = MyClass2(mickey="smart", goofy="funny", minnie="cute")
 
         self.assertEqual(obj1.mickey, "smart")
         self.assertEqual(obj1.goofy, "funny")
         self.assertEqual(obj1.minnie, "cute")
 
-        # bogus setting not defined
+        # bogus attribute not defined
         with self.assertRaises(AttributeError):
             var1 = obj1.pinocchio
 
-    def test_mixin_settings_init_no_passthrough(self):
-        """ Basic passthrough initialization of SettingsMixin """
+    def test_mixin_attributes_init_no_passthrough(self):
+        """ Basic passthrough initialization of AttributesMixin """
         obj1 = MyClass3(mickey="smart", goofy="funny", minnie="cute")
         self.assertEqual(obj1.mickey, "smart")
 
@@ -71,6 +71,6 @@ class MixinTests(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.assertEqual(obj1.minnie, "cute")
 
-        # bogus setting also not defined
+        # bogus attribute also not defined
         with self.assertRaises(AttributeError):
             var1 = obj1.pinocchio

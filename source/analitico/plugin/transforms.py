@@ -27,7 +27,7 @@ class CodeDataframePlugin(IDataframePlugin):
     def process(self, *args, **kwargs) -> pandas.DataFrame:
         """ Apply some python code to the dataframe """
         df = super().process(*args, **kwargs)
-        code = self.get_setting("code", None)
+        code = self.get_attribute("code", None)
         if code:
             try:
                 # TODO plugin should restrict code execution to math, numpy and pandas #17

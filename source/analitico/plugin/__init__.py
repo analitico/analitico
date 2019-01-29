@@ -1,4 +1,3 @@
-
 # plugin base classes
 from .plugin import IPlugin  # NOQA: F401
 from .plugin import IDataframeSourcePlugin  # NOQA: F401

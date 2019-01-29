@@ -1,8 +1,4 @@
-import api.utilities
-
-from django.test import TestCase
-from django.core.validators import validate_slug
-from api.models.training import generate_training_id
+import unittest
 from analitico.utilities import get_dict_dot
 
 TST_DICT = {
@@ -15,7 +11,7 @@ TST_DICT = {
 }
 
 
-class UtilitiesTests(TestCase):
+class UtilitiesTests(unittest.TestCase):
     def test_get_dict_dot(self):
         self.assertEqual(get_dict_dot(TST_DICT, "parent_1.child_1.grandchild_1_1"), 10)
         self.assertEqual(get_dict_dot(TST_DICT, "parent_1.child_1.grandchild_1_2"), 20)

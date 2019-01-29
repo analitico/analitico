@@ -11,7 +11,7 @@ from analitico.utilities import pandas_to_analitico_type
 ##
 
 
-class Dataset(analitico.mixin.SettingsMixin):
+class Dataset(analitico.mixin.AttributesMixin):
     """ A dataset can retrieve data from a source and process it through a pipeline to generate a dataframe """
 
     plugin: analitico.plugin.IPlugin = None
@@ -22,10 +22,6 @@ class Dataset(analitico.mixin.SettingsMixin):
             self.plugin = kwargs["plugin"]
             if isinstance(self.plugin, dict):
                 self.plugin = analitico.plugin.manager.create_plugin(**self.plugin)
-
-    @property
-    def id(self) -> str:
-        return self.get_settings("id")
 
     def get_dataframe(self, **kwargs):
         """ Creates a pandas dataframe from the plugin of this dataset (usually a source or pipeline) """

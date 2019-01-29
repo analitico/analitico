@@ -47,13 +47,13 @@ class TabularModel(AnaliticoModel):
 
     def get_features(self):
         """ Feature columns that should be considered for training """
-        return self.get_setting("features.all")
+        return self.get_attribute("features.all")
 
     features = property(get_features)
 
     def get_label(self):
         """ Label column """
-        return self.get_setting("features.label")
+        return self.get_attribute("features.label")
 
     label = property(get_label)
 
@@ -62,7 +62,7 @@ class TabularModel(AnaliticoModel):
         # TODO specify types from settings for loading
         # https://stackoverflow.com/questions/24251219/pandas-read-csv-low-memory-and-dtype-options
         logger.info("TabularModel.read_data - data_url: %s", data_url)
-        datatypes = self.get_setting("training_data.datatypes", None)
+        datatypes = self.get_attribute("training_data.datatypes", None)
         data_filename = analitico.storage.download_file(data_url)  # cached
         df = pd.read_csv(data_filename, low_memory=(datatypes is None), dtype=datatypes)
         return df
@@ -70,10 +70,10 @@ class TabularModel(AnaliticoModel):
     def preprocess_data(self, df, training=False, results=None):
         """ Preprocess data before it's used to train the model """
         logger.info("TabularModel.preprocess_data")
-        features = self.get_setting("features.all")
-        categorical_features = self.get_setting("features.categorical")
-        timestamp_features = self.get_setting("features.timestamp")
-        label_feature = self.get_setting("features.label")
+        features = self.get_attribute("features.all")
+        categorical_features = self.get_attribute("features.categorical")
+        timestamp_features = self.get_attribute("features.timestamp")
+        label_feature = self.get_attribute("features.label")
 
         # do we have rows without labels? if so, remove and warn
         if training:
@@ -197,7 +197,7 @@ class TabularModel(AnaliticoModel):
 
             # load csv data from results of query joining multiple tables in source database
             loading_on = time_ms()
-            data_url = self.get_setting("training_data.url")
+            data_url = self.get_attribute("training_data.url")
             df = self.read_data(data_url)
             meta["loading_ms"] = time_ms(loading_on)
             records = data["records"] = {}
@@ -221,7 +221,7 @@ class TabularModel(AnaliticoModel):
                 )
 
             # DEBUG ONLY: CUT NUMBER OF ROW TO SPEED UP
-            tail = self.get_setting("parameters.tail", None)
+            tail = self.get_attribute("parameters.tail", None)
             if tail and (len(df) > tail):
                 df = df.tail(tail).copy()
                 logger.warning(
@@ -246,8 +246,8 @@ class TabularModel(AnaliticoModel):
             )
 
             # decide how to create test set from settings variable
-            chronological = self.get_setting("chronological", False)
-            test_size = self.get_setting("parameters.test_size", 0.10)
+            chronological = self.get_attribute("chronological", False)
+            test_size = self.get_attribute("parameters.test_size", 0.10)
 
             # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html
 

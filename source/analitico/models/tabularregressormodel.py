@@ -38,8 +38,8 @@ class TabularRegressorModel(TabularModel):
 
     def create_model(self):
         """ Creates a CatBoostRegressor configured as requested """
-        iterations = self.get_setting("parameters.iterations", 50)
-        learning_rate = self.get_setting("parameters.learning_rate", 1)
+        iterations = self.get_attribute("parameters.iterations", 50)
+        learning_rate = self.get_attribute("parameters.learning_rate", 1)
         return catboost.CatBoostRegressor(
             iterations=iterations, learning_rate=learning_rate, depth=8
         )
