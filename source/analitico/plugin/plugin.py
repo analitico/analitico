@@ -39,7 +39,8 @@ class IPlugin(ABC, SettingsMixin):
 
     @property
     def name(self):
-        return type(self).__name__
+        assert self.Meta.name
+        return self.Meta.name
 
     @property
     def logger(self):
