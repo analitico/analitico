@@ -1,4 +1,3 @@
-
 import os
 
 from django.conf import settings
@@ -14,23 +13,22 @@ import api.test
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
-ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/assets/'
+ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
+
 
 class ItemsTests(api.test.APITestCase):
-
     def setUp(self):
         self.setup_basics()
-        try: 
-            url = reverse('api:workspace-list')
+        try:
+            url = reverse("api:workspace-list")
             self.upload_items(url, api.models.WORKSPACE_PREFIX)
 
-            url = reverse('api:dataset-list')
+            url = reverse("api:dataset-list")
             self.upload_items(url, api.models.DATASET_PREFIX)
 
         except Exception as exc:
             print(exc)
             raise exc
-
 
     def test_items_default_id_prefix(self):
         """ Test models to make sure they are created with the correct prefix in their IDs """
@@ -49,203 +47,170 @@ class ItemsTests(api.test.APITestCase):
         item = api.models.Service()
         self.assertTrue(item.id.startswith(api.models.SERVICE_PREFIX))
 
-
     ##
     ## Workspace
     ##
 
     def test_workspace_get(self):
-        item = self.get_item('workspace', 'ws_001', self.token1)
-        self.assertEqual(item['id'], 'ws_001')
-        self.assertEqual(item['attributes']['user'], 'user1@analitico.ai')
-        self.assertEqual(item['attributes']['title'], 'This is the title')
-        self.assertEqual(item['attributes']['description'], 'This is the description')
-
+        item = self.get_item("workspace", "ws_001", self.token1)
+        self.assertEqual(item["id"], "ws_001")
+        self.assertEqual(item["attributes"]["user"], "user1@analitico.ai")
+        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_get_user2(self):
-        item = self.get_item('workspace', 'ws_002', self.token1)
-        self.assertEqual(item['id'], 'ws_002')
-        self.assertEqual(item['attributes']['user'], 'user2@analitico.ai')
-        self.assertEqual(item['attributes']['title'], 'This is the title')
-        self.assertEqual(item['attributes']['description'], 'This is the description')
-
+        item = self.get_item("workspace", "ws_002", self.token1)
+        self.assertEqual(item["id"], "ws_002")
+        self.assertEqual(item["attributes"]["user"], "user2@analitico.ai")
+        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_get_without_authorization(self):
         # user2 is not the owner of this workspace so, altough it does exist,
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
-        item = self.get_item('workspace', 'ws_001', self.token2, status_code=status.HTTP_404_NOT_FOUND)
-        self.assertEqual(item['error']['code'], 'Not Found')
-        self.assertIsNotNone(item['error']['detail'])
-        self.assertEqual(item['error']['status'], '404') # a string, not a number
-
+        item = self.get_item("workspace", "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        self.assertEqual(item["error"]["code"], "Not Found")
+        self.assertIsNotNone(item["error"]["detail"])
+        self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_get_without_authorization_as_admin(self):
         # ws_002 is owned by user2@analitico.ai but user1 is an admin so he should get it
-        item = self.get_item('workspace', 'ws_002', self.token1)
-        self.assertEqual(item['id'], 'ws_002')
-        self.assertEqual(item['attributes']['title'], 'This is the title')
-        self.assertEqual(item['attributes']['description'], 'This is the description')
-
+        item = self.get_item("workspace", "ws_002", self.token1)
+        self.assertEqual(item["id"], "ws_002")
+        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_patch_title(self):
-        item = self.get_item('workspace', 'ws_001', self.token1)
-        self.assertEqual(item['id'], 'ws_001')
-        self.assertEqual(item['attributes']['title'], 'This is the title')
-        self.assertEqual(item['attributes']['description'], 'This is the description')
- 
-        patch = {
-            'data': {
-                'id': 'ws_001',
-                'attributes': {
-                    'title': 'This is the patched title'
-                }
-            }
-        }
-        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
-        self.assertEqual(patch_item['attributes']['title'], 'This is the patched title')
-        self.assertEqual(patch_item['attributes']['description'], 'This is the description')
+        item = self.get_item("workspace", "ws_001", self.token1)
+        self.assertEqual(item["id"], "ws_001")
+        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["description"], "This is the description")
 
+        patch = {"data": {"id": "ws_001", "attributes": {"title": "This is the patched title"}}}
+        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        self.assertEqual(patch_item["attributes"]["title"], "This is the patched title")
+        self.assertEqual(patch_item["attributes"]["description"], "This is the description")
 
     def test_workspace_patch_title_user2(self):
-        item = self.get_item('workspace', 'ws_002', self.token1)
-        self.assertEqual(item['id'], 'ws_002')
-        self.assertEqual(item['attributes']['title'], 'This is the title')
-        self.assertEqual(item['attributes']['description'], 'This is the description')
+        item = self.get_item("workspace", "ws_002", self.token1)
+        self.assertEqual(item["id"], "ws_002")
+        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["description"], "This is the description")
 
-        patch = {
-            'data': {
-                'id': 'ws_002',
-                'attributes': {
-                    'title': 'This is the patched title'
-                }
-            }
-        }
-        patch_item = self.patch_item('workspace', 'ws_002', patch, self.token1)        
-        self.assertEqual(patch_item['attributes']['title'], 'This is the patched title')
-        self.assertEqual(patch_item['attributes']['description'], 'This is the description')
-
+        patch = {"data": {"id": "ws_002", "attributes": {"title": "This is the patched title"}}}
+        patch_item = self.patch_item("workspace", "ws_002", patch, self.token1)
+        self.assertEqual(patch_item["attributes"]["title"], "This is the patched title")
+        self.assertEqual(patch_item["attributes"]["description"], "This is the description")
 
     def test_workspace_patch_item_patch_title_without_authorization(self):
-        patch = {
-            'data': {
-                'id': 'ws_001',
-                'attributes': {
-                    'title': 'This is the patched title'
-                }
-            }
-        }
+        patch = {"data": {"id": "ws_001", "attributes": {"title": "This is the patched title"}}}
         # user2 is not the owner of this workspace so, altough it does exist,
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
-        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token2, status_code=status.HTTP_404_NOT_FOUND)    
-        self.assertEqual(patch_item['error']['code'], 'Not Found')
-        self.assertIsNotNone(patch_item['error']['detail'])
-        self.assertEqual(patch_item['error']['status'], '404') # a string, not a number
-
+        patch_item = self.patch_item("workspace", "ws_001", patch, self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        self.assertEqual(patch_item["error"]["code"], "Not Found")
+        self.assertIsNotNone(patch_item["error"]["detail"])
+        self.assertEqual(patch_item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_patch_made_up_attribute(self):
-        item = self.get_item('workspace', 'ws_001', self.token1)
-        self.assertEqual(item['id'], 'ws_001')
-        self.assertEqual(item['attributes']['title'], 'This is the title')
-        self.assertEqual(item['attributes']['description'], 'This is the description')
-        self.assertFalse('made_up_attribute' in item['attributes'])
+        item = self.get_item("workspace", "ws_001", self.token1)
+        self.assertEqual(item["id"], "ws_001")
+        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["description"], "This is the description")
+        self.assertFalse("made_up_attribute" in item["attributes"])
 
-        patch = {
-            'data': {
-                'id': 'ws_001',
-                'attributes': {
-                    'made_up_attribute': 'This is a made up attribute'
-                }
-            }
-        }
-        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
-        self.assertEqual(patch_item['attributes']['title'], 'This is the title')
-        self.assertEqual(patch_item['attributes']['description'], 'This is the description')
-        self.assertEqual(patch_item['attributes']['made_up_attribute'], 'This is a made up attribute')
-
+        patch = {"data": {"id": "ws_001", "attributes": {"made_up_attribute": "This is a made up attribute"}}}
+        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        self.assertEqual(patch_item["attributes"]["title"], "This is the title")
+        self.assertEqual(patch_item["attributes"]["description"], "This is the description")
+        self.assertEqual(patch_item["attributes"]["made_up_attribute"], "This is a made up attribute")
 
     def test_workspace_patch_made_up_attribute_with_children(self):
-        item = self.get_item('workspace', 'ws_001', self.token1)
-        self.assertEqual(item['id'], 'ws_001')
-        self.assertEqual(item['attributes']['title'], 'This is the title')
-        self.assertEqual(item['attributes']['description'], 'This is the description')
-        self.assertFalse('made_up_attribute' in item['attributes'])
+        item = self.get_item("workspace", "ws_001", self.token1)
+        self.assertEqual(item["id"], "ws_001")
+        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["description"], "This is the description")
+        self.assertFalse("made_up_attribute" in item["attributes"])
 
         patch = {
-            'data': {
-                'id': 'ws_001',
-                'attributes': {
-                    'made_up_attribute_two': {
-                        'child1': 'This is a made up attribute, child 1',
-                        'child2': 'This is a made up attribute, child 2',
-                    }, 
-                    'made_up_attribute_three': 'This is made_up_attribute_three'
-                }
+            "data": {
+                "id": "ws_001",
+                "attributes": {
+                    "made_up_attribute_two": {
+                        "child1": "This is a made up attribute, child 1",
+                        "child2": "This is a made up attribute, child 2",
+                    },
+                    "made_up_attribute_three": "This is made_up_attribute_three",
+                },
             }
         }
-        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
-        self.assertEqual(patch_item['attributes']['title'], 'This is the title')
-        self.assertEqual(patch_item['attributes']['description'], 'This is the description')
-        self.assertEqual(patch_item['attributes']['made_up_attribute_two']['child1'], 'This is a made up attribute, child 1')
-        self.assertEqual(patch_item['attributes']['made_up_attribute_two']['child2'], 'This is a made up attribute, child 2')
-        self.assertEqual(patch_item['attributes']['made_up_attribute_three'], 'This is made_up_attribute_three')
-
+        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        self.assertEqual(patch_item["attributes"]["title"], "This is the title")
+        self.assertEqual(patch_item["attributes"]["description"], "This is the description")
+        self.assertEqual(
+            patch_item["attributes"]["made_up_attribute_two"]["child1"], "This is a made up attribute, child 1"
+        )
+        self.assertEqual(
+            patch_item["attributes"]["made_up_attribute_two"]["child2"], "This is a made up attribute, child 2"
+        )
+        self.assertEqual(patch_item["attributes"]["made_up_attribute_three"], "This is made_up_attribute_three")
 
     def test_workspace_patch_change_remove(self):
-        patch = {
-            'data': {
-                'id': 'ws_001',
-                'attributes': {
-                    'made_up_attribute': 'adding something'
-                }
-            }
-        }
-        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
-        self.assertEqual(patch_item['attributes']['made_up_attribute'], 'adding something')
+        patch = {"data": {"id": "ws_001", "attributes": {"made_up_attribute": "adding something"}}}
+        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        self.assertEqual(patch_item["attributes"]["made_up_attribute"], "adding something")
 
-        patch['data']['attributes']['made_up_attribute'] = 'then changing it'
-        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
-        self.assertEqual(patch_item['attributes']['made_up_attribute'], 'then changing it')
+        patch["data"]["attributes"]["made_up_attribute"] = "then changing it"
+        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        self.assertEqual(patch_item["attributes"]["made_up_attribute"], "then changing it")
 
-        patch['data']['attributes']['made_up_attribute'] = None # them removing it
-        patch_item = self.patch_item('workspace', 'ws_001', patch, self.token1)        
-        self.assertIsNone(patch_item['attributes']['made_up_attribute'])
-
+        patch["data"]["attributes"]["made_up_attribute"] = None  # them removing it
+        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        self.assertIsNone(patch_item["attributes"]["made_up_attribute"])
 
     def test_workspace_delete(self):
-        item = self.delete_item('workspace', 'ws_001', self.token1, status.HTTP_204_NO_CONTENT)
+        item = self.delete_item("workspace", "ws_001", self.token1, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(item)
 
         # no try and get deleted item, should return a 404
-        item = self.delete_item('workspace', 'ws_001', self.token1, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(item['error']['code'], 'Not Found')
-        self.assertIsNotNone(item['error']['detail'])
-        self.assertEqual(item['error']['status'], '404') # a string, not a number
-
+        item = self.delete_item("workspace", "ws_001", self.token1, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(item["error"]["code"], "Not Found")
+        self.assertIsNotNone(item["error"]["detail"])
+        self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_delete_without_authorization(self):
         # user2 is not the owner of this workspace so, altough it does exist,
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
-        item = self.delete_item('workspace', 'ws_001', self.token2, status_code=status.HTTP_404_NOT_FOUND)
-        self.assertEqual(item['error']['code'], 'Not Found')
-        self.assertIsNotNone(item['error']['detail'])
-        self.assertEqual(item['error']['status'], '404') # a string, not a number
-
+        item = self.delete_item("workspace", "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        self.assertEqual(item["error"]["code"], "Not Found")
+        self.assertIsNotNone(item["error"]["detail"])
+        self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_delete_without_authorization_as_admin(self):
         # ws_002 is owned by user2@analitico.ai but user1 is an admin so he should be able to delete it
-        item = self.delete_item('workspace', 'ws_002', token=self.token1, status_code=status.HTTP_204_NO_CONTENT)
+        item = self.delete_item("workspace", "ws_002", token=self.token1, status_code=status.HTTP_204_NO_CONTENT)
         self.assertIsNone(item)
-
 
     ##
     ## Dataset
     ##
 
     def test_dataset_get_titanic(self):
-        item = self.get_item('dataset', 'ds_titanic', self.token1)
-        self.assertEqual(item['id'], 'ds_titanic')
-        self.assertEqual(item['attributes']['title'], 'Kaggle - Titanic training dataset (train.csv)')
-        self.assertEqual(item['attributes']['description'], 'https://www.kaggle.com/c/titanic')
+        item = self.get_item("dataset", "ds_titanic", self.token1)
+        self.assertEqual(item["id"], "ds_titanic")
+        self.assertEqual(item["attributes"]["title"], "Kaggle - Titanic training dataset (train.csv)")
+        self.assertEqual(item["attributes"]["description"], "https://www.kaggle.com/c/titanic")
+
+    def OFFtest_dataset_get_titanic_data_csv(self):
+
+        url = reverse("api:dataset-data-detail", args=("ds_titanic", "data.csv"))
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        item = self.get_item("dataset", "ds_titanic", self.token1)
+        self.assertEqual(item["id"], "ds_titanic")
+        self.assertEqual(item["attributes"]["title"], "Kaggle - Titanic training dataset (train.csv)")
+        self.assertEqual(item["attributes"]["description"], "https://www.kaggle.com/c/titanic")

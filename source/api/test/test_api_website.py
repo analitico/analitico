@@ -1,4 +1,3 @@
-
 import io
 import os
 import os.path
@@ -26,6 +25,7 @@ import api.test
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
+
 class WebsiteTests(api.test.APITestCase):
 
     ##
@@ -34,5 +34,5 @@ class WebsiteTests(api.test.APITestCase):
 
     def test_lab_redirects_if_not_authenticated(self):
         """ Test that user needs to be authenticated to access /lab and will be redirected if not. """
-        response = self.client.get('/lab')
-        self.assertRedirects(response, '/accounts/login/?next=/lab')
+        response = self.client.get("/lab")
+        self.assertRedirects(response, "/accounts/login/?next=/lab")
