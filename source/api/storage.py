@@ -12,12 +12,12 @@ import libcloud.storage.drivers.google_storage
 # Storage options are configured from json blobs looking like this:
 # {
 #   "driver": "google-storage",
-#   "container": "data.analitico.ai",
+#   "container": "container.domain.ext",
 #   "basepath": "",
 #   "credentials": {
-#     "key": "analitico-api@appspot.gserviceaccount.com",
-#     "secret": "-----BEGIN PRIVATE KEY-----\nCggEAI8sbbUa ... WeDeE=\n-----END PRIVATE KEY-----",
-#     "project": "analitico-api"
+#     "key": "account-name@appspot.gserviceaccount.com",
+#     "secret": "-----BEGIN PRIVATE KEY-----\nfAk...eKy=\n-----END PRIVATE KEY-----",
+#     "project": "account-name"
 #   }
 # }
 
