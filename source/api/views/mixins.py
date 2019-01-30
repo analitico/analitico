@@ -2,36 +2,24 @@
 # pylint: disable=no-member
 
 import os
-import collections
-import email.utils as eut
 
 from django.utils.text import slugify
-from django.utils.translation import gettext as _
-from django.core.exceptions import ObjectDoesNotExist
 from django.http.response import StreamingHttpResponse
 from django.utils.http import parse_http_date_safe, http_date
 from django.utils.timezone import now
 
 import rest_framework
+import rest_framework.viewsets
 
-from rest_framework import serializers, exceptions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.exceptions import NotFound, ParseError, MethodNotAllowed, APIException
+from rest_framework.decorators import action, permission_classes
+from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
-from api.models import ItemsMixin, Workspace, Dataset, Recipe
-from analitico.utilities import logger, get_dict_dot
-from api.utilities import time_ms, api_get_parameter, api_check_authorization
-
-import analitico.models
-import analitico.utilities
-import analitico.storage
-
-import api.models
-import api.utilities
+from api.models import ItemsMixin
+from analitico.utilities import logger
 
 # Django Serializers
 # https://www.django-rest-framework.org/api-guide/serializers/
@@ -296,8 +284,8 @@ class AssetsViewSetMixin:
     @action(methods=["get", "post", "put", "delete"], detail=True, url_name="asset-detail", url_path=ASSET_ID_RE)
     def asset_detail(self, request, pk, asset_class, asset_id=None) -> Response:
         """ Upload, update, download or delete a file asset associated with this item. Supports both direct upload and multipart forms. """
-        assert asset_class == "assets" or asset_class == "data"
-        if request.method == "POST" or request.method == "PUT":
+        assert asset_class in ("assets", "data")
+        if request.method in ("POST", "PUT"):
             # asset_id can be null when uploading multiple files at once with multipart encoding
             return self._asset_upload(request, pk, asset_class, asset_id)
         if request.method == "GET":
