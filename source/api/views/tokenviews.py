@@ -1,4 +1,3 @@
-
 # TokenSerializer and TokenViewSet for token APIs
 # pylint: disable=no-member
 
@@ -23,22 +22,25 @@ import api.pagination
 # Django Serializers
 # https://www.django-rest-framework.org/api-guide/serializers/
 
+
 class TokenSerializer(serializers.ModelSerializer):
     """ Serializer for API authorization tokens. """
 
     class Meta:
         model = Token
-        fields = ('id', 'name', 'user', 'created_at')
+        fields = ("id", "name", "user", "created_at")
 
     id = serializers.SlugField(help_text=_("Unique id."))
     name = serializers.SlugField(help_text=_("Name used to track token usage (eg: testing, mobile, web, server, etc)."), required=False)
-    user = serializers.EmailField(source='user.email', help_text=_('User that owns the token.'), required=False, read_only=True)
-    created_at = serializers.DateTimeField(label=_('Created'), help_text=_('Date and time when token was created.'), required=False, read_only=True)
+    user = serializers.EmailField(source="user.email", help_text=_("User that owns the token."), required=False, read_only=True)
+    created_at = serializers.DateTimeField(
+        label=_("Created"), help_text=_("Date and time when token was created."), required=False, read_only=True
+    )
 
     def validate_key(self, value):
         """ Check that token starts with tok_ """
-        if value[:4] != 'tok_':
-            raise serializers.ValidationError(_('Token key should start with tok_'))
+        if value[:4] != "tok_":
+            raise serializers.ValidationError(_("Token key should start with tok_"))
         return value
 
     def create(self, validated_data):
@@ -57,7 +59,7 @@ class TokenViewSet(viewsets.ModelViewSet):
     partial_update: Modify a previously created API auth token (eg: change its name).
     delete: Delete an API auth token.
     """
-    
+
     serializer_class = TokenSerializer
     permission_classes = [IsAuthenticated]
 
@@ -69,9 +71,9 @@ class TokenViewSet(viewsets.ModelViewSet):
     def create(self, request):
         serializer = TokenSerializer(data=request.data)
         if serializer.is_valid():
-            token = Token(pk=serializer.validated_data['id'])
-            if 'name' in serializer.validated_data:
-                token.name = serializer.validated_data['name']
+            token = Token(pk=serializer.validated_data["id"])
+            if "name" in serializer.validated_data:
+                token.name = serializer.validated_data["name"]
             token.user = request.user
             token.save()
             serializer = TokenSerializer(token)

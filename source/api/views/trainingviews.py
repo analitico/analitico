@@ -1,4 +1,3 @@
-
 # TrainingSerializer and TrainingViewSet for training APIs
 # pylint: disable=no-member
 
@@ -34,29 +33,31 @@ import api.utilities
 # Serializer
 #
 
+
 class TrainingSerializer(serializers.ModelSerializer):
     """ Serializer for machine learning project training set. """
 
     class Meta:
         model = Training
-        fields = ('id', 'status', 'settings', 'results', 'notes', 'created_at', 'updated_at')
+        fields = ("id", "status", "settings", "results", "notes", "created_at", "updated_at")
 
     id = serializers.SlugField(help_text=_("Unique id."))
-#    user = serializers.EmailField(source='owner.email', help_text=_('User that owns the project.'), required=False)
-#    group = serializers.CharField(source='group.name', help_text=_('Project notes (markdown)'), required=False)
+    #    user = serializers.EmailField(source='owner.email', help_text=_('User that owns the project.'), required=False)
+    #    group = serializers.CharField(source='group.name', help_text=_('Project notes (markdown)'), required=False)
 
-    status = serializers.CharField(help_text=_('Training status'), required=False)
-    settings = serializers.JSONField(help_text=_('Project settings'), required=False)
-    results = serializers.JSONField(help_text=_('Training results'), required=False)
-    notes = serializers.CharField(help_text=_('Training notes (markdown)'), required=False)
+    status = serializers.CharField(help_text=_("Training status"), required=False)
+    settings = serializers.JSONField(help_text=_("Project settings"), required=False)
+    results = serializers.JSONField(help_text=_("Training results"), required=False)
+    notes = serializers.CharField(help_text=_("Training notes (markdown)"), required=False)
 
-    created_at = serializers.DateTimeField(label=_('Created'), help_text=_('Date and time when project was created.'), required=False)
-    updated_at = serializers.DateTimeField(label=_('Updated'), help_text=_('Date and time when project was last updated.'), required=False)
+    created_at = serializers.DateTimeField(label=_("Created"), help_text=_("Date and time when project was created."), required=False)
+    updated_at = serializers.DateTimeField(label=_("Updated"), help_text=_("Date and time when project was last updated."), required=False)
 
 
 #
 # ViewSet
 #
+
 
 class TrainingViewSet(rest_framework.viewsets.ModelViewSet):
     """ 
@@ -69,25 +70,24 @@ class TrainingViewSet(rest_framework.viewsets.ModelViewSet):
     partial_update: Modify a previously created project.
     delete: Delete a project.
     """
-    
+
     serializer_class = TrainingSerializer
     permission_classes = [IsAuthenticated]
 
-    help_text='help text viewset'
-    label ='viewset label'
+    help_text = "help text viewset"
+    label = "viewset label"
 
     def get_queryset(self):
         if self.request.user.is_superuser:
             return Training.objects.all()
         return Project.objects.filter(owner=self.request.user)
 
-
     def create(self, request, *args, **kwargs):
         serializer = TrainingSerializer(data=request.data)
         if serializer.is_valid():
-            token = Training(pk=serializer.validated_data['id'])
-            if 'name' in serializer.validated_data:
-                token.name = serializer.validated_data['name']
+            token = Training(pk=serializer.validated_data["id"])
+            if "name" in serializer.validated_data:
+                token.name = serializer.validated_data["name"]
             token.user = request.user
             token.save()
             serializer = TrainingSerializer(token)
