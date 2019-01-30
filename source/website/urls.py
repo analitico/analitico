@@ -21,7 +21,7 @@ schema_view = get_schema_view(
       contact=openapi.Contact(email="support@analitico.ai"),
       license=openapi.License(name="GPLv3", url='https://www.gnu.org/licenses/quick-guide-gplv3.en.html'),
    ),
-   validators=['flex', 'ssv'],
+   #validators=['flex', 'ssv'],
    public=True,
    permission_classes=(permissions.AllowAny,),
 )
