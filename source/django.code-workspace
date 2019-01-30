@@ -1,0 +1,33 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "/home/gionata/github/analitico"
+		},
+		{
+			"path": "/home/gionata/github/analitico-ops"
+		},
+		{
+			"path": "/home/gionata/github/analitico-private"
+		},
+		{
+			"path": "/home/gionata/github/analitico-app"
+		}
+	],
+	"settings": {
+		"python.pythonPath": "/venv/bin/python",
+		"files.watcherExclude": {
+			"**/node_modules/**": true
+		},
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/.ipynb_checkpoints": true,
+			"**/.pytest_cache": true,
+			"**/venv": true
+		},
+		"python.unitTest.cwd": "",
+		"python.unitTest.unittestEnabled": true
+	}
+}

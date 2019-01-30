@@ -1,0 +1,17 @@
+{
+    "python.venvPath": "${workspaceFolder}",
+    "python.unitTest.unittestArgs": [
+        "-v",
+        "-s",
+        "${workspaceFolder}",
+        "-p",
+        "test*.py"
+    ],
+    "python.unitTest.pyTestEnabled": true,
+    "python.unitTest.nosetestsEnabled": false,
+    "python.unitTest.unittestEnabled": true,
+    "python.pythonPath": "venv/bin/python",
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.unitTest.cwd": "${workspaceFolder}",
+    "python.linting.pylintEnabled": true
+}
