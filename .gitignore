@@ -9,6 +9,8 @@ _*.pyx
 .ipynb_checkpoints
 venv
 
+**/.ropeproject
+
 /source/venv
 /source/django
 
