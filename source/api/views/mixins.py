@@ -296,11 +296,11 @@ class AssetsViewSetMixin:
             return self._asset_delete(request, pk, asset_class, asset_id)
         raise MethodNotAllowed(request.method)
 
-    # TODO make asset_id portion of regex mandatory
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="asset-detail-info", url_path=ASSET_INFO_RE)
     def asset_detail_info(self, request, pk, asset_class, asset_id):
         """ Returns an asset's details as json. """
+        assert asset_class and asset_id
         item = self.get_object()
         asset, _ = self._download_asset_as_stream(item, asset_class, asset_id)
         return Response(asset)
