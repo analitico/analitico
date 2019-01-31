@@ -39,8 +39,8 @@ urlpatterns = [
    # django admin site
    path('admin', admin.site.urls, name='admin'),
 
-   # angular frontend application (any path under /lab)
-   path('app/', website.views.lab, name='app'), # placeholder
+   # angular frontend application (any path under /app)
+   path('app', website.views.lab, name='app'), # placeholder
 
    # APIs and documentation
    path('api/', include('api.urls'), name='api'),

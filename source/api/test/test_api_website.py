@@ -32,7 +32,7 @@ class WebsiteTests(api.test.APITestCase):
     ## Login, etc
     ##
 
-    def test_lab_redirects_if_not_authenticated(self):
-        """ Test that user needs to be authenticated to access /lab and will be redirected if not. """
-        response = self.client.get("/lab")
-        self.assertRedirects(response, "/accounts/login/?next=/lab")
+    def test_app_redirects_if_not_authenticated(self):
+        """ Test that user needs to be authenticated to access /app and will be redirected if not. """
+        response = self.client.get("/app")
+        self.assertRedirects(response, "/accounts/login/?next=/app")
