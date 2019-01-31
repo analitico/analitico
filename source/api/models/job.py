@@ -64,3 +64,9 @@ class Job(ItemsMixin, models.Model):
 
     # Current status, eg: created, processing, completed, failed
     status = models.SlugField(blank=True, default="created")
+
+    # The type of job (eg. training, inference, etc)
+    subtype = models.SlugField(blank=True)
+
+    # The item that is the target of this job (eg. model that is trained, dataset that is processed, etc)
+    item_id = models.SlugField(blank=True)

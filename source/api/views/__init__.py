@@ -6,6 +6,7 @@ from .mixins import AttributesSerializerMixin
 
 from .workspaceviews import WorkspaceViewSet
 from .datasetviews import DatasetViewSet
+from .jobviews import JobViewSet
 
 from .views import handle_prj_training
 from .views import handle_prj_upload
