@@ -19,8 +19,9 @@ router = routers.SimpleRouter(trailing_slash=False)
 router.register('workspaces', api.views.WorkspaceViewSet, basename='workspace')
 router.register('datasets', api.views.DatasetViewSet, basename='dataset')
 router.register('jobs', api.views.JobViewSet, basename='job')
-
 router.register('tokens', api.views.TokenViewSet, basename='token')
+
+# deprecated
 router.register('projects', api.views.ProjectViewSet, basename='project')
 router.register('trainings', api.views.TrainingViewSet, basename='training')
 

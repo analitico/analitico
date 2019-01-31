@@ -31,18 +31,18 @@ class ProjectUploadApiTests(APITestCase):
             raise exc
 
     def test_api_upload_no_post(self):
-        response = self.client.post("/api/v1/project/up-prj-001/upload/test001.csv", format="json")
+        response = self.client.post("/api/project/up-prj-001/upload/test001.csv", format="json")
         self.assertEqual(response.status_code, 405)
         error = response.data["error"]
         self.assertEqual(error["status"], "405")
 
     def test_api_upload_no_get(self):
-        response = self.client.get("/api/v1/project/up-prj-001/upload/test001.csv", format="json")
+        response = self.client.get("/api/project/up-prj-001/upload/test001.csv", format="json")
         self.assertEqual(response.status_code, 405)
         error = response.data["error"]
         self.assertEqual(error["status"], "405")
 
     def test_api_404(self):
-        response = self.client.post("/api/v1/fake_endpoint", {"test1": "value1", "test2": "value2"}, format="json")
+        response = self.client.post("/api/fake_endpoint", {"test1": "value1", "test2": "value2"}, format="json")
         self.assertEqual(response.reason_phrase, "Not Found")
         self.assertEqual(response.status_code, 404)

@@ -9,7 +9,7 @@ import requests
 def upload_file_to_analitico(project_id, filename, token):
     """ Uploads given file to analitico cloud storage for processing """
     # obtain a signed upload url
-    api_url = 'http://analitico.ai/api/v1/project/' + project_id + '/upload/' + filename
+    api_url = 'http://analitico.ai/api/project/' + project_id + '/upload/' + filename
     auth_response = requests.put(api_url, headers={
         'Authorization': token
         })

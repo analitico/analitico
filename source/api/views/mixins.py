@@ -18,7 +18,7 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
-from api.models import ItemsMixin
+from api.models import ItemsMixin, Job
 from analitico.utilities import logger
 
 # Django Serializers
@@ -304,3 +304,43 @@ class AssetsViewSetMixin:
         item = self.get_object()
         asset, _ = self._download_asset_as_stream(item, asset_class, asset_id)
         return Response(asset)
+
+
+
+
+##
+## JobsViewSetMixin - endpoints for creating jobs attached to an item, eg: train a model
+##
+
+from .jobviews import JobSerializer
+
+class JobsViewSetMixin:
+    """
+    This is a mixin used by other viewsets like WorkspaceViewSet and DatasetViewSet.
+    It provides the endpoint and methods needed to create jobs that are applied to the item,
+    for example create a job that will process a dataset or train a model.
+    The mixin also lets you list jobs attached to the item or see the status of a specific job.
+    """
+
+    # defined in subclass to list acceptable actions
+    job_subtypes = ()
+
+    def _create_job(self, request, job_item, job_subtype=None):
+        pass
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
+    def job_list(self, request, pk) -> Response:
+        """ Returns a listing of all jobs associated with this item. """
+        jobs = Job.objects.filter(item_id=pk)
+        jobs_serializer = JobSerializer(jobs, many=True) 
+        return Response(jobs_serializer.data)
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["post"], detail=True, url_name="job-detail", url_path=r"jobs/(?P<job_subtype>[-\w.]{4,256})$")
+    def job_create(self, request, pk, job_subtype=None) -> Response:
+        """ Creates a job for this item and returns it. """
+        job_item = self.get_object()
+        if job_subtype in self.job_subtypes:
+            return Response(self._create_job(request, job_item, job_subtype))
+        raise MethodNotAllowed(job_item.type + ' cannot create a job of type: ' + job_subtype)

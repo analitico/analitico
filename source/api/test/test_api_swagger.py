@@ -14,7 +14,7 @@ class SwaggerApiTests(APITestCase):
         self.assertEqual(data["swagger"], "2.0")
         self.assertEqual(data["info"]["title"], "Analitico API")
         self.assertEqual(data["info"]["contact"]["email"], "support@analitico.ai")
-        self.assertEqual(data["basePath"], "/api/v1")
+        self.assertEqual(data["basePath"], "/api")
         self.assertEqual(data["consumes"][0], "application/json")
         self.assertEqual(data["produces"][0], "application/json")
 
