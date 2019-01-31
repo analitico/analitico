@@ -37,17 +37,16 @@ urlpatterns = [
    path('accounts/', include('allauth.urls')),
 
    # django admin site
-   path('admin/', admin.site.urls, name='admin'),
+   path('admin', admin.site.urls, name='admin'),
 
    # angular frontend application (any path under /lab)
-   path('lab', website.views.lab, name='lab'), # placeholder
-   # url(r'^lab.*', TemplateView.as_view(template_name="lab.html"), name="lab"),
+   path('app/', website.views.lab, name='app'), # placeholder
 
-   # REST APIs
-   path('api/v1/', include('api.urls'), name='api'),
+   # APIs and documentation
+   path('api/', include('api.urls'), name='api'),
 
    # APIs documentation and swagger manifest
-   url(r'^api/v1/docs', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
+   path('api/docs', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
    url(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
    url(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
    url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
