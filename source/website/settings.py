@@ -87,6 +87,9 @@ try:
         '159.69.242.143'        # s5.analitico.ai
     ]
 
+    # Disable maximum upload size
+    DATA_UPLOAD_MAX_MEMORY_SIZE=None
+
     # Allow CORS requests from any subdomain of analitico.ai
     CSRF_COOKIE_DOMAIN = 'analitico.ai'
 
