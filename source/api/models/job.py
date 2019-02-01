@@ -10,12 +10,6 @@ from django.db import models
 from .items import ItemsMixin
 from .workspace import Workspace
 
-# Job.status supports these states
-JOB_STATUS_CREATED = "created"
-JOB_STATUS_PROCESSING = "processing"
-JOB_STATUS_PROCESSING = "canceled"
-JOB_STATUS_COMPLETED = "completed"
-JOB_STATUS_FAILED = "failed"
 
 JOB_PREFIX = "jb_"
 
@@ -62,11 +56,18 @@ class Job(ItemsMixin, models.Model):
     ## Custom fields specific to job
     ##
 
+    # Job.status supports these states
+    JOB_STATUS_CREATED = "created"
+    JOB_STATUS_PROCESSING = "processing"
+    JOB_STATUS_CANCELED = "canceled"
+    JOB_STATUS_COMPLETED = "completed"
+    JOB_STATUS_FAILED = "failed"
+
     # Current status, eg: created, processing, completed, failed
     status = models.SlugField(blank=True, default="created")
 
-    # The type of job (eg. training, inference, etc)
-    subtype = models.SlugField(blank=True)
+    # The type of job, or action, for example: workspace/process, model/train, endpoint/inference, etc
+    action = models.CharField(blank=True, max_length=64)
 
     # The item that is the target of this job (eg. model that is trained, dataset that is processed, etc)
     item_id = models.SlugField(blank=True)

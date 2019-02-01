@@ -81,7 +81,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    fields = ('id', 'workspace', 'title', 'description', 'subtype', 'item_id', 'status', 'attributes')
-    list_display = ('id', 'workspace', 'subtype', 'item_id', 'status', 'title', 'description', 'notes', 'created_at', 'updated_at', 'attributes')
+    fields = ('id', 'workspace', 'title', 'description', 'action', 'item_id', 'status', 'attributes')
+    list_display = ('id', 'workspace', 'action', 'item_id', 'status', 'title', 'description', 'notes', 'created_at', 'updated_at', 'attributes')
     search_fields = ('id', 'title', 'description', 'attributes')
     ordering = ('-updated_at',) 
