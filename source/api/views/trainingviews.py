@@ -50,8 +50,12 @@ class TrainingSerializer(serializers.ModelSerializer):
     results = serializers.JSONField(help_text=_("Training results"), required=False)
     notes = serializers.CharField(help_text=_("Training notes (markdown)"), required=False)
 
-    created_at = serializers.DateTimeField(label=_("Created"), help_text=_("Date and time when project was created."), required=False)
-    updated_at = serializers.DateTimeField(label=_("Updated"), help_text=_("Date and time when project was last updated."), required=False)
+    created_at = serializers.DateTimeField(
+        label=_("Created"), help_text=_("Date and time when project was created."), required=False
+    )
+    updated_at = serializers.DateTimeField(
+        label=_("Updated"), help_text=_("Date and time when project was last updated."), required=False
+    )
 
 
 #

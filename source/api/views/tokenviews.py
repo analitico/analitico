@@ -31,8 +31,12 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "user", "created_at")
 
     id = serializers.SlugField(help_text=_("Unique id."))
-    name = serializers.SlugField(help_text=_("Name used to track token usage (eg: testing, mobile, web, server, etc)."), required=False)
-    user = serializers.EmailField(source="user.email", help_text=_("User that owns the token."), required=False, read_only=True)
+    name = serializers.SlugField(
+        help_text=_("Name used to track token usage (eg: testing, mobile, web, server, etc)."), required=False
+    )
+    user = serializers.EmailField(
+        source="user.email", help_text=_("User that owns the token."), required=False, read_only=True
+    )
     created_at = serializers.DateTimeField(
         label=_("Created"), help_text=_("Date and time when token was created."), required=False, read_only=True
     )

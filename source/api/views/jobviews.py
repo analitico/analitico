@@ -1,6 +1,4 @@
-"""
-Views and ViewSets for API models
-"""
+""" JobSerializer and JobViewSet classes """
 
 import rest_framework
 from rest_framework import serializers
@@ -18,7 +16,7 @@ from .mixins import AssetsViewSetMixin, AttributesSerializerMixin
 
 
 class JobSerializer(AttributesSerializerMixin, serializers.ModelSerializer):
-    """ Serializer for Dataset model """
+    """ Serializer for Job model """
 
     class Meta:
         model = Job
@@ -28,6 +26,7 @@ class JobSerializer(AttributesSerializerMixin, serializers.ModelSerializer):
 ##
 ## JobViewSet - list, detail, post and update jobs
 ##
+
 
 class JobViewSet(AssetsViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A job can be created, listed, updated, cancelled, etc. """
@@ -42,4 +41,3 @@ class JobViewSet(AssetsViewSetMixin, rest_framework.viewsets.ModelViewSet):
         if self.request.user.is_superuser:
             return Job.objects.all()
         return Job.objects.filter(workspace__user=self.request.user)
-

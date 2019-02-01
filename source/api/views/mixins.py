@@ -125,7 +125,9 @@ class AssetsViewSetMixin:
             raise NotFound(detail)
         return None
 
-    def _upload_asset_as_stream(self, item, iterator, asset_class, asset_id, size=0, content_type=None, filename=None) -> dict:
+    def _upload_asset_as_stream(
+        self, item, iterator, asset_class, asset_id, size=0, content_type=None, filename=None
+    ) -> dict:
         """ Uploads an asset to a model's storage and returns the assets description. """
         assert isinstance(item, ItemsMixin)
         asset_parts = os.path.splitext(asset_id)
@@ -215,7 +217,13 @@ class AssetsViewSetMixin:
                 if not asset_id or len(request.FILES) > 1:
                     asset_id = upload.name
                 asset_obj = self._upload_asset_as_stream(
-                    item, iter(upload), asset_class, asset_id, size=upload.size, content_type=content_type, filename=upload.name
+                    item,
+                    iter(upload),
+                    asset_class,
+                    asset_id,
+                    size=upload.size,
+                    content_type=content_type,
+                    filename=upload.name,
                 )
                 assets.append(asset_obj)
         else:
@@ -306,13 +314,12 @@ class AssetsViewSetMixin:
         return Response(asset)
 
 
-
-
 ##
 ## JobsViewSetMixin - endpoints for creating jobs attached to an item, eg: train a model
 ##
 
 from .jobviews import JobSerializer
+
 
 class JobsViewSetMixin:
     """
@@ -323,24 +330,30 @@ class JobsViewSetMixin:
     """
 
     # defined in subclass to list acceptable actions
-    job_subtypes = ()
+    job_actions = ()
 
-    def _create_job(self, request, job_item, job_subtype=None):
-        pass
+    def _create_job(self, request, job_item, job_action):
+        workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
+        job_action = job_item.type + "/" + job_action
+        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id)
+        job.save()
+        return job
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
     def job_list(self, request, pk) -> Response:
         """ Returns a listing of all jobs associated with this item. """
         jobs = Job.objects.filter(item_id=pk)
-        jobs_serializer = JobSerializer(jobs, many=True) 
+        jobs_serializer = JobSerializer(jobs, many=True)
         return Response(jobs_serializer.data)
 
     @permission_classes((IsAuthenticated,))
-    @action(methods=["post"], detail=True, url_name="job-detail", url_path=r"jobs/(?P<job_subtype>[-\w.]{4,256})$")
-    def job_create(self, request, pk, job_subtype=None) -> Response:
+    @action(methods=["post"], detail=True, url_name="job-detail", url_path=r"jobs/(?P<job_action>[-\w.]{4,256})$")
+    def job_create(self, request, pk, job_action) -> Response:
         """ Creates a job for this item and returns it. """
         job_item = self.get_object()
-        if job_subtype in self.job_subtypes:
-            return Response(self._create_job(request, job_item, job_subtype))
-        raise MethodNotAllowed(job_item.type + ' cannot create a job of type: ' + job_subtype)
+        if job_action in self.job_actions:
+            job = self._create_job(request, job_item, job_action)
+            jobs_serializer = JobSerializer(job)
+            return Response(jobs_serializer.data)
+        raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)

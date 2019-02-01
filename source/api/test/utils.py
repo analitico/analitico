@@ -5,6 +5,7 @@ import rest_framework.test
 from rest_framework import status
 
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from api.models import Project, Token, Call, User
 
@@ -46,7 +47,7 @@ class APITestCase(rest_framework.test.APITestCase):
         self.assertEqual(response.status_code, status_code)
         return response.data
 
-    def upload_items(self, endpoint, prefix):
+    def _upload_items(self, endpoint, prefix):
         for path in os.listdir(ASSETS_PATH):
             if path.startswith(prefix):
                 item = self.read_json_asset(path)
@@ -73,6 +74,29 @@ class APITestCase(rest_framework.test.APITestCase):
             self.client.credentials(HTTP_AUTHORIZATION="Bearer " + token.id)
         else:
             self.client.logout()
+
+    def _upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
+        """ Uploads a single asset to given url service, performs basic checks """
+        asset_path = os.path.join(ASSETS_PATH, asset_name)
+        asset_size = os.path.getsize(asset_path)
+        with open(asset_path, "rb") as asset_file:
+
+            asset_data = asset_file.read()
+            asset_uploaded = SimpleUploadedFile(asset_name, asset_data, content_type)
+
+            data = {"file": asset_uploaded}
+            # no token means no authentication, not use default token
+            self.auth_token(token)
+            response = self.client.post(url, data, format="multipart")
+            self.assertEqual(response.status_code, status_code)
+
+            if status_code == status.HTTP_201_CREATED:
+                self.assertEqual(len(response.data), 1)
+                data = response.data[0]
+                self.assertEqual(data["content_type"], content_type)
+                self.assertEqual(data["filename"], asset_name)
+                self.assertEqual(data["size"], asset_size)
+            return response
 
     def setup_basics(self):
         self.user1 = User.objects.create_user(email="user1@analitico.ai", is_superuser=True)  # 1st user is admin

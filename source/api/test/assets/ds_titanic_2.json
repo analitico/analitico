@@ -1,6 +1,6 @@
 {
 	"type": "dataset",
-	"id": "ds_titanic",
+	"id": "ds_titanic_2",
 	"attributes": {
 		"workspace": "ws_samples",
 		"title": "Kaggle - Titanic training dataset (train.csv)",

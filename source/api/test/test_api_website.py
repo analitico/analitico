@@ -20,13 +20,13 @@ from analitico.utilities import read_json, get_dict_dot
 from django.test import TestCase, override_settings
 
 import api.models
-import api.test
+from .utils import APITestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
 
-class WebsiteTests(api.test.APITestCase):
+class WebsiteTests(APITestCase):
 
     ##
     ## Login, etc

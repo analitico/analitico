@@ -10,7 +10,7 @@ from api.models import Project, Token, Call, User
 
 PRJ_SETTINGS = {"data": {"parameters": {"learning_rate": 0.50, "iterations": 30}}}
 
-
+# deprecated
 class ProjectsApiTests(api.test.APITestCase):
     def setUp(self):
         super().setUp()

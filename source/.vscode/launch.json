@@ -67,7 +67,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.DatasetTests.test_dataset_get_titanic_job_process"
+                "api.test.DatasetTests.test_dataset_job_action_unsupported"
                 "-v",
                 "2"
             ],
