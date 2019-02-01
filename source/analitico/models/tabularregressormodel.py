@@ -40,28 +40,19 @@ class TabularRegressorModel(TabularModel):
         """ Creates a CatBoostRegressor configured as requested """
         iterations = self.get_attribute("parameters.iterations", 50)
         learning_rate = self.get_attribute("parameters.learning_rate", 1)
-        return catboost.CatBoostRegressor(
-            iterations=iterations, learning_rate=learning_rate, depth=8
-        )
+        return catboost.CatBoostRegressor(iterations=iterations, learning_rate=learning_rate, depth=8)
 
-    def score_training(
-        self, model, test_df, test_pool, test_labels, test_filename, results
-    ):
+    def score_training(self, model, test_df, test_pool, test_labels, test_filename, results):
         """ Scores the results of this training for the CatBoostClassifier model """
         # make the prediction using the resulting model
         test_predictions = model.predict(test_pool)
 
         # loss metrics on test set
         scores = results["data"]["scores"] = {}
-        scores["median_abs_error"] = round(
-            sklearn.metrics.median_absolute_error(test_predictions, test_labels), 5
-        )
-        scores["mean_abs_error"] = round(
-            sklearn.metrics.mean_absolute_error(test_predictions, test_labels), 5
-        )
+        scores["median_abs_error"] = round(sklearn.metrics.median_absolute_error(test_predictions, test_labels), 5)
+        scores["mean_abs_error"] = round(sklearn.metrics.mean_absolute_error(test_predictions, test_labels), 5)
         scores["sqrt_mean_squared_error"] = round(
-            np.sqrt(sklearn.metrics.mean_squared_error(test_predictions, test_labels)),
-            5,
+            np.sqrt(sklearn.metrics.mean_squared_error(test_predictions, test_labels)), 5
         )
 
         # output test set with predictions

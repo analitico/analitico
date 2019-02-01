@@ -26,9 +26,7 @@ class UtilitiesTests(unittest.TestCase):
         self.assertEqual(get_dict_dot(TST_DICT, "parent_2.unknown", "Mickey"), "Mickey")
         self.assertEqual(get_dict_dot(TST_DICT, "parent_1.child_3.unknown"), None)
         self.assertEqual(get_dict_dot(TST_DICT, "parent_1.child_3.unknown", 38), 38)
-        self.assertEqual(
-            get_dict_dot(TST_DICT, "parent_1.child_3.unknown", "Mickey"), "Mickey"
-        )
+        self.assertEqual(get_dict_dot(TST_DICT, "parent_1.child_3.unknown", "Mickey"), "Mickey")
         self.assertEqual(get_dict_dot(TST_DICT, "parent_2"), 42)
 
     def test_get_dict_dot_missing_key(self):

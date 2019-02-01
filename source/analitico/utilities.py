@@ -31,11 +31,7 @@ def read_json(filename):
 
 def time_ms(started_on=None):
     """ Returns the time elapsed since given time in ms """
-    return (
-        datetime.now()
-        if started_on is None
-        else int((datetime.now() - started_on).total_seconds() * 1000)
-    )
+    return datetime.now() if started_on is None else int((datetime.now() - started_on).total_seconds() * 1000)
 
 
 def time_it(code):
@@ -68,9 +64,7 @@ def timestamp_diff_secs(ts1, ts2):
     return t1 - t2
 
 
-def augment_timestamp_columnOLD(
-    df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:%M:%S"
-) -> pd.DataFrame:
+def augment_timestamp_columnOLD(df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
     """ Expand a timestamp column into a number of separate columns
         with the year, month [1,12], hour [0,23], minute [0,59], 
         weekday [0,6] and day of the year [1,366]. The name of the 
@@ -94,9 +88,7 @@ def augment_timestamp_columnOLD(
     return df
 
 
-def augment_timestamp_column(
-    df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:%M:%S"
-) -> pd.DataFrame:
+def augment_timestamp_column(df: pd.DataFrame, col: str, ts_format="%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
     """ Expand a timestamp column into a number of separate columns
         with the year, month [1,12], hour [0,23], minute [0,59], 
         weekday [0,6] and day of the year [1,366]. The name of the 
@@ -119,27 +111,17 @@ def augment_timestamp_column(
         if t:
             df.at[idx, col + "_year"] = t.tm_year
             df.at[idx, col + "_month"] = t.tm_mon
-            df.at[
-                idx, col + "_day"
-            ] = t.tm_mday  # .astype(CategoricalDtype(range(1,31),ordered=True))
+            df.at[idx, col + "_day"] = t.tm_mday  # .astype(CategoricalDtype(range(1,31),ordered=True))
             df.at[idx, col + "_hour"] = t.tm_hour
             df.at[idx, col + "_min"] = t.tm_min
-            df.at[
-                idx, col + "_weekday"
-            ] = t.tm_wday  # .astype(CategoricalDtype(range(0,6),ordered=True))
-            df.at[
-                idx, col + "_yearday"
-            ] = t.tm_yday  # .astype(CategoricalDtype(range(1,366),ordered=True))
+            df.at[idx, col + "_weekday"] = t.tm_wday  # .astype(CategoricalDtype(range(0,6),ordered=True))
+            df.at[idx, col + "_yearday"] = t.tm_yday  # .astype(CategoricalDtype(range(1,366),ordered=True))
             df.at[idx, col + "_holyday"] = int(row[col][:10] in _it_holidays)
     return df
 
 
 def dataframe_to_catpool(
-    df: pd.DataFrame,
-    features,
-    categorical_features=None,
-    timestamp_features=None,
-    label_feature=None,
+    df: pd.DataFrame, features, categorical_features=None, timestamp_features=None, label_feature=None
 ):
     """ Takes a pandas dataframe and prepares a catboost pool to be used for training or prediction.
         df: The source dataframe
@@ -172,9 +154,7 @@ def dataframe_to_catpool(
             categorical_features.append(timestamp_feature + "_holiday")
 
     # indexes of columns with categorical features
-    categorical_idx = [
-        df.columns.get_loc(c) for c in df.columns if c in categorical_features
-    ]
+    categorical_idx = [df.columns.get_loc(c) for c in df.columns if c in categorical_features]
     df2 = df.copy()
     pool = Pool(df2, df_labels, cat_features=categorical_idx)
     return pool, df_labels

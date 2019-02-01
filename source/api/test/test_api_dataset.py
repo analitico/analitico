@@ -82,6 +82,13 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset2["content_type"], "text/csv")
         self.assertEqual(ds_asset2["size"], 61194)
 
+    def test_dataset_job_action_unsupported(self):
+        """ Test requesting a job with an action that is not supported """
+        job_url = reverse("api:dataset-job-detail", args=("ds_titanic_1", "bogus_action"))
+        job_response = self.client.post(job_url, format="json")
+        self.assertEqual(job_response.status_code, 405)
+        self.assertEqual(job_response.status_text, "Method Not Allowed")
+
     def test_dataset_job_action_process(self):
         """ Test uploading csv then requesting to process it """
         asset_url, asset_response = self._upload_titanic("ds_titanic_1")
@@ -97,11 +104,52 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
         self.assertEqual(job_data["attributes"]["workspace"], "ws_samples")
         self.assertEqual(job_data["attributes"]["action"], "dataset/process")
-        self.assertEqual(job_data["attributes"]["status"], Job.JOB_STATUS_PROCESSING)
+        # self.assertEqual(job_data["attributes"]["status"], Job.JOB_STATUS_PROCESSING)
 
-    def test_dataset_job_action_unsupported(self):
-        """ Test requesting a job with an action that is not supported """
-        job_url = reverse("api:dataset-job-detail", args=("ds_titanic_1", "bogus_action"))
+    def test_dataset_job_action_process_with_extra_query_values(self):
+        """ Test requesting a process action with additional query_values """
+        job_url = reverse("api:dataset-job-detail", args=("ds_titanic_1", "process"))
+        job_response = self.client.post(job_url, {"extra1": "value1", "extra2": "value2"})
+        job_data = job_response.data
+
+        # TODO check job that was created has extra params
+        self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
+        self.assertEqual(job_data["attributes"]["workspace"], "ws_samples")
+        self.assertEqual(job_data["attributes"]["action"], "dataset/process")
+
+    def test_dataset_job_action_process_completed(self):
+        """ Test uploading csv then requesting to process it and checking that it completed """
+        # request job processing
+        job_url = reverse("api:dataset-job-detail", args=("ds_titanic_2", "process"))
         job_response = self.client.post(job_url, format="json")
-        self.assertEqual(job_response.status_code, 405)
-        self.assertEqual(job_response.status_text, "Method Not Allowed")
+        job_data = job_response.data
+        self.assertEqual(job_response.status_code, 200)
+        self.assertEqual(job_data["attributes"]["status"], "completed")
+
+        # check dataset again, this time should have data asset
+        ds_url = reverse("api:dataset-detail", args=("ds_titanic_2",))
+        ds_response = self.client.get(ds_url, format="json")
+        ds_data = ds_response.data
+        self.assertEqual(len(ds_data["attributes"]["data"]), 1)
+        ds_asset = ds_data["attributes"]["data"][0]
+        self.assertEqual(ds_asset["id"], "data.csv")
+        self.assertEqual(ds_asset["filename"], "data.csv")
+        self.assertEqual(ds_asset["content_type"], "text/csv")
+        self.assertTrue("schema" in ds_asset)
+
+        # dataset should have schema
+        ds_columns = ds_asset["schema"]["columns"]
+        self.assertEqual(len(ds_columns), 12)
+        self.assertEqual(ds_columns[0]["name"], "PassengerId")
+        self.assertEqual(ds_columns[0]["type"], "integer")
+
+        # retrieve asset info by itself using asset/json endpoint
+        meta_url = reverse("api:dataset-asset-detail-info", args=("ds_titanic_2", "data", "data.csv"))
+        meta_response = self.client.get(meta_url)
+        self.assertEqual(meta_response["Content-Type"], "application/json")
+        self.assertIsNotNone(meta_response.data)
+        meta = meta_response.data
+        self.assertEqual(meta["content_type"], "text/csv")
+        self.assertEqual(meta["filename"], "data.csv")
+        self.assertEqual(meta["id"], "data.csv")
+        self.assertEqual(meta["path"], "workspaces/ws_samples/datasets/ds_titanic_2/data/data.csv")

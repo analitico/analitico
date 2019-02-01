@@ -86,9 +86,7 @@ def storage_open(path, prefer_cloud=False):
         return open(path, "r")
     blob = _get_blob(BUCKET, path)
     try:
-        url = blob.generate_signed_url(
-            expiration=datetime.timedelta(hours=1), method="GET"
-        )
+        url = blob.generate_signed_url(expiration=datetime.timedelta(hours=1), method="GET")
         response = requests.get(url, stream=True)
         print("storage_open('%s') - cloud storage" % path)
         return io.BytesIO(response.content)
@@ -106,9 +104,7 @@ def storage_path(path, prefer_cloud=False):
             return path
         blob = _get_blob(BUCKET, path)
         print("storage_path('%s') - cloud storage" % path)
-        return blob.generate_signed_url(
-            expiration=datetime.timedelta(hours=1), method="GET"
-        )
+        return blob.generate_signed_url(expiration=datetime.timedelta(hours=1), method="GET")
     except Exception as exception:
         detail = str(exception) if exception.args[0] is None else exception.args[0]
         print("storage_path(%s) - exception: %s" % (path, detail))
@@ -135,10 +131,7 @@ def storage_cache(storage_path, file_path=None, ttl_sec=CACHE_TTL_SEC) -> str:
     if os.path.isfile(file_path):
         touched_sec = int(now - os.path.getctime(file_path))
         if touched_sec < ttl_sec:
-            print(
-                "storage_cache('%s') - from cache (modified %ds ago)"
-                % (file_path, touched_sec)
-            )
+            print("storage_cache('%s') - from cache (modified %ds ago)" % (file_path, touched_sec))
             return file_path
 
     blob = _get_blob(BUCKET, storage_path)
@@ -205,11 +198,7 @@ def download_file(url, filename=None, cache_ttl=CACHE_TTL_SEC) -> str:
     if os.path.isfile(filename):
         touched_sec = int(now - os.path.getctime(filename))
         if touched_sec < cache_ttl:
-            logger.info(
-                "download_file: %s (from cache, modified %ds ago)",
-                filename,
-                touched_sec,
-            )
+            logger.info("download_file: %s (from cache, modified %ds ago)", filename, touched_sec)
             return filename
 
     # TODO download and cache URL which are not in our storage

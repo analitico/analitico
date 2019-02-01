@@ -18,7 +18,7 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
-from api.models import ItemsMixin, Job
+from api.models import ItemMixin, Job
 from analitico.utilities import logger
 
 # Django Serializers
@@ -78,8 +78,8 @@ class AttributesSerializerMixin:
 ##
 
 ASSET_CLASS_RE = r"(?P<asset_class>(assets|data))$"
-ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{0,256})$"
-ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{0,256})/info$"
+ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256})$"
+ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256})/info$"
 
 
 class AssetsViewSetMixin:
@@ -92,109 +92,6 @@ class AssetsViewSetMixin:
 
     # Parse most calls in JSON but also support multipart uploads and forms as well as raw uploads
     parser_classes = (JSONParser, MultiPartParser, FileUploadParser)
-
-    #
-    # item/model level help methods
-    #
-
-    def _get_asset_path_from_name(self, item, asset_class, asset_id) -> str:
-        """
-        Given the asset name (eg: /assets/source.csv or /data/train.csv) this method
-        will return the full path of the asset based on the item that owns it, for example
-        a dataset with a given id, and the workspace that owns the item. A complete path looks like:
-        workspaces/ws_001/datasets/ds_001/assets/dataset-asset.csv
-        workspaces/ws_001/assets/workspace-asset.csv
-        workspaces/ws_001/datasets/ds_001/data/source.csv
-        """
-        assert asset_class and asset_id and isinstance(item, ItemsMixin)
-        if item.workspace:
-            w_id = item.workspace.id
-            return "workspaces/{}/{}s/{}/{}/{}".format(w_id, item.type, item.id, asset_class, asset_id)
-        return "workspaces/{}/{}/{}".format(item.id, asset_class, asset_id)
-
-    def _get_asset_from_id(self, item, asset_class, asset_id, raise404=False) -> dict:
-        """ Returns asset record from a model's array of asset descriptors """
-        assert isinstance(item, ItemsMixin)
-        assets = item.get_attribute(asset_class)
-        if assets:
-            for asset in item.assets:
-                if asset["id"] == asset_id:
-                    return asset
-        if raise404:
-            detail = "{} does not contain {}/{}".format(item, asset_class, asset_id)
-            raise NotFound(detail)
-        return None
-
-    def _upload_asset_as_stream(
-        self, item, iterator, asset_class, asset_id, size=0, content_type=None, filename=None
-    ) -> dict:
-        """ Uploads an asset to a model's storage and returns the assets description. """
-        assert isinstance(item, ItemsMixin)
-        asset_parts = os.path.splitext(asset_id)
-        asset_id = slugify(asset_parts[0]) + asset_parts[1]
-        asset_path = self._get_asset_path_from_name(item, asset_class, asset_id)
-
-        asset_storage = item.storage
-        asset_obj = asset_storage.upload_object_via_stream(iterator, asset_path, extra={"content_type": content_type})
-
-        assets = item.get_attribute(asset_class)
-        if not assets:
-            assets = []
-
-        asset = self._get_asset_from_id(item, asset_class, asset_id)
-        if not asset:
-            asset = {"id": asset_id}
-            assets.append(asset)
-
-        asset["created_at"] = now().isoformat()
-        asset["filename"] = filename
-        asset["path"] = asset_path
-        asset["hash"] = asset_obj.hash
-        asset["content_type"] = content_type
-        asset["size"] = max(size, asset_obj.size)
-
-        # update assets in model and therefore on database when caller eventually calls .save()
-        item.set_attribute(asset_class, assets)
-        return asset
-
-    def _download_asset_as_stream(self, item, asset_class, asset_id):
-        """ Returns the asset with the given id along with a stream that can be used to download it from storage. """
-        assert isinstance(item, ItemsMixin)
-        asset = self._get_asset_from_id(item, asset_class, asset_id, raise404=True)
-        asset_storage = item.storage
-        storage_obj, storage_stream = asset_storage.download_object_via_stream(asset["path"])
-
-        # update asset with information from storage like etag that can improve browser caching
-        if "etag" in storage_obj.extra:
-            asset["etag"] = storage_obj.extra["etag"]
-        if "last_modified" in storage_obj.extra:
-            asset["last_modified"] = storage_obj.extra["last_modified"]
-        asset["size"] = storage_obj.size
-        asset["hash"] = storage_obj.hash
-        return asset, storage_stream
-
-    def _delete_asset(self, item, asset_class, asset_id) -> dict:
-        """ Deletes asset with given asset_id and returns its details. Will raise NotFound if asset_id is invalid. """
-        assert asset_class and asset_id and isinstance(item, ItemsMixin)
-        assets = item.get_attribute(asset_class)
-        asset = self._get_asset_from_id(item, asset_class, asset_id, raise404=True)
-
-        storage = item.storage
-        deleted = storage.delete_object(asset["path"])
-
-        if not deleted:
-            # TODO if object cannot deleted it may be better to leave orphan in storage and proceed to deleting from assets?
-            message = "Cannot delete {}/{} from storage, try again later.".format(asset_class, asset_id)
-            logger.error(message)
-            raise APIException(detail=message, code=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-        assets.remove(asset)
-        item.set_attribute(asset_class, assets)
-        return asset
-
-    #
-    # viewset level help methods
-    #
 
     def _asset_upload(self, request, pk, asset_class, asset_id) -> Response:
         """ 
@@ -216,8 +113,7 @@ class AssetsViewSetMixin:
                     content_type = content_type + "; charset=" + upload.charset
                 if not asset_id or len(request.FILES) > 1:
                     asset_id = upload.name
-                asset_obj = self._upload_asset_as_stream(
-                    item,
+                asset_obj = item._upload_asset_stream(
                     iter(upload),
                     asset_class,
                     asset_id,
@@ -228,8 +124,8 @@ class AssetsViewSetMixin:
                 assets.append(asset_obj)
         else:
             # simple upload without a Content-Disposition header. filename is unknown
-            asset_obj = self._upload_asset_as_stream(
-                item, iter(request.stream), asset_class, asset_id, content_type=request.content_type, filename=asset_id
+            asset_obj = item._upload_asset_stream(
+                iter(request.stream), asset_class, asset_id, content_type=request.content_type, filename=asset_id
             )
             assets.append(asset_obj)
         item.save()
@@ -244,7 +140,7 @@ class AssetsViewSetMixin:
         # streaming iterator and the latest etag for the cloud asset, then we
         # check the http headers to see if we can skip the download.
         item = self.get_object()
-        asset, asset_stream = self._download_asset_as_stream(item, asset_class, asset_id)
+        asset, asset_stream = item._download_asset_stream(asset_class, asset_id)
         # if cloud storage provides an etag (optional) let's use that, otherwise the hash will do
         etag = asset["etag"] if "etag" in asset else '"' + asset["hash"] + '"'
         last_modified = parse_http_date_safe(asset["last_modified"]) if "last_modified" in asset else None
@@ -273,7 +169,7 @@ class AssetsViewSetMixin:
     def _asset_delete(self, request, pk, asset_class, asset_id) -> Response:
         """ Delete asset with given asset_id then return HTTP 204 (No Content). """
         item = self.get_object()
-        self._delete_asset(item, asset_class, asset_id)
+        item._delete_asset(asset_class, asset_id)
         item.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -310,7 +206,7 @@ class AssetsViewSetMixin:
         """ Returns an asset's details as json. """
         assert asset_class and asset_id
         item = self.get_object()
-        asset, _ = self._download_asset_as_stream(item, asset_class, asset_id)
+        asset, _ = item._download_asset_stream(asset_class, asset_id)
         return Response(asset)
 
 
@@ -335,8 +231,9 @@ class JobsViewSetMixin:
     def _create_job(self, request, job_item, job_action):
         workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
         job_action = job_item.type + "/" + job_action
-        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id)
+        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=Job.JOB_STATUS_PROCESSING)
         job.save()
+        job.run(request)
         return job
 
     @permission_classes((IsAuthenticated,))

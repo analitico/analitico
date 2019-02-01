@@ -237,9 +237,7 @@ class DatasetTests(unittest.TestCase, TestMixin):
             self.assertEqual(df.loc[1, "elapsed"], pd.Timedelta("1 day"))
             self.assertEqual(df.loc[3, "elapsed"], pd.Timedelta("2 days"))
             self.assertEqual(df.loc[4, "elapsed"], pd.Timedelta("3 days"))
-            self.assertEqual(
-                df.loc[6, "elapsed"], pd.Timedelta("1 days 06:05:01.00003")
-            )
+            self.assertEqual(df.loc[6, "elapsed"], pd.Timedelta("1 days 06:05:01.00003"))
         except Exception as exc:
             raise exc
 

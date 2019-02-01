@@ -5,19 +5,9 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('api', '0002_job'),
-    ]
+    dependencies = [("api", "0002_job")]
 
     operations = [
-        migrations.AddField(
-            model_name='job',
-            name='item_id',
-            field=models.SlugField(blank=True),
-        ),
-        migrations.AddField(
-            model_name='job',
-            name='subtype',
-            field=models.SlugField(blank=True),
-        ),
+        migrations.AddField(model_name="job", name="item_id", field=models.SlugField(blank=True)),
+        migrations.AddField(model_name="job", name="subtype", field=models.SlugField(blank=True)),
     ]

@@ -1,4 +1,3 @@
-
 import django.conf
 
 from rest_framework.exceptions import NotFound
@@ -30,7 +29,8 @@ import libcloud.storage.drivers.google_storage
 # Google Storage driver
 # https://libcloud.readthedocs.io/en/latest/storage/drivers/google_storage.html
 
-class Storage():
+
+class Storage:
     """ A cloud storage class that is provider independent """
 
     # settings used to initialize storage
@@ -46,10 +46,9 @@ class Storage():
         self.settings = settings
         self.driver = driver
         try:
-            self.container = driver.get_container(settings['container'])
+            self.container = driver.get_container(settings["container"])
         except libcloud.storage.types.ContainerDoesNotExistError:
-            self.container = driver.create_container(settings['container'])            
-
+            self.container = driver.create_container(settings["container"])
 
     @staticmethod
     def factory(settings: dict):
@@ -57,22 +56,25 @@ class Storage():
         try:
             if settings is None:
                 settings = django.conf.settings.ANALITICO_STORAGE
-            if 'credentials' not in settings and settings['driver'] == django.conf.settings.ANALITICO_STORAGE['driver']:
-                settings['credentials'] = django.conf.settings.ANALITICO_STORAGE['credentials']
+            if "credentials" not in settings and settings["driver"] == django.conf.settings.ANALITICO_STORAGE["driver"]:
+                settings["credentials"] = django.conf.settings.ANALITICO_STORAGE["credentials"]
 
-            driver = settings['driver']
-            credentials = settings['credentials']
+            driver = settings["driver"]
+            credentials = settings["credentials"]
             assert driver
             assert credentials
 
-            if driver == 'google-storage':
+            if driver == "google-storage":
                 try:
                     # add newline in case it's lost from the environment variable...
-                    settings['credentials']['secret'] = settings['credentials']['secret'].replace('{newline}', '\n')
+                    settings["credentials"]["secret"] = settings["credentials"]["secret"].replace("{newline}", "\n")
                     driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
                     return Storage(settings, driver)
                 except ValueError as exc:
-                    raise Exception('Storage.factory - could not login to Google Cloud Storage, please check environment variables ANALITICO_GCS_KEY and ANALITICO_GCS_SECRET to make sure they are valid', exc)
+                    raise Exception(
+                        "Storage.factory - could not login to Google Cloud Storage, please check environment variables ANALITICO_GCS_KEY and ANALITICO_GCS_SECRET to make sure they are valid",
+                        exc,
+                    )
 
             # TODO add other cloud providers as we need them
             raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
@@ -87,7 +89,6 @@ class Storage():
         upload_obj = self.driver.upload_object(file_path, self.container, object_name, extra, headers)
         return upload_obj
 
-
     def upload_object_via_stream(self, iterator, object_name, extra=None, headers=None):
         """
         Upload an object using an iterator.
@@ -96,7 +97,6 @@ class Storage():
         storage_obj = self.driver.upload_object_via_stream(iterator, self.container, object_name, extra, headers)
         return storage_obj
 
-
     def download_object_via_stream(self, object_name, chunk_size=None):
         """
         Returns an storage object and the iterator which can be used to download it from storage.
@@ -104,7 +104,6 @@ class Storage():
         """
         storage_obj = self.driver.get_object(self.container.name, object_name)
         return storage_obj, self.driver.download_object_as_stream(storage_obj, chunk_size)
-
 
     def delete_object(self, object_name):
         """

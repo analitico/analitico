@@ -19,13 +19,7 @@ from sklearn.model_selection import train_test_split
 from catboost import Pool, CatBoost
 
 from analitico.models import AnaliticoModel
-from analitico.utilities import (
-    augment_timestamp_column,
-    dataframe_to_catpool,
-    time_ms,
-    save_json,
-    logger,
-)
+from analitico.utilities import augment_timestamp_column, dataframe_to_catpool, time_ms, save_json, logger
 
 # number of records per chunk when we preprocess them in parallel
 PARALLEL_PREPROCESS_CHUNK_SIZE = 5000
@@ -117,17 +111,14 @@ class TabularModel(AnaliticoModel):
             df.to_csv(path)
 
         # indexes of columns with categorical features
-        categorical_idx = [
-            df.columns.get_loc(c) for c in df.columns if c in categorical_features
-        ]
+        categorical_idx = [df.columns.get_loc(c) for c in df.columns if c in categorical_features]
         return df, df_labels, categorical_idx
 
     def preprocess_data_parallel(self, df, training=False, results=None):
         """ Split preprocessing in chunks and perform using all cores """
 
         chunk_dfs = [
-            df[i : i + PARALLEL_PREPROCESS_CHUNK_SIZE]
-            for i in range(0, df.shape[0], PARALLEL_PREPROCESS_CHUNK_SIZE)
+            df[i : i + PARALLEL_PREPROCESS_CHUNK_SIZE] for i in range(0, df.shape[0], PARALLEL_PREPROCESS_CHUNK_SIZE)
         ]
 
         results = Parallel(n_jobs=multiprocessing.cpu_count())(
@@ -144,9 +135,7 @@ class TabularModel(AnaliticoModel):
         """ Creates actual CatBoostClassifier or CatBoostRegressor model in subclass """
         raise NotImplementedError()
 
-    def score_training(
-        self, model: CatBoost, test_df, test_pool, test_labels, test_filename, results
-    ):
+    def score_training(self, model: CatBoost, test_df, test_pool, test_labels, test_filename, results):
         """ Scores the results of this training for the CatBoostClassifier model """
 
         params = results["data"]["parameters"] = {}
@@ -180,11 +169,7 @@ class TabularModel(AnaliticoModel):
         training_dir = os.path.join(tempfile.gettempdir(), training_id)
         if not os.path.isdir(training_dir):
             os.mkdir(training_dir)
-        logger.info(
-            "TabularModel.train - training_id: %s, training_dir: %s",
-            training_id,
-            training_dir,
-        )
+        logger.info("TabularModel.train - training_id: %s, training_dir: %s", training_id, training_dir)
 
         try:
             started_on = time_ms()
@@ -202,47 +187,31 @@ class TabularModel(AnaliticoModel):
             meta["loading_ms"] = time_ms(loading_on)
             records = data["records"] = {}
             records["source"] = len(df)
-            logger.info(
-                "TabularModel.train - loaded %d rows in %d ms",
-                records["source"],
-                meta["loading_ms"],
-            )
+            logger.info("TabularModel.train - loaded %d rows in %d ms", records["source"], meta["loading_ms"])
 
             if self.debug:
                 # save a sample of the data as it was received for training
                 sample_df = df.tail(5000)
-                sample_df_filename = os.path.join(
-                    training_dir, self.project_id + "-sample.json"
-                )
+                sample_df_filename = os.path.join(training_dir, self.project_id + "-sample.json")
                 sample_df.to_json(sample_df_filename, orient="records")
-                logger.info(
-                    "TabularModel.train - saved sample of input records to %s",
-                    sample_df_filename,
-                )
+                logger.info("TabularModel.train - saved sample of input records to %s", sample_df_filename)
 
             # DEBUG ONLY: CUT NUMBER OF ROW TO SPEED UP
             tail = self.get_attribute("parameters.tail", None)
             if tail and (len(df) > tail):
                 df = df.tail(tail).copy()
-                logger.warning(
-                    "TabularModel.train - debug enabled, shrinking to %d tail rows",
-                    len(df),
-                )
+                logger.warning("TabularModel.train - debug enabled, shrinking to %d tail rows", len(df))
 
             # filter outliers, calculate dynamic fields, augment timestamps, etc
             # then reorder the dataframe and keep only the columns that really matter
             # and return the dataframe, column of labels and indexes of the categoricals
             preprocessing_on = time_ms()
             logger.info("TabularModel.train - preprocessing data...")
-            df, df_labels, categorical_idx = self.preprocess_data(
-                df, training=True, results=results
-            )
+            df, df_labels, categorical_idx = self.preprocess_data(df, training=True, results=results)
             records["total"] = len(df)
             meta["processing_ms"] = time_ms(preprocessing_on)
             logger.info(
-                "TabularModel.train - preprocessed to %d rows in %d ms",
-                records["total"],
-                meta["processing_ms"],
+                "TabularModel.train - preprocessed to %d rows in %d ms", records["total"], meta["processing_ms"]
             )
 
             # decide how to create test set from settings variable
@@ -294,9 +263,7 @@ class TabularModel(AnaliticoModel):
             assets["training_path"] = results_filename
 
             # score test set, add related metrics to results
-            self.score_training(
-                model, test_df, test_pool, test_labels, test_filename, results
-            )
+            self.score_training(model, test_df, test_pool, test_labels, test_filename, results)
 
             model.save_model(model_filename)
             meta["total_ms"] = time_ms(started_on)
@@ -306,23 +273,15 @@ class TabularModel(AnaliticoModel):
                 # upload model, results, predictions
                 blobprefix = "training/" + training_id + "/"
                 logger.info("TabularModel.train - uploading assets to %s", blobprefix)
-                assets["model_url"] = analitico.storage.upload_file(
-                    blobprefix + "model.cbm", model_filename
-                )
+                assets["model_url"] = analitico.storage.upload_file(blobprefix + "model.cbm", model_filename)
                 assets["model_size"] = os.path.getsize(model_filename)
-                assets["test_url"] = analitico.storage.upload_file(
-                    blobprefix + "test.csv", test_filename
-                )
+                assets["test_url"] = analitico.storage.upload_file(blobprefix + "test.csv", test_filename)
                 assets["test_size"] = os.path.getsize(test_filename)
                 # update with assets urls saving to storage
-                assets["training_url"] = assets["model_url"].replace(
-                    "model.cbm", "training.json"
-                )
+                assets["training_url"] = assets["model_url"].replace("model.cbm", "training.json")
                 meta["total_ms"] = time_ms(started_on)  # include uploads
                 save_json(results, results_filename, indent=4)
-                assets["training_url"] = analitico.storage.upload_file(
-                    blobprefix + "training.json", results_filename
-                )
+                assets["training_url"] = analitico.storage.upload_file(blobprefix + "training.json", results_filename)
                 logger.info("TabularModel.train - uploaded assets")
 
             self.training = results

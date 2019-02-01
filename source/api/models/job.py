@@ -7,8 +7,12 @@ import jsonfield
 import django.utils.crypto
 
 from django.db import models
-from .items import ItemsMixin
+from .items import ItemMixin
 from .workspace import Workspace
+from api.factory import ModelsFactory
+
+import analitico
+import analitico.plugin
 
 
 JOB_PREFIX = "jb_"
@@ -19,7 +23,7 @@ def generate_job_id():
     return JOB_PREFIX + django.utils.crypto.get_random_string()
 
 
-class Job(ItemsMixin, models.Model):
+class Job(ItemMixin, models.Model):
     """ 
     A job is a model for a piece of work like running an ETL pipeline, training a model,
     doiing a machine learning inference, etc. A job can run synchronously inside a web server
@@ -71,3 +75,21 @@ class Job(ItemsMixin, models.Model):
 
     # The item that is the target of this job (eg. model that is trained, dataset that is processed, etc)
     item_id = models.SlugField(blank=True)
+
+    def get_item(self, request=None):
+        return ModelsFactory.from_id(self.item_id, request)
+
+    ##
+    ## Execution
+    ##
+
+    def run(self, request=None):
+        try:
+            item = self.get_item(request)
+            if item:
+                item.run(self, request)
+
+            self.status = Job.JOB_STATUS_COMPLETED
+            return self
+        except Exception as exc:
+            raise exc
