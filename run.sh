@@ -5,11 +5,9 @@ set -e
 echo "Injecting env"
 source analitico-env
 cd /home/www/analitico
-source venv/bin/activate
 
 echo "Start gunicorn"
-cd source
-gunicorn website.wsgi -b unix:/tmp/gunicorn.sock &
+/home/www/analitico/conf/gunicorn_start.sh &
 
 echo "Start nginx"
 nginx

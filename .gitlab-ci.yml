@@ -27,6 +27,8 @@ build_dev:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # export ANALITICO ENV
     - export -p | grep ANALITICO_ > analitico-env
+    # add commit sha to the env
+    - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-env 
     # build docker image
     - docker build --pull -t $BUILD_IMAGE_URL .
     # push the image to gitlab registry
