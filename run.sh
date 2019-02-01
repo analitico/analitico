@@ -7,7 +7,8 @@ source analitico-env
 cd /home/www/analitico
 
 echo "Start gunicorn"
-/home/www/analitico/conf/gunicorn_start.sh &
+mkdir -p /var/log/gunicorn/
+exec /home/www/analitico/conf/gunicorn_start.sh &
 
 echo "Start nginx"
 nginx
