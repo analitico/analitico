@@ -40,7 +40,8 @@
                 "runserver"
             ],
             "django": true,
-            "debugStdLib": true
+            "debugStdLib": true,
+            "logToFile": true
         },
         {
             "name": "Python: Django test",
@@ -51,6 +52,22 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
+                "-v",
+                "2"
+            ],
+            "django": true,
+            "debugStdLib": true
+        },
+        {
+            "name": "Python: Django specific test",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "test",
+                "api.test.DatasetTests.test_dataset_get_titanic_job_process"
                 "-v",
                 "2"
             ],
