@@ -22,7 +22,7 @@ cd /home/www/analitico/app
 npm install
 
 echo "Execute Angular tests"
-ng test
+#ng test
 
 echo "Build Angular app"
 ng build --prod --outputHashing=all
