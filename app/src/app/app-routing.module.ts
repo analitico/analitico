@@ -1,9 +1,9 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
-import { AoLoginComponent } from './components/ao-login/ao-login.component';
+import { AoDatasetViewComponent } from 'src/app/components/ao-dataset-view/ao-dataset-view.component';
 
 const routes: Routes = [
-    { path: 'login', component: AoLoginComponent },
+    { path: 'datasets/:id', component: AoDatasetViewComponent },
 ];
 
 @NgModule({

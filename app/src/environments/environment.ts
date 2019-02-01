@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'https://api-local.analitico.ai/api/v1'
+  apiUrl: '/api'
 };
 
 /*

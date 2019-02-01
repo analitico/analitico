@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 
@@ -7,18 +7,14 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
     templateUrl: './ao-login.component.html',
     styleUrls: ['./ao-login.component.css']
 })
-export class AoLoginComponent implements OnInit {
+export class AoLoginComponent {
 
     username: string;
     password: string;
     CSRFToken: any;
     constructor(private globalState: AoGlobalStateStore, private apiClient: AoApiClientService) { }
 
-    ngOnInit() {
-       this.CSRFToken = this.getCookie('csrftoken');
-    }
-
-
+    // get a cookie from the page
     getCookie(cname: string) {
         const name = cname + '=';
         const ca = document.cookie.split(';');
@@ -35,10 +31,10 @@ export class AoLoginComponent implements OnInit {
     }
 
     login() {
-        this.apiClient.post('/login', { username: this.username, password: this.password })
+        this.apiClient.post('/datasets', { workspace: 'ws_test' })
         .then((response: any) => {
             // notify to global state the user profile
-            this.globalState.setProperty('user', response.data);
+            // this.globalState.setProperty('user', response.data);
         })
         .catch((error: any) => {
             console.error('Login error');

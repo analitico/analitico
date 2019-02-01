@@ -83,6 +83,7 @@ export class AoApiClientService {
         });
     }
 
+    // get a cookie from the page
     private getCookie(name: string) {
         const nameEQ = name + '=';
         const ca = document.cookie.split(';');
@@ -98,10 +99,17 @@ export class AoApiClientService {
         return null;
     }
 
+    /**
+     * Returns defaults option params from http requests.
+     * Handle Django default CSRF strategy passing csrftoken cookie value as
+     * X-CSRFTOKEN header in the request
+     * @param options set of options
+     */
     private getDefaultOptions(options) {
         if (typeof options === 'undefined' || options === null) {
             options = {};
         }
+        // send cookies in CORS preflight requests
         options.withCredentials = true;
         if (typeof options.headers === 'undefined') {
             options.headers = {};
@@ -116,13 +124,14 @@ export class AoApiClientService {
         return options;
     }
 
+    // parse an API response
     private parseResponse(response: any, resolve: any): void {
         // console.log(response);
         resolve(response);
     }
 
     private handleError(response: any, reject: any): void {
-        let status = response.status;
+        const status = response.status;
         // if (res.status === 401 || res.status === 403) {
         // if not authenticated
         reject(response);

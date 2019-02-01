@@ -16,12 +16,18 @@ import { FormsModule } from '@angular/forms';
 import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-state-store.service';
 import { HttpClientModule } from '@angular/common/http';
 import { AoApiClientService } from './services/ao-api-client/ao-api-client.service';
+import { AoNavListComponent } from './components/ao-nav-list/ao-nav-list.component';
+import { AoDatasetViewComponent } from './components/ao-dataset-view/ao-dataset-view.component';
+import { AoViewComponent } from './components/ao-view/ao-view.component';
 
 @NgModule({
     declarations: [
         AppComponent,
         MainNavComponent,
-        AoLoginComponent
+        AoLoginComponent,
+        AoNavListComponent,
+        AoDatasetViewComponent,
+        AoViewComponent
     ],
     imports: [
         BrowserModule,

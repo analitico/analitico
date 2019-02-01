@@ -1,15 +1,15 @@
 <mat-sidenav-container class="sidenav-container">
-    <mat-sidenav #drawer class="sidenav" fixedInViewport="true" [attr.role]="dialog" [mode]="over" [opened]="false">
+    <mat-sidenav #drawer class="sidenav" fixedInViewport="true"
+    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="!(isHandset$ | async)">
         <mat-toolbar (click)="drawer.close()">
             <span class="ao-logo ao-logo-font ao-side-nav-logo">
                 <a routerLink="/">analitico<sup>ai</sup></a>
             </span>
         </mat-toolbar>
-        <mat-nav-list (click)="drawer.close()">
-            <a mat-list-item routerLink="/login" routerLinkActive="active">Login</a>
-            <a mat-list-item routerLink="" routerLinkActive="active">Link 2</a>
-            <a mat-list-item routerLink="" routerLinkActive="active">Link 3</a>
-        </mat-nav-list>
+        <!--<mat-nav-list (click)="drawer.close()"> -->
+        <app-ao-nav-list [url]="'/datasets'" title="Datasets"></app-ao-nav-list>
     </mat-sidenav>
     <mat-sidenav-content>
         <mat-toolbar color="primary">
