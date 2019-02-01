@@ -55,7 +55,7 @@ class AssetsTests(APITestCase):
     def test_asset_upload_multiple_files(self):
         """ Test multipart encoding to upload multiple files at once """
         try:
-            url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", ""))
+            url = reverse("api:workspace-asset-list", args=("ws_storage_gcs", "assets"))
 
             path1 = os.path.join(ASSETS_PATH, "image_dog1.jpg")
             path2 = os.path.join(ASSETS_PATH, "image_dog2.png")

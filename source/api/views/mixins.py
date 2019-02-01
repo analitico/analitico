@@ -178,15 +178,21 @@ class AssetsViewSetMixin:
     #
 
     @permission_classes((IsAuthenticated,))
-    @action(methods=["get"], detail=True, url_name="asset-list", url_path=ASSET_CLASS_RE)
+    @action(methods=["get", "post", "put"], detail=True, url_name="asset-list", url_path=ASSET_CLASS_RE)
     def assets_list(self, request, pk, asset_class) -> Response:
         """ Returns a listing of all assets associated with this item. """
-        item = self.get_object()
-        return Response(item.get_attribute(asset_class, []))
+        assert asset_class in ("assets", "data")
+        if request.method in ("POST", "PUT"):
+            # asset_id can be null, for example, when uploading multiple files at once
+            return self._asset_upload(request, pk, asset_class, asset_id=None)
+        if request.method == "GET":
+            item = self.get_object()
+            return Response(item.get_attribute(asset_class, []))
+        raise MethodNotAllowed(request.method)
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get", "post", "put", "delete"], detail=True, url_name="asset-detail", url_path=ASSET_ID_RE)
-    def asset_detail(self, request, pk, asset_class, asset_id=None) -> Response:
+    def asset_detail(self, request, pk, asset_class, asset_id) -> Response:
         """ Upload, update, download or delete a file asset associated with this item. Supports both direct upload and multipart forms. """
         assert asset_class in ("assets", "data")
         if request.method in ("POST", "PUT"):
