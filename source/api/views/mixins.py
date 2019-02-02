@@ -71,11 +71,21 @@ class AttributesSerializerMixin:
         """ Serialize object to dictionary, extracts all json key to main level """
         data = super().to_representation(item)
         reformatted = {"type": item.type, "id": data.pop("id"), "attributes": data}
+
+        # add additional attributes from json dict
         if item.attributes:
             for key in item.attributes:
                 data[key] = item.attributes[key]
-        # add links to self and its assets
-        reformatted["links"] = self.get_item_links(item)
+
+        # add link to self
+        reformatted["links"] = {"self": self.get_item_url(item)}
+
+        # add links to /assets and /data
+        for asset_class in ("assets", "data"):
+            if asset_class in data:
+                for asset in data[asset_class]:
+                    asset["url"] = self.get_item_asset_url(item, asset_class, asset["id"])
+
         return reformatted
 
     def to_internal_value(self, data):
@@ -269,7 +279,7 @@ class JobsViewSetMixin:
     def _create_job(self, request, job_item, job_action):
         workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
         job_action = job_item.type + "/" + job_action
-        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=Job.JOB_STATUS_PROCESSING)
+        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=Job.JOB_STATUS_RUNNING)
         job.save()
         job.run(request)
         return job
