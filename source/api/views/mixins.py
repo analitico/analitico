@@ -57,6 +57,8 @@ class AttributesSerializerMixin:
     def get_item_links(self, item):
         """ Returns link to item and related assets in a json:api compliant dictionary """
         links = {"self": self.get_item_url(item)}
+        if item.workspace:
+            links["workspace"] = self.get_item_url(item.workspace)
         for asset_class in ("assets", "data"):
             assets = item.get_attribute(asset_class)
             if assets:
