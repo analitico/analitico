@@ -2,6 +2,7 @@ import collections
 import datetime
 import jsonfield
 import os.path
+import mimetypes
 
 import django.core.files
 
@@ -140,6 +141,9 @@ class ItemAssetsMixin:
 
         asset_storage = self.storage
         asset_obj = asset_storage.upload_object_via_stream(iterator, asset_path, extra={"content_type": content_type})
+
+        if not content_type:
+            content_type, _ = mimetypes.guess_type(asset_id)
 
         assets = self.get_attribute(asset_class)
         if not assets:
