@@ -12,6 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 
 import analitico
 import analitico.plugin
+import analitico.utilities
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 
 from .user import User
@@ -75,7 +76,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job, request=None):
+    def run(self, job, runner, **kwargs):
         """ Run job actions on the dataset """
         try:
             # process action runs plugin to generate and save data.csv and its schema
@@ -86,17 +87,21 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                     # TODO if no plugin and has assets, create a simple pipeline
                     return
 
-                plugin = analitico.plugin.manager.create_plugin(**plugin)
+                plugin = runner.create_plugin(**plugin)
+                directory = runner.get_artifacts_directory()
+
+                # process will produce pandas dataframe
                 df = plugin.process()
 
-                with tempfile.TemporaryDirectory(prefix=job.id + "_") as td:
-                    csv_path = os.path.join(td, "data.csv")
-                    df.to_csv(csv_path)
-                    csv_size = os.path.getsize(csv_path)
+                # save dataframe as data.csv
+                csv_path = os.path.join(directory, "data.csv")
+                df.to_csv(csv_path)
 
-                    with open(csv_path, "rb") as f:
-                        asset = self._upload_asset_stream(f, "data", "data.csv", csv_size, "text/csv", "data.csv")
-                        asset["schema"] = analitico.Dataset.generate_schema(df)
-                self.save()
+                # save schema as data.csv.info
+                schema = analitico.Dataset.generate_schema(df)
+                csv_info_path = csv_path + ".info"
+                analitico.utilities.save_json({"schema": schema}, csv_info_path)
+
+            self.save()
         except Exception as exc:
             raise exc

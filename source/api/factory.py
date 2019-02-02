@@ -2,6 +2,10 @@ from rest_framework.exceptions import NotFound
 
 import api.models
 
+##
+## ModelsFactory
+##
+
 
 class ModelsFactory:
     """ Factory used to create models with various methods """

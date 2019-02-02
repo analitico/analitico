@@ -5,6 +5,8 @@ Job - model for a synch or asynch task like training a model, doing a prediction
 import collections
 import jsonfield
 import django.utils.crypto
+import tempfile
+import os.path
 
 from django.db import models
 from .items import ItemMixin
@@ -13,7 +15,7 @@ from api.factory import ModelsFactory
 
 import analitico
 import analitico.plugin
-
+import analitico.utilities
 
 JOB_PREFIX = "jb_"
 
@@ -21,6 +23,81 @@ JOB_PREFIX = "jb_"
 def generate_job_id():
     """ All Job.id have jb_ prefix followed by a random string """
     return JOB_PREFIX + django.utils.crypto.get_random_string()
+
+
+##
+## JobRunner
+##
+
+
+class JobRunner(analitico.plugin.PluginManager):
+    """ An IPluginManager used to run plugins in the context of a server Job """
+
+    # Job currently being executed
+    job = None
+
+    # Request that originated the job run (optional)
+    request = None
+
+    # Target of job being run
+    item = None
+
+    # Owner of target item (used for storage, access rights, etc)
+    workspace = None
+
+    def __init__(self, job, request, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.job = job
+        self.request = request
+
+    def get_temporary_directory(self):
+        """ Temporary directory that can be used while a job runs and is deleted afterwards """
+        if self._temporary_directory is None:
+            self._temporary_directory = tempfile.mkdtemp(prefix=self.job.id + "_")
+        return self._temporary_directory
+
+    def run(self):
+        try:
+            self.job.status = Job.JOB_STATUS_PROCESSING
+            self.job.save()
+
+            self.item = self.job.get_item(self.request)
+            self.workspace = self.item.workspace if self.item.workspace else self.item
+
+            # item runs the job
+            self.item.run(job=self.job, runner=self)
+
+            # upload /data artifacts + metadata created by the item
+            if self._temporary_directory:
+                directory = self.get_artifacts_directory()
+                for path in os.listdir(directory):
+                    fullpath = os.path.join(directory, path)
+                    # process only files (skip directories and .info files)
+                    if os.path.isfile(fullpath) and not path.endswith(".info"):
+                        path_size = os.path.getsize(fullpath)
+                        with open(fullpath, "rb") as f:
+                            asset = self.item._upload_asset_stream(f, "data", path, path_size, None, path)
+                            infopath = fullpath + ".info"
+                            # if asset has a .info coutn
+                            if os.path.isfile(infopath):
+                                json = analitico.utilities.read_json(infopath)
+                                for key, value in json.items():
+                                    asset[key] = value
+                                # TODO may need to touch self.item.assets fior it to save properly
+
+            # mark job as completed
+            self.item.save()
+            self.job.status = Job.JOB_STATUS_COMPLETED
+            self.job.save()
+        except Exception as exc:
+            self.job.status = Job.JOB_STATUS_FAILED
+            self.job.save()
+            raise exc
+
+
+##
+## Job
+##
 
 
 class Job(ItemMixin, models.Model):
@@ -77,19 +154,15 @@ class Job(ItemMixin, models.Model):
     item_id = models.SlugField(blank=True)
 
     def get_item(self, request=None):
+        """ Returns the target of this job (eg: dataset to be processed, model to be trained, etc) """
         return ModelsFactory.from_id(self.item_id, request)
 
     ##
     ## Execution
     ##
 
-    def run(self, request=None):
-        try:
-            item = self.get_item(request)
-            if item:
-                item.run(self, request)
-
-            self.status = Job.JOB_STATUS_COMPLETED
-            return self
-        except Exception as exc:
-            raise exc
+    def run(self, request, **kwargs):
+        """ Runs the job, collects and uplods artifacts, returns the updated job """
+        with JobRunner(self, request, **kwargs) as runner:
+            runner.run()
+        return self
