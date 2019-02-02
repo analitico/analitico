@@ -7,6 +7,7 @@ from django.utils.text import slugify
 from django.http.response import StreamingHttpResponse
 from django.utils.http import parse_http_date_safe, http_date
 from django.utils.timezone import now
+from django.urls import reverse
 
 import rest_framework
 import rest_framework.viewsets
@@ -37,13 +38,42 @@ class AttributesSerializerMixin:
     new migrations and releases. Also different versions can coexist and ignore extra data.
     """
 
-    def to_representation(self, obj):
+    def get_item_url(self, item):
+        """ Returns absolute url to given asset using the same endpoint the request came in through """
+        url = reverse("api:" + item.type + "-detail", args=(item.id,))
+        request = self.context.get("request")
+        if request:
+            url = request.build_absolute_uri(url)
+        return url
+
+    def get_item_asset_url(self, item, asset_class, asset_id):
+        """ Returns absolute url to given item's asset """
+        url = reverse("api:" + item.type + "-asset-detail", args=(item.id, asset_class, asset_id))
+        request = self.context.get("request")
+        if request:
+            url = request.build_absolute_uri(url)
+        return url
+
+    def get_item_links(self, item):
+        """ Returns link to item and related assets in a json:api compliant dictionary """
+        links = {"self": self.get_item_url(item)}
+        for asset_class in ("assets", "data"):
+            assets = item.get_attribute(asset_class)
+            if assets:
+                for asset in assets:
+                    asset_url = self.get_item_asset_url(item, asset_class, asset["id"])
+                    links[asset_class + "/" + asset["id"]] = asset_url
+        return links
+
+    def to_representation(self, item):
         """ Serialize object to dictionary, extracts all json key to main level """
-        data = super().to_representation(obj)
-        reformatted = {"type": obj.type, "id": data.pop("id"), "attributes": data}
-        if obj.attributes:
-            for key in obj.attributes:
-                data[key] = obj.attributes[key]
+        data = super().to_representation(item)
+        reformatted = {"type": item.type, "id": data.pop("id"), "attributes": data}
+        if item.attributes:
+            for key in item.attributes:
+                data[key] = item.attributes[key]
+        # add links to self and its assets
+        reformatted["links"] = self.get_item_links(item)
         return reformatted
 
     def to_internal_value(self, data):
