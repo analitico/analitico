@@ -13,7 +13,7 @@ import analitico.plugin
 
 class PluginManager(IPluginManager):
     """ 
-    Concrete implementation of analitico plugins manager which impleents factory
+    Concrete implementation of analitico plugins manager which implements factory
     and life cycle management and orchestration methods for plugins.
     """
 
