@@ -1,5 +1,9 @@
 import logging
 import pandas
+import tempfile
+import os.path
+import shutil
+
 from abc import ABC, abstractmethod
 
 # Design patterns:
@@ -15,10 +19,42 @@ from analitico.mixin import AttributesMixin
 class IPluginManager(ABC, AttributesMixin):
     """ A base abstract class for a plugin lifecycle manager and runtime environment """
 
+    # Temporary directory used during plugin execution
+    _temporary_directory = None
+
     @abstractmethod
     def create_plugin(self, name: str, **kwargs):
         """ A factory method that creates a plugin from its name and settings (builder pattern) """
         pass
+
+    def get_temporary_directory(self):
+        """ Temporary directory that can be used while a plugin runs and is deleted afterwards """
+        if self._temporary_directory is None:
+            self._temporary_directory = tempfile.mkdtemp()
+        return self._temporary_directory
+
+    def get_artifacts_directory(self):
+        """ 
+        An plugin can produce various file artifacts during execution and place
+        them in this directory (datasets, statistics, models, etc). If the execution 
+        is completed succesfully, a subclass of IPluginManager may persist this 
+        information to storage, etc. A file, eg: data.csv, can have a "sister" file
+        data.csv.info that contains json metadata (eg: a model may have a sister
+        file containing the model's training time, stats, etc).
+        """
+        artifacts = os.path.join(self.get_temporary_directory(), "artifacts")
+        if not os.path.isdir(artifacts):
+            os.mkdir(artifacts)
+        return artifacts
+
+    def __enter__(self):
+        # setup
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """ Delete any temporary files upon exiting """
+        if self._temporary_directory:
+            shutil.rmtree(self._temporary_directory, ignore_errors=True)
 
 
 ##
