@@ -104,7 +104,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
         self.assertEqual(job_data["attributes"]["workspace"], "ws_samples")
         self.assertEqual(job_data["attributes"]["action"], "dataset/process")
-        # self.assertEqual(job_data["attributes"]["status"], Job.JOB_STATUS_PROCESSING)
+        # self.assertEqual(job_data["attributes"]["status"], Job.JOB_STATUS_RUNNING)
 
     def test_dataset_job_action_process_with_extra_query_values(self):
         """ Test requesting a process action with additional query_values """
@@ -117,7 +117,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_data["attributes"]["workspace"], "ws_samples")
         self.assertEqual(job_data["attributes"]["action"], "dataset/process")
 
-    def test_dataset_job_action_process_completed(self):
+    def test_dataset_job_action_process_completed_url_asset(self):
         """ Test uploading csv then requesting to process it and checking that it completed """
         # request job processing
         job_url = reverse("api:dataset-job-detail", args=("ds_titanic_2", "process"))

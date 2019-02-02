@@ -58,7 +58,7 @@ class JobRunner(analitico.plugin.PluginManager):
 
     def run(self):
         try:
-            self.job.status = Job.JOB_STATUS_PROCESSING
+            self.job.status = Job.JOB_STATUS_RUNNING
             self.job.save()
 
             self.item = self.job.get_item(self.request)
@@ -88,11 +88,11 @@ class JobRunner(analitico.plugin.PluginManager):
             # mark job as completed
             self.item.save()
             self.job.status = Job.JOB_STATUS_COMPLETED
-            self.job.save()
         except Exception as exc:
             self.job.status = Job.JOB_STATUS_FAILED
-            self.job.save()
             raise exc
+        finally:
+            self.job.save()
 
 
 ##
@@ -139,7 +139,7 @@ class Job(ItemMixin, models.Model):
 
     # Job.status supports these states
     JOB_STATUS_CREATED = "created"
-    JOB_STATUS_PROCESSING = "processing"
+    JOB_STATUS_RUNNING = "running"
     JOB_STATUS_CANCELED = "canceled"
     JOB_STATUS_COMPLETED = "completed"
     JOB_STATUS_FAILED = "failed"
