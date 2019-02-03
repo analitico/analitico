@@ -3,6 +3,9 @@
 ## Frameworks
 ##
 
+ELI5 debug machine learning classifiers and explain their predictions  
+https://github.com/TeamHG-Memex/eli5
+
 FastText - for multilingual text classification  
 https://fasttext.cc
 
