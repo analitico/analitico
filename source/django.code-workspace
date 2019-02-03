@@ -4,13 +4,13 @@
 			"path": "."
 		},
 		{
-			"path": "/home/gionata/github/analitico"
+			"path": ".."
 		},
 		{
-			"path": "/home/gionata/github/analitico-ops"
+			"path": "../../analitico-ops"
 		},
 		{
-			"path": "/home/gionata/github/analitico-private"
+			"path": "../../analitico-sdk"
 		}
 	],
 	"settings": {
