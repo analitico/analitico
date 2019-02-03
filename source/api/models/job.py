@@ -57,6 +57,7 @@ class JobRunner(analitico.plugin.PluginManager):
         return self._temporary_directory
 
     def run(self):
+        """ Runs job then collects artifacts """
         try:
             self.job.status = Job.JOB_STATUS_RUNNING
             self.job.save()
@@ -162,7 +163,7 @@ class Job(ItemMixin, models.Model):
     ##
 
     def run(self, request, **kwargs):
-        """ Runs the job, collects and uplods artifacts, returns the updated job """
+        """ Runs the job, collects and uploads artifacts, returns the updated job """
         with JobRunner(self, request, **kwargs) as runner:
             runner.run()
         return self

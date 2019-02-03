@@ -26,7 +26,7 @@ class Dataset(analitico.mixin.AttributesMixin):
     def get_dataframe(self, **kwargs):
         """ Creates a pandas dataframe from the plugin of this dataset (usually a source or pipeline) """
         if self.plugin:
-            df = self.plugin.process(**kwargs)
+            df = self.plugin.run(**kwargs)
             assert isinstance(df, pd.DataFrame)
             return df
         return None

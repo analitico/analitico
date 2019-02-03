@@ -2,6 +2,7 @@
 Plugins that import dataframes from different sources
 """
 
+import requests
 import pandas
 from analitico.utilities import analitico_to_pandas_type
 from .plugin import IDataframeSourcePlugin, PluginError
@@ -17,7 +18,7 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
     class Meta(IDataframeSourcePlugin.Meta):
         name = "analitico.plugin.CsvDataframeSourcePlugin"
 
-    def process(self, *args, **kwargs):
+    def run(self, *args, **kwargs):
         """ Creates a pandas dataframe from the csv source """
         try:
             schema = self.get_attribute("source.schema")
@@ -47,7 +48,8 @@ class CsvDataframeSourcePlugin(IDataframeSourcePlugin):
             url = self.get_attribute("source.url")
             if not url:
                 raise PluginError("URL of csv file cannot be empty.", plugin=self)
-            df = pandas.read_csv(url, dtype=dtype, parse_dates=parse_dates)
+            stream = self.manager.get_url_stream(url)
+            df = pandas.read_csv(stream, dtype=dtype, parse_dates=parse_dates)
 
             if index:
                 # transform specific column with unique values to dataframe index

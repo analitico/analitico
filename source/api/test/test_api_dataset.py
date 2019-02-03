@@ -153,3 +153,12 @@ class DatasetTests(APITestCase):
         self.assertEqual(meta["filename"], "data.csv")
         self.assertEqual(meta["id"], "data.csv")
         self.assertEqual(meta["path"], "workspaces/ws_samples/datasets/ds_titanic_2/data/data.csv")
+
+    def test_dataset_job_action_process_csv_from_analitico_asset(self):
+        """ Test uploading csv then requesting to process it and checking that it completed """
+        # request job processing
+        job_url = reverse("api:dataset-job-detail", args=("ds_titanic_3", "process"))
+        job_response = self.client.post(job_url, format="json")
+        job_data = job_response.data
+        self.assertEqual(job_response.status_code, 200)
+        self.assertEqual(job_data["attributes"]["status"], "completed")

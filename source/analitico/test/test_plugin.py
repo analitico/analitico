@@ -53,7 +53,7 @@ class PluginTests(unittest.TestCase, TestMixin):
         self.assertTrue(isinstance(csv_plugin, CsvDataframeSourcePlugin))
         self.assertEqual(csv_plugin.get_attribute("source.url"), csv_url)
 
-        df = csv_plugin.process()
+        df = csv_plugin.run()
         self.assertTrue(isinstance(df, pd.DataFrame))
         self.assertIsNotNone(df)
         self.assertEqual(len(df), 3)
@@ -63,7 +63,7 @@ class PluginTests(unittest.TestCase, TestMixin):
         csv_url = self.get_asset_path("ds_test_1.csv")
         csv_plugin = self.get_csv_plugin(source={"url": csv_url})
 
-        df = csv_plugin.process()
+        df = csv_plugin.run()
         self.assertEqual(df.loc[0, "First"], 10)
 
         # configure plugin to add 2 to all values in the first column of the dataframe
@@ -71,11 +71,11 @@ class PluginTests(unittest.TestCase, TestMixin):
         plugin = manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
 
         # dataframe passed as POSITIONAL parameter
-        df = plugin.process(df)
+        df = plugin.run(df)
         self.assertEqual(df.loc[0, "First"], 12)
 
         # dataframe passed as POSITIONAL parameter
-        df = plugin.process(df)
+        df = plugin.run(df)
         self.assertEqual(df.loc[0, "First"], 14)
 
     def test_plugin_code_dataframe_bug(self):
@@ -83,7 +83,7 @@ class PluginTests(unittest.TestCase, TestMixin):
         csv_url = self.get_asset_path("ds_test_1.csv")
         csv_plugin = manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, source={"url": csv_url})
 
-        df = csv_plugin.process()
+        df = csv_plugin.run()
         self.assertEqual(df.loc[0, "First"], 10)
 
         # refers to df2 which DOES NOT exist
@@ -91,7 +91,7 @@ class PluginTests(unittest.TestCase, TestMixin):
         plugin = manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
 
         with self.assertRaises(PluginError):
-            df = plugin.process(df)
+            df = plugin.run(df)
 
     def test_plugin_pipeline(self):
         """ Test grouping plugins into a multi step pipeline to retrieve and process a dataframe """
@@ -114,7 +114,7 @@ class PluginTests(unittest.TestCase, TestMixin):
         self.assertTrue(isinstance(pipeline_plugin, PipelinePlugin))
 
         # call plugin chain; pass same random parameters just to see that they don't mess up things
-        pipeline_df = pipeline_plugin.process("par1", "par2", mickey="mouse", minni="pluto")
+        pipeline_df = pipeline_plugin.run("par1", "par2", mickey="mouse", minni="pluto")
         self.assertIsNotNone(pipeline_df)
         self.assertTrue(isinstance(pipeline_df, pd.DataFrame))
 
@@ -128,7 +128,7 @@ class PluginTests(unittest.TestCase, TestMixin):
         # call plugin chain again with some random positional
         # and named parameters just to see that they don't mess up things
         # parameters should be passed down the chain of plugins and ignored
-        pipeline_df2 = pipeline_plugin.process("par1", "par2", mickey="mouse", minni="pluto")
+        pipeline_df2 = pipeline_plugin.run("par1", "par2", mickey="mouse", minni="pluto")
         self.assertIsNotNone(pipeline_df2)
         self.assertTrue(isinstance(pipeline_df2, pd.DataFrame))
 

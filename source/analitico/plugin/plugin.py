@@ -3,7 +3,12 @@ import pandas
 import tempfile
 import os.path
 import shutil
+import urllib.request
+import re
+import requests
 
+import urllib.parse
+from urllib.parse import urlparse
 from abc import ABC, abstractmethod
 
 # Design patterns:
@@ -18,6 +23,11 @@ from analitico.mixin import AttributesMixin
 
 class IPluginManager(ABC, AttributesMixin):
     """ A base abstract class for a plugin lifecycle manager and runtime environment """
+
+    # Authorization token to be used when calling analitico APIs
+    token = "tok_tester1_A7HMc7FA"
+
+    endpoint = "https://staging.analitico.ai/api/"
 
     # Temporary directory used during plugin execution
     _temporary_directory = None
@@ -47,6 +57,54 @@ class IPluginManager(ABC, AttributesMixin):
             os.mkdir(artifacts)
         return artifacts
 
+    ##
+    ## URL retrieval, authorization and caching
+    ##
+
+    # regular expression used to detect assets using analitico:// scheme
+    ANALITICO_ASSET_RE = r"(analitico://workspaces/(?P<workspace_id>[-\w.]{4,256})/)"
+
+    def get_url(self, url) -> str:
+        """
+        If the url uses the analitico:// scheme for assets stored on the cloud
+        service, it will convert the url to a regular https:// scheme.
+        If the url points to an analitico API call, the request will have the
+        ?token= authorization token header added to it.
+        """
+        # temporarily while all internal urls are updated to analitico://
+        if url.startswith("workspaces/ws_"):
+            url = "analitico://" + url
+
+        # see if assets uses analitico://workspaces/... scheme
+        match = re.match(self.ANALITICO_ASSET_RE, url)
+        if match:
+            url = self.endpoint + url[match.end() :]
+        return url
+
+    def get_url_stream(self, url):
+        """
+        Returns a stream to the given url. This works for regular http:// or https://
+        and also works for analitico:// assets which are converted to calls to the given
+        endpoint with proper authorization tokens. The stream is returned as an iterator.
+        """
+        url = self.get_url(url)
+        try:
+            url_parse = urlparse(url)
+        except Exception as exc:
+            pass
+        if url_parse and url_parse.scheme in ("http", "https"):
+            headers = {}
+            if url_parse.hostname and url_parse.hostname.endswith("analitico.ai") and self.token:
+                # if url is connecting to analitico.ai add token
+                headers = {"Authorization": "Bearer " + self.token}
+            response = requests.get(url, stream=True, headers=headers)
+            return response.raw
+        return open(url, "rb")
+
+    ##
+    ## with IPluginManager as lifecycle methods
+    ##
+
     def __enter__(self):
         # setup
         return self
@@ -70,8 +128,8 @@ class IPlugin(ABC, AttributesMixin):
 
         name = None
 
-    # Manager that owns this plugin
-    manager = None
+    # Manager that provides environment and lifecycle services
+    manager: IPluginManager = None
 
     @property
     def name(self):
@@ -92,7 +150,7 @@ class IPlugin(ABC, AttributesMixin):
         pass
 
     @abstractmethod
-    def process(self, *args, **kwargs):
+    def run(self, *args, **kwargs):
         """ Run will do in the subclass whatever the plugin does """
         pass
 
@@ -117,7 +175,7 @@ class IDataframeSourcePlugin(IPlugin):
         outputs = [{"name": "dataframe", "type": "pandas.DataFrame"}]
 
     @abstractmethod
-    def process(self, *args, **kwargs):
+    def run(self, *args, **kwargs):
         """ Run creates a dataset from the source and returns it """
         pass
 
@@ -137,7 +195,7 @@ class IDataframePlugin(IPlugin):
         inputs = [{"name": "dataframe", "type": "pandas.DataFrame"}]
         outputs = [{"name": "dataframe", "type": "pandas.DataFrame"}]
 
-    def process(self, *args, **kwargs) -> pandas.DataFrame:
+    def run(self, *args, **kwargs) -> pandas.DataFrame:
         assert isinstance(args[0], pandas.DataFrame)
         return args[0]
 

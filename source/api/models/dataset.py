@@ -91,7 +91,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                 directory = runner.get_artifacts_directory()
 
                 # process will produce pandas dataframe
-                df = plugin.process()
+                df = plugin.run()
 
                 # save dataframe as data.csv
                 csv_path = os.path.join(directory, "data.csv")
