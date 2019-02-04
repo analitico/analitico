@@ -1,7 +1,16 @@
 
--- milestones
+-- Milestones
 
+2019-02-28 Analitico 0.8
+First basic site with fully working backend, business basics in place.
 
+2019-03-31 Analitico 0.9
+Front end with programmable recipes (via jupyter or similar) 
+basic recipes, billing in place.
+
+2019-04-30 Analitico 1.0
+Good looking first release suitable for grand opening 
+with 1.0 features, ready for customers, investors, open sourcing
 
 -- Weekly progress 2019
 
@@ -18,8 +27,8 @@ Gionata
     This week:
         - sdk / Public SDK can be used in Jupyter to load dataset from cloud with 3 lines of code
         - plugin / Complete training workflow for regressor model based on catboost
-        - plugin / Complete prediction workflow for regressor (stretch goal)
         - s24 / Deliver three different models for estimating shopping times (picking, payment, delivery)
+        - plugin / Complete prediction workflow for regressor (stretch goal)
         - business / Complete founder stock papework
         - business / Find physical location
         - business / Committed date for seed
