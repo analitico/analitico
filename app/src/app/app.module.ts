@@ -19,6 +19,12 @@ import { AoApiClientService } from './services/ao-api-client/ao-api-client.servi
 import { AoNavListComponent } from './components/ao-nav-list/ao-nav-list.component';
 import { AoDatasetViewComponent } from './components/ao-dataset-view/ao-dataset-view.component';
 import { AoViewComponent } from './components/ao-view/ao-view.component';
+import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
+// PLUGINS
+import { AoPluginsService } from './services/ao-plugins/ao-plugins.service';
+import { AoPipelinePluginComponent } from './plugins/ao-pipeline-plugin/ao-pipeline-plugin.component';
+import { AoCsvDataframeSourcePluginComponent } from './plugins/ao-csv-dataframe-source-plugin/ao-csv-dataframe-source-plugin.component';
+import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 
 @NgModule({
     declarations: [
@@ -27,7 +33,10 @@ import { AoViewComponent } from './components/ao-view/ao-view.component';
         AoLoginComponent,
         AoNavListComponent,
         AoDatasetViewComponent,
-        AoViewComponent
+        AoViewComponent,
+        AoAnchorDirective,
+        AoPipelinePluginComponent,
+        AoCsvDataframeSourcePluginComponent
     ],
     imports: [
         BrowserModule,
@@ -44,7 +53,8 @@ import { AoViewComponent } from './components/ao-view/ao-view.component';
         MatInputModule,
         FormsModule
     ],
-    providers: [AoGlobalStateStore, AoApiClientService],
+    providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
+    entryComponents: [AoPipelinePluginComponent, AoCsvDataframeSourcePluginComponent],
     bootstrap: [AppComponent]
 })
 export class AppModule {

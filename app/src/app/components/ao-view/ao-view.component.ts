@@ -49,16 +49,31 @@ export class AoViewComponent implements OnInit, OnDestroy {
     // When id change reload object
     onRouteChange(params: any) {
         if (!this.objectId || this.objectId !== params.id) {
-            this.loadObject(params.id);
+            this.loadItem(params.id);
         }
     }
 
     // loads the json object
-    loadObject(id: string) {
+    loadItem(id: string) {
         this.apiClient.get(this.baseUrl + '/' + id)
-        .then((response: any) => {
-            this.item = response.data;
-        });
+            .then((response: any) => {
+                this.item = response.data;
+                this.onLoad();
+            });
     }
 
+    saveItem() {
+        if (!this.item) {
+            throw new Error('missing item');
+        }
+        this.apiClient.patch(this.baseUrl + '/' + this.item.id, this.item)
+            .then((response: any) => {
+                this.item = response.data;
+                // reload
+                this.onLoad();
+            });
+    }
+
+    onLoad(): void {
+    }
 }
