@@ -9,6 +9,7 @@ from django.contrib.auth.models import Group
 from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
+from rest_framework.exceptions import APIException
 
 import analitico
 import analitico.plugin
@@ -83,24 +84,33 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
             if job.action == "dataset/process":
                 plugin = self.get_attribute("plugin")
 
-                if not plugin:
-                    # TODO if no plugin and has assets, create a simple pipeline
-                    return
+                # if dataset doesn't have a plugin we can initialize it with a simple csv reader
+                if not plugin and self.assets:
+                    for asset in self.assets:
+                        if asset.get("content_type") == "text/csv" or asset["path"].endswith(".csv"):
+                            plugin = {
+                                "type": "analitico/plugin",
+                                "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                                "source": {"type": "text/csv", "url": asset["path"]},
+                            }
+                            self.set_attribute("plugin", plugin)
+                            break
 
-                plugin = runner.create_plugin(**plugin)
-                directory = runner.get_artifacts_directory()
+                if plugin:
+                    plugin = runner.create_plugin(**plugin)
+                    directory = runner.get_artifacts_directory()
 
-                # process will produce pandas dataframe
-                df = plugin.run()
+                    # process will produce pandas dataframe
+                    df = plugin.run()
 
-                # save dataframe as data.csv
-                csv_path = os.path.join(directory, "data.csv")
-                df.to_csv(csv_path)
+                    # save dataframe as data.csv
+                    csv_path = os.path.join(directory, "data.csv")
+                    df.to_csv(csv_path)
 
-                # save schema as data.csv.info
-                schema = analitico.dataset.Dataset.generate_schema(df)
-                csv_info_path = csv_path + ".info"
-                analitico.utilities.save_json({"schema": schema}, csv_info_path)
+                    # save schema as data.csv.info
+                    schema = analitico.dataset.Dataset.generate_schema(df)
+                    csv_info_path = csv_path + ".info"
+                    analitico.utilities.save_json({"schema": schema}, csv_info_path)
 
             self.save()
         except Exception as exc:

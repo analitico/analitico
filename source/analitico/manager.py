@@ -54,4 +54,4 @@ class PluginManager(analitico.plugin.IPluginManager):
         # getting the entire plugin chain and recreating it here exactly the same so it
         # can be run in Jupyter, etc.
         plugin = self.create_plugin(**plugin_settings)
-        return Dataset(plugin=plugin)
+        return Dataset(self, plugin=plugin)

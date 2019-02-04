@@ -275,8 +275,9 @@ class PluginError(Exception):
     def __init__(self, message, plugin: IPlugin = None, exception: Exception = None):
         super().__init__(message, exception)
         self.message = message
-        self.plugin = plugin
-        plugin.logger.error(message)
+        if plugin:
+            self.plugin = plugin
+            plugin.logger.error(message)
 
     def __str__(self):
         if self.plugin:
