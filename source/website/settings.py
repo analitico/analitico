@@ -85,9 +85,6 @@ try:
     # Disable maximum upload size
     DATA_UPLOAD_MAX_MEMORY_SIZE = None
 
-    # Allow CORS requests from any subdomain of analitico.ai
-    CSRF_COOKIE_DOMAIN = "analitico.ai"
-
     # Allow preflight OPTION request from these origins
     CORS_ORIGIN_WHITELIST = (
         "app.analitico.ai",
