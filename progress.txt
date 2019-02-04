@@ -1,0 +1,47 @@
+
+-- milestones
+
+
+
+-- Weekly progress 2019
+
+2019-02-04 Progress for week Jan28-Feb03 
+
+Gionata
+    Last Week:
+        - Created class of /data assets for datasets to hold csv/meta produced by ETL pipeline
+        - Implemented Job mechanism which can be used to create asynch queue of long running tasks on workers
+        - Implemented JobRunner environment to be used inside APIs or on separate process
+        - Reformatted code with Black
+    Compared to plan:
+        - On track
+    This week:
+        - sdk / Public SDK can be used in Jupyter to load dataset from cloud with 3 lines of code
+        - plugin / Complete training workflow for regressor model based on catboost
+        - plugin / Complete prediction workflow for regressor (stretch goal)
+        - s24 / Deliver three different models for estimating shopping times (picking, payment, delivery)
+        - business / Complete founder stock papework
+        - business / Find physical location
+        - business / Committed date for seed
+    Milestone progress:
+        - sdk / View datasets, run models on Colaboratory
+        - server / Basic regression and categorical models working end to end on plugins by end of month
+        - api / APIs are essentially finalized in terms of URLs, work to do on functionality
+        - business / Completed seed by end of month
+
+Giovanni
+    Last Week:
+
+    Compared to plan:
+
+    This week:
+
+    Milestone progress:
+
+
+
+Cosa abbiamo concluso la settimana scorsa?
+Come è andata rispetto a quanto pianificato?
+
+Piano per questa settimana?
+Come siamo messi rispetto alla milestone corrente?
