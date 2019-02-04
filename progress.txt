@@ -40,13 +40,19 @@ Gionata
 
 Giovanni
     Last Week:
+        - Implemented Plugin architecture and Pipeline plugin
+        - Tested dynamic loading of external plugins (implementation postponed)
 
     Compared to plan:
-
+        - On track
     This week:
+        - Basic UI for interacting with a complete plugin pipeline.
+        - Upload drag and drop
+        - Basic Process pipeline and refresh (job creation and polling)
 
     Milestone progress:
-
+        - client / process pipeline async and refresh status #28
+        - client / basic UI style #29 
 
 
 -- Template
