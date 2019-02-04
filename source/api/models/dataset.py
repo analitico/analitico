@@ -91,7 +91,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                             plugin = {
                                 "type": "analitico/plugin",
                                 "name": "analitico.plugin.CsvDataframeSourcePlugin",
-                                "source": {"type": "text/csv", "url": asset["path"]},
+                                "source": {"content_type": "text/csv", "url": asset["path"]},
                             }
                             self.set_attribute("plugin", plugin)
                             break
