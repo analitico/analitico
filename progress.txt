@@ -49,8 +49,9 @@ Giovanni
 
 
 
+-- Template
+
 Cosa abbiamo concluso la settimana scorsa?
 Come è andata rispetto a quanto pianificato?
-
 Piano per questa settimana?
 Come siamo messi rispetto alla milestone corrente?
