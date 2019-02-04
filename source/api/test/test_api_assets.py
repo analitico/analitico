@@ -31,7 +31,7 @@ class AssetsTests(APITestCase):
         url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "oh-my-dog.jpg"))
         response = self._upload_file(url, "image_dog1.jpg", "image/jpeg", token=self.token1)
         self.assertEqual(response.data[0]["id"], "oh-my-dog.jpg")
-        self.assertEqual(response.data[0]["path"], "workspaces/ws_storage_gcs/assets/oh-my-dog.jpg")
+        self.assertEqual(response.data[0]["path"], "analitico://workspaces/ws_storage_gcs/assets/oh-my-dog.jpg")
         self.assertEqual(response.data[0]["hash"], "a9f659efd070f3e5b121a54edd8b13d0")
         return url, response
 
@@ -309,7 +309,7 @@ class AssetsTests(APITestCase):
             self.assertEqual(data["hash"], "a9f659efd070f3e5b121a54edd8b13d0")
             self.assertEqual(data["filename"], "image_dog1.jpg")
             self.assertEqual(data["id"], "oh-my-dog.jpg")
-            self.assertEqual(data["path"], "workspaces/ws_storage_gcs/assets/oh-my-dog.jpg")
+            self.assertEqual(data["path"], "analitico://workspaces/ws_storage_gcs/assets/oh-my-dog.jpg")
             self.assertEqual(data["size"], "49038")
         except Exception as exc:
             raise exc

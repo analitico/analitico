@@ -156,7 +156,7 @@ class ItemAssetsMixin:
 
         asset["created_at"] = now().isoformat()
         asset["filename"] = filename
-        asset["path"] = asset_path
+        asset["path"] = asset_obj.name
         asset["hash"] = asset_obj.hash
         asset["content_type"] = content_type
         asset["size"] = max(size, asset_obj.size)

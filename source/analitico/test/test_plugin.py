@@ -7,7 +7,7 @@ import pandas as pd
 import analitico.plugin
 import analitico.utilities
 
-from analitico.plugin import PluginError, manager, PLUGIN_TYPE
+from analitico.plugin import PluginError, PLUGIN_TYPE
 from analitico.plugin import CsvDataframeSourcePlugin, CSV_DATAFRAME_SOURCE_PLUGIN
 from analitico.plugin import CODE_DATAFRAME_PLUGIN
 from analitico.plugin import PipelinePlugin, PIPELINE_PLUGIN
@@ -25,7 +25,7 @@ class PluginTests(unittest.TestCase, TestMixin):
     def test_plugin_basics_settings(self):
         """ Test plugin settings """
         try:
-            plugin = CsvDataframeSourcePlugin(manager=analitico.plugin.manager, param1="value1", param2="value2")
+            plugin = CsvDataframeSourcePlugin(manager=self.manager, param1="value1", param2="value2")
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
@@ -37,7 +37,7 @@ class PluginTests(unittest.TestCase, TestMixin):
 
     def test_plugin_factory(self):
         try:
-            plugin = manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, param1="value1", param2="value2")
+            plugin = self.manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, param1="value1", param2="value2")
 
             self.assertEqual(plugin.param1, "value1")
             self.assertEqual(plugin.param2, "value2")
@@ -68,7 +68,7 @@ class PluginTests(unittest.TestCase, TestMixin):
 
         # configure plugin to add 2 to all values in the first column of the dataframe
         code = "df['First'] = df['First'] + 2"
-        plugin = manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
+        plugin = self.manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
 
         # dataframe passed as POSITIONAL parameter
         df = plugin.run(df)
@@ -81,14 +81,14 @@ class PluginTests(unittest.TestCase, TestMixin):
     def test_plugin_code_dataframe_bug(self):
         """ Test using csv plugin to applies code with a bug to a dataframe """
         csv_url = self.get_asset_path("ds_test_1.csv")
-        csv_plugin = manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, source={"url": csv_url})
+        csv_plugin = self.manager.create_plugin(CSV_DATAFRAME_SOURCE_PLUGIN, source={"url": csv_url})
 
         df = csv_plugin.run()
         self.assertEqual(df.loc[0, "First"], 10)
 
         # refers to df2 which DOES NOT exist
         code = "df['First'] = df2['First'] + 2"
-        plugin = manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
+        plugin = self.manager.create_plugin(CODE_DATAFRAME_PLUGIN, code=code)
 
         with self.assertRaises(PluginError):
             df = plugin.run(df)
@@ -110,7 +110,7 @@ class PluginTests(unittest.TestCase, TestMixin):
             ],
         }
 
-        pipeline_plugin = analitico.plugin.manager.create_plugin(**pipeline_settings)
+        pipeline_plugin = self.manager.create_plugin(**pipeline_settings)
         self.assertTrue(isinstance(pipeline_plugin, PipelinePlugin))
 
         # call plugin chain; pass same random parameters just to see that they don't mess up things

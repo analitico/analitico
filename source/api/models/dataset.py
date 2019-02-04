@@ -98,7 +98,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                 df.to_csv(csv_path)
 
                 # save schema as data.csv.info
-                schema = analitico.Dataset.generate_schema(df)
+                schema = analitico.dataset.Dataset.generate_schema(df)
                 csv_info_path = csv_path + ".info"
                 analitico.utilities.save_json({"schema": schema}, csv_info_path)
 

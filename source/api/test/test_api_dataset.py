@@ -28,11 +28,11 @@ from .utils import APITestCase
 class DatasetTests(APITestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
 
-    def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv"):
-        url = reverse("api:dataset-asset-detail", args=(dataset_id, "assets", asset_name))
+    def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv", asset_class="assets"):
+        url = reverse("api:dataset-asset-detail", args=(dataset_id, asset_class, asset_name))
         response = self._upload_file(url, asset_name, "text/csv", token=self.token1)
         self.assertEqual(response.data[0]["id"], asset_name)
-        path = "workspaces/ws_samples/datasets/" + dataset_id + "/assets/" + asset_name
+        path = "analitico://workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
         self.assertEqual(response.data[0]["path"], path)
         return url, response
 
@@ -152,10 +152,16 @@ class DatasetTests(APITestCase):
         self.assertEqual(meta["content_type"], "text/csv")
         self.assertEqual(meta["filename"], "data.csv")
         self.assertEqual(meta["id"], "data.csv")
-        self.assertEqual(meta["path"], "workspaces/ws_samples/datasets/ds_titanic_2/data/data.csv")
+        self.assertEqual(meta["path"], "analitico://workspaces/ws_samples/datasets/ds_titanic_2/data/data.csv")
 
     def test_dataset_job_action_process_csv_from_analitico_asset(self):
         """ Test uploading csv then requesting to process it and checking that it completed """
+
+        # upload titanic_1.csv
+        asset_url, asset_response = self._upload_titanic("ds_titanic_3")
+        ds_asset1 = asset_response.data[0]
+        self.assertEqual(ds_asset1["id"], "titanic_1.csv")
+
         # request job processing
         job_url = reverse("api:dataset-job-detail", args=("ds_titanic_3", "process"))
         job_response = self.client.post(job_url, format="json")

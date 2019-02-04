@@ -7,6 +7,7 @@ import jsonfield
 import django.utils.crypto
 import tempfile
 import os.path
+import io
 
 from django.db import models
 from .items import ItemMixin
@@ -14,6 +15,7 @@ from .workspace import Workspace
 from api.factory import ModelsFactory
 
 import analitico
+import analitico.manager
 import analitico.plugin
 import analitico.utilities
 
@@ -30,7 +32,7 @@ def generate_job_id():
 ##
 
 
-class JobRunner(analitico.plugin.PluginManager):
+class JobRunner(analitico.manager.PluginManager):
     """ An IPluginManager used to run plugins in the context of a server Job """
 
     # Job currently being executed
@@ -55,6 +57,35 @@ class JobRunner(analitico.plugin.PluginManager):
         if self._temporary_directory is None:
             self._temporary_directory = tempfile.mkdtemp(prefix=self.job.id + "_")
         return self._temporary_directory
+
+    def get_url_stream(self, url):
+        """ Job runner retrieves assets directly from cloud storage while using super for regular URLs """
+        # temporarily while all internal urls are updated prepend analitico://
+        if url.startswith("workspaces/ws_"):
+            url = "analitico://" + url
+        # job runner reads assets straight from cloud storage
+        if url.startswith("analitico://"):
+            storage = self.item.storage
+            if not storage:
+                raise analitico.plugin.PluginError(
+                    "JobRunner.get_url_stream - storage is not configured correctly for item: " + self.item.id
+                )
+            storage_obj, storage_stream = storage.download_object_via_stream(url)
+
+            # download stream to a cache file then hand over stream to file
+            # the temporary file is named after the hash of the file contents in storage.
+            # if we already have a file in cache with the same name, we can be assured that
+            # its contents are the same as the requested file and we can serve directly from file.
+            storage_file = os.path.join(self.get_cache_directory(), "cache_" + storage_obj.hash)
+            if not os.path.isfile(storage_file):
+                storage_temp_file = storage_file + ".tmp_" + django.utils.crypto.get_random_string()
+                with open(storage_temp_file, "wb") as f:
+                    for b in storage_stream:
+                        f.write(b)
+                os.rename(storage_temp_file, storage_file)
+            return open(storage_file, "rb")
+        # base class handles regular URLs
+        return super().get_url_stream(url)
 
     def run(self):
         """ Runs job then collects artifacts """

@@ -1,17 +1,17 @@
-from .plugin import IPluginManager, PluginError
-
 # We need to import this library here even though we don't
 # use it directly below because we are instantiating the
 # plugins by name from globals() and they won't be found if
 # this import is not here.
 import analitico.plugin
 
+from analitico.dataset import Dataset
+
 ##
 ## PluginManager
 ##
 
 
-class PluginManager(IPluginManager):
+class PluginManager(analitico.plugin.IPluginManager):
     """ 
     Concrete implementation of analitico plugins manager which implements factory
     and life cycle management and orchestration methods for plugins.
@@ -39,9 +39,19 @@ class PluginManager(IPluginManager):
         """
         klass = self._get_class_from_fully_qualified_name(name)
         if not klass:
-            raise PluginError("PluginManager - can't find plugin: " + name)
+            raise analitico.plugin.PluginError("PluginManager - can't find plugin: " + name)
         return (klass)(manager=self, **kwargs)
 
-
-# Analitico plugins factory
-manager: IPluginManager = PluginManager()
+    def get_dataset(self, dataset_id):
+        """ Creates a Dataset object from the cloud dataset with the given id """
+        plugin_settings = {
+            "type": "analitico/plugin",
+            "name": "analitico.plugin.CsvDataframeSourcePlugin",
+            "source": {"type": "text/csv", "url": self.endpoint + "datasets/" + dataset_id + "/data/data.csv"},
+        }
+        # Instead of creating a plugin that reads the end product of the dataset
+        # pipeline we should consider reading the dataset information from its endpoint,
+        # getting the entire plugin chain and recreating it here exactly the same so it
+        # can be run in Jupyter, etc.
+        plugin = self.create_plugin(**plugin_settings)
+        return Dataset(plugin=plugin)

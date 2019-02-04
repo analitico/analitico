@@ -13,8 +13,8 @@
 			"name": "analitico.plugin.CsvDataframeSourcePlugin",
 			"source": {
 				"content_type": "text/csv",
-				"notes": "the url below refers to an asset which is in an actual object on the live server",
-				"url": "workspaces/ws_test/datasets/ds_test_live_001/data/data.csv"
+				"notes": "url below is loaded during unit testing...",
+				"url": "analitico://workspaces/ws_samples/datasets/ds_titanic_3/assets/titanic_1.csv"
 			}
 		}
 	}

@@ -16,9 +16,6 @@ from .transforms import CodeDataframePlugin
 from .groups import PipelinePlugin
 from .groups import GraphPlugin
 
-# plugin factory
-from .manager import PluginManager, manager  # NOQA: F401
-
 # plugin names
 CSV_DATAFRAME_SOURCE_PLUGIN = CsvDataframeSourcePlugin.Meta.name
 CODE_DATAFRAME_PLUGIN = CodeDataframePlugin.Meta.name

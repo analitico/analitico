@@ -25,12 +25,26 @@ class IPluginManager(ABC, AttributesMixin):
     """ A base abstract class for a plugin lifecycle manager and runtime environment """
 
     # Authorization token to be used when calling analitico APIs
-    token = "tok_tester1_A7HMc7FA"
+    token = None
 
-    endpoint = "https://staging.analitico.ai/api/"
+    # APIs endpoint, eg: https://analitico.ai/api/
+    endpoint = None
 
     # Temporary directory used during plugin execution
     _temporary_directory = None
+
+    def __init__(self, token=None, endpoint=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if token:
+            assert token.startswith("tok_")
+            self.token = token
+        if endpoint:
+            assert endpoint.startswith("http")
+            self.endpoint = endpoint
+
+    ##
+    ## Plugins
+    ##
 
     @abstractmethod
     def create_plugin(self, name: str, **kwargs):
@@ -57,6 +71,11 @@ class IPluginManager(ABC, AttributesMixin):
             os.mkdir(artifacts)
         return artifacts
 
+    def get_cache_directory(self):
+        """ Returns directory to be used for caches """
+        # method is separate from temp in case we later decide to share local caches
+        return self.get_temporary_directory()
+
     ##
     ## URL retrieval, authorization and caching
     ##
@@ -78,6 +97,10 @@ class IPluginManager(ABC, AttributesMixin):
         # see if assets uses analitico://workspaces/... scheme
         match = re.match(self.ANALITICO_ASSET_RE, url)
         if match:
+            if not self.endpoint:
+                raise PluginError(
+                    "Plugin manager was not been configured with an API endpoint therefore it cannot process: " + url
+                )
             url = self.endpoint + url[match.end() :]
         return url
 
@@ -100,6 +123,14 @@ class IPluginManager(ABC, AttributesMixin):
             response = requests.get(url, stream=True, headers=headers)
             return response.raw
         return open(url, "rb")
+
+    ##
+    ## Factory methods
+    ##
+
+    @abstractmethod
+    def get_dataset(self, dataset_id):
+        return None
 
     ##
     ## with IPluginManager as lifecycle methods
