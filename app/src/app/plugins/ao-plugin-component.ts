@@ -2,9 +2,21 @@
  * Base abstract class for a plugin.
  * Plugins are used to process datasets
  */
-import { BehaviorSubject } from 'rxjs';
+import { Subject } from 'rxjs';
 
-export abstract class AoPluginComponent  {
-    // plugin data will be observed and modified using dataSubject
-    dataSubject: BehaviorSubject<any>;
+export class AoPluginComponent {
+    // plugin data change will be notified using subject
+    onNewDataSubject: Subject<any>;
+    data: any;
+
+    constructor() {
+        this.onNewDataSubject = new Subject();
+    }
+
+    setData(data: any) {
+        // store data
+        this.data = data;
+        // notify data update
+        this.onNewDataSubject.next(data);
+    }
 }

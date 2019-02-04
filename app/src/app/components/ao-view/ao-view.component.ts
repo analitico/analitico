@@ -69,11 +69,11 @@ export class AoViewComponent implements OnInit, OnDestroy {
         this.apiClient.patch(this.baseUrl + '/' + this.item.id, this.item)
             .then((response: any) => {
                 this.item = response.data;
-                // reload
-                this.onLoad();
+                this.onSaved();
             });
     }
 
-    onLoad(): void {
-    }
+    onLoad(): void {}
+
+    onSaved(): void {}
 }

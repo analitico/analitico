@@ -1,4 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
+@import "~jsoneditor/dist/jsoneditor.min.css";
+.jsoneditor-poweredBy{
+    /* hide watermark */
+    display: none;
+}
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
@@ -51,4 +56,12 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 /* remove backdrop when opening drawer*/
 .mat-drawer-backdrop {
     opacity: 0;
+}
+
+
+.ao-plugin-container{
+    width: 80%;
+    margin: 20px auto;
+    border: 1px solid #eeeeee;
+    min-height: 400px;
 }

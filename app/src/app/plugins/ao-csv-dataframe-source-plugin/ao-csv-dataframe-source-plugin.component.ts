@@ -3,7 +3,6 @@
  * as a data source for further processing in the platform
  */
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
 import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 
 @Component({
@@ -11,22 +10,10 @@ import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
     templateUrl: './ao-csv-dataframe-source-plugin.component.html',
     styleUrls: ['./ao-csv-dataframe-source-plugin.component.css']
 })
-export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent implements OnInit {
-    dataSubject: BehaviorSubject<any>;
-    data: any;
+export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
 
     constructor() {
         super();
-        this.dataSubject = new BehaviorSubject({});
-    }
-
-    ngOnInit() {
-        // wait to receive data from parent object
-        this.dataSubject.subscribe(this.onData.bind(this));
-    }
-
-    onData(data: any) {
-       this.data = data;
     }
 
 }

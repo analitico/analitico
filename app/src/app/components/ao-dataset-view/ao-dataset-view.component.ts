@@ -1,12 +1,14 @@
-import { Component, OnInit, OnDestroy, ViewChild, ComponentFactoryResolver } from '@angular/core';
+/**
+ * Dataset is used to process data through plugins.
+ */
+import { Component, OnInit, OnDestroy, ViewChild, ComponentFactoryResolver, ViewContainerRef } from '@angular/core';
 import { AoViewComponent } from 'src/app/components/ao-view/ao-view.component';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
-import { AoPipelinePluginComponent } from 'src/app/plugins/ao-pipeline-plugin/ao-pipeline-plugin.component';
-import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
+
 @Component({
     templateUrl: './ao-dataset-view.component.html',
     styleUrls: ['./ao-dataset-view.component.css']
@@ -16,6 +18,10 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
 
     title: string;
+    viewContainerRef: ViewContainerRef;
+    private pluginData: any;
+    private saveTimeout: any;
+    private showSaved: boolean;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
@@ -27,10 +33,14 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
     ngOnInit() {
         super.ngOnInit();
+        // get the view of the anchor component
+        this.viewContainerRef = this.aoAnchor.viewContainerRef;
     }
 
 
     onLoad() {
+        // clear the view
+        this.viewContainerRef.clear();
         if (this.item.attributes.title) {
             this.title = this.item.attributes.title;
         }
@@ -50,24 +60,45 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
     // load the plugin
     loadPlugin() {
-        const pluginData = this.item.attributes.plugin;
+        this.pluginData = this.item.attributes.plugin;
         // find the class name of the plugin
-        const pluginName = pluginData.name.split('.')[2];
+        const pluginName = this.pluginData.name.split('.')[2];
         // get the plugin component
         const plugin = this.pluginsService.getPlugin(pluginName);
         // if we have found the plugin...
         if (plugin) {
             // get the plugin component factory
             const componentFactory = this.componentFactoryResolver.resolveComponentFactory(plugin);
-            // get the view of the anchor component
-            const viewContainerRef = this.aoAnchor.viewContainerRef;
-            // clear the view
-            viewContainerRef.clear();
             // add the component to the anchor view
-            const componentRef = viewContainerRef.createComponent(componentFactory);
+            const componentRef = this.viewContainerRef.createComponent(componentFactory);
             (<IAoPluginInstance>componentRef.instance).pluginsService = this.pluginsService;
-            // pass data to the component
-            (<IAoPluginInstance>componentRef.instance).dataSubject.next(pluginData);
+            // get data subject
+            const instance = (<IAoPluginInstance>componentRef.instance);
+            // send data
+            instance.setData(this.pluginData);
+            // subscribe to update
+            instance.onNewDataSubject.subscribe(this.onNewData.bind(this));
         }
+    }
+
+    // called when the model is changed
+    onNewData(): void {
+        this.checkIfNeedToSave();
+    }
+    // wait a bit before automatically saving changes to object
+    checkIfNeedToSave() {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        this.saveTimeout = setTimeout(this.saveItem.bind(this), 3000);
+    }
+
+    hideSavedMessage() {
+        this.showSaved = false;
+    }
+
+    onSaved() {
+        this.showSaved = true;
+        setTimeout(this.hideSavedMessage.bind(this), 2000);
     }
 }

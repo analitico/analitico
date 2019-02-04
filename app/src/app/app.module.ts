@@ -24,7 +24,8 @@ import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
 import { AoPluginsService } from './services/ao-plugins/ao-plugins.service';
 import { AoPipelinePluginComponent } from './plugins/ao-pipeline-plugin/ao-pipeline-plugin.component';
 import { AoCsvDataframeSourcePluginComponent } from './plugins/ao-csv-dataframe-source-plugin/ao-csv-dataframe-source-plugin.component';
-import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
+import { AoRawJsonPluginComponent } from './plugins/ao-raw-json-plugin/ao-raw-json-plugin.component';
+import { NgJsonEditorModule } from 'ang-jsoneditor';
 
 @NgModule({
     declarations: [
@@ -36,7 +37,8 @@ import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
         AoViewComponent,
         AoAnchorDirective,
         AoPipelinePluginComponent,
-        AoCsvDataframeSourcePluginComponent
+        AoCsvDataframeSourcePluginComponent,
+        AoRawJsonPluginComponent
     ],
     imports: [
         BrowserModule,
@@ -51,10 +53,11 @@ import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
         MatListModule,
         MatCardModule,
         MatInputModule,
-        FormsModule
+        FormsModule,
+        NgJsonEditorModule
     ],
     providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
-    entryComponents: [AoPipelinePluginComponent, AoCsvDataframeSourcePluginComponent],
+    entryComponents: [AoPipelinePluginComponent, AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent],
     bootstrap: [AppComponent]
 })
 export class AppModule {

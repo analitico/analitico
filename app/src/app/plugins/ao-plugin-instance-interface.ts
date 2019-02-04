@@ -1,5 +1,6 @@
-import { BehaviorSubject } from 'rxjs';
+import { Subject } from 'rxjs';
 export interface IAoPluginInstance {
     pluginsService: any;
-    dataSubject: BehaviorSubject<any>;
+    setData: any;
+    onNewDataSubject: Subject<any>;
 }

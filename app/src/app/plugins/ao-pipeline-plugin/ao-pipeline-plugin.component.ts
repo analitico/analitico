@@ -9,7 +9,6 @@
 
 import { Component, OnInit, OnDestroy, ViewChild, ComponentFactoryResolver } from '@angular/core';
 import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
-import { BehaviorSubject } from 'rxjs';
 import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
 
@@ -18,25 +17,19 @@ import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface'
     templateUrl: './ao-pipeline-plugin.component.html',
     styleUrls: ['./ao-pipeline-plugin.component.css']
 })
-export class AoPipelinePluginComponent extends AoPluginComponent implements OnInit {
+export class AoPipelinePluginComponent extends AoPluginComponent {
     // list of plugins of the pipeline
     plugins: any;
     pluginsService: any;
-    dataSubject: BehaviorSubject<any>;
     // this is the object where we will insert the child components
     @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
     constructor(private componentFactoryResolver: ComponentFactoryResolver) {
         super();
-        this.dataSubject = new BehaviorSubject({});
     }
 
-    ngOnInit() {
-        // wait to receive data from parent object
-        this.dataSubject.subscribe(this.onData.bind(this));
-    }
-
-    onData(data: any) {
-        if (data.plugins) {
+    setData(data: any) {
+        super.setData(data);
+        if (data && data.plugins) {
             this.plugins = data.plugins;
             this.loadPlugins();
         }
@@ -44,13 +37,13 @@ export class AoPipelinePluginComponent extends AoPluginComponent implements OnIn
 
     // loads all the plugins
     loadPlugins(): void {
-        for (const pluginData of this.plugins) {
-            this.loadPlugin(pluginData);
-        }
+        this.plugins.forEach((pluginData, index) => {
+            this.loadPlugin(pluginData, index);
+        });
     }
 
     // load the plugin
-    loadPlugin(pluginData: any): void {
+    loadPlugin(pluginData: any, index: number): void {
         // find the class name of the plugin
         const pluginName = pluginData.name.split('.')[2];
         // get the plugin component
@@ -65,10 +58,20 @@ export class AoPipelinePluginComponent extends AoPluginComponent implements OnIn
             viewContainerRef.clear();
             // add the component to the anchor view
             const componentRef = viewContainerRef.createComponent(componentFactory);
-            // pass data to the component
-            (<IAoPluginInstance>componentRef.instance).dataSubject.next(pluginData);
+            const instance = (<IAoPluginInstance>componentRef.instance);
+            // send data
+            instance.setData(pluginData);
+            // subscribe to update
+            instance.onNewDataSubject.subscribe(this.onNewData.bind(this, index));
         } else {
             throw new Error('Missing plugin, cannot build pipeline');
         }
+    }
+
+    onNewData(index: number, pluginData: any): void {
+        // changed data in a specific plugin
+        this.plugins[index] = pluginData;
+        // notify upper levels
+        this.onNewDataSubject.next();
     }
 }
