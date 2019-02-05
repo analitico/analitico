@@ -7,6 +7,7 @@ import api.models
 import api.utilities
 
 from api.models import Dataset, Job
+from api.factory import ModelsFactory
 from .mixins import AssetsViewSetMixin, AttributesSerializerMixin
 
 
@@ -21,6 +22,14 @@ class JobSerializer(AttributesSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = Job
         exclude = ("attributes",)
+
+    def to_representation(self, item):
+        """ Add link to job target as a "related" link. """
+        data = super().to_representation(item)
+        if "links" in data and item.item_id:
+            target = ModelsFactory.from_id(item.item_id)
+            data["links"]["related"] = self.get_item_url(target)
+        return data
 
 
 ##
