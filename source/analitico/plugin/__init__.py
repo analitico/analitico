@@ -7,7 +7,7 @@ from .plugin import IPluginManager  # NOQA: F401
 from .plugin import PluginError  # NOQA: F401
 
 # plugins to generate dataframes from sources
-from .sources import CsvDataframeSourcePlugin
+from .csvdataframesourceplugin import CsvDataframeSourcePlugin
 
 # plugins to tranform dataframes
 from .transforms import CodeDataframePlugin
