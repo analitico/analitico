@@ -160,6 +160,7 @@ class ItemAssetsMixin:
         asset["hash"] = asset_obj.hash
         asset["content_type"] = content_type
         asset["size"] = max(size, asset_obj.size)
+        asset["url"] = "analitico://{}s/{}/{}/{}".format(self.type, self.id, asset_class, asset_id)
 
         # update assets in model and therefore on database when caller eventually calls .save()
         self.set_attribute(asset_class, assets)

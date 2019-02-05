@@ -8,6 +8,9 @@ import django.utils.crypto
 import tempfile
 import os.path
 import io
+import re
+import json
+import io
 
 from django.db import models
 from .items import ItemMixin
@@ -30,6 +33,9 @@ def generate_job_id():
 ##
 ## JobRunner
 ##
+
+# analitico://type/id/asset/asset_id, eg: analitico://dataset/ds_xxx/assets/data.csv
+ANALITICO_ASSET_RE = r"analitico:\/\/(?P<item_type>[\w]{3,24})s\/(?P<item_id>[_\w]{3,24})\/(?P<asset_class>(assets|data))\/(?P<asset_id>[-\w.]{2,256})$"
 
 
 class JobRunner(analitico.manager.PluginManager):
@@ -63,14 +69,39 @@ class JobRunner(analitico.manager.PluginManager):
         # temporarily while all internal urls are updated prepend analitico://
         if url.startswith("workspaces/ws_"):
             url = "analitico://" + url
+
         # job runner reads assets straight from cloud storage
-        if url.startswith("analitico://"):
-            storage = self.item.storage
+        match = re.search(ANALITICO_ASSET_RE, url)
+        if match:
+            # find asset indicated in the url
+            item_id = match.group("item_id")
+            asset_class = match.group("asset_class")
+            asset_id = match.group("asset_id")
+
+            # TODO should check that current requestor has access rights to this item
+            item = ModelsFactory.from_id(item_id)
+
+            # replace shorthand /data/csv with /data/data.csv
+            wants_json = False
+            if asset_class == "data":
+                if asset_id == "csv":
+                    asset_id = "data.csv"
+                if asset_id == "info":
+                    asset_id = "data.csv"
+                    wants_json = True
+
+            asset = item._get_asset_from_id(asset_class, asset_id, raise404=True)
+            if wants_json:
+                asset_json = json.dumps(asset)
+                return io.StringIO(asset_json)
+
+            storage = item.storage
             if not storage:
                 raise analitico.plugin.PluginError(
                     "JobRunner.get_url_stream - storage is not configured correctly for item: " + self.item.id
                 )
-            storage_obj, storage_stream = storage.download_object_via_stream(url)
+            storage_path = asset["path"]
+            storage_obj, storage_stream = storage.download_object_via_stream(storage_path)
 
             # download stream to a cache file then hand over stream to file
             # the temporary file is named after the hash of the file contents in storage.
@@ -84,6 +115,7 @@ class JobRunner(analitico.manager.PluginManager):
                         f.write(b)
                 os.rename(storage_temp_file, storage_file)
             return open(storage_file, "rb")
+
         # base class handles regular URLs
         return super().get_url_stream(url)
 

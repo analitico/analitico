@@ -15,7 +15,8 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
 class TestMixin:
     """ Basic unit testing functionality for analitico's tests """
 
-    manager = analitico.get_manager()
+    # Create default factory
+    manager = analitico.authorize()
 
     def get_asset_path(self, path):
         """ Returns absolute path of file in test /assets directory """

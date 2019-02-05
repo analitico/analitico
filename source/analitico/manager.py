@@ -47,11 +47,11 @@ class PluginManager(analitico.plugin.IPluginManager):
         plugin_settings = {
             "type": "analitico/plugin",
             "name": "analitico.plugin.CsvDataframeSourcePlugin",
-            "source": {"type": "text/csv", "url": self.endpoint + "datasets/" + dataset_id + "/data/data.csv"},
+            "source": {"type": "text/csv", "url": "analitico://datasets/{}/data/csv".format(dataset_id)},
         }
         # Instead of creating a plugin that reads the end product of the dataset
         # pipeline we should consider reading the dataset information from its endpoint,
         # getting the entire plugin chain and recreating it here exactly the same so it
-        # can be run in Jupyter, etc.
+        # can be run in Jupyter with all its plugins, etc.
         plugin = self.create_plugin(**plugin_settings)
         return Dataset(self, plugin=plugin)

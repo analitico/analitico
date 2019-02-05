@@ -6,6 +6,8 @@ import shutil
 import urllib.request
 import re
 import requests
+import json
+import tempfile
 
 import urllib.parse
 from urllib.parse import urlparse
@@ -92,16 +94,15 @@ class IPluginManager(ABC, AttributeMixin):
         """
         # temporarily while all internal urls are updated to analitico://
         if url.startswith("workspaces/ws_"):
-            url = "analitico://" + url
+            url = ANALITICO_PREFIX + url
 
         # see if assets uses analitico://workspaces/... scheme
-        match = re.match(self.ANALITICO_ASSET_RE, url)
-        if match:
+        if url.startswith("analitico://"):
             if not self.endpoint:
                 raise PluginError(
                     "Plugin manager was not been configured with an API endpoint therefore it cannot process: " + url
                 )
-            url = self.endpoint + url[match.end() :]
+            url = self.endpoint + url[len("analitico://") :]
         return url
 
     def get_url_stream(self, url):
@@ -123,6 +124,14 @@ class IPluginManager(ABC, AttributeMixin):
             response = requests.get(url, stream=True, headers=headers)
             return response.raw
         return open(url, "rb")
+
+    def get_url_json(self, url):
+        url_stream = self.get_url_stream(url)
+        with tempfile.NamedTemporaryFile() as tf:
+            for b in url_stream:
+                tf.write(b)
+            tf.seek(0)
+            return json.load(tf)
 
     ##
     ## Factory methods
@@ -220,6 +229,26 @@ class IDataframePlugin(IPlugin):
     """
     A plugin that takes a pandas dataframe as input,
     manipulates it and returns a pandas dataframe
+    """
+
+    class Meta(IPlugin.Meta):
+        inputs = [{"name": "dataframe", "type": "pandas.DataFrame"}]
+        outputs = [{"name": "dataframe", "type": "pandas.DataFrame"}]
+
+    def run(self, *args, **kwargs) -> pandas.DataFrame:
+        assert isinstance(args[0], pandas.DataFrame)
+        return args[0]
+
+
+##
+## IRecipePlugin - base class for machine learning recipes that can produce trained models
+##
+
+
+class IRecipePlugin(IPlugin):
+    """
+    A plugin that takes a pandas dataframe as input including labels
+    and train a model or a pandas dataframe and run predictions based on a trained model
     """
 
     class Meta(IPlugin.Meta):

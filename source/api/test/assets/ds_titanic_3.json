@@ -14,7 +14,7 @@
 			"source": {
 				"content_type": "text/csv",
 				"notes": "url below is loaded during unit testing...",
-				"url": "analitico://workspaces/ws_samples/datasets/ds_titanic_3/assets/titanic_1.csv"
+				"url": "analitico://datasets/ds_titanic_3/assets/titanic_1.csv"
 			}
 		}
 	}

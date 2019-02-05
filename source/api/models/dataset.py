@@ -93,7 +93,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                             plugin_settings = {
                                 "type": "analitico/plugin",
                                 "name": "analitico.plugin.CsvDataframeSourcePlugin",
-                                "source": {"content_type": "text/csv", "url": asset["path"]},
+                                "source": {"content_type": "text/csv", "url": asset["url"]},
                             }
                             new_plugin = True
                             self.set_attribute("plugin", plugin_settings)

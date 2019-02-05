@@ -33,7 +33,7 @@ class DatasetTests(APITestCase):
         url = reverse("api:dataset-asset-detail", args=(dataset_id, asset_class, asset_name))
         response = self._upload_file(url, asset_name, "text/csv", token=self.token1)
         self.assertEqual(response.data[0]["id"], asset_name)
-        path = "analitico://workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
+        path = "workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
         self.assertEqual(response.data[0]["path"], path)
         return url, response
 
@@ -153,7 +153,8 @@ class DatasetTests(APITestCase):
         self.assertEqual(meta["content_type"], "text/csv")
         self.assertEqual(meta["filename"], "data.csv")
         self.assertEqual(meta["id"], "data.csv")
-        self.assertEqual(meta["path"], "analitico://workspaces/ws_samples/datasets/ds_titanic_2/data/data.csv")
+        self.assertEqual(meta["path"], "workspaces/ws_samples/datasets/ds_titanic_2/data/data.csv")
+        self.assertEqual(meta["url"], "analitico://datasets/ds_titanic_2/data/data.csv")
 
     def test_dataset_job_action_process_csv_from_analitico_asset(self):
         """ Test uploading csv then requesting to process it and checking that it completed """
@@ -205,7 +206,8 @@ class DatasetTests(APITestCase):
         self.assertEqual(meta["content_type"], "text/csv")
         self.assertEqual(meta["filename"], "data.csv")
         self.assertEqual(meta["id"], "data.csv")
-        self.assertEqual(meta["path"], "analitico://workspaces/ws_samples/datasets/ds_titanic_4/data/data.csv")
+        self.assertEqual(meta["path"], "workspaces/ws_samples/datasets/ds_titanic_4/data/data.csv")
+        self.assertEqual(meta["url"], "analitico://datasets/ds_titanic_4/data/data.csv")
         self.assertTrue("schema" in meta)
         self.assertEqual(len(meta["schema"]["columns"]), 12)
 

@@ -8,10 +8,6 @@ import libcloud.storage.base
 import libcloud.storage.types
 import libcloud.storage.drivers.google_storage
 
-# url schema and prefix used for assets in storage
-STORAGE_SCHEMA = "analitico"
-STORAGE_PREFIX = "analitico://"
-
 # Storage options are configured from json blobs looking like this:
 # {
 #   "driver": "google-storage",
@@ -91,18 +87,11 @@ class Storage:
         except Exception as exc:
             raise exc
 
-    def _remove_schema(self, url):
-        """ Removes analitico:// schema and returns straigh storage path """
-        if url and url.startswith(STORAGE_PREFIX):
-            return url[len(STORAGE_PREFIX) :]
-        return url
-
     def upload_object(self, file_path, object_name, extra=None, headers=None):
         """ 
         Upload an object currently located on a disk. 
         https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.upload_object
         """
-        object_name = self._remove_schema(object_name)
         upload_obj = self.driver.upload_object(file_path, self.container, object_name, extra, headers)
         return upload_obj
 
@@ -111,9 +100,7 @@ class Storage:
         Upload an object using an iterator.
         https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.upload_object_via_stream
         """
-        object_name = self._remove_schema(object_name)
         storage_obj = self.driver.upload_object_via_stream(iterator, self.container, object_name, extra, headers)
-        storage_obj.name = STORAGE_PREFIX + storage_obj.name
         return storage_obj
 
     def download_object_via_stream(self, object_name, chunk_size=None):
@@ -122,8 +109,7 @@ class Storage:
         https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.download_object_as_stream
         """
         try:
-            clean_object_name = self._remove_schema(object_name)
-            storage_obj = self.driver.get_object(self.container.name, clean_object_name)
+            storage_obj = self.driver.get_object(self.container.name, object_name)
             return storage_obj, self.driver.download_object_as_stream(storage_obj, chunk_size)
         except Exception as exc:
             raise StorageError("Storage.download_object_via_stream - error while downloading " + object_name, exc)
@@ -133,6 +119,5 @@ class Storage:
         Deletes a storage object, returns true if successfull.
         https://libcloud.readthedocs.io/en/latest/storage/api.html#libcloud.storage.base.StorageDriver.delete_object
         """
-        object_name = self._remove_schema(object_name)
         storage_obj = self.driver.get_object(self.container.name, object_name)
         return self.driver.delete_object(storage_obj)

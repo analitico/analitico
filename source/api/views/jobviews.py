@@ -61,6 +61,7 @@ class JobSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 ## JobViewSetMixin - endpoints for creating jobs attached to an item, eg: train a model
 ##
 
+
 class JobViewSetMixin:
     """
     This is a mixin used by other viewsets like WorkspaceViewSet and DatasetViewSet.
