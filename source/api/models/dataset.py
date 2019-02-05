@@ -82,22 +82,25 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
         try:
             # process action runs plugin to generate and save data.csv and its schema
             if job.action == "dataset/process":
-                plugin = self.get_attribute("plugin")
+                plugin_settings = self.get_attribute("plugin")
+                new_plugin = False
 
                 # if dataset doesn't have a plugin we can initialize it with a simple csv reader
-                if not plugin and self.assets:
+
+                if not plugin_settings and self.assets:
                     for asset in self.assets:
                         if asset.get("content_type") == "text/csv" or asset["path"].endswith(".csv"):
-                            plugin = {
+                            plugin_settings = {
                                 "type": "analitico/plugin",
                                 "name": "analitico.plugin.CsvDataframeSourcePlugin",
                                 "source": {"content_type": "text/csv", "url": asset["path"]},
                             }
-                            self.set_attribute("plugin", plugin)
+                            new_plugin = True
+                            self.set_attribute("plugin", plugin_settings)
                             break
 
-                if plugin:
-                    plugin = runner.create_plugin(**plugin)
+                if plugin_settings:
+                    plugin = runner.create_plugin(**plugin_settings)
                     directory = runner.get_artifacts_directory()
 
                     # process will produce pandas dataframe
@@ -111,6 +114,11 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                     schema = analitico.dataset.Dataset.generate_schema(df)
                     csv_info_path = csv_path + ".info"
                     analitico.utilities.save_json({"schema": schema}, csv_info_path)
+
+                    if new_plugin:
+                        # apply derived schema as a starting schema which
+                        # users will then customize and change, etc.
+                        plugin_settings["source"]["schema"] = schema
 
             self.save()
         except Exception as exc:

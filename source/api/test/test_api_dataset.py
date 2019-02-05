@@ -16,6 +16,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
 
+import analitico.plugin
 import api.models
 from api.models import Job
 from .utils import APITestCase
@@ -168,3 +169,42 @@ class DatasetTests(APITestCase):
         job_data = job_response.data
         self.assertEqual(job_response.status_code, 200)
         self.assertEqual(job_data["attributes"]["status"], "completed")
+
+    def test_dataset_job_action_process_csv_with_no_plugins(self):
+        """ Test uploading csv then requesting to process it and checking that a plugin is created and schema filled """
+        # upload titanic_1.csv
+        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
+        ds_asset = asset_response.data[0]
+        self.assertEqual(ds_asset["id"], "titanic_1.csv")
+
+        # request dataset job processing (dataset has 1 csv asset and no plugins)
+        job_url = reverse("api:dataset-job-detail", args=("ds_titanic_4", "process"))
+        job_response = self.client.post(job_url, format="json")
+        job_data = job_response.data
+        self.assertEqual(job_response.status_code, 200)
+        self.assertEqual(job_data["attributes"]["status"], "completed")
+
+        # check dataset, now it should have an automatically created plugin + schema
+        ds_url = reverse("api:dataset-detail", args=("ds_titanic_4",))
+        ds_response = self.client.get(ds_url, format="json")
+        ds_data = ds_response.data
+        self.assertTrue("plugin" in ds_data["attributes"])
+        ds_plugin = ds_data["attributes"]["plugin"]
+        self.assertEqual(ds_plugin["type"], "analitico/plugin")
+        self.assertEqual(ds_plugin["name"], analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN)
+        self.assertEqual(ds_plugin["source"]["content_type"], "text/csv")
+        ds_schema = ds_plugin["source"]["schema"]
+        self.assertEqual(len(ds_schema["columns"]), 12)
+
+        # retrieve data.csv (output) info and check for schema
+        meta_url = reverse("api:dataset-asset-detail-info", args=("ds_titanic_4", "data", "data.csv"))
+        meta_response = self.client.get(meta_url)
+        self.assertEqual(meta_response["Content-Type"], "application/json")
+        self.assertIsNotNone(meta_response.data)
+        meta = meta_response.data
+        self.assertEqual(meta["content_type"], "text/csv")
+        self.assertEqual(meta["filename"], "data.csv")
+        self.assertEqual(meta["id"], "data.csv")
+        self.assertEqual(meta["path"], "analitico://workspaces/ws_samples/datasets/ds_titanic_4/data/data.csv")
+        self.assertTrue("schema" in meta)
+        self.assertEqual(len(meta["schema"]["columns"]), 12)
