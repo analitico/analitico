@@ -208,3 +208,64 @@ class DatasetTests(APITestCase):
         self.assertEqual(meta["path"], "analitico://workspaces/ws_samples/datasets/ds_titanic_4/data/data.csv")
         self.assertTrue("schema" in meta)
         self.assertEqual(len(meta["schema"]["columns"]), 12)
+
+    def test_dataset_upoload_process_data(self):
+        """ Test uploading csv then requesting to process it with data/process endpoint """
+        # upload titanic_1.csv
+        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
+        ds_asset = asset_response.data[0]
+        self.assertEqual(ds_asset["id"], "titanic_1.csv")
+
+        # request dataset job processing (dataset has 1 csv asset and no plugins)
+        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",))
+        job_response = self.client.post(job_url, format="json")
+        job_data = job_response.data
+        self.assertEqual(job_response.status_code, 200)
+        self.assertEqual(job_data["attributes"]["status"], "completed")
+
+    def test_dataset_upload_process_data_get_csv(self):
+        """ Test uploading csv, processing, downloading csv """
+        # upload and process titanic_1.csv
+        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
+        ds_asset = asset_response.data[0]
+        self.assertEqual(ds_asset["id"], "titanic_1.csv")
+
+        # request dataset job processing (dataset has 1 csv asset and no plugins)
+        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",))
+        job_response = self.client.post(job_url, format="json")
+        job_data = job_response.data
+        self.assertEqual(job_response.status_code, 200)
+        self.assertEqual(job_data["attributes"]["status"], "completed")
+
+        # request data download, check that it is streaming
+        csv_url = reverse("api:dataset-detail-data-csv", args=("ds_titanic_4",))
+        csv_response = self.client.get(csv_url)
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertTrue(csv_response.streaming)
+        csv = csv_response.streaming_content
+        csv_data = csv_response.getvalue().decode("utf-8")
+        # note that csv header starts with PassengerId because pandas implicit index was not saved (by design)
+        csv_header = "PassengerId,Survived,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked\n"
+        self.assertTrue(csv_data.startswith(csv_header))
+
+    def test_dataset_upload_process_data_get_info(self):
+        """ Test uploading csv, processing, downloading info on csv """
+        # upload and process titanic_1.csv
+        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
+        ds_asset = asset_response.data[0]
+        self.assertEqual(ds_asset["id"], "titanic_1.csv")
+
+        # request dataset job processing (dataset has 1 csv asset and no plugins)
+        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",))
+        job_response = self.client.post(job_url, format="json")
+        job_data = job_response.data
+        self.assertEqual(job_response.status_code, 200)
+        self.assertEqual(job_data["attributes"]["status"], "completed")
+
+        # request information on data, check schema is present
+        info_url = reverse("api:dataset-detail-data-info", args=("ds_titanic_4",))
+        info_response = self.client.get(info_url)
+        self.assertEqual(info_response.status_code, 200)
+        self.assertFalse(info_response.streaming)
+        info_data = info_response.data
+        self.assertEqual(len(info_data["schema"]["columns"]), 12)
