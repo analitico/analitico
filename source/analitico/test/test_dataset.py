@@ -4,7 +4,7 @@ import pandas as pd
 
 from analitico.dataset import Dataset
 
-from .mixin import TestMixin
+from .testmixin import TestMixin
 
 # pylint: disable=no-member
 

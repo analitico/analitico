@@ -2,10 +2,6 @@ import collections
 
 from analitico.utilities import get_dict_dot, set_dict_dot
 
-##
-## AttributesMixin
-##
-
 
 class AttributesMixin:
     """

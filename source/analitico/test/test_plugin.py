@@ -12,7 +12,7 @@ from analitico.plugin import CsvDataframeSourcePlugin, CSV_DATAFRAME_SOURCE_PLUG
 from analitico.plugin import CODE_DATAFRAME_PLUGIN
 from analitico.plugin import PipelinePlugin, PIPELINE_PLUGIN
 
-from .mixin import TestMixin
+from .testmixin import TestMixin
 
 # pylint: disable=no-member
 

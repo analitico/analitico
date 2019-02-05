@@ -30,7 +30,7 @@ class MyClass3(analitico.mixin.AttributesMixin):
         self.mickey = mickey
 
 
-class MixinTests(unittest.TestCase):
+class AttributesMixinTests(unittest.TestCase):
     """ Unit testing for mixin classes """
 
     def test_mixin_attributes(self):
