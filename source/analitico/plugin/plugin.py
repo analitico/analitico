@@ -14,14 +14,14 @@ from abc import ABC, abstractmethod
 # Design patterns:
 # https://github.com/faif/python-patterns
 
-from analitico.mixin import AttributesMixin
+from analitico.mixin import AttributeMixin
 
 ##
 ## IPluginManager
 ##
 
 
-class IPluginManager(ABC, AttributesMixin):
+class IPluginManager(ABC, AttributeMixin):
     """ A base abstract class for a plugin lifecycle manager and runtime environment """
 
     # Authorization token to be used when calling analitico APIs
@@ -151,7 +151,7 @@ class IPluginManager(ABC, AttributesMixin):
 ##
 
 
-class IPlugin(ABC, AttributesMixin):
+class IPlugin(ABC, AttributeMixin):
     """ Abstract base class for Analitico plugins """
 
     class Meta:

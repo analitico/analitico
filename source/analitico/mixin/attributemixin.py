@@ -3,7 +3,7 @@ import collections
 from analitico.utilities import get_dict_dot, set_dict_dot
 
 
-class AttributesMixin:
+class AttributeMixin:
     """
     A simple mixin to implement a class with configurable attributes
 

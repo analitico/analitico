@@ -22,101 +22,8 @@ from rest_framework import status
 from api.models import ItemMixin, Job
 from analitico.utilities import logger
 
-# Django Serializers
-# https://www.django-rest-framework.org/api-guide/serializers/
-# Django ViewSet
-# https://www.django-rest-framework.org/api-guide/viewsets/
-# Examples of url patterns:
-# https://simpleisbetterthancomplex.com/references/2016/10/10/url-patterns.html
-
-
-class AttributesSerializerMixin:
-    """
-    A serializer for a generic model which is used to store different kinds of objects. All of them
-    have a few fields in common while the rest of the payload is stored in 'json', a dictionary.
-    This allows easy extension without having to refactor the SQL storage continuosly and introduce
-    new migrations and releases. Also different versions can coexist and ignore extra data.
-    """
-
-    def get_item_url(self, item):
-        """ Returns absolute url to given asset using the same endpoint the request came in through """
-        url = reverse("api:" + item.type + "-detail", args=(item.id,))
-        request = self.context.get("request")
-        if request:
-            url = request.build_absolute_uri(url)
-        return url
-
-    def get_item_asset_url(self, item, asset_class, asset_id):
-        """ Returns absolute url to given item's asset """
-        url = reverse("api:" + item.type + "-asset-detail", args=(item.id, asset_class, asset_id))
-        request = self.context.get("request")
-        if request:
-            url = request.build_absolute_uri(url)
-        return url
-
-    def get_item_links(self, item):
-        """ Returns link to item and related assets in a json:api compliant dictionary """
-        links = {"self": self.get_item_url(item)}
-        if item.workspace:
-            links["workspace"] = self.get_item_url(item.workspace)
-        for asset_class in ("assets", "data"):
-            assets = item.get_attribute(asset_class)
-            if assets:
-                for asset in assets:
-                    asset_url = self.get_item_asset_url(item, asset_class, asset["id"])
-                    links[asset_class + "/" + asset["id"]] = asset_url
-        return links
-
-    def to_representation(self, item):
-        """ Serialize object to dictionary, extracts all json key to main level """
-        data = super().to_representation(item)
-        reformatted = {"type": item.type, "id": data.pop("id"), "attributes": data}
-
-        # add additional attributes from json dict
-        if item.attributes:
-            for key in item.attributes:
-                data[key] = item.attributes[key]
-
-        # add link to self
-        reformatted["links"] = {"self": self.get_item_url(item)}
-
-        # add links to /assets and /data
-        for asset_class in ("assets", "data"):
-            if asset_class in data:
-                for asset in data[asset_class]:
-                    asset["url"] = self.get_item_asset_url(item, asset_class, asset["id"])
-
-        return reformatted
-
-    def to_internal_value(self, data):
-        """ Convert dictionary to internal representation (all unknown fields go into json) """
-        # If this payload is in json:api format it will have a 'data'
-        # element which contains the actual payload. If in json format
-        # it will just have a regular dictionary with the data directly in it
-        if "data" in data:
-            data = data["data"]
-
-        # works with input in json:api style (attributes) or flat json
-        attributes = data.pop("attributes") if "attributes" in data else data.copy()
-
-        for (key, _) in self.fields.fields.items():
-            if key in attributes:
-                data[key] = attributes.pop(key)
-
-        # Perform the data validation, eg:
-        # if not blabla:
-        #    raise serializers.ValidationError({
-        #        'blabla': 'This field is required.'
-        #    })
-        # Use regular serializer for everything but the json contents which go as-is
-        validated = super().to_internal_value(data)
-        validated["attributes"] = attributes
-        # Return the validated values which will be available as `.validated_data`.
-        return validated
-
-
 ##
-## AssetsViewSetMixin - a mixin for uploading and downloading assets
+## AssetViewSetMixin - a mixin for uploading and downloading assets
 ##
 
 # /assets or /data
@@ -127,7 +34,7 @@ ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256}\.[\w]{
 ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256}\.[\w]{1,12})/info$"
 
 
-class AssetsViewSetMixin:
+class AssetViewSetMixin:
     """
     This is a mixin used by other viewsets like WorkspaceViewSet and DatasetViewSet.
     It provides the endpoint and methods needed to upload, update, download and delete
@@ -259,49 +166,3 @@ class AssetsViewSetMixin:
         item = self.get_object()
         asset, _ = item._download_asset_stream(asset_class, asset_id)
         return Response(asset)
-
-
-##
-## JobsViewSetMixin - endpoints for creating jobs attached to an item, eg: train a model
-##
-
-from .jobviews import JobSerializer
-
-
-class JobsViewSetMixin:
-    """
-    This is a mixin used by other viewsets like WorkspaceViewSet and DatasetViewSet.
-    It provides the endpoint and methods needed to create jobs that are applied to the item,
-    for example create a job that will process a dataset or train a model.
-    The mixin also lets you list jobs attached to the item or see the status of a specific job.
-    """
-
-    # defined in subclass to list acceptable actions
-    job_actions = ()
-
-    def _create_job(self, request, job_item, job_action):
-        workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
-        job_action = job_item.type + "/" + job_action
-        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=Job.JOB_STATUS_RUNNING)
-        job.save()
-        job.run(request)
-        return job
-
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
-    def job_list(self, request, pk) -> Response:
-        """ Returns a listing of all jobs associated with this item. """
-        jobs = Job.objects.filter(item_id=pk)
-        jobs_serializer = JobSerializer(jobs, many=True)
-        return Response(jobs_serializer.data)
-
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["post"], detail=True, url_name="job-detail", url_path=r"jobs/(?P<job_action>[-\w.]{4,256})$")
-    def job_create(self, request, pk, job_action) -> Response:
-        """ Creates a job for this item and returns it. """
-        job_item = self.get_object()
-        if job_action in self.job_actions:
-            job = self._create_job(request, job_item, job_action)
-            jobs_serializer = JobSerializer(job)
-            return Response(jobs_serializer.data)
-        raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)

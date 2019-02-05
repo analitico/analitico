@@ -12,7 +12,9 @@ import api.models
 import api.utilities
 
 from api.models import Dataset, Job
-from .mixins import AssetsViewSetMixin, AttributesSerializerMixin, JobsViewSetMixin
+from .attributeserializermixin import AttributeSerializerMixin
+from .assetviewsetmixin import AssetViewSetMixin
+from .jobviews import JobViewSetMixin
 
 
 ##
@@ -20,7 +22,7 @@ from .mixins import AssetsViewSetMixin, AttributesSerializerMixin, JobsViewSetMi
 ##
 
 
-class DatasetSerializer(AttributesSerializerMixin, serializers.ModelSerializer):
+class DatasetSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
     """ Serializer for Dataset model """
 
     class Meta:
@@ -33,7 +35,7 @@ class DatasetSerializer(AttributesSerializerMixin, serializers.ModelSerializer):
 ##
 
 
-class DatasetViewSet(AssetsViewSetMixin, JobsViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class DatasetViewSet(AssetViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """
     A dataset model is used to store information on a dataset which is a plugin
     or collection of plugins that can extract, transform and load (ETL) a data source

@@ -3,13 +3,13 @@ import unittest
 import analitico.mixin
 
 
-class MyClass1(analitico.mixin.AttributesMixin):
+class MyClass1(analitico.mixin.AttributeMixin):
     """ Class has no __init__ method """
 
     pass
 
 
-class MyClass2(analitico.mixin.AttributesMixin):
+class MyClass2(analitico.mixin.AttributeMixin):
     """ Class with passthrough init method """
 
     mickey = "empty"
@@ -20,7 +20,7 @@ class MyClass2(analitico.mixin.AttributesMixin):
         self.mickey = mickey
 
 
-class MyClass3(analitico.mixin.AttributesMixin):
+class MyClass3(analitico.mixin.AttributeMixin):
     """ Class with no passthrough init method """
 
     mickey = "empty"
@@ -34,7 +34,7 @@ class AttributesMixinTests(unittest.TestCase):
     """ Unit testing for mixin classes """
 
     def test_mixin_attributes(self):
-        """ Basic basic functionality of AttributesMixin """
+        """ Basic basic functionality of AttributeMixin """
         obj1 = MyClass1(mickey="smart", goofy="funny", minnie="cute")
 
         self.assertEqual(obj1.mickey, "smart")
@@ -42,14 +42,14 @@ class AttributesMixinTests(unittest.TestCase):
         self.assertEqual(obj1.minnie, "cute")
 
     def test_mixin_attributes_missing_attribute(self):
-        """ Basic missing attribute in AttributesMixin """
+        """ Basic missing attribute in AttributeMixin """
         obj1 = MyClass1(mickey="smart", goofy="funny", minnie="cute")
 
         with self.assertRaises(AttributeError):
             var1 = obj1.pinocchio
 
     def test_mixin_attributes_init_passthrough(self):
-        """ Basic passthrough initialization of AttributesMixin """
+        """ Basic passthrough initialization of AttributeMixin """
         obj1 = MyClass2(mickey="smart", goofy="funny", minnie="cute")
 
         self.assertEqual(obj1.mickey, "smart")
@@ -61,7 +61,7 @@ class AttributesMixinTests(unittest.TestCase):
             var1 = obj1.pinocchio
 
     def test_mixin_attributes_init_no_passthrough(self):
-        """ Basic passthrough initialization of AttributesMixin """
+        """ Basic passthrough initialization of AttributeMixin """
         obj1 = MyClass3(mickey="smart", goofy="funny", minnie="cute")
         self.assertEqual(obj1.mickey, "smart")
 

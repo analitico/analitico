@@ -1,1 +1,1 @@
-from .attributesmixin import AttributesMixin
+from .attributemixin import AttributeMixin

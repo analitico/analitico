@@ -2,23 +2,23 @@
 Views and ViewSets for API models
 """
 
-from django.core.exceptions import ObjectDoesNotExist
 import rest_framework
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
-
-from analitico.utilities import logger, get_dict_dot
 
 import api.models
 import api.utilities
+from analitico.utilities import logger, get_dict_dot
 from api.models import Workspace, Dataset
-from .mixins import AttributesSerializerMixin, AssetsViewSetMixin
+from .attributeserializermixin import AttributeSerializerMixin
+from .assetviewsetmixin import AssetViewSetMixin
 
 ##
 ## WorkspaceSerializer
 ##
 
 
-class WorkspaceSerializer(AttributesSerializerMixin, serializers.ModelSerializer):
+class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
     """ Serializer for Workspace model """
 
     class Meta:
@@ -75,7 +75,7 @@ class WorkspaceSerializer(AttributesSerializerMixin, serializers.ModelSerializer
 ## pylint: disable=no-member
 
 
-class WorkspaceViewSet(AssetsViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class WorkspaceViewSet(AssetViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ 
     List, detail, create, update and delete machine learning project trainings
 
@@ -89,9 +89,6 @@ class WorkspaceViewSet(AssetsViewSetMixin, rest_framework.viewsets.ModelViewSet)
 
     item_class = api.models.Workspace
     serializer_class = WorkspaceSerializer
-
-    help_text = "help text viewset"
-    label = "viewset label"
 
     def get_queryset(self):
         if self.request.user.is_authenticated:

@@ -2,7 +2,7 @@ from .tokenviews import TokenSerializer, TokenViewSet
 from .projectviews import ProjectSerializer, ProjectViewSet
 from .trainingviews import TrainingViewSet
 
-from .mixins import AttributesSerializerMixin
+from .attributeserializermixin import AttributeSerializerMixin
 
 from .workspaceviews import WorkspaceViewSet
 from .datasetviews import DatasetViewSet

@@ -162,7 +162,7 @@ class Job(ItemMixin, models.Model):
     # Time when last updated
     updated_at = models.DateTimeField(auto_now=True, verbose_name="updated")
 
-    # Additional attributes are stored as json (used by AttributesMixin)
+    # Additional attributes are stored as json (used by AttributeMixin)
     attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
 
     ##

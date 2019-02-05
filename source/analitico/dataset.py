@@ -11,7 +11,7 @@ from analitico.utilities import pandas_to_analitico_type
 ##
 
 
-class Dataset(analitico.mixin.AttributesMixin):
+class Dataset(analitico.mixin.AttributeMixin):
     """ A dataset can retrieve data from a source and process it through a pipeline to generate a dataframe """
 
     plugin: analitico.plugin.IPlugin = None
