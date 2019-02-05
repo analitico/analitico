@@ -107,8 +107,11 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                     df = plugin.run()
 
                     # save dataframe as data.csv
+                    # we will save the index column only if it is named
+                    # and it was created explicitely
                     csv_path = os.path.join(directory, "data.csv")
-                    df.to_csv(csv_path)
+                    index = bool(df.index.name)
+                    df.to_csv(csv_path, index=index)
 
                     # save schema as data.csv.info
                     schema = analitico.dataset.Dataset.generate_schema(df)
