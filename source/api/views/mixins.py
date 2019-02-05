@@ -119,9 +119,12 @@ class AttributesSerializerMixin:
 ## AssetsViewSetMixin - a mixin for uploading and downloading assets
 ##
 
+# /assets or /data
 ASSET_CLASS_RE = r"(?P<asset_class>(assets|data))$"
-ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256})$"
-ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256})/info$"
+# /assets or /data plus a filename with extension
+ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256}\.[\w]{1,12})$"
+# /assets or /data plus a filename with extension and /info
+ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256}\.[\w]{1,12})/info$"
 
 
 class AssetsViewSetMixin:

@@ -3,7 +3,10 @@ Views and ViewSets for API models
 """
 
 import rest_framework
+
 from rest_framework import serializers
+from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 import api.models
 import api.utilities
@@ -50,3 +53,18 @@ class DatasetViewSet(AssetsViewSetMixin, JobsViewSetMixin, rest_framework.viewse
         if self.request.user.is_superuser:
             return Dataset.objects.all()
         return Dataset.objects.filter(workspace__user=self.request.user)
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["post"], detail=True, url_name="detail-data-process", url_path="data/process")
+    def data_process(self, request, pk):
+        return self.job_create(request, pk, "process")
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get"], detail=True, url_name="detail-data-csv", url_path="data/csv")
+    def data_csv(self, request, pk):
+        return self.asset_detail(request, pk, "data", "data.csv")
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get"], detail=True, url_name="detail-data-info", url_path="data/info")
+    def data_info(self, request, pk):
+        return self.asset_detail_info(request, pk, "data", "data.csv")
