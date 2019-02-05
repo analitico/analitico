@@ -80,25 +80,11 @@ try:
         "138.201.196.111",  # s1.analitico.ai
         "78.46.46.165",  # s2.analitico.ai
         "159.69.242.143",  # s5.analitico.ai
+        "analitico.test" # for local testing
     ]
 
     # Disable maximum upload size
     DATA_UPLOAD_MAX_MEMORY_SIZE = None
-
-    # Allow preflight OPTION request from these origins
-    CORS_ORIGIN_WHITELIST = (
-        "app.analitico.ai",
-        "app-staging.analitico.ai",
-        "app-local.analitico.ai",
-        "lab.analitico.ai",
-        "lab-staging.analitico.ai",
-    )
-
-    # Allow passing cookies into CORS request (e.g. session cookie)
-    CORS_ALLOW_CREDENTIALS = True
-
-    # set the session cookie for all subdomains of analitico.ai
-    SESSION_COOKIE_DOMAIN = "analitico.ai"
 
     # Application definition
     INSTALLED_APPS = [
@@ -124,11 +110,9 @@ try:
         "allauth.socialaccount.providers.google",
         "allauth.socialaccount.providers.github",
         "allauth.socialaccount.providers.windowslive",
-        "corsheaders",
     ]
 
     MIDDLEWARE = [
-        "corsheaders.middleware.CorsMiddleware",
         "django.middleware.security.SecurityMiddleware",
         "django.contrib.sessions.middleware.SessionMiddleware",
         "django.middleware.common.CommonMiddleware",
