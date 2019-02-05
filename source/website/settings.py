@@ -80,7 +80,7 @@ try:
         "138.201.196.111",  # s1.analitico.ai
         "78.46.46.165",  # s2.analitico.ai
         "159.69.242.143",  # s5.analitico.ai
-        "analitico.test" # for local testing
+        "analitico.test",  # for local testing
     ]
 
     # Disable maximum upload size
