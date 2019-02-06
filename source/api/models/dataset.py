@@ -85,15 +85,22 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                 plugin_settings = self.get_attribute("plugin")
                 new_plugin = False
 
-                # if dataset doesn't have a plugin we can initialize it with a simple csv reader
-
+                # if the dataset doesn't have a plugin we can initialize it with a dataset pipeline
+                # which initially will contain a single plugin to read the source data from csv
+                # and may later on be extended to do other data transformations tasks
                 if not plugin_settings and self.assets:
                     for asset in self.assets:
                         if asset.get("content_type") == "text/csv" or asset["path"].endswith(".csv"):
                             plugin_settings = {
-                                "type": "analitico/plugin",
-                                "name": "analitico.plugin.CsvDataframeSourcePlugin",
-                                "source": {"content_type": "text/csv", "url": asset["url"]},
+                                "type": analitico.plugin.PLUGIN_TYPE,
+                                "name": analitico.plugin.DATAFRAME_PIPELINE_PLUGIN,
+                                "plugins": [
+                                    {
+                                        "type": analitico.plugin.PLUGIN_TYPE,
+                                        "name": analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN,
+                                        "source": {"content_type": "text/csv", "url": asset["url"]},
+                                    }
+                                ],
                             }
                             new_plugin = True
                             self.set_attribute("plugin", plugin_settings)
@@ -103,25 +110,14 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                     plugin = runner.create_plugin(**plugin_settings)
                     directory = runner.get_artifacts_directory()
 
-                    # process will produce pandas dataframe
+                    # process will produce pandas dataframe and create data.csv, data.csv.info
                     df = plugin.run()
-
-                    # save dataframe as data.csv
-                    # we will save the index column only if it is named
-                    # and it was created explicitely
-                    csv_path = os.path.join(directory, "data.csv")
-                    index = bool(df.index.name)
-                    df.to_csv(csv_path, index=index)
-
-                    # save schema as data.csv.info
-                    schema = analitico.dataset.Dataset.generate_schema(df)
-                    csv_info_path = csv_path + ".info"
-                    analitico.utilities.save_json({"schema": schema}, csv_info_path)
 
                     if new_plugin:
                         # apply derived schema as a starting schema which
                         # users will then customize and change, etc.
-                        plugin_settings["source"]["schema"] = schema
+                        schema = analitico.dataset.Dataset.generate_schema(df)
+                        plugin_settings["plugins"][0]["source"]["schema"] = schema
 
             self.save()
         except Exception as exc:

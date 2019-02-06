@@ -13,13 +13,15 @@ from .csvdataframesourceplugin import CsvDataframeSourcePlugin
 from .transforms import CodeDataframePlugin
 
 # plugin workflows
-from .groups import PipelinePlugin
-from .groups import GraphPlugin
+from .pipelineplugin import PipelinePlugin
+from .dataframepipelineplugin import DataframePipelinePlugin
+from .graphplugin import GraphPlugin
 
 # plugin names
 CSV_DATAFRAME_SOURCE_PLUGIN = CsvDataframeSourcePlugin.Meta.name
 CODE_DATAFRAME_PLUGIN = CodeDataframePlugin.Meta.name
 PIPELINE_PLUGIN = PipelinePlugin.Meta.name
+DATAFRAME_PIPELINE_PLUGIN = DataframePipelinePlugin.Meta.name
 GRAPH_PLUGIN = GraphPlugin.Meta.name
 
 # analitico type for plugins

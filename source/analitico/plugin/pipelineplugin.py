@@ -38,18 +38,3 @@ class PipelinePlugin(IGroupPlugin):
             if not isinstance(args, tuple):
                 args = (args,)
         return args if len(args) > 1 else args[0]
-
-
-##
-## GraphPlugin
-##
-
-
-class GraphPlugin(IGroupPlugin):
-    """ A plugin that can join a number of other plugins into a coordinated workflow. """
-
-    class Meta(IGroupPlugin.Meta):
-        name = "analitico.plugin.GraphPlugin"
-
-    def run(self, *args, **kwargs):
-        raise NotImplementedError()

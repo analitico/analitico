@@ -185,16 +185,23 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_response.status_code, 200)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
-        # check dataset, now it should have an automatically created plugin + schema
+        # check dataset, now it should have an automatically created dataset pipeline plugin + schema
         ds_url = reverse("api:dataset-detail", args=("ds_titanic_4",))
         ds_response = self.client.get(ds_url, format="json")
         ds_data = ds_response.data
         self.assertTrue("plugin" in ds_data["attributes"])
-        ds_plugin = ds_data["attributes"]["plugin"]
-        self.assertEqual(ds_plugin["type"], "analitico/plugin")
-        self.assertEqual(ds_plugin["name"], analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN)
-        self.assertEqual(ds_plugin["source"]["content_type"], "text/csv")
-        ds_schema = ds_plugin["source"]["schema"]
+        ds_pipe_plugin = ds_data["attributes"]["plugin"]
+        self.assertEqual(ds_pipe_plugin["type"], analitico.plugin.PLUGIN_TYPE)
+        self.assertEqual(ds_pipe_plugin["name"], analitico.plugin.DATAFRAME_PIPELINE_PLUGIN)
+
+        # inside the pipeline plugin we should have a csv source plugin
+        ds_csv_plugin = ds_pipe_plugin["plugins"][0]
+        self.assertEqual(ds_csv_plugin["type"], analitico.plugin.PLUGIN_TYPE)
+        self.assertEqual(ds_csv_plugin["name"], analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN)
+        self.assertEqual(ds_csv_plugin["source"]["content_type"], "text/csv")
+
+        # csv source should be prepopulated with schema
+        ds_schema = ds_csv_plugin["source"]["schema"]
         self.assertEqual(len(ds_schema["columns"]), 12)
 
         # retrieve data.csv (output) info and check for schema

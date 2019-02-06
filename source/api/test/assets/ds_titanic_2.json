@@ -1,20 +1,24 @@
 {
 	"type": "dataset",
 	"id": "ds_titanic_2",
-
 	"attributes": {
 		"workspace": "ws_samples",
 		"title": "Kaggle - Titanic training dataset (train.csv)",
 		"description": "https://www.kaggle.com/c/titanic",
 		"notes": "Basic plugin with external csv source that can be accessed via public url",
-
 		"plugin": {
 			"type": "analitico/plugin",
-			"name": "analitico.plugin.CsvDataframeSourcePlugin",
-			"source": {
-				"content_type": "text/csv",
-				"url": "https://storage.googleapis.com/public.analitico.ai/data/titanic/train.csv"
-			}
+			"name": "analitico.plugin.DataframePipelinePlugin",
+			"plugins": [
+				{
+					"type": "analitico/plugin",
+					"name": "analitico.plugin.CsvDataframeSourcePlugin",
+					"source": {
+						"content_type": "text/csv",
+						"url": "https://storage.googleapis.com/public.analitico.ai/data/titanic/train.csv"
+					}
+				}
+			]
 		}
 	}
 }
