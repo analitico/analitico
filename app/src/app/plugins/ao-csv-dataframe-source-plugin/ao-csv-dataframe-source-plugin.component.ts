@@ -11,9 +11,11 @@ import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
     styleUrls: ['./ao-csv-dataframe-source-plugin.component.css']
 })
 export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
+    uploadUrl = './assets';
 
     constructor() {
         super();
     }
+
 
 }

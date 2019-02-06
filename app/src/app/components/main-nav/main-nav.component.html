@@ -1,27 +1,26 @@
-<mat-sidenav-container class="sidenav-container">
-    <mat-sidenav #drawer class="sidenav" fixedInViewport="true"
-    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
-    [mode]="(isHandset$ | async) ? 'over' : 'side'"
-    [opened]="!(isHandset$ | async)">
-        <mat-toolbar (click)="drawer.close()">
-            <span class="ao-logo ao-logo-font ao-side-nav-logo">
-                <a routerLink="/">analitico<sup>ai</sup></a>
-            </span>
-        </mat-toolbar>
-        <!--<mat-nav-list (click)="drawer.close()"> -->
-        <app-ao-nav-list [url]="'/datasets'" title="Datasets"></app-ao-nav-list>
-    </mat-sidenav>
-    <mat-sidenav-content>
-        <mat-toolbar color="primary">
-            <button type="button" aria-label="Toggle sidenav" mat-icon-button (click)="drawer.toggle()">
-                <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
-            </button>
-            <span class="ao-logo ao-logo-font ao-main-nav-logo">
-                <a routerLink="/">analitico<sup>ai</sup></a>
-            </span>
-            <div class="ao-spacer"></div>
-            <a mat-mini-fab routerLink="/profile">{{ userInitial }}</a>
-        </mat-toolbar>
-        <ng-content (click)="drawer.close()"></ng-content>
-    </mat-sidenav-content>
-</mat-sidenav-container>
+<ng-container>
+    <mat-toolbar color="primary" class="ao-toolbar">
+        <button type="button" aria-label="Toggle sidenav" mat-icon-button (click)="drawer.toggle()">
+            <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+        </button>
+        <span class="ao-logo ao-logo-font ao-main-nav-logo">
+            <a routerLink="/">analitico<sup>ai</sup></a>
+        </span>
+        <div class="ao-spacer"></div>
+        <a mat-mini-fab routerLink="/profile">{{ userInitial }}</a>
+    </mat-toolbar>
+    <mat-sidenav-container class="sidenav-container">
+        <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'" [mode]="(isHandset$ | async) ? 'over' : 'side'"
+            [opened]="!(isHandset$ | async)">
+            <!--<mat-nav-list (click)="drawer.close()"> -->
+            <h3>Datasets</h3>
+            <input [(ngModel)]="datasetTitle" type="text">
+            <button (click)="createDataset()">new dataset</button>
+            <app-ao-nav-list [url]="'/datasets'" [filter]="datasetsFilter"></app-ao-nav-list>
+        </mat-sidenav>
+        <mat-sidenav-content>
+
+            <ng-content (click)="drawer.close()"></ng-content>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+</ng-container>

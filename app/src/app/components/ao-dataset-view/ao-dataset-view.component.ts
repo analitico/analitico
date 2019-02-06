@@ -8,6 +8,7 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
     templateUrl: './ao-dataset-view.component.html',
@@ -21,11 +22,13 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     viewContainerRef: ViewContainerRef;
     private pluginData: any;
     private saveTimeout: any;
-    private showSaved: boolean;
+    assetsUrl: string;
+
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
-        private pluginsService: AoPluginsService) {
+        private pluginsService: AoPluginsService,
+        private snackBar: MatSnackBar) {
         super(route, apiClient);
     }
     static hasPlugin(item): boolean {
@@ -37,15 +40,15 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
         this.viewContainerRef = this.aoAnchor.viewContainerRef;
     }
 
-
     onLoad() {
+        this.assetsUrl = '/datasets/' + this.item.id + '/assets';
         // clear the view
         this.viewContainerRef.clear();
-        if (this.item.attributes.title) {
-            this.title = this.item.attributes.title;
-        }
-        // check if we have at least one plugin
-        if (!AoDatasetViewComponent.hasPlugin(this.item)) {
+
+        this.title = (this.item.attributes && this.item.attributes.title) || this.item.id;
+
+        // create plugin if it does not exist
+        /* if (!AoDatasetViewComponent.hasPlugin(this.item)) {
             // add Pipeline plugin
             this.item.attributes.plugin = {
                 'type': 'analitico/plugin',
@@ -53,36 +56,43 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
                 'plugins': []
             };
             // save
-            return this.saveItem();
-        }
+            return this.saveItem()
+                .then(() => {
+                    this.onLoad();
+                });
+        } */
         this.loadPlugin();
-
     }
+
     // load the plugin
     loadPlugin() {
-        this.pluginData = this.item.attributes.plugin;
-        // find the class name of the plugin
-        const pluginName = this.pluginData.name.split('.')[2];
-        // get the plugin component
-        const plugin = this.pluginsService.getPlugin(pluginName);
-        // if we have found the plugin...
-        if (plugin) {
-            // get the plugin component factory
-            const componentFactory = this.componentFactoryResolver.resolveComponentFactory(plugin);
-            // add the component to the anchor view
-            const componentRef = this.viewContainerRef.createComponent(componentFactory);
-            (<IAoPluginInstance>componentRef.instance).pluginsService = this.pluginsService;
-            // get data subject
-            const instance = (<IAoPluginInstance>componentRef.instance);
-            // send data
-            instance.setData(this.pluginData);
-            // subscribe to update
-            instance.onNewDataSubject.subscribe(this.onNewData.bind(this));
+        if (AoDatasetViewComponent.hasPlugin(this.item)) {
+            // if we have a plugin
+            this.pluginData = this.item.attributes.plugin;
+            // find the class name of the plugin
+            const pluginName = this.pluginData.name.split('.')[2];
+            // get the plugin component
+            const plugin = this.pluginsService.getPlugin(pluginName);
+            // if we have found the plugin...
+            if (plugin) {
+                // get the plugin component factory
+                const componentFactory = this.componentFactoryResolver.resolveComponentFactory(plugin);
+                // add the component to the anchor view
+                const componentRef = this.viewContainerRef.createComponent(componentFactory);
+                (<IAoPluginInstance>componentRef.instance).pluginsService = this.pluginsService;
+                // get data subject
+                const instance = (<IAoPluginInstance>componentRef.instance);
+                // send data
+                instance.setData(this.pluginData);
+                // subscribe to update
+                instance.onNewDataSubject.subscribe(this.onNewData.bind(this));
+            }
         }
     }
 
     // called when the model is changed
     onNewData(): void {
+        // we want to wait a bit before saving
         this.checkIfNeedToSave();
     }
     // wait a bit before automatically saving changes to object
@@ -93,12 +103,8 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
         this.saveTimeout = setTimeout(this.saveItem.bind(this), 3000);
     }
 
-    hideSavedMessage() {
-        this.showSaved = false;
-    }
-
     onSaved() {
-        this.showSaved = true;
-        setTimeout(this.hideSavedMessage.bind(this), 2000);
+        // show a message
+        this.snackBar.open('Item has been saved', null, { duration: 3000 });
     }
 }

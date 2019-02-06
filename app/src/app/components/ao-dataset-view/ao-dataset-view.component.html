@@ -1,5 +1,22 @@
-<div class="text-center">
-        <h3>{{title}}<span *ngIf="showSaved">saved</span></h3>  
-        <ng-template app-ao-anchor></ng-template>
-      
-</div>
+<mat-sidenav-container class="sidenav-container">
+    <mat-sidenav-content>
+        <div class="ao-text-center">
+            <h4 class="mat-h4">{{title}}</h4>
+            <div class="ao-padding">
+                <ng-template app-ao-anchor></ng-template>
+            </div>
+        </div>
+        <div [fileUploadInputFor]="fileUploadQueue" class="ao-upload-drop-zone">
+            Just drag and drop files here
+        </div>
+
+    </mat-sidenav-content>
+    <mat-sidenav mode="side" position="end" [opened]="true" class="sidenav">
+        <app-ao-nav-list [url]="assetsUrl"></app-ao-nav-list>
+    </mat-sidenav>
+</mat-sidenav-container>
+
+
+<mat-file-upload-queue #fileUploadQueue class="ao-upload-queue" [fileAlias]="'file'" [httpUrl]="uploadUrl" multiple>
+    <mat-file-upload [file]="file" [id]="i" *ngFor="let file of fileUploadQueue.files; let i = index"></mat-file-upload>
+</mat-file-upload-queue>

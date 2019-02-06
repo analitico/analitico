@@ -7,7 +7,7 @@
     for example to construct ETL (extract, transform, load) workflows.
  */
 
-import { Component, OnInit, OnDestroy, ViewChild, ComponentFactoryResolver } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ComponentFactoryResolver, ViewContainerRef } from '@angular/core';
 import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
 import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
@@ -21,6 +21,7 @@ export class AoPipelinePluginComponent extends AoPluginComponent {
     // list of plugins of the pipeline
     plugins: any;
     pluginsService: any;
+    viewContainerRef: ViewContainerRef;
     // this is the object where we will insert the child components
     @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
     constructor(private componentFactoryResolver: ComponentFactoryResolver) {
@@ -37,6 +38,10 @@ export class AoPipelinePluginComponent extends AoPluginComponent {
 
     // loads all the plugins
     loadPlugins(): void {
+        // get the view of the anchor component
+        this.viewContainerRef = this.aoAnchor.viewContainerRef;
+        // clear the view
+        this.viewContainerRef.clear();
         this.plugins.forEach((pluginData, index) => {
             this.loadPlugin(pluginData, index);
         });
@@ -52,12 +57,8 @@ export class AoPipelinePluginComponent extends AoPluginComponent {
         if (plugin) {
             // get the plugin component factory
             const componentFactory = this.componentFactoryResolver.resolveComponentFactory(plugin);
-            // get the view of the anchor component
-            const viewContainerRef = this.aoAnchor.viewContainerRef;
-            // clear the view
-            viewContainerRef.clear();
             // add the component to the anchor view
-            const componentRef = viewContainerRef.createComponent(componentFactory);
+            const componentRef = this.viewContainerRef.createComponent(componentFactory);
             const instance = (<IAoPluginInstance>componentRef.instance);
             // send data
             instance.setData(pluginData);
@@ -68,6 +69,8 @@ export class AoPipelinePluginComponent extends AoPluginComponent {
         }
     }
 
+    // when we receive data change notifications we want to update the correspondent data model and pass
+    // the notification above
     onNewData(index: number, pluginData: any): void {
         // changed data in a specific plugin
         this.plugins[index] = pluginData;

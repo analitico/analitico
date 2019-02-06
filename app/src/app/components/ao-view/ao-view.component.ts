@@ -8,6 +8,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
+import { take } from 'rxjs/operators';
 
 @Component({
     selector: 'app-ao-view',
@@ -26,7 +27,8 @@ export class AoViewComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
-        this.urlSubscription = this.route.url.subscribe(this.onUrlChange.bind(this));
+        // take the first url value emitted which will be use as the base url
+        this.urlSubscription = this.route.url.pipe(take(1)).subscribe(this.onUrlChange.bind(this));
     }
 
     ngOnDestroy() {
@@ -49,7 +51,9 @@ export class AoViewComponent implements OnInit, OnDestroy {
     // When id change reload object
     onRouteChange(params: any) {
         if (!this.objectId || this.objectId !== params.id) {
-            this.loadItem(params.id);
+            this.objectId = params.id;
+            console.log('loading ' + this.objectId);
+            this.loadItem(this.objectId);
         }
     }
 
@@ -59,21 +63,34 @@ export class AoViewComponent implements OnInit, OnDestroy {
             .then((response: any) => {
                 this.item = response.data;
                 this.onLoad();
+            })
+            .catch((response) => {
+                /*if (response.status === 404) {
+                    window.location.href = this.baseUrl;
+                }*/
             });
     }
 
     saveItem() {
-        if (!this.item) {
-            throw new Error('missing item');
-        }
-        this.apiClient.patch(this.baseUrl + '/' + this.item.id, this.item)
-            .then((response: any) => {
-                this.item = response.data;
-                this.onSaved();
-            });
+        const that = this;
+        return new Promise(function (resolve, reject) {
+            if (!that.item) {
+                reject(new Error('missing item'));
+            }
+            that.apiClient.patch(that.baseUrl + '/' + that.item.id, that.item)
+                .then((response: any) => {
+                    that.item = response.data;
+                    that.onSaved();
+                    resolve(response.data);
+                    // refresh
+                    // this.onLoad();
+                })
+                .catch(reject);
+        });
+
     }
 
-    onLoad(): void {}
+    onLoad(): void { }
 
-    onSaved(): void {}
+    onSaved(): void { }
 }

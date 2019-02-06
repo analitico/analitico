@@ -10,7 +10,7 @@ import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 export class AoRawJsonPluginComponent extends AoPluginComponent implements OnInit {
     @ViewChild(JsonEditorComponent) editor: JsonEditorComponent;
     editorOptions: JsonEditorOptions;
-    // the editor component will use a copy of the data
+    // the editor component will be bound to another variable to avoid refreshing
     editorData: any;
     constructor() {
         super();
@@ -35,7 +35,7 @@ export class AoRawJsonPluginComponent extends AoPluginComponent implements OnIni
     */
     onEditorChange(data: any) {
         // change my data
-        this.setData(data);
+        this.setData(this.editor.get());
     }
 
 }
