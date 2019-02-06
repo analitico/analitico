@@ -26,11 +26,12 @@ build_dev:
     - apk update && apk add git
     # remove repo
     - rm -rf /builds/analitico/analitico
-    - mkdir -p /builds/analitico/analitico
-    - cd /builds/analitico/analitico
+    - mkdir -p /builds/analitico/
+    - cd /builds/analitico/
     # clone with submodule 
     - echo $GITHUB_TOKEN
-    - git clone --recurse-submodules https://giovannizorzato:$GITHUB_TOKEN@github.com/analitico/analitico.git .
+    - git clone --recurse-submodules https://giovannizorzato:${GITHUB_TOKEN}@github.com/analitico/analitico.git 
+    - cd analitico
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # export ANALITICO ENV
