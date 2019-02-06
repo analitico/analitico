@@ -30,9 +30,9 @@ build_dev:
     - cd /builds/analitico/
     # clone with submodule 
     - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
-    - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-sdk.git" > /.git-credentials
+    - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-sdk.git" >> /.git-credentials
     - git config credential.helper 'store --file=/.git-credentials'
-    - git clone --recurse-submodules $URL 
+    - git clone --recurse-submodules https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git 
     - rm /.git-credentials
     - cd analitico
     # login to registry
