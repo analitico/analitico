@@ -29,8 +29,11 @@ build_dev:
     - mkdir -p /builds/analitico/
     - cd /builds/analitico/
     # clone with submodule 
-    - echo $GITHUB_TOKEN
-    - git clone --recurse-submodules https://giovannizorzato:${GITHUB_TOKEN}@github.com/analitico/analitico.git 
+    - URL="https://giovannizorzato:"
+    - URL="$URL$GITHUB_TOKEN"
+    - URL="$URL@github.com/analitico/analitico.git"
+    - echo $URL
+    - git clone --recurse-submodules $URL 
     - cd analitico
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
