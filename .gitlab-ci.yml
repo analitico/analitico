@@ -23,6 +23,12 @@ cache:
 build_dev:
   stage: build
   script:
+    # remove repo
+    - rm -rf /builds/analitico/analitico
+    - mkdir -p /builds/analitico/analitico
+    # clone with submodule 
+    - git clone --recurse-submodules "https://$GITHUB_TOKEN@github.com/analitico/analitico.git" /builds/analitico/
+    - cd /builds/analitico/analitico
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # export ANALITICO ENV
