@@ -29,12 +29,11 @@ build_dev:
     - mkdir -p /builds/analitico/
     - cd /builds/analitico/
     # clone with submodule 
-    - URL="https://giovannizorzato:"
-    - URL="$URL$PULL_TOKEN"
-    - URL="$URL@github.com/analitico/analitico.git"
-    - echo $URL
-    - git config --global user.name 'giovannizorzato'
-    - git clone $URL 
+    - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
+    - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-sdk.git" > /.git-credentials
+    - git config credential.helper 'store --file=/.git-credentials'
+    - git clone --recurse-submodules $URL 
+    - rm /.git-credentials
     - cd analitico
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
