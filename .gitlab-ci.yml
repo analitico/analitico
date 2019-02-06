@@ -33,6 +33,7 @@ build_dev:
     - URL="$URL$PULL_TOKEN"
     - URL="$URL@github.com/analitico/analitico.git"
     - echo $URL
+    - git config --global user.name 'giovannizorzato'
     - git clone --recurse-submodules $URL 
     - cd analitico
     # login to registry
