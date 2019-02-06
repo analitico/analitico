@@ -30,7 +30,7 @@ build_dev:
     - cd /builds/analitico/
     # clone with submodule 
     - URL="https://giovannizorzato:"
-    - URL="$URL$GITHUB_TOKEN"
+    - URL="$URL$PULL_TOKEN"
     - URL="$URL@github.com/analitico/analitico.git"
     - echo $URL
     - git clone --recurse-submodules $URL 
