@@ -23,7 +23,7 @@ cache:
 build_dev:
   stage: build
   script:
-    - apt install git-all
+    - apk add git
     # remove repo
     - rm -rf /builds/analitico/analitico
     - mkdir -p /builds/analitico/analitico
