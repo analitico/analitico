@@ -25,7 +25,7 @@ echo "Execute Angular tests"
 #ng test
 
 echo "Build Angular app"
-ng build --prod --outputHashing=all
+ng build --outputHashing=all
 
 echo "Link nginx conf"
 sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
