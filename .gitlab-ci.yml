@@ -29,7 +29,7 @@ build_dev:
     - mkdir -p /builds/analitico/analitico
     - cd /builds/analitico/analitico
     # clone with submodule 
-    - git clone --recurse-submodules "https://$GITHUB_TOKEN@github.com/analitico/analitico.git" .
+    - git clone --recurse-submodules https://"$GITHUB_TOKEN"@github.com/analitico/analitico.git .
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # export ANALITICO ENV
