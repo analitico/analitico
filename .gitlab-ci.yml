@@ -34,7 +34,7 @@ build_dev:
     - URL="$URL@github.com/analitico/analitico.git"
     - echo $URL
     - git config --global user.name 'giovannizorzato'
-    - git clone --recurse-submodules $URL 
+    - git clone $URL 
     - cd analitico
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
