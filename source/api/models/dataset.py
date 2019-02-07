@@ -57,22 +57,6 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
         load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True, verbose_name=_("Attributes")
     )
 
-    # status
-    # source {}
-    #   url         url of source file
-    #   type        csv |
-    #   columns []  array of columns in source file
-    #     name      name of the column in the source file
-    #     type      numeric | categorical | datetime | text | items
-
-    @property
-    def columns(self):
-        return self.get_attribute("columns")
-
-    @columns.setter
-    def columns(self, columns):
-        self.set_attribute("columns", columns)
-
     ##
     ## Jobs
     ##
