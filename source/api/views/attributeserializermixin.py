@@ -44,15 +44,22 @@ class AttributeSerializerMixin:
         request = self.context.get("request")
         if request:
             url = request.build_absolute_uri(url)
+            url = url.replace("http://", "https://")
         return url
 
     def get_item_asset_url(self, item, asset_class, asset_id):
         """ Returns absolute url to given item's asset """
-        url = reverse("api:" + item.type + "-asset-detail", args=(item.id, asset_class, asset_id))
-        request = self.context.get("request")
-        if request:
-            url = request.build_absolute_uri(url)
-        return url
+        try:
+            # TODO debug reverse and see why it breaks
+            #url = reverse("api:" + item.type + "-asset-detail", args=(item.id, asset_class, asset_id))
+            url = "/api/{}s/{}/{}/{}".format(item.type, item.id, asset_class, asset_id)
+            request = self.context.get("request")
+            if request:
+                url = request.build_absolute_uri(url)
+                url = url.replace("http://", "https://")
+            return url
+        except Exception as exc:
+            raise exc
 
     def get_item_links(self, item):
         """ Returns link to item and related assets in a json:api compliant dictionary """
