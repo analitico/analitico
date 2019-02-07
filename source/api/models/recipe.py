@@ -5,6 +5,8 @@ from django.contrib.auth.models import Group
 from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
+from rest_framework.exceptions import APIException, NotFound
+from rest_framework import status
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
@@ -47,3 +49,25 @@ class Recipe(ItemMixin, models.Model):
     attributes = jsonfield.JSONField(
         load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True, verbose_name=_("Attributes")
     )
+
+    ##
+    ## Jobs
+    ##
+
+    def run(self, job, runner, **kwargs):
+        """ Run job actions on the recipe """
+        try:
+            # process action runs recipe and creates a trained model
+            if job.action == "recipe/train":
+                plugin_settings = self.get_attribute("plugin")
+                if not plugin_settings:
+                    raise APIException("Recipe.run - the recipe has no configured plugins", status.HTTP_400_BAD_REQUEST)
+
+                plugin = runner.create_plugin(**plugin_settings)
+                df = plugin.run()
+
+                # TODO create a new trained model, save artifacts to the model, link model to recipe
+
+            self.save()
+        except Exception as exc:
+            raise exc

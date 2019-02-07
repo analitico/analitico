@@ -1,0 +1,16 @@
+{
+  "plugin":{
+    "type":"analitico/plugin",
+    "name":"analitico.plugin.RecipePipelinePlugin",
+    "plugins":[
+      {
+        "type":"analitico/plugin",
+        "name":"analitico.plugin.CsvDataframeSourcePlugin",
+        "source":{
+          "content_type":"text/csv",
+          "url":"analitico://datasets/ds_housesalesprediction/data/csv"
+        }
+      }
+    ]
+  }
+}
