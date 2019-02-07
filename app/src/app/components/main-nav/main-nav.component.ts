@@ -103,4 +103,13 @@ export class MainNavComponent implements OnInit, OnDestroy {
                 this.changeWorkspace(workspace);
             });
     }
+
+    // define default sort function on created_at attributes
+    sortDatasetsFunction = function (a, b) {
+        try {
+            return a.attributes.created_at > b.attributes.created_at ? -1 : 1;
+        } catch (e) {
+            console.error(e);
+        }
+    };
 }

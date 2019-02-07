@@ -30,6 +30,7 @@ import { AoDataframePipelinePluginComponent } from './plugins/ao-dataframe-pipel
 import { AoMatFileUploadComponent } from './components/ao-mat-file-upload/ao-mat-file-upload.component';
 import { AoMatFileUploadQueueComponent } from './components/ao-mat-file-upload-queue/ao-mat-file-upload-queue.component';
 import { AoFileUploadInputForDirective } from './directives/ao-file-upload-input-for/ao-file-upload-input-for.directive';
+import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-nav-list-from-url/ao-nav-list-from-url.component';
 
 
 @NgModule({
@@ -47,7 +48,8 @@ import { AoFileUploadInputForDirective } from './directives/ao-file-upload-input
         AoDataframePipelinePluginComponent,
         AoMatFileUploadComponent,
         AoMatFileUploadQueueComponent,
-        AoFileUploadInputForDirective
+        AoFileUploadInputForDirective,
+        AoNavListFromUrlComponent
     ],
     imports: [
         BrowserModule,

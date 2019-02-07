@@ -10,6 +10,7 @@ import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { environment } from '../../../environments/environment';
+import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 
 @Component({
     templateUrl: './ao-dataset-view.component.html',
@@ -23,13 +24,15 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     viewContainerRef: ViewContainerRef;
     private pluginData: any;
     private saveTimeout: any;
-    assetsUrl: string;
     uploadAssetUrl: string;
+    isProcessing = false;
+    assets: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
         private pluginsService: AoPluginsService,
-        private snackBar: MatSnackBar) {
+        private snackBar: MatSnackBar,
+        private jobService: AoJobService) {
         super(route, apiClient);
     }
     static hasPlugin(item): boolean {
@@ -42,7 +45,6 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
 
     onLoad() {
-        this.assetsUrl = '/datasets/' + this.item.id + '/assets';
         this.uploadAssetUrl = environment.apiUrl + '/datasets/' + this.item.id + '/assets';
         // clear the view
         this.viewContainerRef.clear();
@@ -63,6 +65,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
                     this.onLoad();
                 });
         } */
+        this.assets = this.item.attributes.assets;
         this.loadPlugin();
     }
 
@@ -108,5 +111,30 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     onSaved() {
         // show a message
         this.snackBar.open('Item has been saved', null, { duration: 3000 });
+    }
+
+    // execute the process command on the dataset and refresh status when finished
+    process() {
+        const that = this;
+        this.isProcessing = true;
+        this.apiClient.post('/datasets/' + this.item.id + '/data/process', {})
+            .then((response: any) => {
+                const jobId = response.data.id;
+                // set a watcher for this job
+                this.jobService.watchJob(jobId)
+                    .subscribe({
+                        next(data: any) {
+                            if (data.status !== 'processing') {
+                                that.isProcessing = false;
+                                // reload
+                                that.loadItem();
+                            }
+                        }
+                    });
+            });
+    }
+
+    assetUploaded() {
+        this.process();
     }
 }

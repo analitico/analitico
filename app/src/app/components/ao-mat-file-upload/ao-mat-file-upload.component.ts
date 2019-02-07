@@ -51,7 +51,7 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
 
     /** Output  */
     @Output() removeEvent = new EventEmitter<AoMatFileUploadComponent>();
-    @Output() onUpload = new EventEmitter();
+    @Output() uploaded = new EventEmitter();
 
     public progressPercentage = 0;
     public loaded = 0;
@@ -109,7 +109,7 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
         const xToken = this.getCookie('csrftoken');
         if (xToken) {
             // add csfr token
-            this.httpRequestHeaders = (<HttpHeaders> this.httpRequestHeaders).append('X-CSRFTOKEN', xToken);
+            this.httpRequestHeaders = (<HttpHeaders>this.httpRequestHeaders).append('X-CSRFTOKEN', xToken);
         }
         this.fileUploadSubscription = this.HttpClient.post(this.httpUrl, formData, {
             headers: this.httpRequestHeaders,
@@ -123,15 +123,17 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
                 this.progressPercentage = Math.floor(event.loaded * 100 / event.total);
                 this.loaded = event.loaded;
                 this.total = event.total;
+            } else if (event.type === HttpEventType.Response) {
+                this.remove();
+                this.uploaded.emit({ file: this._file, event: event });
+                this.isUploading = false;
             }
-            this.onUpload.emit({ file: this._file, event: event });
         }, (error: any) => {
             if (this.fileUploadSubscription) {
                 this.fileUploadSubscription.unsubscribe();
             }
             this.progressPercentage = 0;
             this.isUploading = false;
-            this.onUpload.emit({ file: this._file, event: event });
         });
     }
 

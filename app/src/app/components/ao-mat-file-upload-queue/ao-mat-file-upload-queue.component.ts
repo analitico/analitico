@@ -48,6 +48,8 @@ export class AoMatFileUploadQueueComponent implements OnDestroy, AfterViewInit {
     @Input()
     fileAlias = 'file';
 
+    isVisible = false;
+
     ngAfterViewInit() {
         // When the list changes, re-subscribe
         this._changeSubscription = this.fileUploads.changes.pipe(startWith(null)).subscribe(() => {
@@ -61,11 +63,15 @@ export class AoMatFileUploadQueueComponent implements OnDestroy, AfterViewInit {
     private _listenTofileRemoved(): void {
         this._fileRemoveSubscription = this.fileUploadRemoveEvents.subscribe((event: AoMatFileUploadComponent) => {
             this.files.splice(event.id, 1);
+            if (this.files.length === 0) {
+                this.isVisible = false;
+            }
         });
     }
 
     add(file: any) {
         this.files.push(file);
+        this.isVisible = true;
     }
 
     public uploadAll() {
@@ -76,6 +82,11 @@ export class AoMatFileUploadQueueComponent implements OnDestroy, AfterViewInit {
 
     public removeAll() {
         this.files.splice(0, this.files.length);
+        this.isVisible = false;
+    }
+
+    close() {
+        this.isVisible = false;
     }
 
     ngOnDestroy() {

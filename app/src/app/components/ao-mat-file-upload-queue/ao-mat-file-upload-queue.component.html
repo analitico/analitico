@@ -1,3 +1,4 @@
-<div *ngIf="files.length > 0" class="ao-upload-queue">
+<div *ngIf="isVisible" class="ao-upload-queue">
+    <mat-icon (click)="close()">close</mat-icon>
 <ng-content></ng-content>
 </div>

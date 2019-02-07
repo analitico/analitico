@@ -18,7 +18,7 @@
                     <h3>Datasets</h3>
                     <input [(ngModel)]="datasetTitle" type="text">
                     <button (click)="createDataset()">new dataset</button>
-                    <app-ao-nav-list [url]="'/datasets'" [filter]="datasetsFilter"></app-ao-nav-list>
+                    <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="datasetsFilter" [sort]="sortDatasetsFunction"></app-ao-nav-list-from-url>
                 </div>
             
         </mat-sidenav>
