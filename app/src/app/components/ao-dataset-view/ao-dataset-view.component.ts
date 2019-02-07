@@ -9,6 +9,7 @@ import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.direct
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { environment } from '../../../environments/environment';
 
 @Component({
     templateUrl: './ao-dataset-view.component.html',
@@ -23,7 +24,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     private pluginData: any;
     private saveTimeout: any;
     assetsUrl: string;
-
+    uploadAssetUrl: string;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
@@ -42,6 +43,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
 
     onLoad() {
         this.assetsUrl = '/datasets/' + this.item.id + '/assets';
+        this.uploadAssetUrl = environment.apiUrl + '/datasets/' + this.item.id + '/assets';
         // clear the view
         this.viewContainerRef.clear();
 

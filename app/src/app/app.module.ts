@@ -21,7 +21,6 @@ import {
     MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule
 } from '@angular/material';
 import { NgJsonEditorModule } from 'ang-jsoneditor';
-import { MatFileUploadModule } from 'angular-material-fileupload';
 // PLUGINS
 import { AoPluginsService } from './services/ao-plugins/ao-plugins.service';
 import { AoPipelinePluginComponent } from './plugins/ao-pipeline-plugin/ao-pipeline-plugin.component';
@@ -29,6 +28,9 @@ import { AoCsvDataframeSourcePluginComponent } from './plugins/ao-csv-dataframe-
 import { AoRawJsonPluginComponent } from './plugins/ao-raw-json-plugin/ao-raw-json-plugin.component';
 import { AoDataframePipelinePluginComponent } from './plugins/ao-dataframe-pipeline-plugin/ao-dataframe-pipeline-plugin.component';
 import { AoMatFileUploadComponent } from './components/ao-mat-file-upload/ao-mat-file-upload.component';
+import { AoMatFileUploadQueueComponent } from './components/ao-mat-file-upload-queue/ao-mat-file-upload-queue.component';
+import { AoFileUploadInputForDirective } from './directives/ao-file-upload-input-for/ao-file-upload-input-for.directive';
+
 
 @NgModule({
     declarations: [
@@ -43,7 +45,9 @@ import { AoMatFileUploadComponent } from './components/ao-mat-file-upload/ao-mat
         AoCsvDataframeSourcePluginComponent,
         AoRawJsonPluginComponent,
         AoDataframePipelinePluginComponent,
-        AoMatFileUploadComponent
+        AoMatFileUploadComponent,
+        AoMatFileUploadQueueComponent,
+        AoFileUploadInputForDirective
     ],
     imports: [
         BrowserModule,
@@ -61,7 +65,6 @@ import { AoMatFileUploadComponent } from './components/ao-mat-file-upload/ao-mat
         MatSnackBarModule,
         FormsModule,
         NgJsonEditorModule,
-        MatFileUploadModule,
         MatProgressSpinnerModule
     ],
     providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],

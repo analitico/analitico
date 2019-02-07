@@ -13,13 +13,16 @@
         <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'" [mode]="(isHandset$ | async) ? 'over' : 'side'"
             [opened]="!(isHandset$ | async)">
             <!--<mat-nav-list (click)="drawer.close()"> -->
-            <h3>Datasets</h3>
-            <input [(ngModel)]="datasetTitle" type="text">
-            <button (click)="createDataset()">new dataset</button>
-            <app-ao-nav-list [url]="'/datasets'" [filter]="datasetsFilter"></app-ao-nav-list>
+                <div class="ao-padding">
+                    <p>{{workspaceName}}</p>
+                    <h3>Datasets</h3>
+                    <input [(ngModel)]="datasetTitle" type="text">
+                    <button (click)="createDataset()">new dataset</button>
+                    <app-ao-nav-list [url]="'/datasets'" [filter]="datasetsFilter"></app-ao-nav-list>
+                </div>
+            
         </mat-sidenav>
         <mat-sidenav-content>
-
             <ng-content (click)="drawer.close()"></ng-content>
         </mat-sidenav-content>
     </mat-sidenav-container>

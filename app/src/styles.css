@@ -91,7 +91,6 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     right: 0;
     width: 300px;
     max-height: 400px;
-    min-height: 200px;
     padding: 40px;
     background-color: #ffffff;
     overflow-y: auto;

@@ -22,6 +22,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
     datasetsFilter: any;
     workspaces: any;
     datasetTitle: string;
+    workspaceName: string;
 
     isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
         .pipe(
@@ -49,13 +50,13 @@ export class MainNavComponent implements OnInit, OnDestroy {
                     let workspace = this.workspaces[0];
                     this.workspaces.forEach(w => {
                         // if we have ws_test workspace, select this (for testing)
-                        if (w.id === 'ws_test') {
+                        if (w.id === 'ws_giovannitest') {
                             workspace = w;
                             return false;
                         }
                     });
                     // set workspace
-                    this.globalState.setProperty('workspace', workspace.id);
+                    this.globalState.setProperty('workspace', workspace);
                 }
             });
     }
@@ -83,15 +84,16 @@ export class MainNavComponent implements OnInit, OnDestroy {
         }
     }
 
-    changeWorkspace(workspaceId: string) {
+    changeWorkspace(workspace: any) {
+        this.workspaceName = workspace.id;
         // add a filter to the dataset list
-        this.datasetsFilter = { 'attributes.workspace': workspaceId };
+        this.datasetsFilter = { 'attributes.workspace': workspace.id };
     }
 
     // create a new dataset
     createDataset() {
         const workspace = this.globalState.getProperty('workspace');
-        const params = { 'workspace': workspace, attributes: {}};
+        const params = { 'workspace': workspace.id, attributes: {}};
         if (this.datasetTitle) {
             params.attributes['title'] = this.datasetTitle;
         }
