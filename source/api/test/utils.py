@@ -24,6 +24,15 @@ class APITestCase(rest_framework.test.APITestCase):
         abs_path = os.path.join(ASSETS_PATH, path)
         return read_json(abs_path)
 
+    def get_items(self, item_type, token=None, status_code=status.HTTP_200_OK):
+        url = reverse("api:" + item_type + "-list")
+        self.auth_token(token)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status_code)
+        if response.status_code == status.HTTP_200_OK:
+            self.assertIsNotNone(response.data)
+        return response.data
+
     def get_item(self, item_type, item_id, token=None, status_code=status.HTTP_200_OK):
         url = reverse("api:" + item_type + "-detail", args=(item_id,))
         self.auth_token(token)
@@ -51,6 +60,7 @@ class APITestCase(rest_framework.test.APITestCase):
         for path in os.listdir(ASSETS_PATH):
             if path.startswith(prefix):
                 item = self.read_json_asset(path)
+                print("Loading {}:{} from {}...".format(item["type"], item["id"], path))
 
                 token = self.token1
                 if get_dict_dot(item, "attributes.user") == "user2@analitico.ai":
