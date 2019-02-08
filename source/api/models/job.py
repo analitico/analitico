@@ -121,6 +121,25 @@ class JobRunner(analitico.manager.PluginManager):
         # base class handles regular URLs
         return super().get_url_stream(url)
 
+    def upload_artifacts(self, item):
+        """ Uploads all files in the artifacts directory to the given item's data assets """
+        directory = self.get_artifacts_directory()
+        for path in os.listdir(directory):
+            fullpath = os.path.join(directory, path)
+            # process only files (skip directories and .info files)
+            if os.path.isfile(fullpath) and not path.endswith(".info"):
+                path_size = os.path.getsize(fullpath)
+                with open(fullpath, "rb") as f:
+                    asset = item._upload_asset_stream(f, "data", path, path_size, None, path)
+                    infopath = fullpath + ".info"
+                    # if asset has a .info companion
+                    if os.path.isfile(infopath):
+                        json = analitico.utilities.read_json(infopath)
+                        for key, value in json.items():
+                            asset[key] = value
+        # TODO may need to touch self.item.assets for it to save properly
+        item.save()
+
     def run(self):
         """ Runs job then collects artifacts """
         try:
@@ -134,22 +153,7 @@ class JobRunner(analitico.manager.PluginManager):
             self.item.run(job=self.job, runner=self)
 
             # upload /data artifacts + metadata created by the item
-            if self._temporary_directory:
-                directory = self.get_artifacts_directory()
-                for path in os.listdir(directory):
-                    fullpath = os.path.join(directory, path)
-                    # process only files (skip directories and .info files)
-                    if os.path.isfile(fullpath) and not path.endswith(".info"):
-                        path_size = os.path.getsize(fullpath)
-                        with open(fullpath, "rb") as f:
-                            asset = self.item._upload_asset_stream(f, "data", path, path_size, None, path)
-                            infopath = fullpath + ".info"
-                            # if asset has a .info coutn
-                            if os.path.isfile(infopath):
-                                json = analitico.utilities.read_json(infopath)
-                                for key, value in json.items():
-                                    asset[key] = value
-                                # TODO may need to touch self.item.assets fior it to save properly
+            self.upload_artifacts(self.item)
 
             # mark job as completed
             self.item.save()

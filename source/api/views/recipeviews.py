@@ -40,12 +40,16 @@ class RecipeViewSet(JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
 
     item_class = api.models.Recipe
     serializer_class = RecipeSerializer
+
+    # The only action that can be performed on a recipe is to train it
     job_actions = ("train",)
 
+    # All methods require prior authentication, no token, no access
+    permission_classes = (IsAuthenticated,)
+
     def get_queryset(self):
-        """ A user only has access to objects he or his workspaces own. """
-        if self.request.user.is_anonymous:
-            return Recipe.objects.none()
+        """ A user must be authenticated and only only access to objects he or his workspaces own. """
+        assert not self.request.user.is_anonymous
         if self.request.user.is_superuser:
             return Recipe.objects.all()
         return Recipe.objects.filter(workspace__user=self.request.user)

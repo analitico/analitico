@@ -8,7 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
-from .items import ItemMixin
+from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 
 ##
@@ -22,7 +22,7 @@ def generate_model_id():
     return MODEL_PREFIX + get_random_string()
 
 
-class Model(ItemMixin, models.Model):
+class Model(ItemMixin, ItemAssetsMixin, models.Model):
     """ A trained machine learning model which can be used for inferences """
 
     # Unique id has a type prefix + random string

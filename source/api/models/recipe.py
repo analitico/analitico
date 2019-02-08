@@ -1,5 +1,8 @@
 import collections
 import jsonfield
+import os.path
+import os
+import shutil
 
 from django.contrib.auth.models import Group
 from django.db import models
@@ -12,6 +15,8 @@ from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
 from .items import ItemMixin
 from .workspace import Workspace
+from .job import Job, JobRunner
+from .model import Model
 
 #
 # Recipe - A recipe uses modules and scripts to produce a trained model
@@ -54,7 +59,7 @@ class Recipe(ItemMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job, runner, **kwargs):
+    def run(self, job: Job, runner: JobRunner, **kwargs):
         """ Run job actions on the recipe """
         try:
             # process action runs recipe and creates a trained model
@@ -64,9 +69,27 @@ class Recipe(ItemMixin, models.Model):
                     raise APIException("Recipe.run - the recipe has no configured plugins", status.HTTP_400_BAD_REQUEST)
 
                 plugin = runner.create_plugin(**plugin_settings)
-                df = plugin.run()
+                results = plugin.run(action=job.action)
 
-                # TODO create a new trained model, save artifacts to the model, link model to recipe
+                model = Model(workspace=self.workspace)
+                model.save()
+
+                # upload artifacts to model not to the recipe
+                # a recipe has a one to many relation with trained models
+                artifacts = runner.get_artifacts_directory()
+                runner.upload_artifacts(model)
+                shutil.rmtree(artifacts, ignore_errors=True)
+
+                # store training results
+                model.set_attribute("recipe_id", self.id)
+                model.set_attribute("job_id", job.id)
+                model.set_attribute("results", results)
+                model.save()
+
+                # job will return information linking to the trained model
+                job.set_attribute("recipe_id", self.id)
+                job.set_attribute("model_id", model.id)
+                job.save()
 
             self.save()
         except Exception as exc:
