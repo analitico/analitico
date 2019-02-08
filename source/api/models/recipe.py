@@ -71,19 +71,20 @@ class Recipe(ItemMixin, models.Model):
                 plugin = runner.create_plugin(**plugin_settings)
                 results = plugin.run(action=job.action)
 
+                # create a model which will host training results and assets
                 model = Model(workspace=self.workspace)
                 model.save()
 
-                # upload artifacts to model not to the recipe
+                # upload artifacts to model (not to the recipe!)
                 # a recipe has a one to many relation with trained models
                 artifacts = runner.get_artifacts_directory()
                 runner.upload_artifacts(model)
                 shutil.rmtree(artifacts, ignore_errors=True)
 
-                # store training results
+                # store training results, link model to recipe and job
                 model.set_attribute("recipe_id", self.id)
                 model.set_attribute("job_id", job.id)
-                model.set_attribute("results", results)
+                model.set_attribute("training", results)
                 model.save()
 
                 # job will return information linking to the trained model
