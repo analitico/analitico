@@ -94,9 +94,8 @@ class RecipeTests(APITestCase):
     def test_recipe_train(self):
         """ Process a dataset, then train a recipe with it """
         try:
-            self.auth_token(self.token1)
-
             # process source dataset
+            self.auth_token(self.token1)
             url = reverse("api:dataset-job-detail", args=("ds_housesalesprediction_1", "process"))
             response = self.client.post(url, format="json")
 
@@ -115,10 +114,25 @@ class RecipeTests(APITestCase):
             url = reverse("api:recipe-job-detail", args=("rx_housesalesprediction_1", "train"))
             response = self.client.post(url, format="json", status_code=status.HTTP_201_CREATED)
 
-            recipe = response.data
-            self.assertIsInstance(recipe, dict)
-            self.assertEqual(recipe["type"], "recipe")
-            self.assertEqual(recipe["id"], "rx_housesalesprediction_1")
+            # job from recipe train action
+            job = response.data
+            self.assertIsInstance(job, dict)
+            self.assertEqual(job["type"], "job")
+            self.assertTrue(job["id"].startswith(api.models.JOB_PREFIX))
+            self.assertEqual(job["attributes"]["status"], "completed")
+
+            # trained model from job
+            model_id = job["attributes"]["model_id"]
+            url = reverse("api:model-detail", args=(model_id,))
+            response = self.client.get(url, format="json")
+            model = response.data
+            self.assertEqual(model["type"], "model")
+            self.assertEqual(model["id"], model_id)
+
+            # training results from model
+            training = model["attributes"]["training"]
+            self.assertEqual(training["type"], "analitico/training")
+            self.assertEqual(training["algorithm"], analitico.plugin.CATBOOST_REGRESSOR_PLUGIN)
 
         except Exception as exc:
             raise exc
