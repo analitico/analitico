@@ -4,13 +4,17 @@
 			"path": "."
 		},
 		{
-			"path": "/home/gionata/github/analitico-ops"
+			"path": "../analitico-ops"
 		}
 	],
 	"settings": {
 		"python.pythonPath": "venv/bin/python",
 		"files.watcherExclude": {
-			"**/node_modules/**": true
+			"**/node_modules/**": true,
+			"**/venv/**": true,
+			"**/__pycache__": true,
+			"**/.ipynb_checkpoints": true,
+			"**/.pytest_cache": true
 		},
 		"files.exclude": {
 			"**/__pycache__": true,
