@@ -51,7 +51,7 @@ class AttributeSerializerMixin:
         """ Returns absolute url to given item's asset """
         try:
             # TODO debug reverse and see why it breaks
-            #url = reverse("api:" + item.type + "-asset-detail", args=(item.id, asset_class, asset_id))
+            # url = reverse("api:" + item.type + "-asset-detail", args=(item.id, asset_class, asset_id))
             url = "/api/{}s/{}/{}/{}".format(item.type, item.id, asset_class, asset_id)
             request = self.context.get("request")
             if request:
