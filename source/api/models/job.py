@@ -34,8 +34,10 @@ def generate_job_id():
 ## JobRunner
 ##
 
-# analitico://type/id/asset/asset_id, eg: analitico://dataset/ds_xxx/assets/data.csv
-ANALITICO_ASSET_RE = r"analitico:\/\/(?P<item_type>[\w]{3,24})s\/(?P<item_id>[_\w]{3,24})\/(?P<asset_class>(assets|data))\/(?P<asset_id>[-\w.]{2,256})$"
+# analitico://item_type/item_id/asset_class/asset_id, eg: analitico://dataset/ds_xxx/assets/data.csv
+ANALITICO_ASSET_RE = (
+    r"analitico:\/\/(?P<item_type>[\a-z]+)s\/(?P<item_id>[\w]+)\/(?P<asset_class>data|assets)\/(?P<asset_id>[-\w\.]+)"
+)
 
 
 class JobRunner(analitico.manager.PluginManager):
