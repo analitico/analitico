@@ -60,7 +60,7 @@ class APITestCase(rest_framework.test.APITestCase):
         for path in os.listdir(ASSETS_PATH):
             if path.startswith(prefix):
                 item = self.read_json_asset(path)
-                print("Loading {}:{} from {}...".format(item["type"], item["id"], path))
+                # print("Loading {}:{} from {}...".format(item["type"], item["id"], path))
 
                 token = self.token1
                 if get_dict_dot(item, "attributes.user") == "user2@analitico.ai":

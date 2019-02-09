@@ -9,6 +9,7 @@ from .datasetviews import DatasetViewSet
 from .jobviews import JobViewSet
 from .recipeviews import RecipeViewSet
 from .modelviews import ModelViewSet
+from .endpointviews import EndpointViewSet
 
 from .views import handle_prj_training
 from .views import handle_prj_upload

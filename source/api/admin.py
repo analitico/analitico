@@ -4,8 +4,12 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import ugettext_lazy as _
 
-from .models import User, Token, Call, Project, Training
-from .models import Workspace, Dataset, Recipe, Job
+from .models import User, Token, Call
+from .models import Workspace, Dataset, Recipe, Job, Model, Endpoint
+
+# deprecated: to be removed soon
+from .models import Project, Training
+
 
 # TODO customize admin site
 # https://stackoverflow.com/questions/4938491/django-admin-change-header-django-administration-text/24983231#24983231
@@ -40,16 +44,6 @@ class ApiCallAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
 
 
-# @admin.register(Training)
-# class TrainingAdmin(admin.ModelAdmin):
-#    list_display = ('id', 'project_id', 'status', 'is_active', 'records', 'rmse', 'created_at')
-#    ordering = ('-updated_at',)
-
-#
-# Items
-#
-
-
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
     fields = ("id", "user", "group", "title", "description", "attributes")
@@ -68,6 +62,22 @@ class DatasetAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
+    fields = ("id", "workspace", "title", "description", "attributes")
+    list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at", "attributes")
+    search_fields = ("id", "title", "description", "attributes")
+    ordering = ("-updated_at",)
+
+
+@admin.register(Model)
+class ModelAdmin(admin.ModelAdmin):
+    fields = ("id", "workspace", "title", "description", "attributes")
+    list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at", "attributes")
+    search_fields = ("id", "title", "description", "attributes")
+    ordering = ("-updated_at",)
+
+
+@admin.register(Endpoint)
+class EndpointAdmin(admin.ModelAdmin):
     fields = ("id", "workspace", "title", "description", "attributes")
     list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at", "attributes")
     search_fields = ("id", "title", "description", "attributes")

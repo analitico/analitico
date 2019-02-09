@@ -3,6 +3,7 @@ from .usermanager import UserManager
 from .call import Call
 from .token import Token
 
+# deprecated: soon to be removed
 from .project import Project
 from .training import Training
 
@@ -14,3 +15,4 @@ from .recipe import Recipe, RECIPE_PREFIX
 from .model import Model, MODEL_PREFIX
 from .service import Service, SERVICE_PREFIX
 from .job import Job, JOB_PREFIX
+from .endpoint import Endpoint, ENDPOINT_PREFIX
