@@ -1,5 +1,7 @@
 import collections
 import jsonfield
+import pandas as pd
+import os
 
 from django.contrib.auth.models import Group
 from django.db import models
@@ -8,11 +10,13 @@ from rest_framework.exceptions import APIException, NotFound
 from rest_framework import status
 
 import analitico.plugin
+from analitico.plugin import PluginError
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 from .job import Job, JobRunner
+from api.factory import ModelsFactory
 
 ##
 ## Endpoint
@@ -50,6 +54,10 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
     attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
 
     ##
+    ## Prediction
+    ##
+
+    ##
     ## Jobs
     ##
 
@@ -57,7 +65,7 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
         """ Run job actions on the recipe """
         try:
             # process action runs recipe and creates a trained model
-            if job.action == "endpoint/inference":
+            if job.action == "endpoint/predict":
                 plugin_settings = self.get_attribute("plugin")
                 if not plugin_settings:
                     # start with basic endpoint pipeline of nothing configured yet
@@ -66,28 +74,34 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                         "name": analitico.plugin.ENDPOINT_PIPELINE_PLUGIN,
                     }
 
+                model_id = self.get_attribute("model_id")
+                if not model_id:
+                    raise PluginError("Endpoint.run - model_id to be used for prediction is not configured")
+                model = ModelsFactory.from_id(model_id)  # TODO pass request to check auth
+                assert model
+
+                # restore /data artifacts used by plugin to run prediction
+                artifacts_path = runner.get_artifacts_directory()
+                for asset in model.get_attribute("data"):
+                    cache_path = runner.get_cache_asset(model, "data", asset["id"])
+                    artifact_path = os.path.join(artifacts_path, asset["id"])
+                    os.symlink(cache_path, artifact_path)
+
+                # create dataframe from request data
+                request = runner.request
+                assert request and request.data and request.data["data"]
+                data = request.data["data"]
+                if isinstance(data, dict):
+                    data = [data]
+                data_df = pd.DataFrame.from_records(data)
+
+                # plugin run prediction pipeline and returns predictions as dataframe
                 plugin = runner.create_plugin(**plugin_settings)
-                results = plugin.run(action=job.action)
-
-                # create a model which will host training results and assets
-                model = Model(workspace=self.workspace)
-                model.save()
-
-                # upload artifacts to model (not to the recipe!)
-                # a recipe has a one to many relation with trained models
-                artifacts = runner.get_artifacts_directory()
-                runner.upload_artifacts(model)
-                shutil.rmtree(artifacts, ignore_errors=True)
-
-                # store training results, link model to recipe and job
-                model.set_attribute("recipe_id", self.id)
-                model.set_attribute("job_id", job.id)
-                model.set_attribute("training", results)
-                model.save()
+                predictions_df = plugin.run(job.action, data_df)
 
                 # job will return information linking to the trained model
                 job.set_attribute("recipe_id", self.id)
-                job.set_attribute("model_id", model.id)
+                job.set_attribute("model_id", "ciao")
                 job.save()
 
             self.save()

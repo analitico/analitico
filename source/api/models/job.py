@@ -21,6 +21,7 @@ import analitico
 import analitico.manager
 import analitico.plugin
 import analitico.utilities
+import api.plugin
 
 JOB_PREFIX = "jb_"
 
@@ -60,11 +61,47 @@ class JobRunner(analitico.manager.PluginManager):
         self.job = job
         self.request = request
 
+    def create_plugin(self, name: str, **kwargs):
+        """
+        Create a plugin given its name and the environment it will run in.
+        Any additional parameters passed to this method will be passed to the
+        plugin initialization code and will be stored as a plugin setting.
+        """
+        klass = self._get_class_from_fully_qualified_name(name, globals=globals())
+        if not klass:
+            raise analitico.plugin.PluginError("JobRunner - can't find plugin: " + name)
+        return (klass)(manager=self, **kwargs)
+
     def get_temporary_directory(self):
         """ Temporary directory that can be used while a job runs and is deleted afterwards """
         if self._temporary_directory is None:
             self._temporary_directory = tempfile.mkdtemp(prefix=self.job.id + "_")
         return self._temporary_directory
+
+    def get_cache_asset(self, item, asset_class, asset_id):
+        """ 
+        Returns filename of cached asset after downloading it if necessary. 
+        File should be used as read only and copied if it needs to be modified.
+        """
+        asset = item._get_asset_from_id(asset_class, asset_id, raise404=True)
+        assert asset
+        # name of the file in cache is determined by its hash so all files are unique and
+        # we do not need to check versions, eg. if we have it with the correct name it's
+        # the correct version and we can save a rountrip to check with the server
+        storage_file = os.path.join(self.get_cache_directory(), "cache_" + asset["hash"])
+
+        # if not in cache already download it from storage
+        if not os.path.isfile(storage_file):
+            storage = item.storage
+            assert storage
+            storage_path = asset["path"]
+            storage_obj, storage_stream = storage.download_object_via_stream(storage_path)
+            storage_temp_file = storage_file + ".tmp_" + django.utils.crypto.get_random_string()
+            with open(storage_temp_file, "wb") as f:
+                for b in storage_stream:
+                    f.write(b)
+            os.rename(storage_temp_file, storage_file)
+        return storage_file
 
     def get_url_stream(self, url):
         """ Job runner retrieves assets directly from cloud storage while using super for regular URLs """

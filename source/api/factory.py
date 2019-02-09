@@ -23,6 +23,8 @@ class ModelsFactory:
             return api.models.Model()
         if model_type == "service":
             return api.models.Service()
+        if model_type == "endpoint":
+            return api.models.Endpoint()
         raise NotFound("ItemsFactory.from_type could not find type: " + model_type)
 
     @staticmethod
@@ -39,6 +41,8 @@ class ModelsFactory:
             return api.models.Model.objects.get(pk=model_id)
         if model_id.startswith(api.models.SERVICE_PREFIX):
             return api.models.Service.objects.get(pk=model_id)
+        if model_id.startswith(api.models.ENDPOINT_PREFIX):
+            return api.models.Endpoint.objects.get(pk=model_id)
         raise NotFound("ItemsFactory.from_id could not find id: " + model_id)
 
     @staticmethod

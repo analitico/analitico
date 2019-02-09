@@ -110,8 +110,10 @@
                 {
                     "type": "analitico/plugin",
                     "name": "analitico.plugin.CatBoostRegressorPlugin",
-                    "iterations": 10,
-                    "learning_rate": 0.90
+                    "parameters": {
+                        "iterations": 10,
+                        "learning_rate": 0.90
+                    }
                 }
             ]
         }

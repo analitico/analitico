@@ -23,7 +23,16 @@ def generate_model_id():
 
 
 class Model(ItemMixin, ItemAssetsMixin, models.Model):
-    """ A trained machine learning model which can be used for inferences """
+    """
+    A trained machine learning model which can be used for inferences.
+    The "training" attribute of the model includes all the information on
+    the training data, parameters, scores and performances. The model can also
+    has /data assets like saved CatBoost models, CoreML dumps, etc.
+    Trained models are used as immutables in that once created their data
+    doesn't change. When you run a new training session you create a new
+    model. An endpoint will point to a model to use for predictions. When
+    a new model is created, the endpoint is updated to point to the new model.
+    """
 
     # Unique id has a type prefix + random string
     id = models.SlugField(primary_key=True, default=generate_model_id, verbose_name=_("Id"))

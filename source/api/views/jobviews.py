@@ -90,7 +90,7 @@ class JobViewSetMixin:
         return Response(jobs_serializer.data)
 
     @permission_classes((IsAuthenticated,))
-    @action(methods=["post"], detail=True, url_name="job-detail", url_path=r"jobs/(?P<job_action>[-\w.]{4,256})$")
+    @action(methods=["post"], detail=True, url_name="job-action", url_path=r"jobs/(?P<job_action>[-\w.]{4,256})$")
     def job_create(self, request, pk, job_action) -> Response:
         """ Creates a job for this item and returns it. """
         job_item = self.get_object()
