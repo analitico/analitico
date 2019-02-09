@@ -14,7 +14,9 @@ from rest_framework.exceptions import APIException
 import analitico
 import analitico.plugin
 import analitico.utilities
+
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
+from analitico.schema import generate_schema
 
 from .user import User
 from .items import ItemMixin, ItemAssetsMixin
@@ -100,7 +102,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                     if new_plugin:
                         # apply derived schema as a starting schema which
                         # users will then customize and change, etc.
-                        schema = analitico.dataset.Dataset.generate_schema(df)
+                        schema = generate_schema(df)
                         plugin_settings["plugins"][0]["source"]["schema"] = schema
 
             self.save()
