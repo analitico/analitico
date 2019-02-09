@@ -90,7 +90,7 @@ class RecipeTests(APITestCase):
 
     def test_recipe_train_method_not_allowed(self):
         """ Request training of a job using GET instead of POST """
-        url = reverse("api:recipe-job-detail", args=("rx_housesalesprediction_1", "train"))
+        url = reverse("api:recipe-job-action", args=("rx_housesalesprediction_1", "train"))
         response = self.client.get(url, format="json", status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
     def test_recipe_train_predict_the_whole_enchilada(self):
@@ -103,7 +103,7 @@ class RecipeTests(APITestCase):
         try:
             # process source dataset
             self.auth_token(self.token1)
-            url = reverse("api:dataset-job-detail", args=("ds_housesalesprediction_1", "process"))
+            url = reverse("api:dataset-job-action", args=("ds_housesalesprediction_1", "process"))
             response = self.client.post(url, format="json")
 
             job = response.data
@@ -118,7 +118,7 @@ class RecipeTests(APITestCase):
             self.assertTrue("related" in job["links"])
 
             # train recipe using dataset output
-            url = reverse("api:recipe-job-detail", args=("rx_housesalesprediction_1", "train"))
+            url = reverse("api:recipe-job-action", args=("rx_housesalesprediction_1", "train"))
             response = self.client.post(url, format="json", status_code=status.HTTP_201_CREATED)
 
             # job from recipe train action
@@ -147,10 +147,10 @@ class RecipeTests(APITestCase):
                 url,
                 data={
                     "workspace": model["attributes"]["workspace"],
+                    "model_id": model_id,
                     "plugin": {
                         "type": analitico.plugin.PLUGIN_TYPE,
-                        "name": api.plugin.API_ENDPOINT_PIPELINE_PLUGIN,
-                        "model_id": model_id,
+                        "name": analitico.plugin.ENDPOINT_PIPELINE_PLUGIN,
                         "plugins": [{"type": analitico.plugin.PLUGIN_TYPE, "name": training["plugins"]["prediction"]}],
                     },
                 },
@@ -159,21 +159,34 @@ class RecipeTests(APITestCase):
             endpoint = response.data
             endpoint_id = endpoint["id"]
             self.assertTrue(endpoint["id"].startswith(api.models.ENDPOINT_PREFIX))
+            self.assertEquals(endpoint["attributes"]["model_id"], model_id)
             self.assertEquals(endpoint["attributes"]["plugin"]["type"], analitico.plugin.PLUGIN_TYPE)
-            self.assertEquals(endpoint["attributes"]["plugin"]["name"], api.plugin.API_ENDPOINT_PIPELINE_PLUGIN)
-            self.assertEquals(endpoint["attributes"]["plugin"]["model_id"], model_id)
+            self.assertEquals(endpoint["attributes"]["plugin"]["name"], analitico.plugin.ENDPOINT_PIPELINE_PLUGIN)
 
             # load some data that we want to run predictions on
             num_predictions = 20  # number of test predictions to run
             homes_path = self.get_asset_path("kc_house_data.csv")
             homes = pd.read_csv(homes_path).head(num_predictions)  # just a sample
+            homes_dict = homes.to_dict(orient="records")
+
+            # run predictions one at a time
+            predict_url = reverse("api:endpoint-job-action", args=(endpoint_id, "predict"))
+            for home in homes_dict:
+                priceless_home = home.copy()
+                priceless_home.pop("price")
+                predict_response = self.client.post(predict_url, priceless_home, format="json")
+                predict_data = predict_response.data
+                predict_price = predict_data["attributes"]["payload"]["predictions"][0]
+                print("House price: " + str(home["price"]) + ", predicted price: " + str(predict_price))
+                self.assertTrue(predict_price > 0)
+                # TODO check job layout
+
+            # run a bunch of predictions at once
             priceless_homes = homes.drop(["price"], axis=1)
             priceless_dict = priceless_homes.to_dict(orient="records")
-
-            predict_url = reverse("api:endpoint-predict", args=(endpoint_id,))
-            for priceless_home in priceless_dict:
-                predict_response = self.client.post(predict_url, priceless_home, status_code=status.HTTP_201_CREATED)
-                predict_data = predict_response.data
+            preds2_response = self.client.post(predict_url, priceless_dict, format="json")
+            preds2_data = preds2_response.data
+            self.assertEqual(len(preds2_data["attributes"]["payload"]["predictions"]), len(priceless_homes))
 
         except Exception as exc:
             raise exc
