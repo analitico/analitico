@@ -10,6 +10,7 @@ import api.utilities
 from api.models import Recipe, Job
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
+from .itemviews import ItemViewSetMixin
 from .jobviews import JobViewSetMixin
 
 
@@ -31,7 +32,7 @@ class RecipeSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 ##
 
 
-class RecipeViewSet(JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class RecipeViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """
     A recipe contains a pipeline of plugins that can take some training data
     and use it to train a model. When the training action is performed, the result
@@ -43,13 +44,3 @@ class RecipeViewSet(JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
 
     # The only action that can be performed on a recipe is to train it
     job_actions = ("train",)
-
-    # All methods require prior authentication, no token, no access
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        """ A user must be authenticated and only only access to objects he or his workspaces own. """
-        assert not self.request.user.is_anonymous
-        if self.request.user.is_superuser:
-            return Recipe.objects.all()
-        return Recipe.objects.filter(workspace__user=self.request.user)

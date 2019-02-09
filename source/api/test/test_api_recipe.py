@@ -1,6 +1,7 @@
 import io
 import os
 import os.path
+import pandas as pd
 
 from django.conf import settings
 from django.test import TestCase
@@ -18,7 +19,8 @@ from analitico.utilities import read_json, get_dict_dot
 
 import analitico.plugin
 import api.models
-from api.models import Job
+import api.plugin
+from api.models import Job, Endpoint
 from .utils import APITestCase
 
 
@@ -31,7 +33,7 @@ class RecipeTests(APITestCase):
 
     def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv", asset_class="assets"):
         url = reverse("api:dataset-asset-detail", args=(dataset_id, asset_class, asset_name))
-        response = self._upload_file(url, asset_name, "text/csv", token=self.token1)
+        response = self.upload_file(url, asset_name, "text/csv", token=self.token1)
         self.assertEqual(response.data[0]["id"], asset_name)
         path = "workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
         self.assertEqual(response.data[0]["path"], path)
@@ -41,11 +43,11 @@ class RecipeTests(APITestCase):
         self.setup_basics()
         try:
             url = reverse("api:workspace-list")
-            self._upload_items(url, api.models.WORKSPACE_PREFIX)
+            self.upload_items(url, api.models.WORKSPACE_PREFIX)
             url = reverse("api:dataset-list")
-            self._upload_items(url, api.models.DATASET_PREFIX)
+            self.upload_items(url, api.models.DATASET_PREFIX)
             url = reverse("api:recipe-list")
-            self._upload_items(url, api.models.RECIPE_PREFIX)
+            self.upload_items(url, api.models.RECIPE_PREFIX)
         except Exception as exc:
             print(exc)
             raise exc
@@ -91,8 +93,13 @@ class RecipeTests(APITestCase):
         url = reverse("api:recipe-job-detail", args=("rx_housesalesprediction_1", "train"))
         response = self.client.get(url, format="json", status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def test_recipe_train_and_predict(self):
-        """ Process a dataset, then train a recipe with it, use the model to create and endpoint, run predictions """
+    def test_recipe_train_predict_the_whole_enchilada(self):
+        """ 
+        A fairly complicated end to end test:
+        - create a dataset and process it
+        - create a recipe and train model with dataset
+        - create an endpoint and run predictions on model
+        """
         try:
             # process source dataset
             self.auth_token(self.token1)
@@ -133,6 +140,40 @@ class RecipeTests(APITestCase):
             training = model["attributes"]["training"]
             self.assertEqual(training["type"], "analitico/training")
             self.assertEqual(training["plugins"]["training"], analitico.plugin.CATBOOST_REGRESSOR_PLUGIN)
+
+            # create an endpoint that can serve inferences based on trained model
+            url = reverse("api:endpoint-list")
+            response = self.client.post(
+                url,
+                data={
+                    "workspace": model["attributes"]["workspace"],
+                    "plugin": {
+                        "type": analitico.plugin.PLUGIN_TYPE,
+                        "name": api.plugin.API_ENDPOINT_PIPELINE_PLUGIN,
+                        "model_id": model_id,
+                        "plugins": [{"type": analitico.plugin.PLUGIN_TYPE, "name": training["plugins"]["prediction"]}],
+                    },
+                },
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            endpoint = response.data
+            endpoint_id = endpoint["id"]
+            self.assertTrue(endpoint["id"].startswith(api.models.ENDPOINT_PREFIX))
+            self.assertEquals(endpoint["attributes"]["plugin"]["type"], analitico.plugin.PLUGIN_TYPE)
+            self.assertEquals(endpoint["attributes"]["plugin"]["name"], api.plugin.API_ENDPOINT_PIPELINE_PLUGIN)
+            self.assertEquals(endpoint["attributes"]["plugin"]["model_id"], model_id)
+
+            # load some data that we want to run predictions on
+            num_predictions = 20  # number of test predictions to run
+            homes_path = self.get_asset_path("kc_house_data.csv")
+            homes = pd.read_csv(homes_path).head(num_predictions)  # just a sample
+            priceless_homes = homes.drop(["price"], axis=1)
+            priceless_dict = priceless_homes.to_dict(orient="records")
+
+            predict_url = reverse("api:endpoint-predict", args=(endpoint_id,))
+            for priceless_home in priceless_dict:
+                predict_response = self.client.post(predict_url, priceless_home, status_code=status.HTTP_201_CREATED)
+                predict_data = predict_response.data
 
         except Exception as exc:
             raise exc

@@ -31,7 +31,7 @@ class DatasetTests(APITestCase):
 
     def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv", asset_class="assets"):
         url = reverse("api:dataset-asset-detail", args=(dataset_id, asset_class, asset_name))
-        response = self._upload_file(url, asset_name, "text/csv", token=self.token1)
+        response = self.upload_file(url, asset_name, "text/csv", token=self.token1)
         self.assertEqual(response.data[0]["id"], asset_name)
         path = "workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
         self.assertEqual(response.data[0]["path"], path)
@@ -41,9 +41,9 @@ class DatasetTests(APITestCase):
         self.setup_basics()
         try:
             url = reverse("api:workspace-list")
-            self._upload_items(url, api.models.WORKSPACE_PREFIX)
+            self.upload_items(url, api.models.WORKSPACE_PREFIX)
             url = reverse("api:dataset-list")
-            self._upload_items(url, api.models.DATASET_PREFIX)
+            self.upload_items(url, api.models.DATASET_PREFIX)
         except Exception as exc:
             print(exc)
             raise exc

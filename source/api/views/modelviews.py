@@ -10,6 +10,7 @@ import api.utilities
 from api.models import Model
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
+from .itemviews import ItemViewSetMixin
 from .jobviews import JobViewSetMixin
 
 
@@ -31,7 +32,7 @@ class ModelSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 ##
 
 
-class ModelViewSet(JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class ModelViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A trained machine learning model with its training information and file assets """
 
     item_class = api.models.Model
@@ -39,13 +40,3 @@ class ModelViewSet(JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
 
     # The only action that can be performed on a recipe is to train it
     job_actions = ("train",)
-
-    # All methods require prior authentication, no token, no access
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        """ A user must be authenticated and only only access to objects he or his workspaces own. """
-        assert not self.request.user.is_anonymous
-        if self.request.user.is_superuser:
-            return Model.objects.all()
-        return Model.objects.filter(workspace__user=self.request.user)

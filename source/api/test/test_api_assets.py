@@ -29,7 +29,7 @@ class AssetsTests(APITestCase):
     def _upload_dog(self):
         """ The same dog image is used in a number of tests """
         url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "oh-my-dog.jpg"))
-        response = self._upload_file(url, "image_dog1.jpg", "image/jpeg", token=self.token1)
+        response = self.upload_file(url, "image_dog1.jpg", "image/jpeg", token=self.token1)
         self.assertEqual(response.data[0]["id"], "oh-my-dog.jpg")
         self.assertEqual(response.data[0]["path"], "workspaces/ws_storage_gcs/assets/oh-my-dog.jpg")
         self.assertEqual(response.data[0]["hash"], "a9f659efd070f3e5b121a54edd8b13d0")
@@ -40,10 +40,10 @@ class AssetsTests(APITestCase):
         self.setup_basics()
         try:
             url = reverse("api:workspace-list")
-            self._upload_items(url, api.models.WORKSPACE_PREFIX)
+            self.upload_items(url, api.models.WORKSPACE_PREFIX)
 
             url = reverse("api:dataset-list")
-            self._upload_items(url, api.models.DATASET_PREFIX)
+            self.upload_items(url, api.models.DATASET_PREFIX)
 
         except Exception as exc:
             print(exc)
@@ -97,7 +97,7 @@ class AssetsTests(APITestCase):
         try:
             # asset_id matches filename
             url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "image_dog1.jpg"))
-            response = self._upload_file(
+            response = self.upload_file(
                 url, "image_dog1.jpg", "image/jpeg", self.token2, status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as exc:
@@ -108,7 +108,7 @@ class AssetsTests(APITestCase):
         try:
             # asset_id matches filename
             url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "image_dog1.jpg"))
-            response = self._upload_file(
+            response = self.upload_file(
                 url, "image_dog1.jpg", "image/jpeg", token=None, status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as exc:
@@ -119,7 +119,7 @@ class AssetsTests(APITestCase):
         try:
             # upload an image to storage
             url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "download1.jpg"))
-            response1 = self._upload_file(url, "image_dog1.jpg", "image/jpeg", token=self.token1)
+            response1 = self.upload_file(url, "image_dog1.jpg", "image/jpeg", token=self.token1)
             self.assertEqual(response1.data[0]["id"], "download1.jpg")
             self.assertEqual(response1.data[0]["hash"], "a9f659efd070f3e5b121a54edd8b13d0")
 

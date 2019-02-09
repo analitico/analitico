@@ -21,10 +21,10 @@ class ItemsTests(APITestCase):
         self.setup_basics()
         try:
             url = reverse("api:workspace-list")
-            self._upload_items(url, api.models.WORKSPACE_PREFIX)
+            self.upload_items(url, api.models.WORKSPACE_PREFIX)
 
             url = reverse("api:dataset-list")
-            self._upload_items(url, api.models.DATASET_PREFIX)
+            self.upload_items(url, api.models.DATASET_PREFIX)
 
         except Exception as exc:
             print(exc)

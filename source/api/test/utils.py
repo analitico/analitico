@@ -24,6 +24,9 @@ class APITestCase(rest_framework.test.APITestCase):
         abs_path = os.path.join(ASSETS_PATH, path)
         return read_json(abs_path)
 
+    def get_asset_path(self, asset_name):
+        return os.path.join(ASSETS_PATH, asset_name)
+
     def get_items(self, item_type, token=None, status_code=status.HTTP_200_OK):
         url = reverse("api:" + item_type + "-list")
         self.auth_token(token)
@@ -56,7 +59,7 @@ class APITestCase(rest_framework.test.APITestCase):
         self.assertEqual(response.status_code, status_code)
         return response.data
 
-    def _upload_items(self, endpoint, prefix):
+    def upload_items(self, endpoint, prefix):
         for path in os.listdir(ASSETS_PATH):
             if path.startswith(prefix):
                 item = self.read_json_asset(path)
@@ -85,7 +88,7 @@ class APITestCase(rest_framework.test.APITestCase):
         else:
             self.client.logout()
 
-    def _upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
+    def upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
         """ Uploads a single asset to given url service, performs basic checks """
         asset_path = os.path.join(ASSETS_PATH, asset_name)
         asset_size = os.path.getsize(asset_path)
