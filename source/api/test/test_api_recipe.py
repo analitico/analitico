@@ -91,8 +91,8 @@ class RecipeTests(APITestCase):
         url = reverse("api:recipe-job-detail", args=("rx_housesalesprediction_1", "train"))
         response = self.client.get(url, format="json", status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def test_recipe_train(self):
-        """ Process a dataset, then train a recipe with it """
+    def test_recipe_train_and_predict(self):
+        """ Process a dataset, then train a recipe with it, use the model to create and endpoint, run predictions """
         try:
             # process source dataset
             self.auth_token(self.token1)
@@ -132,7 +132,7 @@ class RecipeTests(APITestCase):
             # training results from model
             training = model["attributes"]["training"]
             self.assertEqual(training["type"], "analitico/training")
-            self.assertEqual(training["algorithm"], analitico.plugin.CATBOOST_REGRESSOR_PLUGIN)
+            self.assertEqual(training["plugins"]["training"], analitico.plugin.CATBOOST_REGRESSOR_PLUGIN)
 
         except Exception as exc:
             raise exc
