@@ -47,6 +47,8 @@ class ItemMixin:
         """ Returns type of item, eg: workspace, project, dataset, etc """
         return type(self).__name__.lower()
 
+    ## Attributes
+
     # A set of attributes implemented as a JSONField in the concrete class like this to work around a django issue:
     # attributes = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, blank=True, null=True)
     attributes = None
@@ -62,6 +64,8 @@ class ItemMixin:
         set_dict_dot(attributes, key, value)
         self.attributes = attributes  # need to assign or it won't save() it...
 
+    ## Basic properties
+
     @property
     def notes(self):
         return self.get_attribute("notes")
@@ -70,9 +74,7 @@ class ItemMixin:
     def notes(self, notes):
         self.set_attribute("notes", notes)
 
-    ##
     ## Assets
-    ##
 
     @property
     def storage(self) -> api.storage.Storage:
