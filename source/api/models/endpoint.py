@@ -11,7 +11,7 @@ from rest_framework import status
 
 import analitico.plugin
 from analitico.plugin import PluginError
-from analitico.utilities import get_dict_dot, set_dict_dot, logger
+from analitico.utilities import get_dict_dot, set_dict_dot, time_ms
 from .user import User
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
@@ -81,11 +81,13 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                 assert model
 
                 # restore /data artifacts used by plugin to run prediction
+                assets_ms = time_ms()
                 artifacts_path = runner.get_artifacts_directory()
                 for asset in model.get_attribute("data"):
                     cache_path = runner.get_cache_asset(model, "data", asset["id"])
                     artifact_path = os.path.join(artifacts_path, asset["id"])
                     os.symlink(cache_path, artifact_path)
+                assets_ms = time_ms(assets_ms)
 
                 # create dataframe from request data
                 request = runner.request
@@ -97,11 +99,15 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
 
                 # plugin run prediction pipeline and returns predictions as dataframe
                 plugin = runner.create_plugin(**plugin_settings)
-                predictions_df = plugin.run(job.action, data_df)
+                results = plugin.run(job.action, data_df)
 
-                # job will return information linking to the trained model
-                job.set_attribute("recipe_id", self.id)
-                job.set_attribute("model_id", "ciao")
+                # additional information
+                results["records"] = data
+                results["model_id"] = model_id
+                results["endpoint_id"] = self.id
+                results["performance"]["assets_ms"] = assets_ms
+
+                job.payload = results
                 job.save()
 
             self.save()
