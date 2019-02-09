@@ -23,6 +23,7 @@
 			"**/venv": true
 		},
 		"python.unitTest.cwd": "source",
-		"python.unitTest.unittestEnabled": true
+		"python.unitTest.unittestEnabled": true,
+		"editor.fontFamily": "'Ubuntu Mono', 'Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback'"
 	}
 }
