@@ -188,6 +188,12 @@ class RecipeTests(APITestCase):
             preds2_data = preds2_response.data
             self.assertEqual(len(preds2_data["attributes"]["payload"]["predictions"]), len(priceless_homes))
 
+            # run predictions directly on /predict endpoint which returns simplified results (w/o job information)
+            preds3_url = reverse("api:endpoint-predict", args=(endpoint_id,))
+            preds3_response = self.client.post(preds3_url, priceless_dict, format="json")
+            preds3_data = preds3_response.data
+            self.assertEqual(len(preds3_data["predictions"]), len(priceless_homes))
+
         except Exception as exc:
             raise exc
 

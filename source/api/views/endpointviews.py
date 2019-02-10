@@ -4,10 +4,13 @@ from rest_framework import serializers
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import APIException
 
+import analitico
 import api.models
 import api.utilities
 
+from analitico import ACTION_PREDICT
 from api.models import Endpoint, Job
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviews import ItemViewSetMixin
@@ -40,9 +43,10 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets
     serializer_class = EndpointSerializer
 
     # The only action that can be performed on an endpoint is an inference
-    job_actions = ("predict",)
+    job_actions = (ACTION_PREDICT,)
 
-    @action(methods=["post"], detail=True, url_name="predict", url_path="predict")
+    @action(methods=["post"], detail=True, url_name=ACTION_PREDICT, url_path=ACTION_PREDICT)
     def predict(self, request, pk):
-        data = request.data
-        return Response("ciao pippo!")
+        """ Runs a synchronous prediction on an endpoint """
+        job_item = self.get_object()  # endpoint
+        return self.create_job_response(request, job_item, ACTION_PREDICT, run_async=False, just_payload=True)

@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 import api.models
 import api.utilities
 
+from analitico import ACTION_PROCESS
 from api.models import Dataset, Job
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
@@ -46,7 +47,7 @@ class DatasetViewSet(AssetViewSetMixin, JobViewSetMixin, rest_framework.viewsets
 
     item_class = api.models.Dataset
     serializer_class = DatasetSerializer
-    job_actions = ("process",)
+    job_actions = (ACTION_PROCESS,)
 
     def get_queryset(self):
         """ A user only has access to objects he or his workspaces own. """
@@ -59,7 +60,7 @@ class DatasetViewSet(AssetViewSetMixin, JobViewSetMixin, rest_framework.viewsets
     @permission_classes((IsAuthenticated,))
     @action(methods=["post"], detail=True, url_name="detail-data-process", url_path="data/process")
     def data_process(self, request, pk):
-        return self.job_create(request, pk, "process")
+        return self.job_create(request, pk, ACTION_PROCESS)
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="detail-data-csv", url_path="data/csv")

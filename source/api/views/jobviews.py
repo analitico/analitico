@@ -80,13 +80,24 @@ class JobViewSetMixin:
     # defined in subclass to list acceptable actions
     job_actions = ()
 
-    def _create_job(self, request, job_item, job_action):
+    def create_job(self, request, job_item, job_action, run_async=False):
         workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
         job_action = job_item.type + "/" + job_action
-        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=Job.JOB_STATUS_RUNNING)
+        job_status = Job.JOB_STATUS_CREATED if run_async else Job.JOB_STATUS_RUNNING
+        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=job_status)
         job.save()
-        job.run(request)
+        if not run_async:
+            job.run(request)
         return job
+
+    def create_job_response(self, request, job_item, job_action, run_async=False, just_payload=False):
+        """ Runs a job and creates a response which can be the job itself or just its payload """
+        job = self.create_job(request, job_item, job_action, run_async=run_async)
+        if job.status == Job.JOB_STATUS_COMPLETED and just_payload:
+            payload = job.payload
+            payload["job_id"] = job.id
+            return Response(payload)
+        return Response(job)
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
@@ -102,7 +113,7 @@ class JobViewSetMixin:
         """ Creates a job for this item and returns it. """
         job_item = self.get_object()
         if job_action in self.job_actions:
-            job = self._create_job(request, job_item, job_action)
+            job = self.create_job(request, job_item, job_action)
             jobs_serializer = JobSerializer(job)
             return Response(jobs_serializer.data)
         raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)
