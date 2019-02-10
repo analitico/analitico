@@ -167,7 +167,7 @@ class ItemsTests(APITestCase):
 
         patch["data"]["attributes"]["made_up_attribute"] = None  # them removing it
         patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
-        self.assertIsNone(patch_item["attributes"]["made_up_attribute"])
+        self.assertIsNone(patch_item["attributes"].get("made_up_attribute"))
 
     def test_workspace_delete(self):
         item = self.delete_item("workspace", "ws_001", self.token1, status.HTTP_204_NO_CONTENT)

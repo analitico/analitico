@@ -34,7 +34,7 @@ from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
 from api.models import ItemMixin, Job
-from analitico.utilities import logger
+from analitico.utilities import logger, get_dict_dot
 
 ##
 ## JobSerializer
@@ -51,6 +51,13 @@ class JobSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
     def to_representation(self, item):
         """ Add link to job target as a "related" link. """
         data = super().to_representation(item)
+
+        # Payload as its own dictionary:
+        # pros: easier to find among attributes
+        # cons: breaks pattern with other items
+        # payload = data["attributes"].pop("payload", None)
+        # data["payload"] = payload
+
         if "links" in data and item.item_id:
             target = ModelsFactory.from_id(item.item_id)
             data["links"]["related"] = self.get_item_url(target)

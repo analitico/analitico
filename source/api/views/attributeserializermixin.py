@@ -82,7 +82,10 @@ class AttributeSerializerMixin:
         # add additional attributes from json dict
         if item.attributes:
             for key in item.attributes:
-                data[key] = item.attributes[key]
+                value = item.attributes[key]
+                # skip nulls
+                if value:
+                    data[key] = item.attributes[key]
 
         # add link to self
         reformatted["links"] = {"self": self.get_item_url(item)}
