@@ -1,113 +1,110 @@
 {
-    "type": "dataset",
-    "id": "ds_housesalesprediction_1",
-    "attributes": {
-        "title": "",
-        "description": "",
-        "created_at": "2019-02-07T21:17:47.983920+01:00",
-        "updated_at": "2019-02-07T21:17:47.984014+01:00",
-        "workspace": "ws_samples",
-        "plugin": {
-            "type": "analitico/plugin",
-            "name": "analitico.plugin.DataframePipelinePlugin",
-            "plugins": [
-                {
-                    "type": "analitico/plugin",
-                    "name": "analitico.plugin.CsvDataframeSourcePlugin",
-                    "source": {
-                        "content_type": "text/csv",
-                        "url": "https://storage.googleapis.com/public.analitico.ai/data/housesalesprediction/kc_house_data.csv",
-                        "schema": {
-                            "columns": [
-                                {
-                                    "name": "id",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "date",
-                                    "type": "datetime"
-                                },
-                                {
-                                    "name": "bedrooms",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "bathrooms",
-                                    "type": "float"
-                                },
-                                {
-                                    "name": "sqft_living",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "sqft_lot",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "floors",
-                                    "type": "float"
-                                },
-                                {
-                                    "name": "waterfront",
-                                    "type": "boolean"
-                                },
-                                {
-                                    "name": "view",
-                                    "type": "category"
-                                },
-                                {
-                                    "name": "condition",
-                                    "type": "category"
-                                },
-                                {
-                                    "name": "grade",
-                                    "type": "float"
-                                },
-                                {
-                                    "name": "sqft_above",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "sqft_basement",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "yr_built",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "yr_renovated",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "zipcode",
-                                    "type": "category"
-                                },
-                                {
-                                    "name": "lat",
-                                    "type": "float"
-                                },
-                                {
-                                    "name": "long",
-                                    "type": "float"
-                                },
-                                {
-                                    "name": "sqft_living15",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "sqft_lot15",
-                                    "type": "integer"
-                                },
-                                {
-                                    "name": "price",
-                                    "type": "float"
-                                }
-                            ]
-                        }
-                    }
-                }
-            ]
-        }
-    }
+	"type": "dataset",
+	"id": "ds_housesalesprediction_1",
+	"attributes": {
+		"title": "",
+		"description": "",
+		"created_at": "2019-02-07T21:17:47.983920+01:00",
+		"updated_at": "2019-02-07T21:17:47.984014+01:00",
+		"workspace": "ws_samples",
+		"plugin": {
+			"type": "analitico/plugin",
+			"name": "analitico.plugin.DataframePipelinePlugin",
+			"plugins": [{
+				"type": "analitico/plugin",
+				"name": "analitico.plugin.CsvDataframeSourcePlugin",
+				"source": {
+					"content_type": "text/csv",
+					"url": "https://storage.googleapis.com/public.analitico.ai/data/housesalesprediction/kc_house_data.csv",
+					"schema": {
+						"columns": [{
+								"name": "id",
+								"type": "integer"
+							},
+							{
+								"name": "date",
+								"type": "datetime"
+							},
+							{
+								"name": "bedrooms",
+								"type": "integer"
+							},
+							{
+								"name": "bathrooms",
+								"type": "float"
+							},
+							{
+								"name": "sqft_living",
+								"type": "integer"
+							},
+							{
+								"name": "sqft_lot",
+								"type": "integer"
+							},
+							{
+								"name": "floors",
+								"type": "float"
+							},
+							{
+								"name": "waterfront",
+								"type": "boolean"
+							},
+							{
+								"name": "view",
+								"type": "category"
+							},
+							{
+								"name": "condition",
+								"type": "category"
+							},
+							{
+								"name": "grade",
+								"type": "float"
+							},
+							{
+								"name": "sqft_above",
+								"type": "integer"
+							},
+							{
+								"name": "sqft_basement",
+								"type": "integer"
+							},
+							{
+								"name": "yr_built",
+								"type": "integer"
+							},
+							{
+								"name": "yr_renovated",
+								"type": "integer"
+							},
+							{
+								"name": "zipcode",
+								"type": "category"
+							},
+							{
+								"name": "lat",
+								"type": "float"
+							},
+							{
+								"name": "long",
+								"type": "float"
+							},
+							{
+								"name": "sqft_living15",
+								"type": "integer"
+							},
+							{
+								"name": "sqft_lot15",
+								"type": "integer"
+							},
+							{
+								"name": "price",
+								"type": "float"
+							}
+						]
+					}
+				}
+			}]
+		}
+	}
 }
