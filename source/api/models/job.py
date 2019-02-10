@@ -188,12 +188,8 @@ class JobRunner(analitico.manager.PluginManager):
 
             # item runs the job
             self.item.run(job=self.job, runner=self)
-
-            # upload /data artifacts + metadata created by the item
-            self.upload_artifacts(self.item)
-
-            # mark job as completed
             self.item.save()
+
             self.job.status = Job.JOB_STATUS_COMPLETED
         except Exception as exc:
             self.job.status = Job.JOB_STATUS_FAILED

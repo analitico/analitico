@@ -105,6 +105,9 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                         schema = generate_schema(df)
                         plugin_settings["plugins"][0]["source"]["schema"] = schema
 
+                    # upload processing artifacts to /data
+                    runner.upload_artifacts(self)
+
             self.save()
         except Exception as exc:
             raise exc
