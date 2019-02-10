@@ -84,7 +84,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                                     {
                                         "type": analitico.plugin.PLUGIN_TYPE,
                                         "name": analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN,
-                                        "source": {"content_type": "text/csv", "url": asset["url"]},
+                                        "source": {"content_type": "text/csv", "url": asset["path"]},
                                     }
                                 ],
                             }
