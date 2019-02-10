@@ -6,6 +6,7 @@ import rest_framework.renderers
 import rest_framework_json_api.renderers
 from analitico.utilities import get_dict_dot
 
+
 class JSONRenderer(rest_framework.renderers.JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         # change results to { 'data': results } to be more json:api-ish
@@ -22,7 +23,7 @@ class JSONRenderer(rest_framework.renderers.JSONRenderer):
 
             if isinstance(data, dict):
                 if "error" not in data:
-                    
+
                     # in json:api when "data" is present it is the only entry
                     is_jsonapi_data = "data" in data and len(data) == 1
                     if not is_jsonapi_data:
@@ -30,5 +31,5 @@ class JSONRenderer(rest_framework.renderers.JSONRenderer):
 
             if isinstance(data, list):
                 data = OrderedDict({"data": data})
-        
+
         return super().render(data, accepted_media_type, renderer_context)

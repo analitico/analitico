@@ -266,6 +266,7 @@ class Job(ItemMixin, models.Model):
     def payload(self):
         """ Payload attached to the job (eg: an inference, job results, etc) """
         return self.get_attribute("payload", None)
+
     @payload.setter
     def payload(self, payload):
         self.set_attribute("payload", payload)
