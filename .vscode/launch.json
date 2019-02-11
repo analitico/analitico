@@ -34,7 +34,8 @@
             "debugOptions": [ "Django"],
             "envPath": "${workspaceFolder}/dev.env",
             "args": [
-                "runserver"
+                "runserver",
+                "--noreload"
             ],
             "django": true,
             "debugStdLib": true,
@@ -70,7 +71,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.DatasetTests.test_dataset_upload_process_data_get_info",
+                "api.test.RecipeTests.test_recipe_train_predict_the_whole_enchilada",
                 "-v",
                 "2"
             ],
