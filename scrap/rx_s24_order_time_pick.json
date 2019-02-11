@@ -1,0 +1,251 @@
+{
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.RecipePipelinePlugin",
+        "plugins": [
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                "source": {
+                    "content_type": "text/csv",
+                    "url": "analitico://datasets/ds_s24_order_time_pick/data/csv",
+                    "schema": {
+                        "columns": [
+                            {
+                                "name": "order_amount",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_volume",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_deliver_at_start.dayofweek",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.year",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.month",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.day",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.hour",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.minute",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_fulfillment_type",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "items_total",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "items_with_variable_weight",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "store_name",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ztl",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_has_subscription",
+                                "type": "category"
+                            },
+                            {
+                                "name": "pick_time.min",
+                                "type": "float"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.CatBoostRegressorPlugin",
+                "parameters": {
+                    "iterations": 50,
+                    "learning_rate": 0.90
+                },
+                "data": {
+                    "label": "pick_time.min",
+                    "schema": {
+                        "columns": [
+                            {
+                                "name": "order_amount",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_volume",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_deliver_at_start.dayofweek",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.year",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.month",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.day",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.hour",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_deliver_at_start.minute",
+                                "type": "category"
+                            },
+                            {
+                                "name": "order_fulfillment_type",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "items_total",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "items_with_variable_weight",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "store_name",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ztl",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_has_subscription",
+                                "type": "category"
+                            },
+                            {
+                                "name": "pick_time.min",
+                                "type": "float"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+}
