@@ -17,8 +17,6 @@ import api.utilities
 from analitico.utilities import logger
 from api.utilities import time_ms, api_get_parameter, api_check_authorization
 
-import s24.models
-
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
