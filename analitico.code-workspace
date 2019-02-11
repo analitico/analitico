@@ -4,6 +4,9 @@
 			"path": "."
 		},
 		{
+			"path": "../analitico-s24"
+		},
+		{
 			"path": "../analitico-ops"
 		}
 	],

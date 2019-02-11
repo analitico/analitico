@@ -89,7 +89,6 @@ try:
     # Application definition
     INSTALLED_APPS = [
         "api",
-        "s24",
         "website",
         "gunicorn",
         "rest_framework",

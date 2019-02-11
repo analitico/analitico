@@ -1,7 +1,4 @@
 from .tokenviews import TokenSerializer, TokenViewSet
-from .projectviews import ProjectSerializer, ProjectViewSet
-from .trainingviews import TrainingViewSet
-
 from .attributeserializermixin import AttributeSerializerMixin
 
 from .workspaceviews import WorkspaceViewSet
@@ -10,8 +7,3 @@ from .jobviews import JobViewSet
 from .recipeviews import RecipeViewSet
 from .modelviews import ModelViewSet
 from .endpointviews import EndpointViewSet
-
-from .views import handle_prj_training
-from .views import handle_prj_upload
-from .views import handle_trn
-from .views import handle_trn_activate
