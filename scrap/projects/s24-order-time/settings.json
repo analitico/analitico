@@ -1,13 +1,13 @@
 {
     "type": "analitico/settings",
     "version": "1.0",
-
     "project_id": "s24-order-time",
     "model_id": "s24-order-time-model",
-
-    "iterations": 50,
+    "parameters": {
+        "iterations": 50,
+        "learning_rate": 1
+    },
     "chronological": true,
-
     "features": {
         "all": [
             "order_amount",
@@ -46,7 +46,6 @@
         ],
         "label": "total_min"
     },
-    
     "training_data": {
         "url": "https://storage.googleapis.com/data.analitico.ai/data/s24/training/orders-joined.csv"
     }
