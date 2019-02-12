@@ -36,7 +36,6 @@ import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-
     declarations: [
         AppComponent,
         MainNavComponent,
-        AoLoginComponent,
         AoNavListComponent,
         AoDatasetViewComponent,
         AoViewComponent,
