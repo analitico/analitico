@@ -72,11 +72,9 @@ export class AoNavListComponent implements OnInit {
         }
     }
 
-
     // output the id of the selected item
     selectItem(item: any) {
         this.selectedId.emit(item.id);
     }
-
 
 }

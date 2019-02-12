@@ -4,10 +4,6 @@
             <a matLine routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)" title="{{item.id}}">
                 {{(item.attributes && item.attributes.title) || item.id}}
             </a>
-            <button mat-icon-button (click)="deleteItem(item)">
-                <mat-icon>delete_outline</mat-icon>
-            </button>
-
         </mat-list-item>
 
     </mat-nav-list>

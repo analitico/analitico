@@ -1,6 +1,5 @@
-import { Component, EventEmitter, Input, OnDestroy, Output, Inject, forwardRef, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, OnInit } from '@angular/core';
 import { HttpClient, HttpEventType, HttpHeaders, HttpParams } from '@angular/common/http';
-import { AoMatFileUploadQueueComponent } from 'src/app/components/ao-mat-file-upload-queue/ao-mat-file-upload-queue.component';
 
 @Component({
     selector: 'app-ao-mat-file-upload',
@@ -9,11 +8,7 @@ import { AoMatFileUploadQueueComponent } from 'src/app/components/ao-mat-file-up
 })
 export class AoMatFileUploadComponent implements OnInit, OnDestroy {
 
-
-
     public isUploading = false;
-
-
 
     /* Http request input bindings */
     @Input()
@@ -61,19 +56,8 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
     private fileUploadSubscription: any;
 
 
-    constructor(
-        private HttpClient: HttpClient
-        , @Inject(forwardRef(() => AoMatFileUploadQueueComponent)) public matFileUploadQueue: AoMatFileUploadQueueComponent
-    ) {
+    constructor(private httpClient: HttpClient) { }
 
-        if (matFileUploadQueue) {
-            this.httpUrl = matFileUploadQueue.httpUrl || this.httpUrl;
-            this.httpRequestHeaders = matFileUploadQueue.httpRequestHeaders || this.httpRequestHeaders;
-            this.httpRequestParams = matFileUploadQueue.httpRequestParams || this.httpRequestParams;
-            this.fileAlias = matFileUploadQueue.fileAlias || this.fileAlias;
-        }
-
-    }
     ngOnInit() {
         // start immediately
         this.upload();
@@ -111,7 +95,7 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
             // add csfr token
             this.httpRequestHeaders = (<HttpHeaders>this.httpRequestHeaders).append('X-CSRFTOKEN', xToken);
         }
-        this.fileUploadSubscription = this.HttpClient.post(this.httpUrl, formData, {
+        this.fileUploadSubscription = this.httpClient.post(this.httpUrl, formData, {
             headers: this.httpRequestHeaders,
             observe: 'events',
             params: this.httpRequestParams,

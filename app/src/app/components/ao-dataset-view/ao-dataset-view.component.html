@@ -20,6 +20,6 @@
 </mat-sidenav-container>
 
 
-<app-ao-mat-file-upload-queue #fileUploadQueue  [fileAlias]="'file'" [httpUrl]="uploadAssetUrl" multiple>
-    <app-ao-mat-file-upload [file]="file" [id]="i" *ngFor="let file of fileUploadQueue.files; let i = index" (uploaded)="assetUploaded()"></app-ao-mat-file-upload>
+<app-ao-mat-file-upload-queue #fileUploadQueue   multiple>
+    <app-ao-mat-file-upload [file]="file" [id]="i" *ngFor="let file of fileUploadQueue.files; let i = index" (uploaded)="assetUploaded()" [fileAlias]="'file'" [httpUrl]="uploadAssetUrl"></app-ao-mat-file-upload>
 </app-ao-mat-file-upload-queue>

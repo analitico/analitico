@@ -38,11 +38,13 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
 
     // loads an url  that provides a list of objects with id and title properties
     loadListFromUrl() {
-        this.apiClient.get(this._url)
-            .then((response: any) => {
-                this.items = response.data;
-                this.processItems();
-            });
+        if (this._url) {
+            this.apiClient.get(this._url)
+                .then((response: any) => {
+                    this.items = response.data;
+                    this.processItems();
+                });
+        }
     }
 
     // delete an item using DELETE request
