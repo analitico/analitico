@@ -7,7 +7,7 @@ source analitico-env
 
 echo "Installing requirements"
 source venv/bin/activate
-sudo pip3 install -r requirements.txt
+pip3 install -r requirements.txt
 
 cd source
 
@@ -38,6 +38,6 @@ chmod 600 /home/www/ssl/analitico.ai.key
 chmod 755 /home/www/ssl/analitico.ai.crt
 
 # make tmp and subfolders public
-# chmod -R 777 /tmp
+chmod -R 777 /tmp
 
 echo "Done"
