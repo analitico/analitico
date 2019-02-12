@@ -36,4 +36,8 @@ echo "$ANALITICO_SSL_CRT" | base64 -d -w0 | tr -d '\r' > /home/www/ssl/analitico
 echo "$ANALITICO_SSL_KEY" | base64 -d -w0 | tr -d '\r' > /home/www/ssl/analitico.ai.key
 chmod 600 /home/www/ssl/analitico.ai.key
 chmod 755 /home/www/ssl/analitico.ai.crt
+
+# make tmp and subfolders public
+chmod -R 777 /tmp
+
 echo "Done"
