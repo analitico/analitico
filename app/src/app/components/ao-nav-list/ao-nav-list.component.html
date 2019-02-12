@@ -1,7 +1,7 @@
 <div>
     <mat-nav-list>
         <mat-list-item *ngFor="let item of _items">
-            <a matLine routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)" title="{{item.id}}">
+            <a matLine (click)="selectItem(item)" title="{{item.id}}">
                 {{(item.attributes && item.attributes.title) || item.id}}
             </a>
         </mat-list-item>

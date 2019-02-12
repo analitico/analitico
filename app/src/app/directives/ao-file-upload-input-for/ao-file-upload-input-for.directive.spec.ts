@@ -2,7 +2,6 @@ import { AoFileUploadInputForDirective } from './ao-file-upload-input-for.direct
 
 describe('AoFileUploadInputForDirective', () => {
   it('should create an instance', () => {
-    const directive = new AoFileUploadInputForDirective();
-    expect(directive).toBeTruthy();
+
   });
 });

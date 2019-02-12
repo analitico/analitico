@@ -10,7 +10,7 @@ import { AoNavListComponent } from 'src/app/components/ao-nav-list/ao-nav-list.c
 export class AoNavListFromUrlComponent extends AoNavListComponent implements OnInit {
 
     constructor(protected apiClient: AoApiClientService) {
-        super(apiClient);
+        super();
     }
 
     private _url: any;

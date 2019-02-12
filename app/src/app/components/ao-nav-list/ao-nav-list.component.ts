@@ -1,5 +1,4 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 
 import * as _ from 'lodash';
 
@@ -34,9 +33,7 @@ export class AoNavListComponent implements OnInit {
         this.processItems();
     }
 
-    constructor(protected apiClient: AoApiClientService) {
-
-    }
+    constructor() {}
 
 
     // filters an array of objects using a dictionary
