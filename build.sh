@@ -1,6 +1,8 @@
 #!/bin/bash
 # exit if error
 set -e
+# switch user
+su www
 # Build and test execution
 echo "Injecting env"
 source analitico-env
@@ -38,6 +40,6 @@ chmod 600 /home/www/ssl/analitico.ai.key
 chmod 755 /home/www/ssl/analitico.ai.crt
 
 # make tmp and subfolders public
-chmod -R 777 /tmp
+# chmod -R 777 /tmp
 
 echo "Done"
