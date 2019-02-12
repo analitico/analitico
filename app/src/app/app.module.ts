@@ -7,7 +7,6 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MainNavComponent } from './components/main-nav/main-nav.component';
 import { LayoutModule } from '@angular/cdk/layout';
-import { AoLoginComponent } from './components/ao-login/ao-login.component';
 import { FormsModule } from '@angular/forms';
 import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-state-store.service';
 import { HttpClientModule } from '@angular/common/http';
@@ -30,7 +29,7 @@ import { AoDataframePipelinePluginComponent } from './plugins/ao-dataframe-pipel
 import { AoMatFileUploadComponent } from './components/ao-mat-file-upload/ao-mat-file-upload.component';
 import { AoMatFileUploadQueueComponent } from './components/ao-mat-file-upload-queue/ao-mat-file-upload-queue.component';
 import { AoFileUploadInputForDirective } from './directives/ao-file-upload-input-for/ao-file-upload-input-for.directive';
-import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-nav-list-from-url/ao-nav-list-from-url.component';
+import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-nav-list-from-url.component';
 
 
 @NgModule({
