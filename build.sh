@@ -1,8 +1,6 @@
 #!/bin/bash
 # exit if error
 set -e
-# switch user
-su www
 # Build and test execution
 echo "Injecting env"
 source analitico-env
