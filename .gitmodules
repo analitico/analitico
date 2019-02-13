@@ -3,4 +3,5 @@
 	url = https://github.com/analitico/analitico-sdk.git
 [submodule "integrations/s24"]
 	path = integrations/s24
-	url = /home/gionata/github/analitico-s24
+	url = https://github.com/Supermercato24/analitico-s24.git
+
