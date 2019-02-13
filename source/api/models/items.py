@@ -134,13 +134,12 @@ class ItemAssetsMixin:
             raise NotFound(detail)
         return None
 
-    def _upload_asset_stream(self, iterator, asset_class, asset_id, size=0, content_type=None, filename=None) -> dict:
+    def upload_asset_stream(self, iterator, asset_class, asset_id, size=0, content_type=None, filename=None, extras=None) -> dict:
         """ Uploads an asset to a model's storage and returns the assets description. """
         assert isinstance(self, ItemMixin)
         asset_parts = os.path.splitext(asset_id)
         asset_id = slugify(asset_parts[0]) + asset_parts[1]
         asset_path = self._get_asset_path_from_name(asset_class, asset_id)
-
         asset_storage = self.storage
         asset_obj = asset_storage.upload_object_via_stream(iterator, asset_path, extra={"content_type": content_type})
 
@@ -174,11 +173,20 @@ class ItemAssetsMixin:
             asset["size"] = max(size, asset_obj.size)
             asset["url"] = "analitico://{}s/{}/{}/{}".format(self.type, self.id, asset_class, asset_id)
 
-            # update assets in model and therefore on database when caller eventually calls .save()
+            # if caller provided some extra info it can be saved along
+            # with the assets info. we need to check that it is not information
+            # that will overwrite anything that's already there
+            if extras:
+                for key, value in extras.items():
+                    if key not in asset:
+                        asset[key] = value
+
+            # update assets in model and on database
             self.set_attribute(asset_class, assets)
+            self.save()
         return asset
 
-    def _download_asset_stream(self, asset_class, asset_id):
+    def download_asset_stream(self, asset_class, asset_id):
         """ Returns the asset with the given id along with a stream that can be used to download it from storage. """
         assert isinstance(self, ItemMixin)
         asset = self._get_asset_from_id(asset_class, asset_id, raise404=True)
@@ -192,6 +200,9 @@ class ItemAssetsMixin:
             asset["last_modified"] = storage_obj.extra["last_modified"]
         asset["size"] = storage_obj.size
         asset["hash"] = storage_obj.hash
+
+
+
         return asset, storage_stream
 
     def _delete_asset(self, asset_class, asset_id) -> dict:
