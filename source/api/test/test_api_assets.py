@@ -92,6 +92,23 @@ class AssetsTests(APITestCase):
         except Exception as exc:
             raise exc
 
+    def test_asset_upload_same_file_multiple_times(self):
+        """ Test uploading the same file more than once """
+        try:
+            url1, _ = self._upload_dog()
+            url2, _ = self._upload_dog()
+            url3, _ = self._upload_dog()
+
+            url = reverse("api:workspace-detail", args=("ws_storage_gcs",))
+            response = self.client.get(url)
+            attributes = response.data["attributes"]
+
+            # thou shall only have one dog!
+            self.assertEqual(len(attributes["assets"]), 1)
+            self.assertEqual(attributes["assets"][0]["id"], "oh-my-dog.jpg")
+        except Exception as exc:
+            raise exc
+
     def test_asset_upload_wrong_token_404(self):
         """ Test simple upload of image asset using the wrong token """
         try:
