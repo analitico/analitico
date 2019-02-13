@@ -5,10 +5,9 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File (Integrated Terminal)",
+            "name": "Run File (Python)",
             "type": "python",
             "request": "launch",
-            "OFFprogram": "examples/api-dataset.py",
             "program": "${file}",
             "cwd": "${workspaceFolder}/source",
             "envPath": "${workspaceFolder}/dev.env",
@@ -18,14 +17,7 @@
             }
         },
         {
-            "name": "Python: Attach",
-            "type": "python",
-            "request": "attach",
-            "port": 5678,
-            "host": "localhost"
-        },
-        {
-            "name": "Python: Django",
+            "name": "Run Server (Django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/source",
@@ -45,7 +37,7 @@
             }
         },
         {
-            "name": "Python: Django test",
+            "name": "Test All (Django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/source",
@@ -63,7 +55,7 @@
             }
         },
         {
-            "name": "Python: Django specific test",
+            "name": "Test One (Django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}",
@@ -71,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.RecipeTests.test_recipe_train_predict_the_whole_enchilada",
+                "api.test.AssetsTests.test_asset_upload_same_file_multiple_times",
                 "-v",
                 "2"
             ],
@@ -82,7 +74,7 @@
             }
         },
         {
-            "name": "Python: Trainer",
+            "name": "Worker (Django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}",
@@ -93,13 +85,6 @@
                 "trn_c8C9o5BSKrps"
             ],
             "django": true
-        },
-        {
-            "name": "Python: Current File (External Terminal)",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "externalTerminal"
         }
     ]
 }

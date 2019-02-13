@@ -4,9 +4,6 @@
 			"path": "."
 		},
 		{
-			"path": "../analitico-s24"
-		},
-		{
 			"path": "../analitico-ops"
 		}
 	],
@@ -23,7 +20,10 @@
 			"**/__pycache__": true,
 			"**/.ipynb_checkpoints": true,
 			"**/.pytest_cache": true,
-			"**/venv": true
+			"**/analitico.egg-info": true,
+			"**/catboost_info": true,
+			"**/venv": true,
+			"sdk/build": true
 		},
 		"python.unitTest.cwd": "source",
 		"python.unitTest.unittestEnabled": true,
