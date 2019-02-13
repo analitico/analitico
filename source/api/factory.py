@@ -2,6 +2,8 @@ from rest_framework.exceptions import NotFound
 
 import api.models
 
+from analitico.utilities import logger
+
 ##
 ## ModelsFactory
 ##
@@ -11,26 +13,37 @@ class ModelsFactory:
     """ Factory used to create models with various methods """
 
     @staticmethod
-    def from_type(model_type: str = None):
-        """ Creates a new model from its type, eg: workspace, dataset, etc """
-        if model_type == "workspace":
-            return api.models.Workspace()
-        if model_type == "dataset":
-            return api.models.Dataset()
-        if model_type == "recipe":
-            return api.models.Recipe()
-        if model_type == "model":
-            return api.models.Model()
-        if model_type == "service":
-            return api.models.Service()
-        if model_type == "endpoint":
-            return api.models.Endpoint()
-        raise NotFound("ItemsFactory.from_type could not find type: " + model_type)
+    def get_item_class_from_id(item_id: str):
+        """ Returns item class from item id """
+        assert item_id
+        if item_id.startswith(api.models.DATASET_PREFIX):
+            return api.models.Dataset
+        if item_id.startswith(api.models.ENDPOINT_PREFIX):
+            return api.models.Endpoint
+        if item_id.startswith(api.models.JOB_PREFIX):
+            return api.models.Job
+        if item_id.startswith(api.models.MODEL_PREFIX):
+            return api.models.Model
+        if item_id.startswith(api.models.RECIPE_PREFIX):
+            return api.models.Recipe
+        if item_id.startswith(api.models.SERVICE_PREFIX):
+            return api.models.Service
+        if item_id.startswith(api.models.WORKSPACE_PREFIX):
+            return api.models.Workspace
+        logger.warning("ModelsFactory.get_class_from_id could not find class for id: " + item_id)
+        return None
+
+    @staticmethod
+    def get_item_type_from_id(item_id: str):
+        assert item_id
+        item_class = ModelsFactory.get_item_class_from_id(item_id)
+        return item_class._meta.model_name if item_class else None
 
     @staticmethod
     def from_id(model_id: str, request=None):
         """ Loads a model from database given its id whose prefix determines the model type, eg: ws_xxx for Workspace. """
         # TODO limit access to objects available with request credentials
+        assert item_id
         if model_id.startswith(api.models.WORKSPACE_PREFIX):
             return api.models.Workspace.objects.get(pk=model_id)
         if model_id.startswith(api.models.DATASET_PREFIX):
@@ -45,8 +58,4 @@ class ModelsFactory:
             return api.models.Endpoint.objects.get(pk=model_id)
         raise NotFound("ItemsFactory.from_id could not find id: " + model_id)
 
-    @staticmethod
-    def from_data(model_data: str):
-        """ Use a serializer to create a model from its serialized data """
-        # TODO
-        return model_data
+ 

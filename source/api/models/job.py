@@ -13,6 +13,8 @@ import json
 import io
 
 from django.db import models
+from django.db import transaction
+
 from .items import ItemMixin
 from .workspace import Workspace
 from api.factory import ModelsFactory
@@ -167,15 +169,11 @@ class JobRunner(analitico.manager.PluginManager):
             if os.path.isfile(fullpath) and not path.endswith(".info"):
                 path_size = os.path.getsize(fullpath)
                 with open(fullpath, "rb") as f:
-                    asset = item._upload_asset_stream(f, "data", path, path_size, None, path)
-                    infopath = fullpath + ".info"
-                    # if asset has a .info companion
-                    if os.path.isfile(infopath):
-                        json = analitico.utilities.read_json(infopath)
-                        for key, value in json.items():
-                            asset[key] = value
-        # TODO may need to touch self.item.assets for it to save properly
-        item.save()
+                    # if asset has a .info companion read as extra info on the asset
+                    extras_path = fullpath + ".info"
+                    extras = analitico.utilities.read_json(extras_path) if os.path.isfile(extras_path) else None
+                    # upload asset and extras, item will take care of saving to database
+                    item.upload_asset_stream(f, "data", path, path_size, None, path, extras)
 
     def run(self):
         """ Runs job then collects artifacts """

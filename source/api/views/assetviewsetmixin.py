@@ -65,7 +65,7 @@ class AssetViewSetMixin:
                     content_type = content_type + "; charset=" + upload.charset
                 if not asset_id or len(request.FILES) > 1:
                     asset_id = upload.name
-                asset_obj = item._upload_asset_stream(
+                asset_obj = item.upload_asset_stream(
                     iter(upload),
                     asset_class,
                     asset_id,
@@ -76,7 +76,7 @@ class AssetViewSetMixin:
                 assets.append(asset_obj)
         else:
             # simple upload without a Content-Disposition header. filename is unknown
-            asset_obj = item._upload_asset_stream(
+            asset_obj = item.upload_asset_stream(
                 iter(request.stream), asset_class, asset_id, content_type=request.content_type, filename=asset_id
             )
             assets.append(asset_obj)
@@ -92,7 +92,7 @@ class AssetViewSetMixin:
         # streaming iterator and the latest etag for the cloud asset, then we
         # check the http headers to see if we can skip the download.
         item = self.get_object()
-        asset, asset_stream = item._download_asset_stream(asset_class, asset_id)
+        asset, asset_stream = item.download_asset_stream(asset_class, asset_id)
         # if cloud storage provides an etag (optional) let's use that, otherwise the hash will do
         etag = asset["etag"] if "etag" in asset else '"' + asset["hash"] + '"'
         last_modified = parse_http_date_safe(asset["last_modified"]) if "last_modified" in asset else None
@@ -164,5 +164,5 @@ class AssetViewSetMixin:
         """ Returns an asset's details as json. """
         assert asset_class and asset_id
         item = self.get_object()
-        asset, _ = item._download_asset_stream(asset_class, asset_id)
+        asset, _ = item.download_asset_stream(asset_class, asset_id)
         return Response(asset)

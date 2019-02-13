@@ -19,6 +19,7 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
+from api.factory import ModelsFactory
 from api.models import ItemMixin, Job
 from analitico.utilities import logger
 
@@ -39,8 +40,20 @@ class AttributeSerializerMixin:
     """
 
     def get_item_url(self, item):
-        """ Returns absolute url to given asset using the same endpoint the request came in through """
+        """ Returns absolute url to given item using the same endpoint the request came in through """
+        assert isinstance(item, ItemMixin)
         url = reverse("api:" + item.type + "-detail", args=(item.id,))
+        request = self.context.get("request")
+        if request:
+            url = request.build_absolute_uri(url)
+            url = url.replace("http://", "https://")
+        return url
+
+    def get_item_id_url(self, item_id):
+        """ Returns absolute url to given item (by id) using the same endpoint the request came in through """
+        assert isinstance(item_id, str)
+        item_type = ModelsFactory.get_item_type_from_id(item_id)
+        url = reverse("api:" + item_type + "-detail", args=(item_id,))
         request = self.context.get("request")
         if request:
             url = request.build_absolute_uri(url)
@@ -87,14 +100,27 @@ class AttributeSerializerMixin:
                 if value:
                     data[key] = item.attributes[key]
 
-        # add link to self
-        reformatted["links"] = {"self": self.get_item_url(item)}
-
         # add links to /assets and /data
         for asset_class in ("assets", "data"):
             if asset_class in data:
                 for asset in data[asset_class]:
                     asset["url"] = self.get_item_asset_url(item, asset_class, asset["id"])
+
+        # add link to self
+        reformatted["links"] = {"self": self.get_item_url(item)}
+
+        dataset_id = item.get_attribute("dataset_id")
+        if dataset_id:
+            reformatted["links"]["dataset"] = self.get_item_id_url(dataset_id) 
+        model_id = item.get_attribute("model_id")
+        if model_id:
+            reformatted["links"]["model"] = self.get_item_id_url(model_id) 
+        recipe_id = item.get_attribute("recipe_id")
+        if recipe_id:
+            reformatted["links"]["recipe"] = self.get_item_id_url(recipe_id) 
+        enpoint_id = item.get_attribute("endpoint_id")
+        if enpoint_id:
+            reformatted["links"]["endpoint"] = self.get_item_id_url(enpoint_id) 
 
         return reformatted
 

@@ -134,7 +134,7 @@ class ItemAssetsMixin:
             raise NotFound(detail)
         return None
 
-    def upload_asset_stream(self, iterator, asset_class, asset_id, size=0, content_type=None, filename=None, extras=None) -> dict:
+    def upload_asset_stream(self, iterator, asset_class, asset_id, size=0, content_type=None, filename=None, asset_extras=None) -> dict:
         """ Uploads an asset to a model's storage and returns the assets description. """
         assert isinstance(self, ItemMixin)
         asset_parts = os.path.splitext(asset_id)
@@ -176,8 +176,8 @@ class ItemAssetsMixin:
             # if caller provided some extra info it can be saved along
             # with the assets info. we need to check that it is not information
             # that will overwrite anything that's already there
-            if extras:
-                for key, value in extras.items():
+            if asset_extras:
+                for key, value in asset_extras.items():
                     if key not in asset:
                         asset[key] = value
 
