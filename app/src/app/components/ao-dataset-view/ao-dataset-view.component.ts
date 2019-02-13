@@ -22,8 +22,8 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
 
     title: string;
     viewContainerRef: ViewContainerRef;
-    private pluginData: any;
-    private saveTimeout: any;
+    pluginData: any;
+    saveTimeout: any;
     uploadAssetUrl: string;
     isProcessing = false;
     assets: any;
@@ -45,6 +45,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
 
     onLoad() {
+        console.log('onLoad');
         this.uploadAssetUrl = environment.apiUrl + '/datasets/' + this.item.id + '/assets';
         // clear the view
         this.viewContainerRef.clear();
@@ -65,7 +66,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
                     this.onLoad();
                 });
         } */
-        this.assets = this.item.attributes.assets;
+        this.assets = this.item.attributes && this.item.attributes.assets;
         this.loadPlugin();
     }
 
@@ -135,6 +136,6 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
 
     assetUploaded() {
-        this.process();
+       // this.process();
     }
 }

@@ -1,3 +1,6 @@
+/**
+ * Displays a list of mat-upload components (upload queue)
+ */
 import { Component, OnDestroy, QueryList, Input, ContentChildren, forwardRef, AfterViewInit } from '@angular/core';
 import { AoMatFileUploadComponent } from 'src/app/components/ao-mat-file-upload/ao-mat-file-upload.component';
 import { Subscription, Observable, merge } from 'rxjs';

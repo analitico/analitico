@@ -22,10 +22,10 @@ cd /home/www/analitico/app
 npm install
 
 echo "Execute Angular tests"
-#ng test
+ng test
 
 echo "Build Angular app"
-ng build --outputHashing=all
+ng build --prod --outputHashing=all
 
 echo "Link nginx conf"
 sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf

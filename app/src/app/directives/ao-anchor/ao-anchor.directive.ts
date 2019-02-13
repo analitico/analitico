@@ -1,3 +1,6 @@
+/**
+ * Used to get a child view in parent component
+ */
 import { Directive, ViewContainerRef } from '@angular/core';
 
 @Directive({

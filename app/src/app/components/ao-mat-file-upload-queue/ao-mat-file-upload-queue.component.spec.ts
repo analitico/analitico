@@ -1,6 +1,9 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AoMatFileUploadQueueComponent } from './ao-mat-file-upload-queue.component';
+import {
+    MatIconModule, MatProgressSpinnerModule
+} from '@angular/material';
 
 describe('AoMatFileUploadQueueComponent', () => {
   let component: AoMatFileUploadQueueComponent;
@@ -8,7 +11,8 @@ describe('AoMatFileUploadQueueComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AoMatFileUploadQueueComponent ]
+      declarations: [ AoMatFileUploadQueueComponent ],
+      imports: [MatIconModule]
     })
     .compileComponents();
   }));

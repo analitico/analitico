@@ -1,3 +1,7 @@
+/**
+ * Displays a list of object.
+ * Can filter and sort object according to parameters.
+ */
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 
 import * as _ from 'lodash';
@@ -28,12 +32,15 @@ export class AoNavListComponent implements OnInit {
             this.processItems();
         }
     }
+    get items() {
+        return this._items;
+    }
     @Input() set items(items: any) {
         this._items = items;
         this.processItems();
     }
 
-    constructor() {}
+    constructor() { }
 
 
     // filters an array of objects using a dictionary

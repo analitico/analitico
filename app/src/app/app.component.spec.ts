@@ -1,4 +1,4 @@
-/*
+
 import { TestBed, async } from '@angular/core/testing';
 
 import { AppComponent } from './app.component';
@@ -6,7 +6,7 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MainNavComponent } from './components/main-nav/main-nav.component';
 import { LayoutModule } from '@angular/cdk/layout';
-import { AoLoginComponent } from './components/ao-login/ao-login.component';
+
 import { FormsModule } from '@angular/forms';
 import { AoGlobalStateStore } from './services/ao-global-state-store/ao-global-state-store.service';
 import { HttpClientModule } from '@angular/common/http';
@@ -17,7 +17,7 @@ import { AoViewComponent } from './components/ao-view/ao-view.component';
 import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
 import {
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
-    MatCardModule, MatInputModule, MatSnackBarModule
+    MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule
 } from '@angular/material';
 // PLUGINS
 import { AoPluginsService } from './services/ao-plugins/ao-plugins.service';
@@ -25,8 +25,12 @@ import { AoPipelinePluginComponent } from './plugins/ao-pipeline-plugin/ao-pipel
 import { AoCsvDataframeSourcePluginComponent } from './plugins/ao-csv-dataframe-source-plugin/ao-csv-dataframe-source-plugin.component';
 import { AoRawJsonPluginComponent } from './plugins/ao-raw-json-plugin/ao-raw-json-plugin.component';
 import { NgJsonEditorModule } from 'ang-jsoneditor';
-import { MatFileUploadModule } from 'angular-material-fileupload';
-
+import { RouterTestingModule } from '@angular/router/testing';
+import { AoDataframePipelinePluginComponent } from './plugins/ao-dataframe-pipeline-plugin/ao-dataframe-pipeline-plugin.component';
+import { AoMatFileUploadComponent } from './components/ao-mat-file-upload/ao-mat-file-upload.component';
+import { AoMatFileUploadQueueComponent } from './components/ao-mat-file-upload-queue/ao-mat-file-upload-queue.component';
+import { AoFileUploadInputForDirective } from './directives/ao-file-upload-input-for/ao-file-upload-input-for.directive';
+import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-nav-list-from-url.component';
 
 describe('AppComponent', () => {
     beforeEach(async(() => {
@@ -45,19 +49,24 @@ describe('AppComponent', () => {
                 MatSnackBarModule,
                 FormsModule,
                 NgJsonEditorModule,
-                MatFileUploadModule
+                RouterTestingModule,
+                MatProgressSpinnerModule
             ],
             declarations: [
                 AppComponent,
                 MainNavComponent,
-                AoLoginComponent,
                 AoNavListComponent,
                 AoDatasetViewComponent,
                 AoViewComponent,
                 AoAnchorDirective,
                 AoPipelinePluginComponent,
                 AoCsvDataframeSourcePluginComponent,
-                AoRawJsonPluginComponent
+                AoRawJsonPluginComponent,
+                AoDataframePipelinePluginComponent,
+                AoMatFileUploadComponent,
+                AoMatFileUploadQueueComponent,
+                AoFileUploadInputForDirective,
+                AoNavListFromUrlComponent
             ],
             providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
         }).compileComponents();
@@ -69,4 +78,4 @@ describe('AppComponent', () => {
         expect(app).toBeTruthy();
     });
 
-}); */
+});

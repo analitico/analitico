@@ -1,3 +1,7 @@
+/**
+ * Upload a file to a url. Can be associated with a queue
+ * It automatically handles CSRFTOKEN.
+ */
 import { Component, EventEmitter, Input, OnDestroy, Output, OnInit } from '@angular/core';
 import { HttpClient, HttpEventType, HttpHeaders, HttpParams } from '@angular/common/http';
 
@@ -33,6 +37,8 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
     }
     set file(file: any) {
         this._file = file;
+        this.fileName = file.name;
+        this.fileSize = this._file.size;
         this.total = this._file.size;
     }
 
@@ -51,6 +57,8 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
     public progressPercentage = 0;
     public loaded = 0;
     public total = 0;
+    public fileName: string;
+    public fileSize: any;
     private _file: any;
     private _id: number;
     private fileUploadSubscription: any;
@@ -81,8 +89,8 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
 
 
     public upload(): void {
-        if (this.isUploading) {
-            // still doing...
+        if (this.isUploading || !this._file) {
+            // still doing or nothing to do
             return;
         }
         this.isUploading = true;
@@ -130,7 +138,7 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
-        console.log('file ' + this._file.name + ' destroyed...');
+        console.log('file ' + this.fileName + ' destroyed...');
     }
 
 }

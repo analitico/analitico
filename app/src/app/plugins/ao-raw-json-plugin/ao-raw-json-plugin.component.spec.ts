@@ -1,14 +1,18 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AoRawJsonPluginComponent } from './ao-raw-json-plugin.component';
-
+import { JsonEditorComponent, JsonEditorOptions } from 'ang-jsoneditor';
+import {
+    MatCardModule
+} from '@angular/material';
 describe('AoRawJsonPluginComponent', () => {
   let component: AoRawJsonPluginComponent;
   let fixture: ComponentFixture<AoRawJsonPluginComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AoRawJsonPluginComponent ]
+      declarations: [ AoRawJsonPluginComponent, JsonEditorComponent ],
+      imports: [MatCardModule]
     })
     .compileComponents();
   }));

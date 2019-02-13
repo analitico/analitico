@@ -7,7 +7,7 @@ import { Subject } from 'rxjs';
 export class AoPluginComponent {
     // plugin data change will be notified using subject
     onNewDataSubject: Subject<any>;
-    data: any;
+    data: any = {name: ''};
 
     constructor() {
         this.onNewDataSubject = new Subject();

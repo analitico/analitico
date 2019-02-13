@@ -1,3 +1,6 @@
+/**
+ * A nav-list component that load object list from a url
+ */
 import { Component, OnInit, Input } from '@angular/core';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoNavListComponent } from 'src/app/components/ao-nav-list/ao-nav-list.component';
@@ -14,6 +17,9 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
     }
 
     private _url: any;
+    get url() {
+        return this._url;
+    }
     @Input() set url(val: string) {
         if (val) {
             this._url = val;
