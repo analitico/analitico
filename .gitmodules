@@ -1,3 +1,6 @@
 [submodule "sdk"]
 	path = sdk
 	url = https://github.com/analitico/analitico-sdk.git
+[submodule "integrations/s24"]
+	path = integrations/s24
+	url = /home/gionata/github/analitico-s24
