@@ -111,16 +111,16 @@ class AttributeSerializerMixin:
 
         dataset_id = item.get_attribute("dataset_id")
         if dataset_id:
-            reformatted["links"]["dataset"] = self.get_item_id_url(dataset_id) 
+            reformatted["links"]["dataset"] = self.get_item_id_url(dataset_id)
         model_id = item.get_attribute("model_id")
         if model_id:
-            reformatted["links"]["model"] = self.get_item_id_url(model_id) 
+            reformatted["links"]["model"] = self.get_item_id_url(model_id)
         recipe_id = item.get_attribute("recipe_id")
         if recipe_id:
-            reformatted["links"]["recipe"] = self.get_item_id_url(recipe_id) 
+            reformatted["links"]["recipe"] = self.get_item_id_url(recipe_id)
         enpoint_id = item.get_attribute("endpoint_id")
         if enpoint_id:
-            reformatted["links"]["endpoint"] = self.get_item_id_url(enpoint_id) 
+            reformatted["links"]["endpoint"] = self.get_item_id_url(enpoint_id)
 
         return reformatted
 

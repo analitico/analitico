@@ -134,7 +134,9 @@ class ItemAssetsMixin:
             raise NotFound(detail)
         return None
 
-    def upload_asset_stream(self, iterator, asset_class, asset_id, size=0, content_type=None, filename=None, asset_extras=None) -> dict:
+    def upload_asset_stream(
+        self, iterator, asset_class, asset_id, size=0, content_type=None, filename=None, asset_extras=None
+    ) -> dict:
         """ Uploads an asset to a model's storage and returns the assets description. """
         assert isinstance(self, ItemMixin)
         asset_parts = os.path.splitext(asset_id)
@@ -200,8 +202,6 @@ class ItemAssetsMixin:
             asset["last_modified"] = storage_obj.extra["last_modified"]
         asset["size"] = storage_obj.size
         asset["hash"] = storage_obj.hash
-
-
 
         return asset, storage_stream
 

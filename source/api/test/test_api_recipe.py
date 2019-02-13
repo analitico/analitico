@@ -56,7 +56,7 @@ class RecipeTests(APITestCase):
         """ Test getting a list of recipes without a token """
         self.auth_token(None)
         url = reverse("api:recipe-list")
-        response = self.client.get(url, format="json", status_code=status.HTTP_403_FORBIDDEN)
+        self.client.get(url, format="json", status_code=status.HTTP_403_FORBIDDEN)
 
     def test_recipe_get_list(self):
         """ Test getting a list of recipes """
@@ -75,7 +75,7 @@ class RecipeTests(APITestCase):
         """ Get a specific recipe without givin an auth token """
         self.auth_token(None)
         url = reverse("api:recipe-detail", args=("rx_housesalesprediction_1",))
-        response = self.client.get(url, format="json", status_code=status.HTTP_403_FORBIDDEN)
+        self.client.get(url, format="json", status_code=status.HTTP_403_FORBIDDEN)
 
     def test_recipe_get_detail(self):
         """ Get a specific recipe """

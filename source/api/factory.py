@@ -12,6 +12,8 @@ from analitico.utilities import logger
 class ModelsFactory:
     """ Factory used to create models with various methods """
 
+    # pylint: disable=no-member
+
     @staticmethod
     def get_item_class_from_id(item_id: str):
         """ Returns item class from item id """
@@ -40,22 +42,22 @@ class ModelsFactory:
         return item_class._meta.model_name if item_class else None
 
     @staticmethod
-    def from_id(model_id: str, request=None):
+    def from_id(item_id: str, request=None):
         """ Loads a model from database given its id whose prefix determines the model type, eg: ws_xxx for Workspace. """
         # TODO limit access to objects available with request credentials
         assert item_id
-        if model_id.startswith(api.models.WORKSPACE_PREFIX):
-            return api.models.Workspace.objects.get(pk=model_id)
-        if model_id.startswith(api.models.DATASET_PREFIX):
-            return api.models.Dataset.objects.get(pk=model_id)
-        if model_id.startswith(api.models.RECIPE_PREFIX):
-            return api.models.Recipe.objects.get(pk=model_id)
-        if model_id.startswith(api.models.MODEL_PREFIX):
-            return api.models.Model.objects.get(pk=model_id)
-        if model_id.startswith(api.models.SERVICE_PREFIX):
-            return api.models.Service.objects.get(pk=model_id)
-        if model_id.startswith(api.models.ENDPOINT_PREFIX):
-            return api.models.Endpoint.objects.get(pk=model_id)
-        raise NotFound("ItemsFactory.from_id could not find id: " + model_id)
-
- 
+        if item_id.startswith(api.models.DATASET_PREFIX):
+            return api.models.Dataset.objects.get(pk=item_id)
+        if item_id.startswith(api.models.ENDPOINT_PREFIX):
+            return api.models.Endpoint.objects.get(pk=item_id)
+        if item_id.startswith(api.models.JOB_PREFIX):
+            return api.models.Job.objects.get(pk=item_id)
+        if item_id.startswith(api.models.MODEL_PREFIX):
+            return api.models.Model.objects.get(pk=item_id)
+        if item_id.startswith(api.models.RECIPE_PREFIX):
+            return api.models.Recipe.objects.get(pk=item_id)
+        if item_id.startswith(api.models.SERVICE_PREFIX):
+            return api.models.Service.objects.get(pk=item_id)
+        if item_id.startswith(api.models.WORKSPACE_PREFIX):
+            return api.models.Workspace.objects.get(pk=item_id)
+        raise NotFound("ModelsFactory.from_id could not find id: " + item_id)
