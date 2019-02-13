@@ -136,6 +136,11 @@ class RecipeTests(APITestCase):
             self.assertEqual(model["type"], "model")
             self.assertEqual(model["id"], model_id)
 
+            # check that model has related links
+            self.assertTrue(api.models.MODEL_PREFIX in model["links"]["self"])
+            self.assertTrue(api.models.RECIPE_PREFIX in model["links"]["recipe"])
+            self.assertTrue(api.models.JOB_PREFIX in model["links"]["job"])
+
             # training results from model
             training = model["attributes"]["training"]
             self.assertEqual(training["type"], "analitico/training")

@@ -5,7 +5,6 @@ import api.models.dataset
 import api.models.items
 import api.models.model
 import api.models.recipe
-import api.models.service
 import api.models.token
 import api.models.training
 import api.models.usermanager
@@ -185,26 +184,6 @@ class Migration(migrations.Migration):
             bases=(api.models.items.ItemMixin, models.Model),
         ),
         migrations.CreateModel(
-            name="Service",
-            fields=[
-                (
-                    "id",
-                    models.SlugField(
-                        default=api.models.service.generate_service_id,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="Id",
-                    ),
-                ),
-                ("title", models.TextField(blank=True, verbose_name="Title")),
-                ("description", models.TextField(blank=True, verbose_name="Description")),
-                ("created_at", models.DateTimeField(auto_now_add=True, verbose_name="Created")),
-                ("updated_at", models.DateTimeField(auto_now=True, verbose_name="Updated")),
-                ("attributes", jsonfield.fields.JSONField(blank=True, null=True, verbose_name="Attributes")),
-            ],
-            bases=(api.models.items.ItemMixin, models.Model),
-        ),
-        migrations.CreateModel(
             name="Token",
             fields=[
                 (
@@ -295,11 +274,6 @@ class Migration(migrations.Migration):
                 ),
             ],
             bases=(api.models.items.ItemMixin, models.Model),
-        ),
-        migrations.AddField(
-            model_name="service",
-            name="workspace",
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.Workspace"),
         ),
         migrations.AddField(
             model_name="recipe",

@@ -28,8 +28,6 @@ class ModelsFactory:
             return api.models.Model
         if item_id.startswith(api.models.RECIPE_PREFIX):
             return api.models.Recipe
-        if item_id.startswith(api.models.SERVICE_PREFIX):
-            return api.models.Service
         if item_id.startswith(api.models.WORKSPACE_PREFIX):
             return api.models.Workspace
         logger.warning("ModelsFactory.get_class_from_id could not find class for id: " + item_id)
@@ -56,8 +54,6 @@ class ModelsFactory:
             return api.models.Model.objects.get(pk=item_id)
         if item_id.startswith(api.models.RECIPE_PREFIX):
             return api.models.Recipe.objects.get(pk=item_id)
-        if item_id.startswith(api.models.SERVICE_PREFIX):
-            return api.models.Service.objects.get(pk=item_id)
         if item_id.startswith(api.models.WORKSPACE_PREFIX):
             return api.models.Workspace.objects.get(pk=item_id)
         raise NotFound("ModelsFactory.from_id could not find id: " + item_id)

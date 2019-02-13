@@ -32,20 +32,18 @@ class ItemsTests(APITestCase):
 
     def test_items_default_id_prefix(self):
         """ Test models to make sure they are created with the correct prefix in their IDs """
-        item = api.models.Workspace()
-        self.assertTrue(item.id.startswith(api.models.WORKSPACE_PREFIX))
-
         item = api.models.Dataset()
         self.assertTrue(item.id.startswith(api.models.DATASET_PREFIX))
-
-        item = api.models.Recipe()
-        self.assertTrue(item.id.startswith(api.models.RECIPE_PREFIX))
-
+        item = api.models.Endpoint()
+        self.assertTrue(item.id.startswith(api.models.ENDPOINT_PREFIX))
+        item = api.models.Job()
+        self.assertTrue(item.id.startswith(api.models.JOB_PREFIX))
         item = api.models.Model()
         self.assertTrue(item.id.startswith(api.models.MODEL_PREFIX))
-
-        item = api.models.Service()
-        self.assertTrue(item.id.startswith(api.models.SERVICE_PREFIX))
+        item = api.models.Recipe()
+        self.assertTrue(item.id.startswith(api.models.RECIPE_PREFIX))
+        item = api.models.Workspace()
+        self.assertTrue(item.id.startswith(api.models.WORKSPACE_PREFIX))
 
     ##
     ## Workspace

@@ -13,6 +13,5 @@ from .workspace import Workspace, WORKSPACE_PREFIX
 from .dataset import Dataset, DATASET_PREFIX
 from .recipe import Recipe, RECIPE_PREFIX
 from .model import Model, MODEL_PREFIX
-from .service import Service, SERVICE_PREFIX
 from .job import Job, JOB_PREFIX
 from .endpoint import Endpoint, ENDPOINT_PREFIX

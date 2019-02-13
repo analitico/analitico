@@ -53,12 +53,13 @@ class AttributeSerializerMixin:
         """ Returns absolute url to given item (by id) using the same endpoint the request came in through """
         assert isinstance(item_id, str)
         item_type = ModelsFactory.get_item_type_from_id(item_id)
-        url = reverse("api:" + item_type + "-detail", args=(item_id,))
-        request = self.context.get("request")
-        if request:
-            url = request.build_absolute_uri(url)
-            url = url.replace("http://", "https://")
-        return url
+        if item_type:
+            url = reverse("api:" + item_type + "-detail", args=(item_id,))
+            request = self.context.get("request")
+            if request:
+                url = request.build_absolute_uri(url)
+                url = url.replace("http://", "https://")
+            return url
 
     def get_item_asset_url(self, item, asset_class, asset_id):
         """ Returns absolute url to given item's asset """
@@ -74,54 +75,35 @@ class AttributeSerializerMixin:
         except Exception as exc:
             raise exc
 
-    def get_item_links(self, item):
-        """ Returns link to item and related assets in a json:api compliant dictionary """
-        links = {"self": self.get_item_url(item)}
-        if item.workspace:
-            links["workspace"] = self.get_item_url(item.workspace)
-        for asset_class in ("assets", "data"):
-            assets = item.get_attribute(asset_class)
-            if assets:
-                for asset in assets:
-                    asset_url = self.get_item_asset_url(item, asset_class, asset["id"])
-                    links[asset_class + "/" + asset["id"]] = asset_url
-        return links
-
     def to_representation(self, item):
         """ Serialize object to dictionary, extracts all json key to main level """
         data = super().to_representation(item)
         reformatted = {"type": item.type, "id": data.pop("id"), "attributes": data}
 
+        # add link to self
+        reformatted["links"] = {"self": self.get_item_url(item)}
+
         # add additional attributes from json dict
         if item.attributes:
-            for key in item.attributes:
-                value = item.attributes[key]
+            for key, value in item.attributes.items():
                 # skip nulls
                 if value:
                     data[key] = item.attributes[key]
+                    if key.endswith("_id"):
+                        # Hypermedia As The Engine Of Application State:
+                        # if the attributes ends with _id it is (likely) a reference
+                        # to a connected item, like a recipe_id for a model or a
+                        # model_id for an endpoint, etc. we implement HATEAOS by
+                        # introducing automatic links to all related items endpoints
+                        item_url = self.get_item_id_url(value)
+                        if item_url:
+                            reformatted["links"][key[:-3]] = item_url
 
         # add links to /assets and /data
         for asset_class in ("assets", "data"):
             if asset_class in data:
                 for asset in data[asset_class]:
                     asset["url"] = self.get_item_asset_url(item, asset_class, asset["id"])
-
-        # add link to self
-        reformatted["links"] = {"self": self.get_item_url(item)}
-
-        dataset_id = item.get_attribute("dataset_id")
-        if dataset_id:
-            reformatted["links"]["dataset"] = self.get_item_id_url(dataset_id)
-        model_id = item.get_attribute("model_id")
-        if model_id:
-            reformatted["links"]["model"] = self.get_item_id_url(model_id)
-        recipe_id = item.get_attribute("recipe_id")
-        if recipe_id:
-            reformatted["links"]["recipe"] = self.get_item_id_url(recipe_id)
-        enpoint_id = item.get_attribute("endpoint_id")
-        if enpoint_id:
-            reformatted["links"]["endpoint"] = self.get_item_id_url(enpoint_id)
-
         return reformatted
 
     def to_internal_value(self, data):
