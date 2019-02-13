@@ -9,6 +9,7 @@ from django.contrib.auth.models import Group
 from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
+from django.db import transaction
 from rest_framework.exceptions import APIException
 
 import analitico
@@ -90,24 +91,25 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                             }
                             new_plugin = True
                             self.set_attribute("plugin", plugin_settings)
+                            self.save()
                             break
 
                 if plugin_settings:
                     plugin = runner.create_plugin(**plugin_settings)
-                    directory = runner.get_artifacts_directory()
-
-                    # process will produce pandas dataframe and create data.csv, data.csv.info
+                    # plugin will produce pandas dataframe and create data.csv, data.csv.info
                     df = plugin.run()
-
                     if new_plugin:
                         # apply derived schema as a starting schema which
                         # users will then customize and change, etc.
                         schema = generate_schema(df)
-                        plugin_settings["plugins"][0]["source"]["schema"] = schema
-
+                        with transaction.atomic():
+                            self.refresh_from_db()
+                            plugin_settings = self.get_attribute("plugin")
+                            plugin_settings["plugins"][0]["source"]["schema"] = schema
+                            self.set_attribute("plugin", plugin_settings)
+                            self.save()
                     # upload processing artifacts to /data
                     runner.upload_artifacts(self)
-
             self.save()
         except Exception as exc:
             raise exc
