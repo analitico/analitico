@@ -11,7 +11,7 @@ from django.db import models
 from django.utils.text import slugify
 from django.utils.timezone import now
 from django.utils.crypto import get_random_string
-from django.utils.translation import ugettext_lazy as _
+from django.db import transaction
 
 from rest_framework import status
 from rest_framework.exceptions import APIException, NotFound
@@ -144,28 +144,38 @@ class ItemAssetsMixin:
         asset_storage = self.storage
         asset_obj = asset_storage.upload_object_via_stream(iterator, asset_path, extra={"content_type": content_type})
 
-        if not content_type:
-            content_type, _ = mimetypes.guess_type(asset_id)
+        # we could conceivably have multiple uploads to multiple assets
+        # running at the same time. since each of these can be quite long
+        # once could complete while the other is still going. therefore the model
+        # at this point may be old since some other thread already added an asset.
+        # so we lock the model in a transaction, refresh it from database, add the
+        # asset and unlock it
+        with transaction.atomic():
+            # refresh as there may be new assets
+            self.refresh_from_db()
 
-        assets = self.get_attribute(asset_class)
-        if not assets:
-            assets = []
+            if not content_type:
+                content_type, _ = mimetypes.guess_type(asset_id)
 
-        asset = self._get_asset_from_id(asset_class, asset_id)
-        if not asset:
-            asset = {"id": asset_id}
-            assets.append(asset)
+            assets = self.get_attribute(asset_class)
+            if not assets:
+                assets = []
 
-        asset["created_at"] = now().isoformat()
-        asset["filename"] = filename
-        asset["path"] = asset_obj.name
-        asset["hash"] = asset_obj.hash
-        asset["content_type"] = content_type
-        asset["size"] = max(size, asset_obj.size)
-        asset["url"] = "analitico://{}s/{}/{}/{}".format(self.type, self.id, asset_class, asset_id)
+            asset = self._get_asset_from_id(asset_class, asset_id)
+            if not asset:
+                asset = {"id": asset_id}
+                assets.append(asset)
 
-        # update assets in model and therefore on database when caller eventually calls .save()
-        self.set_attribute(asset_class, assets)
+            asset["created_at"] = now().isoformat()
+            asset["filename"] = filename
+            asset["path"] = asset_obj.name
+            asset["hash"] = asset_obj.hash
+            asset["content_type"] = content_type
+            asset["size"] = max(size, asset_obj.size)
+            asset["url"] = "analitico://{}s/{}/{}/{}".format(self.type, self.id, asset_class, asset_id)
+
+            # update assets in model and therefore on database when caller eventually calls .save()
+            self.set_attribute(asset_class, assets)
         return asset
 
     def _download_asset_stream(self, asset_class, asset_id):
