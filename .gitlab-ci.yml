@@ -31,6 +31,7 @@ build_dev:
     # clone with submodule 
     - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
     - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-sdk.git" >> /.git-credentials
+    - echo "https://giovannizorzato:$PULL_TOKEN@github.com/Supermercato24/analitico-s24.git" >> /.git-credentials
     - git config --global credential.helper 'store --file=/.git-credentials'
     - git clone --recurse-submodules https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git 
     - rm /.git-credentials
