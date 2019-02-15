@@ -50,14 +50,14 @@ class ItemsTests(APITestCase):
     ##
 
     def test_workspace_get(self):
-        item = self.get_item("workspace", "ws_001", self.token1)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
         self.assertEqual(item["attributes"]["user"], "user1@analitico.ai")
         self.assertEqual(item["attributes"]["title"], "This is the title")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_get_user2(self):
-        item = self.get_item("workspace", "ws_002", self.token1)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_002", self.token1)
         self.assertEqual(item["id"], "ws_002")
         self.assertEqual(item["attributes"]["user"], "user2@analitico.ai")
         self.assertEqual(item["attributes"]["title"], "This is the title")
@@ -67,37 +67,37 @@ class ItemsTests(APITestCase):
         # user2 is not the owner of this workspace so, altough it does exist,
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
-        item = self.get_item("workspace", "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
         self.assertEqual(item["error"]["code"], "Not Found")
         self.assertIsNotNone(item["error"]["detail"])
         self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_get_without_authorization_as_admin(self):
         # ws_002 is owned by user2@analitico.ai but user1 is an admin so he should get it
-        item = self.get_item("workspace", "ws_002", self.token1)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_002", self.token1)
         self.assertEqual(item["id"], "ws_002")
         self.assertEqual(item["attributes"]["title"], "This is the title")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_patch_title(self):
-        item = self.get_item("workspace", "ws_001", self.token1)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
         self.assertEqual(item["attributes"]["title"], "This is the title")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
         patch = {"data": {"id": "ws_001", "attributes": {"title": "This is the patched title"}}}
-        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token1)
         self.assertEqual(patch_item["attributes"]["title"], "This is the patched title")
         self.assertEqual(patch_item["attributes"]["description"], "This is the description")
 
     def test_workspace_patch_title_user2(self):
-        item = self.get_item("workspace", "ws_002", self.token1)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_002", self.token1)
         self.assertEqual(item["id"], "ws_002")
         self.assertEqual(item["attributes"]["title"], "This is the title")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
         patch = {"data": {"id": "ws_002", "attributes": {"title": "This is the patched title"}}}
-        patch_item = self.patch_item("workspace", "ws_002", patch, self.token1)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_002", patch, self.token1)
         self.assertEqual(patch_item["attributes"]["title"], "This is the patched title")
         self.assertEqual(patch_item["attributes"]["description"], "This is the description")
 
@@ -106,26 +106,26 @@ class ItemsTests(APITestCase):
         # user2 is not the owner of this workspace so, altough it does exist,
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
-        patch_item = self.patch_item("workspace", "ws_001", patch, self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token2, status_code=status.HTTP_404_NOT_FOUND)
         self.assertEqual(patch_item["error"]["code"], "Not Found")
         self.assertIsNotNone(patch_item["error"]["detail"])
         self.assertEqual(patch_item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_patch_made_up_attribute(self):
-        item = self.get_item("workspace", "ws_001", self.token1)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
         self.assertEqual(item["attributes"]["title"], "This is the title")
         self.assertEqual(item["attributes"]["description"], "This is the description")
         self.assertFalse("made_up_attribute" in item["attributes"])
 
         patch = {"data": {"id": "ws_001", "attributes": {"made_up_attribute": "This is a made up attribute"}}}
-        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token1)
         self.assertEqual(patch_item["attributes"]["title"], "This is the title")
         self.assertEqual(patch_item["attributes"]["description"], "This is the description")
         self.assertEqual(patch_item["attributes"]["made_up_attribute"], "This is a made up attribute")
 
     def test_workspace_patch_made_up_attribute_with_children(self):
-        item = self.get_item("workspace", "ws_001", self.token1)
+        item = self.get_item(api.models.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
         self.assertEqual(item["attributes"]["title"], "This is the title")
         self.assertEqual(item["attributes"]["description"], "This is the description")
@@ -143,7 +143,7 @@ class ItemsTests(APITestCase):
                 },
             }
         }
-        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token1)
         self.assertEqual(patch_item["attributes"]["title"], "This is the title")
         self.assertEqual(patch_item["attributes"]["description"], "This is the description")
         self.assertEqual(
@@ -156,23 +156,23 @@ class ItemsTests(APITestCase):
 
     def test_workspace_patch_change_remove(self):
         patch = {"data": {"id": "ws_001", "attributes": {"made_up_attribute": "adding something"}}}
-        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token1)
         self.assertEqual(patch_item["attributes"]["made_up_attribute"], "adding something")
 
         patch["data"]["attributes"]["made_up_attribute"] = "then changing it"
-        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token1)
         self.assertEqual(patch_item["attributes"]["made_up_attribute"], "then changing it")
 
         patch["data"]["attributes"]["made_up_attribute"] = None  # them removing it
-        patch_item = self.patch_item("workspace", "ws_001", patch, self.token1)
+        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token1)
         self.assertIsNone(patch_item["attributes"].get("made_up_attribute"))
 
     def test_workspace_delete(self):
-        item = self.delete_item("workspace", "ws_001", self.token1, status.HTTP_204_NO_CONTENT)
+        item = self.delete_item(api.models.WORKSPACE_TYPE, "ws_001", self.token1, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(item)
 
         # no try and get deleted item, should return a 404
-        item = self.delete_item("workspace", "ws_001", self.token1, status.HTTP_404_NOT_FOUND)
+        item = self.delete_item(api.models.WORKSPACE_TYPE, "ws_001", self.token1, status.HTTP_404_NOT_FOUND)
         self.assertEqual(item["error"]["code"], "Not Found")
         self.assertIsNotNone(item["error"]["detail"])
         self.assertEqual(item["error"]["status"], "404")  # a string, not a number
@@ -181,12 +181,12 @@ class ItemsTests(APITestCase):
         # user2 is not the owner of this workspace so, altough it does exist,
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
-        item = self.delete_item("workspace", "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        item = self.delete_item(api.models.WORKSPACE_TYPE, "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
         self.assertEqual(item["error"]["code"], "Not Found")
         self.assertIsNotNone(item["error"]["detail"])
         self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_delete_without_authorization_as_admin(self):
         # ws_002 is owned by user2@analitico.ai but user1 is an admin so he should be able to delete it
-        item = self.delete_item("workspace", "ws_002", token=self.token1, status_code=status.HTTP_204_NO_CONTENT)
+        item = self.delete_item(api.models.WORKSPACE_TYPE, "ws_002", token=self.token1, status_code=status.HTTP_204_NO_CONTENT)
         self.assertIsNone(item)

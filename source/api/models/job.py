@@ -25,6 +25,7 @@ import analitico.plugin
 import analitico.utilities
 import api.plugin
 
+JOB_TYPE = "job"
 JOB_PREFIX = "jb_"
 
 

@@ -6,7 +6,7 @@
 		"description": "",
 		"created_at": "2019-02-07T21:17:47.983920+01:00",
 		"updated_at": "2019-02-07T21:17:47.984014+01:00",
-		"workspace": "ws_samples",
+		"workspace_id": "ws_samples",
 		"plugin": {
 			"type": "analitico/plugin",
 			"name": "analitico.plugin.DataframePipelinePlugin",

@@ -15,6 +15,7 @@ from .workspace import Workspace
 ## Model - a trained machine learning model (not model in the sense of Django db model)
 ##
 
+MODEL_TYPE = "model"
 MODEL_PREFIX = "ml_"  # trained machine learning model (not a django model)
 
 

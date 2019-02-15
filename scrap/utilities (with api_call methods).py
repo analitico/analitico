@@ -12,6 +12,8 @@ from rest_framework.exceptions import APIException, ParseError
 from analitico.utilities import time_ms, logger
 from api.models import Token
 
+# from api.models.apicall import ApiCall
+
 # RESTful API Design Tips from Experience
 # https://medium.com/studioarmix/learn-restful-api-design-ideals-c5ec915a430f
 
@@ -20,6 +22,25 @@ from api.models import Token
 
 # Following this format for errors:
 # https://jsonapi.org/format/#errors
+
+
+def api_save_call(request=None, results=None, status=200) -> Call:
+    """ Track API call in database by creating and saving API call model """
+    try:
+        call = Call()
+        if request:
+            call.user = request.user
+            call.token = request.auth if request.auth and type(request.auth) is Token else None
+            call.url = request.path
+            call.method = request.method
+            call.data = request.data
+        call.results = results
+        call.status = status
+        call.save()
+        results["meta"]["api_id"] = call.id
+    except Exception as exc:
+        logger.error(exc)
+    return call
 
 
 def item_or_first(item):

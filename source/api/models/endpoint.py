@@ -22,6 +22,7 @@ from api.factory import ModelsFactory
 ## Endpoint
 ##
 
+ENDPOINT_TYPE = "endpoint"
 ENDPOINT_PREFIX = "ep_"
 
 

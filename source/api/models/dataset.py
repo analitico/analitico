@@ -27,6 +27,7 @@ from .workspace import Workspace
 ## Dataset
 ##
 
+DATASET_TYPE = "dataset"
 DATASET_PREFIX = "ds_"  # dataset source, filters, etc
 
 

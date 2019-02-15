@@ -3,7 +3,7 @@
 	"id": "ds_titanic_3",
 
 	"attributes": {
-		"workspace": "ws_samples",
+		"workspace_id": "ws_samples",
 		"title": "Kaggle - Titanic training dataset (train.csv)",
 		"description": "https://www.kaggle.com/c/titanic",
 		"notes": "Basic plugin with external csv source that can be accessed via public url",

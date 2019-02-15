@@ -4,12 +4,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import ugettext_lazy as _
 
-from .models import User, Token, Call
+from .models import User, Token
 from .models import Workspace, Dataset, Recipe, Job, Model, Endpoint
-
-# deprecated: to be removed soon
-from .models import Project, Training
-
 
 # TODO customize admin site
 # https://stackoverflow.com/questions/4938491/django-admin-change-header-django-administration-text/24983231#24983231
@@ -36,12 +32,6 @@ class UserAdmin(DjangoUserAdmin):
 class TokenAdmin(admin.ModelAdmin):
     list_display = ("id", "email", "name", "created_at")
     ordering = ("name", "-created_at")
-
-
-@admin.register(Call)
-class ApiCallAdmin(admin.ModelAdmin):
-    list_display = ("id", "token", "created_at")
-    ordering = ("-created_at",)
 
 
 @admin.register(Workspace)

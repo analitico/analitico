@@ -7,7 +7,7 @@ from rest_framework import status
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from api.models import Project, Token, Call, User
+from api.models import Token, User
 
 from analitico.utilities import read_json, get_dict_dot
 
@@ -60,26 +60,30 @@ class APITestCase(rest_framework.test.APITestCase):
         return response.data
 
     def upload_items(self, endpoint, prefix):
-        for path in os.listdir(ASSETS_PATH):
-            if path.startswith(prefix):
-                item = self.read_json_asset(path)
-                # print("Loading {}:{} from {}...".format(item["type"], item["id"], path))
+        try:
+            for path in os.listdir(ASSETS_PATH):
+                if path.startswith(prefix):
+                    item = self.read_json_asset(path)
+                    # print("Loading {}:{} from {}...".format(item["type"], item["id"], path))
 
-                token = self.token1
-                if get_dict_dot(item, "attributes.user") == "user2@analitico.ai":
-                    token = self.token2
-                if get_dict_dot(item, "attributes.user") == "user3@analitico.ai":
-                    token = self.token3
+                    token = self.token1
+                    if get_dict_dot(item, "attributes.user") == "user2@analitico.ai":
+                        token = self.token2
+                    if get_dict_dot(item, "attributes.user") == "user3@analitico.ai":
+                        token = self.token3
 
-                self.auth_token(token)
-                response = self.client.post(endpoint, {"data": item}, format="json")
-                self.assertIsNotNone(response.data)
+                    self.auth_token(token)
+                    response = self.client.post(endpoint, {"data": item}, format="json")
+                    self.assertIsNotNone(response.data)
 
-                created_item = response.data
-                self.assertEqual(item["id"], created_item["id"])
-                self.assertEqual(item["type"], created_item["type"])
-                self.assertEqual(item["attributes"]["title"], created_item["attributes"]["title"])
-                self.assertEqual(item["attributes"]["description"], created_item["attributes"]["description"])
+                    created_item = response.data
+                    self.assertFalse("error" in created_item, "Error should not be in response")
+                    self.assertEqual(item["id"], created_item["id"])
+                    self.assertEqual(item["type"], created_item["type"])
+                    self.assertEqual(item["attributes"]["title"], created_item["attributes"]["title"])
+                    self.assertEqual(item["attributes"]["description"], created_item["attributes"]["description"])
+        except Exception as exc:
+            raise exc
 
     def auth_token(self, token=None):
         """ Append authorization token to self.client calls """

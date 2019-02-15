@@ -59,7 +59,7 @@ class AttributeSerializerMixin:
             if request:
                 url = request.build_absolute_uri(url)
                 url = url.replace("http://", "https://")
-            return url
+            return url, item_type
 
     def get_item_asset_url(self, item, asset_class, asset_id):
         """ Returns absolute url to given item's asset """
@@ -78,6 +78,12 @@ class AttributeSerializerMixin:
     def to_representation(self, item):
         """ Serialize object to dictionary, extracts all json key to main level """
         data = super().to_representation(item)
+
+        # rename workspace -> workspace_id for consistency
+        workspace_id = data.pop("workspace", None)
+        if workspace_id:
+            data["workspace_id"] = workspace_id
+
         reformatted = {"type": item.type, "id": data.pop("id"), "attributes": data}
 
         # add link to self
@@ -95,7 +101,7 @@ class AttributeSerializerMixin:
                         # to a connected item, like a recipe_id for a model or a
                         # model_id for an endpoint, etc. we implement HATEAOS by
                         # introducing automatic links to all related items endpoints
-                        item_url = self.get_item_id_url(value)
+                        item_url, _ = self.get_item_id_url(value)
                         if item_url:
                             reformatted["links"][key[:-3]] = item_url
 
@@ -116,6 +122,11 @@ class AttributeSerializerMixin:
 
         # works with input in json:api style (attributes) or flat json
         attributes = data.pop("attributes") if "attributes" in data else data.copy()
+
+        # rename workspace_id -> workspace for consistency
+        workspace_id = attributes.pop("workspace_id", None)
+        if workspace_id:
+            attributes["workspace"] = workspace_id
 
         for (key, _) in self.fields.fields.items():
             if key in attributes:

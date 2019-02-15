@@ -103,7 +103,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_data["id"][:3], "jb_")
         self.assertEqual(job_data["type"], "job")
         self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
-        self.assertEqual(job_data["attributes"]["workspace"], "ws_samples")
+        self.assertEqual(job_data["attributes"]["workspace_id"], "ws_samples")
         self.assertEqual(job_data["attributes"]["action"], "dataset/process")
         # self.assertEqual(job_data["attributes"]["status"], Job.JOB_STATUS_RUNNING)
 
@@ -115,7 +115,7 @@ class DatasetTests(APITestCase):
 
         # TODO check job that was created has extra params
         self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
-        self.assertEqual(job_data["attributes"]["workspace"], "ws_samples")
+        self.assertEqual(job_data["attributes"]["workspace_id"], "ws_samples")
         self.assertEqual(job_data["attributes"]["action"], "dataset/process")
 
     def test_dataset_job_action_process_completed_url_asset(self):

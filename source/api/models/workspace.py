@@ -14,6 +14,7 @@ from .items import ItemMixin, ItemAssetsMixin
 ## Workspace - A workspace contains projects, datasets, programs, access rights, etc...
 ##
 
+WORKSPACE_TYPE = "workspace"
 WORKSPACE_PREFIX = "ws_"  # workspace with rights and one or more projects and other resources
 
 

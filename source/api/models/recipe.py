@@ -22,6 +22,7 @@ from .model import Model
 # Recipe - A recipe uses modules and scripts to produce a trained model
 #
 
+RECIPE_TYPE = "recipe"
 RECIPE_PREFIX = "rx_"  # machine learning recipe (an experiment with modules, code, etc)
 
 

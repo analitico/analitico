@@ -111,11 +111,11 @@ class RecipeTests(APITestCase):
             self.assertTrue(job["id"].startswith(api.models.JOB_PREFIX))
             self.assertEqual(job["attributes"]["action"], "dataset/process")
             self.assertEqual(job["attributes"]["status"], "completed")
-            self.assertEqual(job["attributes"]["workspace"], "ws_samples")
+            self.assertEqual(job["attributes"]["workspace_id"], "ws_samples")
             self.assertEqual(job["attributes"]["item_id"], "ds_housesalesprediction_1")
             self.assertEqual(len(job["links"]), 2)  # self, related
             self.assertTrue("self" in job["links"])
-            self.assertTrue("related" in job["links"])
+            self.assertTrue("dataset" in job["links"])
 
             # train recipe using dataset output
             url = reverse("api:recipe-job-action", args=("rx_housesalesprediction_1", "train"))
@@ -151,7 +151,7 @@ class RecipeTests(APITestCase):
             response = self.client.post(
                 url,
                 data={
-                    "workspace": model["attributes"]["workspace"],
+                    "workspace_id": model["attributes"]["workspace_id"],
                     "model_id": model_id,
                     "plugin": {
                         "type": analitico.plugin.PLUGIN_TYPE,

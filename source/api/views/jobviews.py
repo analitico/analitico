@@ -49,7 +49,7 @@ class JobSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
         exclude = ("attributes",)
 
     def to_representation(self, item):
-        """ Add link to job target as a "related" link. """
+        """ Add link to job target as a related link. """
         data = super().to_representation(item)
 
         # Payload as its own dictionary:
@@ -59,8 +59,9 @@ class JobSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
         # data["payload"] = payload
 
         if "links" in data and item.item_id:
-            target = ModelsFactory.from_id(item.item_id)
-            data["links"]["related"] = self.get_item_url(target)
+            item_url, item_type = self.get_item_id_url(item.item_id)
+            if item_url:
+                data["links"][item_type] = item_url
         return data
 
 
