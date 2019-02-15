@@ -139,23 +139,14 @@ class AssetViewSetMixin:
         factory = JobRunner(None, request)
         asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
         df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
-        records = df.to_dict("records")
-        # metadata is expensive so we only return it on demand
+        data = {"meta": {"page": page, "page_size": page_size}, "data": df.to_dict("records")}
+        # extra metadata is expensive so we only return it on demand
         if get_query_parameter_as_bool(request, "meta", False):
             rows = get_csv_row_count(asset_file)  # file needs to be read end to end
-            return Response(
-                {
-                    "meta": {
-                        "page": page,
-                        "page_size": page_size,
-                        "total_pages": int((rows + page_size - 1) / page_size),
-                        "total_records": rows,
-                    },
-                    "data": records,
-                }
-            )
+            data["meta"]["total_pages"] = int((rows + page_size - 1) / page_size)
+            data["meta"]["total_records"] = rows
         # return records and information on current page
-        return Response({"data": records})
+        return Response(data)
 
     #
     # ViewSet actions

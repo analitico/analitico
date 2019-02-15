@@ -312,11 +312,9 @@ class DatasetTests(APITestCase):
         self.assertEqual(len(records), 25)
         self.assertEqual(records[0]["Number"], 0)
         self.assertEqual(records[24]["Number"], 24)
-        self.assertTrue("meta" not in response.data)
         # indicate ?meta=False
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=False"
         response = self.client.get(url)
-        self.assertTrue("meta" not in response.data)
 
     def test_dataset_paging_no_parameters_with_meta(self):
         self.upload_large_random_data_csv("ds_titanic_4", 496)
@@ -415,7 +413,6 @@ class DatasetTests(APITestCase):
             self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
             self.assertEqual(records[0]["Number"], i * DEFAULT_PAGE_SIZE)
             self.assertEqual(records[24]["Number"], ((i + 1) * DEFAULT_PAGE_SIZE) - 1)
-            self.assertTrue("meta" not in response.data)
             loading_ms = time_ms(loading_ms)
             self.assertLess(int(loading_ms), 100, "Page loading time should be under 100ms")
         total_ms = time_ms(total_ms)
