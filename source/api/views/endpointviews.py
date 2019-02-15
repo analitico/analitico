@@ -13,7 +13,7 @@ import api.utilities
 from analitico import ACTION_PREDICT
 from api.models import Endpoint, Job
 from .attributeserializermixin import AttributeSerializerMixin
-from .itemviews import ItemViewSetMixin
+from .itemviewsetmixin import ItemViewSetMixin
 from .assetviewsetmixin import AssetViewSetMixin
 from .jobviews import JobViewSetMixin
 

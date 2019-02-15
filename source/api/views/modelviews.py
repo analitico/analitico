@@ -10,7 +10,7 @@ import api.utilities
 from api.models import Model
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
-from .itemviews import ItemViewSetMixin
+from .itemviewsetmixin import ItemViewSetMixin
 from .jobviews import JobViewSetMixin
 
 

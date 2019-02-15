@@ -87,7 +87,7 @@ class JobAdmin(admin.ModelAdmin):
         "description",
         "notes",
         "created_at",
-        "updated_at"
+        "updated_at",
     )
     search_fields = ("id", "title", "description", "attributes")
     ordering = ("-updated_at",)

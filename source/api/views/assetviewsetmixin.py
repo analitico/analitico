@@ -2,6 +2,7 @@
 # pylint: disable=no-member
 
 import os
+import pandas as pd
 
 from django.utils.text import slugify
 from django.http.response import StreamingHttpResponse
@@ -19,7 +20,7 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
-from api.models import ItemMixin, Job
+from api.models import ItemMixin, Job, JobRunner, ASSETS_CLASS_DATA
 from analitico.utilities import logger
 
 ##
@@ -45,7 +46,7 @@ class AssetViewSetMixin:
     # Parse most calls in JSON but also support multipart uploads and forms as well as raw uploads
     parser_classes = (JSONParser, MultiPartParser, FileUploadParser)
 
-    def _asset_upload(self, request, pk, asset_class, asset_id) -> Response:
+    def asset_upload(self, request, pk, asset_class, asset_id) -> Response:
         """ 
         Uploads one or more assets to this item's storage, returns a list of 
         uploaded assets. Supports direct upload and multipart forms. 
@@ -83,7 +84,7 @@ class AssetViewSetMixin:
         item.save()
         return Response(assets, status=rest_framework.status.HTTP_201_CREATED)
 
-    def _asset_download(self, request, pk, asset_class, asset_id) -> Response:
+    def asset_download(self, request, pk, asset_class, asset_id) -> Response:
         """ Downloads an assets content. """
         # We could use the item's hash as an etag and avoid talking to storage
         # at all if the If-None-Match header matches the etag. However if for
@@ -118,12 +119,29 @@ class AssetViewSetMixin:
         response["ETag"] = etag
         return response
 
-    def _asset_delete(self, request, pk, asset_class, asset_id) -> Response:
+    def asset_delete(self, request, pk, asset_class, asset_id) -> Response:
         """ Delete asset with given asset_id then return HTTP 204 (No Content). """
         item = self.get_object()
         item._delete_asset(asset_class, asset_id)
         item.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def asset_download_csv_as_json_with_paging(self, request, pk, asset_class, asset_id):
+        """ Returns a .csv asset converted to json records with paging support """
+        item = self.get_object()
+
+        factory = JobRunner(None, request)
+        asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
+        df = pd.read_csv(asset_file)
+
+        min_page_size, max_page_size = 1, 100
+        page = request.GET.get("page", 0)
+        page_size = max(min_page_size, min(max_page_size, request.GET.get("page_size", 25)))
+
+        offset = page * page_size
+        df = df[offset : offset + page_size]
+        records = df.to_dict("records")
+        return Response({"data": records})
 
     #
     # ViewSet actions
@@ -136,7 +154,7 @@ class AssetViewSetMixin:
         assert asset_class in ("assets", "data")
         if request.method in ("POST", "PUT"):
             # asset_id can be null, for example, when uploading multiple files at once
-            return self._asset_upload(request, pk, asset_class, asset_id=None)
+            return self.asset_upload(request, pk, asset_class, asset_id=None)
         if request.method == "GET":
             item = self.get_object()
             return Response(item.get_attribute(asset_class, []))
@@ -149,13 +167,13 @@ class AssetViewSetMixin:
         assert asset_class in ("assets", "data")
         if request.method in ("POST", "PUT"):
             # asset_id can be null when uploading multiple files at once with multipart encoding
-            return self._asset_upload(request, pk, asset_class, asset_id)
+            return self.asset_upload(request, pk, asset_class, asset_id)
         if request.method == "GET":
             assert asset_id
-            return self._asset_download(request, pk, asset_class, asset_id)
+            return self.asset_download(request, pk, asset_class, asset_id)
         if request.method == "DELETE":
             assert asset_id
-            return self._asset_delete(request, pk, asset_class, asset_id)
+            return self.asset_delete(request, pk, asset_class, asset_id)
         raise MethodNotAllowed(request.method)
 
     @permission_classes((IsAuthenticated,))

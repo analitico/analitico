@@ -94,7 +94,9 @@ class APITestCase(rest_framework.test.APITestCase):
 
     def upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
         """ Uploads a single asset to given url service, performs basic checks """
-        asset_path = os.path.join(ASSETS_PATH, asset_name)
+        asset_path = asset_name
+        if not os.path.isfile(asset_name):
+            asset_path = os.path.join(ASSETS_PATH, asset_name)
         asset_size = os.path.getsize(asset_path)
         with open(asset_path, "rb") as asset_file:
 
@@ -111,7 +113,7 @@ class APITestCase(rest_framework.test.APITestCase):
                 self.assertEqual(len(response.data), 1)
                 data = response.data[0]
                 self.assertEqual(data["content_type"], content_type)
-                self.assertEqual(data["filename"], asset_name)
+                self.assertTrue(data["filename"] in asset_name)
                 self.assertEqual(data["size"], asset_size)
             return response
 

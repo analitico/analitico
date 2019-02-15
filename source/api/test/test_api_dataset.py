@@ -1,6 +1,11 @@
 import io
 import os
 import os.path
+import numpy as np
+import pandas as pd
+import tempfile
+import random
+import string
 
 from django.conf import settings
 from django.test import TestCase
@@ -278,3 +283,32 @@ class DatasetTests(APITestCase):
         self.assertFalse(info_response.streaming)
         info_data = info_response.data
         self.assertEqual(len(info_data["schema"]["columns"]), 12)
+
+    def test_dataset_download_large_csv_as_paged_json(self):
+        """ Test uploading a large csv then downloading as json in pages """
+
+        N, k = 10000, 5
+        df = pd.DataFrame(
+            {
+                "Number": range(0, N, 1),
+                "Random": np.random.randint(k, k + 100, size=N),
+                "String": pd.Series(random.choice(string.ascii_uppercase) for _ in range(N)),
+            }
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".csv") as csv_file:
+            df.to_csv(csv_file.name)
+            self.assertTrue(os.path.isfile(csv_file.name))
+
+            csv_file.seek(0)
+            url = reverse("api:dataset-asset-detail", args=("ds_titanic_4", "data", "data.csv"))
+            response = self.upload_file(url, csv_file.name, "text/csv", token=self.token1)
+            self.assertEqual(response.data[0]["id"], "data.csv")
+
+            url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            records = response.data["data"]
+            self.assertEqual(len(records), 25)            
+            self.assertEqual(records[0]["Number"], 0)            
+            self.assertEqual(records[24]["Number"], 24)            

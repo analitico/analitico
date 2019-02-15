@@ -106,7 +106,9 @@ class ItemsTests(APITestCase):
         # user2 is not the owner of this workspace so, altough it does exist,
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
-        patch_item = self.patch_item(api.models.WORKSPACE_TYPE, "ws_001", patch, self.token2, status_code=status.HTTP_404_NOT_FOUND)
+        patch_item = self.patch_item(
+            api.models.WORKSPACE_TYPE, "ws_001", patch, self.token2, status_code=status.HTTP_404_NOT_FOUND
+        )
         self.assertEqual(patch_item["error"]["code"], "Not Found")
         self.assertIsNotNone(patch_item["error"]["detail"])
         self.assertEqual(patch_item["error"]["status"], "404")  # a string, not a number
@@ -188,5 +190,7 @@ class ItemsTests(APITestCase):
 
     def test_workspace_delete_without_authorization_as_admin(self):
         # ws_002 is owned by user2@analitico.ai but user1 is an admin so he should be able to delete it
-        item = self.delete_item(api.models.WORKSPACE_TYPE, "ws_002", token=self.token1, status_code=status.HTTP_204_NO_CONTENT)
+        item = self.delete_item(
+            api.models.WORKSPACE_TYPE, "ws_002", token=self.token1, status_code=status.HTTP_204_NO_CONTENT
+        )
         self.assertIsNone(item)

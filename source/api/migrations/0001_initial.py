@@ -218,5 +218,5 @@ class Migration(migrations.Migration):
             model_name="dataset",
             name="workspace",
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.Workspace"),
-        )
+        ),
     ]

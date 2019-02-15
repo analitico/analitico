@@ -94,6 +94,9 @@ class ItemMixin:
 ## ItemsAssetsMixin - methods to handle assets attached to items
 ##
 
+ASSETS_CLASS_ASSETS = "assets"
+ASSETS_CLASS_DATA = "data"
+
 
 class ItemAssetsMixin:
     """
@@ -102,9 +105,6 @@ class ItemAssetsMixin:
     /assets associated with the model (eg: source data) and /data, for example the
     processed data resulting from an ETL pipeline or machine learning model.
     """
-
-    ASSETS_CLASS_ASSETS = "assets"
-    ASSETS_CLASS_DATA = "data"
 
     def _get_asset_path_from_name(self, asset_class, asset_id) -> str:
         """
