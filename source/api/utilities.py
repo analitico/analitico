@@ -56,46 +56,25 @@ def api_exception_handler(exc: Exception, context) -> Response:
     return Response({"error": {"status": "500", "code": type(exc).__name__, "detail": repr(exc)}}, 500)
 
 
-def api_get_parameter(request: Request, parameter: str) -> str:
+##
+## Query parameters
+##
+
+
+def get_query_parameter(request: Request, parameter: str, default=None) -> str:
     """ Returns a parameter either from the request's json payload, form parameters or query parameters. """
     if parameter in request.data:
         return request.data[parameter]
     if parameter in request.query_params:
         return request.query_params[parameter]
-    return None
+    return default
 
 
-def api_check_authorization(request: Request, resource: str):
-    """ Will raise an exception if the token is missing or incorrect """
-    # raise APIException("Missing or invalid authorization bearer token. Access is not authorized.", 401)
-    pass
+def get_query_parameter_as_bool(request: Request, parameter: str, default=False):
+    value = get_query_parameter(request, parameter)
+    return (value.lower() in ("true", "1", "yes", "ofcourse")) if value else default
 
 
-def api_wrapper(method, request, **kwargs) -> {}:
-    """ APIs wrapper used to handle shared services like auth, tracking, errors, etc """
-    try:
-        started_on = datetime.datetime.now()
-        results = method(request, **kwargs)
-        results["meta"]["total_ms"] = int((datetime.datetime.now() - started_on).total_seconds() * 1000)
-        # TODO: track calls and performance in Google Analytics
-
-    except APIException as exc:
-        print(exc)
-        results = {
-            "errors": [
-                {
-                    "status": str(exc.status_code),
-                    "code": exc.get_codes(),
-                    "detail": exc.detail if exc.default_detail else exc.default_detail,
-                }
-            ]
-        }
-        return Response(results, exc.status_code)
-
-    except Exception as exc:
-        print(exc)
-        results = {"errors": [{"status": "500", "code": type(exc).__name__.lower(), "detail": str(exc)}]}
-        return Response(results, 500)
-        # TODO: track errors in Google Analytics
-
-    return Response(results)
+def get_query_parameter_as_int(request: Request, parameter: str, default=0):
+    value = get_query_parameter(request, parameter)
+    return int(value) if value else default

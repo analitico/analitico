@@ -20,9 +20,10 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
+from analitico.utilities import logger, get_csv_row_count
 from api.models import ItemMixin, Job, JobRunner, ASSETS_CLASS_DATA
-from analitico.utilities import logger
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE
+from api.utilities import get_query_parameter_as_bool
 
 ##
 ## AssetViewSetMixin - a mixin for uploading and downloading assets
@@ -139,8 +140,22 @@ class AssetViewSetMixin:
         asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
         df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
         records = df.to_dict("records")
+        # metadata is expensive so we only return it on demand
+        if get_query_parameter_as_bool(request, "meta", False):
+            rows = get_csv_row_count(asset_file)  # file needs to be read end to end
+            return Response(
+                {
+                    "meta": {
+                        "page": page,
+                        "page_size": page_size,
+                        "total_pages": int((rows + page_size - 1) / page_size),
+                        "total_records": rows,
+                    },
+                    "data": records,
+                }
+            )
         # return records and information on current page
-        return Response({"data": records, "meta": {"page": page, "page_size": page_size}})
+        return Response({"data": records})
 
     #
     # ViewSet actions

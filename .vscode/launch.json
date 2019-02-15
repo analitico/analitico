@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run File (Python)",
+            "name": "Run file (python)",
             "type": "python",
             "request": "launch",
             "program": "${file}",
@@ -17,7 +17,7 @@
             }
         },
         {
-            "name": "Run Server (Django)",
+            "name": "Run server (django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/source",
@@ -37,7 +37,7 @@
             }
         },
         {
-            "name": "Test All (Django)",
+            "name": "Test all (Django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/source",
@@ -55,7 +55,7 @@
             }
         },
         {
-            "name": "Test One (Django)",
+            "name": "Test one (django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}",
@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.AssetsTests.test_asset_upload_same_file_multiple_times",
+                "api.test.DatasetTests",
                 "-v",
                 "2"
             ],
@@ -74,7 +74,7 @@
             }
         },
         {
-            "name": "Worker (Django)",
+            "name": "Worker (django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}",
