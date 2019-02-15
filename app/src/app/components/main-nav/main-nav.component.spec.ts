@@ -155,7 +155,7 @@ describe('MainNavComponent', () => {
             fixture.whenStable().then(() => {
                 fixture.detectChanges();
                 expect(component.workspace.id).toEqual('ws2');
-                expect(component.workspaceFilter['attributes.workspace']).toEqual('ws2');
+                expect(component.workspaceFilter['attributes.workspace_id']).toEqual('ws2');
             });
             component.changedWorkspace();
         });

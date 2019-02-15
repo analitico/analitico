@@ -97,22 +97,10 @@ export class MainNavComponent implements OnInit, OnDestroy {
 
     // set a filter for children components (datasets/recipes/models/etc...)
     setWorkspacefilter() {
-        this.workspaceFilter = { 'attributes.workspace': this.workspace.id };
+        this.workspaceFilter = { 'attributes.workspace_id': this.workspace.id };
     }
 
-    // create a new dataset
-    createDataset() {
-        const workspace = this.globalState.getProperty('workspace');
-        const params = { 'workspace': workspace.id, attributes: {} };
-        if (this.datasetTitle) {
-            params.attributes['title'] = this.datasetTitle;
-        }
-        this.apiClient.post('/datasets', params)
-            .then((response: any) => {
-                // refresh all components
-                this.setWorkspacefilter();
-            });
-    }
+   
 
     // define default sort function on created_at attributes
     sortByCreatedAtDescFunction = function (a, b) {

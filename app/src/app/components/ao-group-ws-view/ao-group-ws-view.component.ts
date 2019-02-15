@@ -1,7 +1,7 @@
 /**
  * View for group of object that must be updated or filtered according to current workspace
  */
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { AoGroupViewComponent } from 'src/app/components/ao-group-view/ao-group-view.component';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
@@ -16,6 +16,8 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     protected globalStateObserverSubscription: any; // keeps reference of observer subscription for cleanup
     private workspace: any;
     private originalItems: any;
+
+    @Input() newItemTitle: string;
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected globalState: AoGlobalStateStore) {
@@ -57,11 +59,25 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
         const filteredItems = [];
         if (this.originalItems && this.originalItems.length > 0) {
             this.originalItems.forEach(element => {
-                if (element.attributes.workspace === this.workspace.id) {
+                if (element.attributes.workspace_id === this.workspace.id) {
                     filteredItems.push(element);
                 }
             });
             this.items = filteredItems;
         }
+    }
+
+     // create a new dataset
+     createItem() {
+        const workspace = this.globalState.getProperty('workspace');
+        const params = { 'workspace_id': workspace.id, attributes: {} };
+        if (this.newItemTitle) {
+            params.attributes['title'] = this.newItemTitle;
+        }
+        this.apiClient.post(this.baseUrl, params)
+            .then((response: any) => {
+                // reload
+                super.loadItems();
+            });
     }
 }

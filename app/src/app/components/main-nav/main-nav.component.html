@@ -7,7 +7,8 @@
             <a routerLink="/">analitico<sup>ai</sup></a>
         </span>
         <div class="ao-spacer"></div>
-        <mat-select placeholder="Workspace" [(ngModel)]="selectedWorkspace" (selectionChange)="changedWorkspace()" class="ao-toolbar-workspace-selector">
+        <mat-select placeholder="Workspace" [(ngModel)]="selectedWorkspace" (selectionChange)="changedWorkspace()"
+            class="ao-toolbar-workspace-selector">
             <mat-option *ngFor="let workspace of workspaces" [value]="workspace">
                 {{(workspace.attributes && workspace.attributes.title) || workspace.id}}
             </mat-option>
@@ -20,50 +21,36 @@
             <!--<mat-nav-list (click)="drawer.close()"> -->
             <div class="ao-padding ao-left-side-nav">
                 <div class="ao-margin-bottom">
-                    <mat-expansion-panel>
-                        <mat-expansion-panel-header>
-                            <mat-panel-title>
-                                Datasets
-                            </mat-panel-title>
-                        </mat-expansion-panel-header>
-                        <input [(ngModel)]="datasetTitle" type="text">
-                        <button (click)="createDataset()">new dataset</button>
-                        <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
-                    </mat-expansion-panel>
+
+                    <a routerLink="/datasets"><h3>Datasets</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
+
                 </div>
 
                 <div class="ao-margin-top-bottom">
-                    <mat-expansion-panel>
-                        <mat-expansion-panel-header>
-                            <mat-panel-title>
-                                Recipes
-                            </mat-panel-title>
-                        </mat-expansion-panel-header>
-                        <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
-                    </mat-expansion-panel>
+
+                    <a routerLink="/recipes"><h3>Recipes</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
+
                 </div>
 
                 <div class="ao-margin-top-bottom">
-                    <mat-expansion-panel>
-                        <mat-expansion-panel-header>
-                            <mat-panel-title>
-                                Models
-                            </mat-panel-title>
-                        </mat-expansion-panel-header>
-                        <app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
-                    </mat-expansion-panel>
+
+                    <a routerLink="/models"><h3> Models</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
+
                 </div>
 
 
                 <div class="ao-margin-top-bottom">
-                    <mat-expansion-panel>
-                        <mat-expansion-panel-header>
-                            <mat-panel-title>
-                                Endpoints
-                            </mat-panel-title>
-                        </mat-expansion-panel-header>
-                        <app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
-                    </mat-expansion-panel>
+
+                    <a routerLink="/endpoints"><h3>Endpoints</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction"></app-ao-nav-list-from-url>
+
                 </div>
             </div>
 
