@@ -25,7 +25,7 @@ class JSONRenderer(rest_framework.renderers.JSONRenderer):
                 if "error" not in data:
 
                     # in json:api when "data" is present it is the only entry
-                    is_jsonapi_data = "data" in data and len(data) == 1
+                    is_jsonapi_data = "data" in data and (key in ("data", "meta", "links") for key in data.keys())
                     if not is_jsonapi_data:
                         data = OrderedDict({"data": data})
 
