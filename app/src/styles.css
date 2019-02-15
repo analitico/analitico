@@ -1,5 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 @import "~jsoneditor/dist/jsoneditor.min.css";
+@import "~ag-grid-community/dist/styles/ag-grid.css";
+@import "~ag-grid-community/dist/styles/ag-theme-balham.css";
+
 .jsoneditor-poweredBy{
     /* hide watermark */
     display: none;
@@ -63,7 +66,7 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 
 
-.ao-pipeline-plugin-container{
+.ao-pipeline-plugin{
     border: 1px solid #eeeeee;
 }
 
@@ -73,6 +76,19 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 .ao-padding{
     padding: 30px;
+}
+
+.ao-padding-10{
+    padding: 10px;
+}
+
+
+.ao-margin-top-bottom{
+    margin: 40px 0;
+}
+
+.ao-margin-bottom{
+    margin-bottom: 40px;
 }
 
 .ao-plugin-container{
@@ -100,4 +116,19 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 .ao-upload-queue button{
     display: none;
+}
+
+.ao-left-side-nav a{
+    font-size: 14px !important;
+}
+
+.ao-toolbar-workspace-selector{
+    width: 200px !important;
+    margin-right: 40px;
+    font-size: 14px;
+    text-align: right;
+}
+
+.ao-toolbar-workspace-selector .mat-select-value{
+    padding-right: 8px;
 }

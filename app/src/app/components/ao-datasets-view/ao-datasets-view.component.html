@@ -1,7 +1,8 @@
-<div>
+<div class="ao-padding">
+    <h3>Datasets</h3>
     <mat-nav-list>
         <mat-list-item *ngFor="let item of items">
-            <a matLine routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)" title="{{item.id}}">
+            <a matLine routerLink="{{baseUrl}}/{{item.id}}" routerLinkActive="active" title="{{item.id}}">
                 {{(item.attributes && item.attributes.title) || item.id}}
             </a>
         </mat-list-item>

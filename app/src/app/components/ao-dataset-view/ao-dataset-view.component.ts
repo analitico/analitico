@@ -27,6 +27,9 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     uploadAssetUrl: string;
     isProcessing = false;
     assets: any;
+    data: any;
+    // if the dataset has only one data it is a table
+    outputTableSchema: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
@@ -67,6 +70,11 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
                 });
         } */
         this.assets = this.item.attributes && this.item.attributes.assets;
+        this.data = this.item.attributes && this.item.attributes.data;
+        // if only one data, consider its schema as the table schema
+        if (this.data.length === 1 && this.data[0].schema) {
+            this.outputTableSchema = this.data[0].schema;
+        }
         this.loadPlugin();
     }
 
@@ -136,6 +144,6 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
 
     assetUploaded() {
-       // this.process();
+        // this.process();
     }
 }

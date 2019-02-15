@@ -2,7 +2,7 @@ import { async, ComponentFixture, TestBed, fakeAsync, tick, flushMicrotasks } fr
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AoDatasetViewComponent } from './ao-dataset-view.component';
 import {
-    MatSidenavModule, MatProgressSpinnerModule, MatIconModule, MatListModule, MatSnackBarModule
+    MatSidenavModule, MatProgressSpinnerModule, MatIconModule, MatListModule, MatSnackBarModule, MatExpansionModule
 } from '@angular/material';
 import { AoMatFileUploadQueueComponent } from 'src/app/components/ao-mat-file-upload-queue/ao-mat-file-upload-queue.component';
 import { AoFileUploadInputForDirective } from 'src/app/directives/ao-file-upload-input-for/ao-file-upload-input-for.directive';
@@ -48,7 +48,8 @@ describe('AoDatasetViewComponent', () => {
         TestBed.configureTestingModule({
             declarations: [AoDatasetViewComponent, AoMatFileUploadQueueComponent, AoFileUploadInputForDirective,
                 AoNavListComponent, AoMatFileUploadComponent, AoAnchorDirective],
-            imports: [MatProgressSpinnerModule, MatSidenavModule, MatIconModule, MatListModule, MatSnackBarModule, BrowserAnimationsModule],
+            imports: [MatProgressSpinnerModule, MatSidenavModule, MatIconModule, MatListModule,
+                MatSnackBarModule, BrowserAnimationsModule, MatExpansionModule],
             providers: [
                 { provide: AoApiClientService, useClass: MockAoApiClientService },
                 { provide: ActivatedRoute, useClass: MockActivatedRoute }

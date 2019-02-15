@@ -1,25 +1,48 @@
 <mat-sidenav-container class="sidenav-container">
     <mat-sidenav-content>
-        <button mat-raised-button (click)="process()">Process 
-                <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" [strokeWidth]="4"></mat-progress-spinner>
+        <button mat-raised-button (click)="process()">Process
+            <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" [strokeWidth]="4"></mat-progress-spinner>
         </button>
         <div class="ao-text-center">
             <h4 class="mat-h4">{{title}}</h4>
             <div class="ao-padding">
                 <ng-template app-ao-anchor></ng-template>
+                <app-ao-table-view [schema]="outputTableSchema"></app-ao-table-view>
             </div>
         </div>
 
     </mat-sidenav-content>
     <mat-sidenav mode="side" position="end" [opened]="true" class="sidenav">
-        <div [fileUploadInputFor]= "fileUploadQueue" class="ao-upload-drop-zone">
+        <div [fileUploadInputFor]="fileUploadQueue" class="ao-upload-drop-zone">
 
         </div>
-        <app-ao-nav-list [items]="assets"></app-ao-nav-list>
+        <div class="ao-padding-10">
+            <div class="ao-margin-top-bottom">
+                <mat-expansion-panel [expanded]="true">
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>
+                            Assets
+                        </mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <app-ao-nav-list [items]="assets"></app-ao-nav-list>
+                </mat-expansion-panel>
+            </div>
+            <div class="ao-margin-top-bottom">
+                <mat-expansion-panel [expanded]="true">
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>
+                            Data
+                        </mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <app-ao-nav-list [items]="data"></app-ao-nav-list>
+                </mat-expansion-panel>
+            </div>
+        </div>
     </mat-sidenav>
 </mat-sidenav-container>
 
 
-<app-ao-mat-file-upload-queue #fileUploadQueue   multiple>
-    <app-ao-mat-file-upload [file]="file" [id]="i" *ngFor="let file of fileUploadQueue.files; let i = index" (uploaded)="assetUploaded()" [fileAlias]="'file'" [httpUrl]="uploadAssetUrl"></app-ao-mat-file-upload>
+<app-ao-mat-file-upload-queue #fileUploadQueue multiple>
+    <app-ao-mat-file-upload [file]="file" [id]="i" *ngFor="let file of fileUploadQueue.files; let i = index" (uploaded)="assetUploaded()"
+        [fileAlias]="'file'" [httpUrl]="uploadAssetUrl"></app-ao-mat-file-upload>
 </app-ao-mat-file-upload-queue>

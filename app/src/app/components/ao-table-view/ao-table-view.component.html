@@ -1,0 +1,15 @@
+<ag-grid-angular 
+    style="width: 100%; height:500px;" 
+    class="ag-theme-balham"
+    [columnDefs]="columns"
+    [rowBuffer]="rowBuffer"
+    [rowSelection]="rowSelection"
+    [rowDeselection]="true"
+    [rowModelType]="rowModelType"
+    [paginationPageSize]="paginationPageSize"
+    [cacheOverflowSize]="cacheOverflowSize"
+    [maxConcurrentDatasourceRequests]="maxConcurrentDatasourceRequests"
+    [infiniteInitialRowCount]="infiniteInitialRowCount"
+    [maxBlocksInCache]="maxBlocksInCache"
+    (gridReady)="onGridReady($event)">
+</ag-grid-angular>

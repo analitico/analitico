@@ -65,9 +65,9 @@ export class AoViewComponent implements OnInit, OnDestroy {
                 this.onLoad();
             })
             .catch((response) => {
-                /*if (response.status === 404) {
-                    window.location.href = this.baseUrl;
-                }*/
+                if (response.status === 404) {
+                    window.location.href = '/app';
+                }
             });
     }
 
