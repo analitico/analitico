@@ -42,6 +42,23 @@ class DatasetTests(APITestCase):
         self.assertEqual(response.data[0]["path"], path)
         return url, response
 
+    def upload_large_random_data_csv(self, dataset_id, N=10000, k=5):
+        df = pd.DataFrame(
+            {
+                "Number": range(0, N, 1),
+                "Random": np.random.randint(k, k + 100, size=N),
+                "String": pd.Series(random.choice(string.ascii_uppercase) for _ in range(N)),
+            }
+        )
+        with tempfile.NamedTemporaryFile(suffix=".csv") as csv_file:
+            df.to_csv(csv_file.name)
+            self.assertTrue(os.path.isfile(csv_file.name))
+            csv_file.seek(0)
+            url = reverse("api:dataset-asset-detail", args=(dataset_id, "data", "data.csv"))
+            response = self.upload_file(url, csv_file.name, "text/csv", token=self.token1)
+            self.assertEqual(response.data[0]["id"], "data.csv")
+
+
     def setUp(self):
         self.setup_basics()
         try:
@@ -262,6 +279,8 @@ class DatasetTests(APITestCase):
         csv_header = "PassengerId,Survived,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked\n"
         self.assertTrue(csv_data.startswith(csv_header))
 
+
+
     def test_dataset_upload_process_data_get_info(self):
         """ Test uploading csv, processing, downloading info on csv """
         # upload and process titanic_1.csv
@@ -284,31 +303,26 @@ class DatasetTests(APITestCase):
         info_data = info_response.data
         self.assertEqual(len(info_data["schema"]["columns"]), 12)
 
-    def test_dataset_download_large_csv_as_paged_json(self):
+    def test_dataset_paging_no_parameters(self):
         """ Test uploading a large csv then downloading as json in pages """
+        self.upload_large_random_data_csv("ds_titanic_4")
 
-        N, k = 10000, 5
-        df = pd.DataFrame(
-            {
-                "Number": range(0, N, 1),
-                "Random": np.random.randint(k, k + 100, size=N),
-                "String": pd.Series(random.choice(string.ascii_uppercase) for _ in range(N)),
-            }
-        )
+        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        records = response.data["data"]
+        self.assertEqual(len(records), 25)            
+        self.assertEqual(records[0]["Number"], 0)            
+        self.assertEqual(records[24]["Number"], 24)            
 
-        with tempfile.NamedTemporaryFile(suffix=".csv") as csv_file:
-            df.to_csv(csv_file.name)
-            self.assertTrue(os.path.isfile(csv_file.name))
+    def test_dataset_paging_second_page(self):
+        """ Test uploading a large csv then downloading as json in pages """
+        self.upload_large_random_data_csv("ds_titanic_4")
 
-            csv_file.seek(0)
-            url = reverse("api:dataset-asset-detail", args=("ds_titanic_4", "data", "data.csv"))
-            response = self.upload_file(url, csv_file.name, "text/csv", token=self.token1)
-            self.assertEqual(response.data[0]["id"], "data.csv")
-
-            url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            records = response.data["data"]
-            self.assertEqual(len(records), 25)            
-            self.assertEqual(records[0]["Number"], 0)            
-            self.assertEqual(records[24]["Number"], 24)            
+        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=1"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        records = response.data["data"]
+        self.assertEqual(len(records), 25)            
+        self.assertEqual(records[0]["Number"], 25)            
+        self.assertEqual(records[24]["Number"], 49)            

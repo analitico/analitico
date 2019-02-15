@@ -135,8 +135,8 @@ class AssetViewSetMixin:
         df = pd.read_csv(asset_file)
 
         min_page_size, max_page_size = 1, 100
-        page = request.GET.get("page", 0)
-        page_size = max(min_page_size, min(max_page_size, request.GET.get("page_size", 25)))
+        page = int(request.GET.get("page", 0))
+        page_size = max(min_page_size, min(max_page_size, int(request.GET.get("page_size", 25))))
 
         offset = page * page_size
         df = df[offset : offset + page_size]
