@@ -22,6 +22,7 @@ from rest_framework import status
 
 from api.models import ItemMixin, Job, JobRunner, ASSETS_CLASS_DATA
 from analitico.utilities import logger
+from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE
 
 ##
 ## AssetViewSetMixin - a mixin for uploading and downloading assets
@@ -128,20 +129,18 @@ class AssetViewSetMixin:
 
     def asset_download_csv_as_json_with_paging(self, request, pk, asset_class, asset_id):
         """ Returns a .csv asset converted to json records with paging support """
+        # which page are we on, what size is each page
+        page = int(request.GET.get("page", 0))
+        page_size = max(MIN_PAGE_SIZE, min(MAX_PAGE_SIZE, int(request.GET.get("page_size", DEFAULT_PAGE_SIZE))))
+        offset = page * page_size
+        # retrieve only the requested chunk from cached copy of storage asset on local disk
         item = self.get_object()
-
         factory = JobRunner(None, request)
         asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
-        df = pd.read_csv(asset_file)
-
-        min_page_size, max_page_size = 1, 100
-        page = int(request.GET.get("page", 0))
-        page_size = max(min_page_size, min(max_page_size, int(request.GET.get("page_size", 25))))
-
-        offset = page * page_size
-        df = df[offset : offset + page_size]
+        df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
         records = df.to_dict("records")
-        return Response({"data": records})
+        # return records and information on current page
+        return Response({"data": records, "meta": {"page": page, "page_size": page_size}})
 
     #
     # ViewSet actions

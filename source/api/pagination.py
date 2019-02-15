@@ -6,6 +6,10 @@ import rest_framework_json_api.pagination
 import rest_framework.renderers
 import rest_framework_json_api.renderers
 
+MIN_PAGE_SIZE = 1
+MAX_PAGE_SIZE = 100
+DEFAULT_PAGE_SIZE = 25
+
 # class AnaliticoPageNumberPagination(pagination.PageNumberPagination):
 class AnaliticoPageNumberPagination(rest_framework_json_api.pagination.JsonApiPageNumberPagination):
 
