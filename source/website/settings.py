@@ -65,6 +65,7 @@ try:
     # Covers pytest, regular testing and django-coverage
     if sys.argv[0].endswith("pytest.py") or ("test" in sys.argv) or ("test_coverage" in sys.argv):
         DATABASES["default"]["ENGINE"] = "django.db.backends.sqlite3"
+        DATABASES["default"].pop("OPTIONS") # remove SSL configurations
 
     # We are keeping file storage cloud independent so that we can use whichever
     # cloud makes the most sense and also give customers an option to bring their own
