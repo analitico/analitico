@@ -19,6 +19,7 @@ import sentry_sdk
 import raven
 import sys
 
+from analitico.utilities import save_text
 from rest_framework.exceptions import APIException
 
 try:
@@ -34,6 +35,17 @@ try:
     # SECURITY WARNING: keep the secret key used in production secret!
     SECRET_KEY = os.environ["ANALITICO_SECRET_KEY"]
 
+    # We connect to MySQL using SSL so we need the proper certificates
+    sql_ssl_key = os.environ["ANALITICO_MYSQL_SSL_KEY"].replace("{newline}", "\n")
+    sql_ssl_cert = os.environ["ANALITICO_MYSQL_SSL_CERT"].replace("{newline}", "\n")
+    sql_ssl_ca = os.environ["ANALITICO_MYSQL_SSL_CA"].replace("{newline}", "\n")
+    sql_ssl_key_path = os.path.join(BASE_DIR, "client-key.pem")
+    sql_ssl_cert_path = os.path.join(BASE_DIR, "client-cert.pem")
+    sql_ssl_ca_path = os.path.join(BASE_DIR, "server-ca.pem")
+    save_text(sql_ssl_key, sql_ssl_key_path)
+    save_text(sql_ssl_cert, sql_ssl_cert_path)
+    save_text(sql_ssl_ca, sql_ssl_ca_path)
+
     # MySQL database
     DATABASES = {
         "default": {
@@ -43,6 +55,10 @@ try:
             "HOST": os.environ["ANALITICO_MYSQL_HOST"],
             "USER": os.environ["ANALITICO_MYSQL_USER"],
             "PASSWORD": os.environ["ANALITICO_MYSQL_PASSWORD"],
+            # WARNING: Private sql keys are included in /conf
+            # They can later be easily removed and rotated out of service
+            # https://dev.mysql.com/doc/refman/5.5/en/mysql-ssl-set.html
+            "OPTIONS": {"ssl_key": sql_ssl_key_path, "ssl_cert": sql_ssl_cert_path, "ssl_ca": sql_ssl_ca_path},
         }
     }
 
