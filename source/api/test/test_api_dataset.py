@@ -27,6 +27,7 @@ from api.models import Job
 from .utils import APITestCase
 from analitico import ACTION_PROCESS
 from api.pagination import MIN_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
+from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -301,9 +302,14 @@ class DatasetTests(APITestCase):
         info_data = info_response.data
         self.assertEqual(len(info_data["schema"]["columns"]), 12)
 
+    ##
+    ## Paging CSV as JSON records
+    ##
+
     def test_dataset_paging_no_parameters_no_meta(self):
-        """ Test uploading a large csv then downloading as json in pages """
-        self.upload_large_random_data_csv("ds_titanic_4", 500)
+        """ Download large csv as paged json with default settings """
+        N = 500
+        self.upload_large_random_data_csv("ds_titanic_4", N)
         # do not indicate ?meta, defaults to false
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
         response = self.client.get(url)
@@ -312,90 +318,144 @@ class DatasetTests(APITestCase):
         self.assertEqual(len(records), 25)
         self.assertEqual(records[0]["Number"], 0)
         self.assertEqual(records[24]["Number"], 24)
+        self.assertTrue("meta" in response.data)
+        self.assertEqual(response.data["meta"]["page"], 0)
+        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["total_pages"], N / DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["total_records"], N)
         # indicate ?meta=False
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=False"
         response = self.client.get(url)
+        self.assertTrue("meta" in response.data)
+        self.assertEqual(response.data["meta"]["page"], 0)
+        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
+        self.assertTrue("total_pages" not in response.data["meta"])
+        self.assertTrue("total_records" not in response.data["meta"])
 
-    def test_dataset_paging_no_parameters_with_meta(self):
-        self.upload_large_random_data_csv("ds_titanic_4", 496)
+    def test_dataset_paging_asset_endpoint(self):
+        """ Download paged csv using regular assets endpoint with ?format=json parameter """
+        N = 500
+        self.upload_large_random_data_csv("ds_titanic_4", N)
+        url = reverse("api:dataset-asset-detail", args=("ds_titanic_4", ASSETS_CLASS_DATA, "data.csv")) + "?format=json"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        records = response.data["data"]
+        self.assertEqual(len(records), 25)
+        self.assertEqual(records[0]["Number"], 0)
+        self.assertEqual(records[24]["Number"], 24)
+        self.assertTrue("meta" in response.data)
+        self.assertEqual(response.data["meta"]["page"], 0)
+        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["total_pages"], N / DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["total_records"], N)
+        # indicate ?meta=False
+        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=False"
+        response = self.client.get(url)
+        self.assertTrue("meta" in response.data)
+        self.assertEqual(response.data["meta"]["page"], 0)
+        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
+        self.assertTrue("total_pages" not in response.data["meta"])
+        self.assertTrue("total_records" not in response.data["meta"])
+
+    def test_dataset_paging_no_parameters_uneven_pages(self):
+        N = 496  # last page is different
+        self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=yes"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         records = response.data["data"]
-        self.assertEqual(len(records), 25)
+        self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
         self.assertEqual(records[0]["Number"], 0)
-        self.assertEqual(records[24]["Number"], 24)
-        # metadata is optional
+        self.assertEqual(records[N % DEFAULT_PAGE_SIZE]["Number"], N % DEFAULT_PAGE_SIZE)
+        # metadata
         meta = response.data["meta"]
         self.assertEqual(meta["page"], 0)
         self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_pages"], 20)
-        self.assertEqual(meta["total_records"], 496)
+        self.assertEqual(meta["total_pages"], int((N + DEFAULT_PAGE_SIZE - 1) / DEFAULT_PAGE_SIZE))
+        self.assertEqual(meta["total_records"], N)
 
     def test_dataset_paging_no_parameters(self):
         """ Test uploading a large csv then downloading as json in pages """
-        self.upload_large_random_data_csv("ds_titanic_4", 500)
-
+        N = DEFAULT_PAGE_SIZE * 20
+        self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=1"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         records = response.data["data"]
-        self.assertEqual(len(records), 25)
+        self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
         self.assertEqual(records[0]["Number"], 0)
-        self.assertEqual(records[24]["Number"], 24)
+        self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], DEFAULT_PAGE_SIZE - 1)
         meta = response.data["meta"]
         self.assertEqual(meta["page"], 0)
+        self.assertEqual(meta["page_records"], DEFAULT_PAGE_SIZE)
         self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_records"], 500)
+        self.assertEqual(meta["total_records"], N)
 
     def test_dataset_paging_second_page(self):
-        self.upload_large_random_data_csv("ds_titanic_4", 500)
-
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=1"
+        N = DEFAULT_PAGE_SIZE * 40
+        self.upload_large_random_data_csv("ds_titanic_4", N)
+        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=2"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         records = response.data["data"]
-        self.assertEqual(len(records), 25)
-        self.assertEqual(records[0]["Number"], 25)
-        self.assertEqual(records[24]["Number"], 49)
+        self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
+        self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 2)
+        self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], (DEFAULT_PAGE_SIZE * 3) - 1)
 
     def test_dataset_paging_last_page(self):
-        self.upload_large_random_data_csv("ds_titanic_4", 490)
+        N = (DEFAULT_PAGE_SIZE * 20) - 10
+        self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=19&meta=True"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         records = response.data["data"]
-        self.assertEqual(len(records), 15)
-        self.assertEqual(records[0]["Number"], 475)
-        self.assertEqual(records[14]["Number"], 489)
+        self.assertEqual(len(records), N % DEFAULT_PAGE_SIZE)
+        self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 19)
+        self.assertEqual(records[(N % DEFAULT_PAGE_SIZE) - 1]["Number"], N - 1)
         meta = response.data["meta"]
         self.assertEqual(meta["page"], 19)
+        self.assertEqual(meta["page_records"], N % DEFAULT_PAGE_SIZE)
         self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_records"], 490)
+        self.assertEqual(meta["total_records"], N)
+        self.assertEqual(meta["total_pages"], int((N + DEFAULT_PAGE_SIZE - 1) / DEFAULT_PAGE_SIZE))
 
     def test_dataset_paging_beyond_last_page(self):
-        self.upload_large_random_data_csv("ds_titanic_4", 490)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=20&meta=1"
+        N = (DEFAULT_PAGE_SIZE * 20) - 10
+        self.upload_large_random_data_csv("ds_titanic_4", N)
+        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=20"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         records = response.data["data"]
         self.assertEqual(len(records), 0)
         meta = response.data["meta"]
         self.assertEqual(meta["page"], 20)
+        self.assertEqual(meta["page_records"], 0)
         self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_records"], 490)
+        self.assertEqual(meta["total_records"], N)
+        self.assertEqual(meta["total_pages"], 20)
         # beyond last
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=310"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         records = response.data["data"]
         self.assertEqual(len(records), 0)
+        meta = response.data["meta"]
+        self.assertEqual(meta["page"], 310)
+        self.assertEqual(meta["page_records"], 0)
+        self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
+        self.assertEqual(meta["total_records"], N)
+        self.assertEqual(meta["total_pages"], 20)
 
     def test_dataset_paging_scan_pages_check_performance(self):
-        self.upload_large_random_data_csv("ds_titanic_4", DEFAULT_PAGE_SIZE * 500)
+        N = DEFAULT_PAGE_SIZE * 5000  # large but not huge 125K records
+        self.upload_large_random_data_csv("ds_titanic_4", N)
 
         # first page loading time may be higher because cache is cold
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=0&meta=yes"
+        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         records = response.data["data"]
@@ -404,15 +464,17 @@ class DatasetTests(APITestCase):
         # WARNING: THIS TEST CHECKS PERFORMANCE AND WILL THROW IF THE LOOP IS SLOW
         # THIS MEANS THAT IF YOU SETUP A BREAKPOINT AND DEBUG THE CODE YOU WILL GET AN ASSERT
         total_ms = time_ms()
-        for i in range(20, 60):
+        for i in range(1, 50):  # 50 runs
+            page_number = random.randint(1, 3000)  # random page
             loading_ms = time_ms()
-            url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=" + str(i)
+            url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
+            url = url + "?page=" + str(page_number) + "&meta=false"  # NO META ROWS COUNT
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             records = response.data["data"]
             self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
-            self.assertEqual(records[0]["Number"], i * DEFAULT_PAGE_SIZE)
-            self.assertEqual(records[24]["Number"], ((i + 1) * DEFAULT_PAGE_SIZE) - 1)
+            self.assertEqual(records[0]["Number"], page_number * DEFAULT_PAGE_SIZE)
+            self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], ((page_number + 1) * DEFAULT_PAGE_SIZE) - 1)
             loading_ms = time_ms(loading_ms)
             self.assertLess(int(loading_ms), 100, "Page loading time should be under 100ms")
         total_ms = time_ms(total_ms)
@@ -434,7 +496,8 @@ class DatasetTests(APITestCase):
         self.assertEqual(meta["page_size"], 50)
 
     def test_dataset_paging_huge_page(self):
-        self.upload_large_random_data_csv("ds_titanic_4", MAX_PAGE_SIZE * 20)
+        N = MAX_PAGE_SIZE * 20
+        self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=10&page_size=500&meta=yES"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

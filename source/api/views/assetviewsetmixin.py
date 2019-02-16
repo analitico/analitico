@@ -23,7 +23,7 @@ from rest_framework import status
 from analitico.utilities import logger, get_csv_row_count
 from api.models import ItemMixin, Job, JobRunner, ASSETS_CLASS_DATA
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE
-from api.utilities import get_query_parameter_as_bool
+from api.utilities import get_query_parameter, get_query_parameter_as_bool
 
 ##
 ## AssetViewSetMixin - a mixin for uploading and downloading assets
@@ -139,9 +139,11 @@ class AssetViewSetMixin:
         factory = JobRunner(None, request)
         asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
         df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
-        data = {"meta": {"page": page, "page_size": page_size}, "data": df.to_dict("records")}
-        # extra metadata is expensive so we only return it on demand
-        if get_query_parameter_as_bool(request, "meta", False):
+
+        data = {"meta": {"page": page, "page_records": len(df), "page_size": page_size}, "data": df.to_dict("records")}
+
+        # extra metadata could be expensive so we leave the option to opt out for performance
+        if get_query_parameter_as_bool(request, "meta", True):
             rows = get_csv_row_count(asset_file)  # file needs to be read end to end
             data["meta"]["total_pages"] = int((rows + page_size - 1) / page_size)
             data["meta"]["total_records"] = rows
@@ -175,6 +177,10 @@ class AssetViewSetMixin:
             return self.asset_upload(request, pk, asset_class, asset_id)
         if request.method == "GET":
             assert asset_id
+            # if this is a .csv asset which is being requested as a paged json dictionary
+            if get_query_parameter(request, "format") == "json" and ".csv" in asset_id:
+                return self.asset_download_csv_as_json_with_paging(request, pk, asset_class, asset_id)
+            # download asset directly
             return self.asset_download(request, pk, asset_class, asset_id)
         if request.method == "DELETE":
             assert asset_id
