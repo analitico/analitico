@@ -18,6 +18,7 @@ import logging.config
 import sentry_sdk
 import raven
 import sys
+import tempfile
 
 from analitico.utilities import save_text
 from rest_framework.exceptions import APIException
@@ -25,7 +26,67 @@ from rest_framework.exceptions import APIException
 try:
 
     # SECURITY WARNING: don't run with debug turned on in production!
-    DEBUG = os.environ.get("ANALITICO_DEBUG", "False") == "True"
+    DEBUG = os.environ.get("ANALITICO_DEBUG", "False").lower() == "true"
+
+    ###
+    ### Logging (setup log first so at least if there's an error you get it logged)
+    ###
+
+    # Examples of logging configuration:
+    # https://lincolnloop.com/blog/django-logging-right-way/
+
+    # Sentry/Django documentation
+    # https://docs.sentry.io/clients/python/integrations/django/
+
+    # See logs here:
+    # https://sentry.io/analiticoai/python/
+
+    sentry_sdk.init("https://3cc8a3cf05e140a9bef3946e24756dc5@sentry.io/1336917")
+
+    RAVEN_CONFIG = {
+        "dsn": "https://3cc8a3cf05e140a9bef3946e24756dc5:30ab9adb8199489a962d94566cd746bc@sentry.io/1336917",
+        # If you are using git, you can also automatically configure the
+        # release based on the git info.
+        #   'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
+        #   'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
+        "release": "v0.11",
+    }
+
+    LOGLEVEL = os.environ.get("LOGLEVEL", "info").upper()
+
+    LOGGING_CONFIG = None
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "console": {
+                    # exact format is not important, this is the minimum information
+                    "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+                }
+            },
+            "handlers": {
+                "console": {"class": "logging.StreamHandler", "formatter": "console"},
+                # Add Handler for Sentry for `warning` and above
+                "sentry": {"level": "WARNING", "class": "raven.contrib.django.raven_compat.handlers.SentryHandler"},
+            },
+            "loggers": {
+                # root logger
+                "": {
+                    "level": "WARNING",
+                    "handlers": ["console"],
+                    #'handlers': ['console', 'sentry'],
+                },
+                "analitico": {
+                    "level": LOGLEVEL,
+                    "handlers": ["console"],
+                    # 'handlers': ['console', 'sentry'],
+                    # required to avoid double logging with root logger
+                    "propagate": False,
+                },
+            },
+        }
+    )
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
     # Project is always started with currenct directory in /analitico/source/
@@ -36,15 +97,9 @@ try:
     SECRET_KEY = os.environ["ANALITICO_SECRET_KEY"]
 
     # We connect to MySQL using SSL so we need the proper certificates
-    sql_ssl_key = os.environ["ANALITICO_MYSQL_SSL_KEY"].replace("{newline}", "\n")
-    sql_ssl_cert = os.environ["ANALITICO_MYSQL_SSL_CERT"].replace("{newline}", "\n")
-    sql_ssl_ca = os.environ["ANALITICO_MYSQL_SSL_CA"].replace("{newline}", "\n")
-    sql_ssl_key_path = os.path.join(BASE_DIR, "client-key.pem")
-    sql_ssl_cert_path = os.path.join(BASE_DIR, "client-cert.pem")
-    sql_ssl_ca_path = os.path.join(BASE_DIR, "server-ca.pem")
-    save_text(sql_ssl_key, sql_ssl_key_path)
-    save_text(sql_ssl_cert, sql_ssl_cert_path)
-    save_text(sql_ssl_ca, sql_ssl_ca_path)
+    sql_ssl_key_path = "../conf/cloudsql/client-key.pem"
+    sql_ssl_cert_path = "../conf/cloudsql/client-cert.pem"
+    sql_ssl_ca_path = "../conf/cloudsql/client-ca.pem"
 
     # MySQL database
     DATABASES = {
@@ -201,7 +256,7 @@ try:
         "google": {"SCOPE": ["profile", "email"], "AUTH_PARAMS": {"access_type": "online"}}  # email is a requirement
     }
 
-    LOGIN_REDIRECT_URL = "lab"
+    LOGIN_REDIRECT_URL = "app"
 
     ##
     ## Email sender (configured in environment variables)
@@ -314,67 +369,6 @@ try:
             },
         }
     }
-
-    ###
-    ### Logging
-    ###
-
-    # Examples of logging configuration:
-    # https://lincolnloop.com/blog/django-logging-right-way/
-
-    # Sentry/Django documentation
-    # https://docs.sentry.io/clients/python/integrations/django/
-
-    # See logs here:
-    # https://sentry.io/analiticoai/python/
-
-    sentry_sdk.init("https://3cc8a3cf05e140a9bef3946e24756dc5@sentry.io/1336917")
-
-    RAVEN_CONFIG = {
-        "dsn": "https://3cc8a3cf05e140a9bef3946e24756dc5:30ab9adb8199489a962d94566cd746bc@sentry.io/1336917",
-        # If you are using git, you can also automatically configure the
-        # release based on the git info.
-        #   'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
-        #   'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
-        "release": "v0.11",
-    }
-
-    LOGLEVEL = os.environ.get("LOGLEVEL", "info").upper()
-
-    LOGGING_CONFIG = None
-    logging.config.dictConfig(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "console": {
-                    # exact format is not important, this is the minimum information
-                    "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
-                }
-            },
-            "handlers": {
-                "console": {"class": "logging.StreamHandler", "formatter": "console"},
-                # Add Handler for Sentry for `warning` and above
-                "sentry": {"level": "WARNING", "class": "raven.contrib.django.raven_compat.handlers.SentryHandler"},
-            },
-            "loggers": {
-                # root logger
-                "": {
-                    "level": "WARNING",
-                    "handlers": ["console"],
-                    #'handlers': ['console', 'sentry'],
-                },
-                "analitico": {
-                    "level": LOGLEVEL,
-                    "handlers": ["console"],
-                    # 'handlers': ['console', 'sentry'],
-                    # required to avoid double logging with root logger
-                    "propagate": False,
-                },
-            },
-        }
-    )
-
 
 except KeyError as exc:
     detail = (

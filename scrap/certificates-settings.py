@@ -1,0 +1,10 @@
+    sql_ssl_key = os.environ["ANALITICO_MYSQL_SSL_KEY"].replace("{newline}", "\n")
+    sql_ssl_cert = os.environ["ANALITICO_MYSQL_SSL_CERT"].replace("{newline}", "\n")
+    sql_ssl_ca = os.environ["ANALITICO_MYSQL_SSL_CA"].replace("{newline}", "\n")
+    sql_ssl_key_path = os.path.join(tempfile.gettempdir(), "client-key.pem")
+    sql_ssl_cert_path = os.path.join(tempfile.gettempdir(), "client-cert.pem")
+    sql_ssl_ca_path = os.path.join(tempfile.gettempdir(), "server-ca.pem")
+    save_text(sql_ssl_key, sql_ssl_key_path)
+    save_text(sql_ssl_cert, sql_ssl_cert_path)
+    save_text(sql_ssl_ca, sql_ssl_ca_path)
+
