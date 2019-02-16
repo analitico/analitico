@@ -109,7 +109,8 @@ try:
             "NAME": os.environ.get("ANALITICO_MYSQL_NAME", "analitico"),
             "HOST": os.environ["ANALITICO_MYSQL_HOST"],
             "USER": os.environ["ANALITICO_MYSQL_USER"],
-            "PASSWORD": os.environ["ANALITICO_MYSQL_PASSWORD"]
+            "PASSWORD": os.environ["ANALITICO_MYSQL_PASSWORD"],
+            "CONN_MAX_AGE": 120 # connection stays on for two minutes
         }
     }
 
