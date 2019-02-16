@@ -110,14 +110,14 @@ try:
             "HOST": os.environ["ANALITICO_MYSQL_HOST"],
             "USER": os.environ["ANALITICO_MYSQL_USER"],
             "PASSWORD": os.environ["ANALITICO_MYSQL_PASSWORD"],
-            "CONN_MAX_AGE": 120 # connection stays on for two minutes
+            "CONN_MAX_AGE": 120, # connection stays on for two minutes
+            "OPTIONS": {"ssl_key": sql_ssl_key_path, "ssl_cert": sql_ssl_cert_path, "ssl_ca": sql_ssl_ca_path}
         }
     }
 
     # WARNING: Private sql keys are included in /conf
     # They can later be easily removed and rotated out of service
     # https://dev.mysql.com/doc/refman/5.5/en/mysql-ssl-set.html
-    #"OPTIONS": {"ssl_key": sql_ssl_key_path, "ssl_cert": sql_ssl_cert_path, "ssl_ca": sql_ssl_ca_path},
 
 
     # Covers pytest, regular testing and django-coverage
