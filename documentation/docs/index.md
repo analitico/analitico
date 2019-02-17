@@ -1,4 +1,4 @@
-# Material <small>for MkDocs</small>
+# Analitico
 
 ## Create beautiful project documentation
 
