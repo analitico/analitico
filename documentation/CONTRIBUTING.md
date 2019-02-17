@@ -1,7 +1,6 @@
 # Contributing
 
-Interested in contributing to the Material theme? Want to report a bug? Before
-you do, please read the following guidelines.
+Interested in contributing to the Analitico code base? Want to report a bug? Before you do, please read the following guidelines.
 
 ## Submission context
 
@@ -10,7 +9,7 @@ you do, please read the following guidelines.
 For quick questions there's no need to open an issue as you can reach us on
 [gitter.im][1].
 
-  [1]: https://gitter.im/squidfunk/mkdocs-material
+  [1]: https://gitter.im/analitico-ai
 
 ### Found a bug?
 
@@ -19,16 +18,15 @@ to the [issue tracker][2] in our GitHub repository. Even better, you can submit
 a Pull Request with a fix. However, before doing so, please read the
 [submission guidelines][3].
 
-  [2]: https://github.com/squidfunk/mkdocs-material/issues
+  [2]: https://github.com/analitico/analitico/issues
   [3]: #submission-guidelines
 
 ### Missing a feature?
 
 You can request a new feature by submitting an issue to our GitHub Repository.
 If you would like to implement a new feature, please submit an issue with a
-proposal for your work first, to be sure that it is of use for everyone, as
-the Material theme is highly opinionated. Please consider what kind of change
-it is:
+proposal for your work first, to be sure that it is of use for everyone. 
+Please consider what kind of change it is:
 
 * For a **major feature**, first open an issue and outline your proposal so
   that it can be discussed. This will also allow us to better coordinate our
@@ -38,7 +36,7 @@ it is:
 * **Small features and bugs** can be crafted and directly submitted as a Pull
   Request. However, there is no guarantee that your feature will make it into
   the master, as it's always a matter of opinion whether if benefits the
-  overall functionality of the theme.
+  overall functionality.
 
 ## Submission guidelines
 
@@ -66,17 +64,17 @@ go ahead.
   make your changes in a separate git branch and add descriptive messages to
   your commits.
 
-2. **Build**: Before submitting a pull requests, [build the theme][5]. This is
-  a mandatory requirement for your PR to get accepted, as the theme should at
+2. **Build**: Before submitting a pull requests, run the test suite. This is
+  a mandatory requirement for your PR to get accepted, as the repo should at
   all times be installable through GitHub.
 
-3. **Pull Request**: After building the theme, commit the compiled output, push
-  your branch to GitHub and send a PR to `mkdocs-material:master`. If we
+3. **Pull Request**: After building running the tests, push
+  your branch to GitHub and send a PR to `analitico:master`. If we
   suggest changes, make the required updates, rebase your branch and push the
   changes to your GitHub repository, which will automatically update your PR.
 
 After your PR is merged, you can safely delete your branch and pull the changes
 from the main (upstream) repository.
 
-  [4]: https://squidfunk.github.io/mkdocs-material/customization/#environment-setup
-  [5]: https://squidfunk.github.io/mkdocs-material/customization/#build-process
+  [4]: https://github.com/analitico/analitico/wiki/Development-Environment
+  

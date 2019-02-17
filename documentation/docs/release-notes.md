@@ -2,16 +2,16 @@
 
 ## Upgrading
 
-To upgrade Material to the latest version, use `pip`:
+To upgrade Analitico to the latest version, use `pip`:
 
 ``` sh
-pip install --upgrade mkdocs-material
+pip install --upgrade analitico
 ```
 
 To inspect the currently installed version, use the following command:
 
 ``` sh
-pip show mkdocs-material
+pip show analitico
 ```
 
 ### Material 3.x to 4.x
@@ -479,7 +479,7 @@ pip show mkdocs-material
 
 ### 1.6.0 <small>_ April 22, 2017</small>
 
-* Added build test for Docker image on Travis
+* Added build test for Docker image on Travis#762
 * Added search overlay for better user experience (focus)
 * Added language from localizations to `html` tag
 * Fixed #270: source links broken for absolute URLs
@@ -698,6 +698,6 @@ pip show mkdocs-material
 * Made MkDocs building/serving in build process optional
 * Set up continuous integration with Travis
 
-### 0.1.0 <small>_ February 9, 2016</small>
+### 0.0.0.dev13 <small>_ February 6, 2019</small>
 
 * Initial release

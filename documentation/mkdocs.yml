@@ -1,4 +1,5 @@
-# Copyright (c) 2016-2019 Martin Donath <martin.donath@squidfunk.com>
+
+# Copyright (c) 2019 Analitico Labs Inc. <info@analitico.ai>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -18,23 +19,28 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+# Based on MkDocs Material by Martin Donath, thanks!
+# Copyright (c) 2016-2019 Martin Donath <martin.donath@squidfunk.com>
+
+
 # Project information
-site_name: Material for MkDocs
-site_description: A Material Design theme for MkDocs
-site_author: Martin Donath
-site_url: https://squidfunk.github.io/mkdocs-material/
+site_name: Analitico for Developers
+site_description: A documentation site for Analitico SDK and APIs
+site_author: Analitico Labs Inc.
+site_url: https://analitico.ai/docs
 
 # Repository
-repo_name: squidfunk/mkdocs-material
-repo_url: https://github.com/squidfunk/mkdocs-material
+repo_name: analitico/analitico-sdk
+repo_url: https://github.com/analitico/analitico-sdk
 edit_uri: ""
 
 # Copyright
-copyright: 'Copyright &copy; 2016 - 2019 Martin Donath'
+copyright: 'Copyright &copy; 2019 Analitico Labs Inc.'
 
 # Configuration
 theme:
   name: 'material'
+  custom_dir: 'theme'
 
   # 404 page
   static_templates:
@@ -61,14 +67,16 @@ theme:
 # Customization
 extra:
   social:
-    - type: globe
-      link: http://struct.cc
+    #- type: globe
+    #  link: http://struct.cc
     - type: github-alt
-      link: https://github.com/squidfunk
+      link: https://github.com/analitico
     - type: twitter
-      link: https://twitter.com/squidfunk
+      link: https://twitter.com/analiticolabs
     - type: linkedin
-      link: https://linkedin.com/in/squidfunk
+      link: https://www.linkedin.com/in/gionata/
+    - type: facebook
+      link: https://www.facebook.com/analiticoai
 
 # Extensions
 markdown_extensions:
@@ -103,9 +111,9 @@ markdown_extensions:
 
 # Page tree
 nav:
-  - Material: index.md
+  - Introduction: index.md
   - Getting started: getting-started.md
-  - Extensions:
+  - APIs:
     - Admonition: extensions/admonition.md
     - CodeHilite: extensions/codehilite.md
     - Footnotes: extensions/footnotes.md
