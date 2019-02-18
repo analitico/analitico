@@ -14,6 +14,8 @@ import { delay } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
 import { environment } from '../../../environments/environment';
+import { AoTableViewComponent } from '../ao-table-view/ao-table-view.component';
+import { AgGridModule } from 'ag-grid-angular';
 
 class MockAoApiClientService {
     get(url: any) {
@@ -47,9 +49,9 @@ describe('AoDatasetViewComponent', () => {
     beforeEach(async(() => {
         TestBed.configureTestingModule({
             declarations: [AoDatasetViewComponent, AoMatFileUploadQueueComponent, AoFileUploadInputForDirective,
-                AoNavListComponent, AoMatFileUploadComponent, AoAnchorDirective],
+                AoNavListComponent, AoMatFileUploadComponent, AoAnchorDirective, AoTableViewComponent],
             imports: [MatProgressSpinnerModule, MatSidenavModule, MatIconModule, MatListModule,
-                MatSnackBarModule, BrowserAnimationsModule, MatExpansionModule],
+                MatSnackBarModule, BrowserAnimationsModule, MatExpansionModule, AgGridModule],
             providers: [
                 { provide: AoApiClientService, useClass: MockAoApiClientService },
                 { provide: ActivatedRoute, useClass: MockActivatedRoute }

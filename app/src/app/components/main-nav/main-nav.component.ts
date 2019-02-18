@@ -100,8 +100,6 @@ export class MainNavComponent implements OnInit, OnDestroy {
         this.workspaceFilter = { 'attributes.workspace_id': this.workspace.id };
     }
 
-   
-
     // define default sort function on created_at attributes
     sortByCreatedAtDescFunction = function (a, b) {
         try {

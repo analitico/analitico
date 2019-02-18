@@ -21,6 +21,7 @@ export class AoViewComponent implements OnInit, OnDestroy {
     objectId: string;
     item: any;
     baseUrl: string;
+    itemUrl: string;
 
     constructor(private route: ActivatedRoute, protected apiClient: AoApiClientService) {
 
@@ -53,13 +54,14 @@ export class AoViewComponent implements OnInit, OnDestroy {
         if (!this.objectId || this.objectId !== params.id) {
             this.objectId = params.id;
             console.log('loading ' + this.objectId);
+            this.itemUrl = this.baseUrl + '/' + this.objectId;
             this.loadItem();
         }
     }
 
     // loads the json object
     loadItem() {
-        this.apiClient.get(this.baseUrl + '/' + this.objectId)
+        this.apiClient.get(this.itemUrl)
             .then((response: any) => {
                 this.item = response.data;
                 this.onLoad();

@@ -1,13 +1,15 @@
 <mat-sidenav-container class="sidenav-container">
     <mat-sidenav-content>
-        <button mat-raised-button (click)="process()">Process
-            <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" [strokeWidth]="4"></mat-progress-spinner>
-        </button>
+
         <div class="ao-text-center">
             <h4 class="mat-h4">{{title}}</h4>
             <div class="ao-padding">
                 <ng-template app-ao-anchor></ng-template>
-                <app-ao-table-view [schema]="outputTableSchema"></app-ao-table-view>
+                <button mat-raised-button (click)="process()" style="margin: 10px auto 40px auto;">Process
+                    <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" [strokeWidth]="4"></mat-progress-spinner>
+                </button>
+    
+                <app-ao-table-view [schema]="outputTableSchema" [data]="itemUrl + '/data/json'"></app-ao-table-view>
             </div>
         </div>
 

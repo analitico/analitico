@@ -1,13 +1,15 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
-import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
-import { AoGroupWsViewComponent } from './ao-group-ws-view.component';
-import { delay } from 'rxjs/operators';
-import { of } from 'rxjs';
-import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
-import { FormsModule } from '@angular/forms';
+
+import { AoModelsViewComponent } from './ao-models-view.component';
+import { MatGridListModule } from '@angular/material';
 import { RouterTestingModule } from '@angular/router/testing';
-import { MatListItemBase, MatListModule } from '@angular/material';
+import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
+import { ActivatedRoute } from '@angular/router';
+import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
+import { of } from 'rxjs';
+import { delay } from 'rxjs/operators';
+
+
 class MockAoApiClientService {
     get(url: any) {
         return new Promise((resolve, reject) => {
@@ -16,13 +18,13 @@ class MockAoApiClientService {
                     {
                         id: 'id1',
                         attributes: {
-                            workspace_id: 'ws1'
+                            workspace: 'ws1'
                         }
                     },
                     {
                         id: 'id2',
                         attributes: {
-                            workspace_id: 'ws2'
+                            workspace: 'ws2'
                         }
                     }
                 ]
@@ -31,9 +33,8 @@ class MockAoApiClientService {
     }
 }
 
-// mock ActivateRoute returning url and params
 class MockActivatedRoute {
-    url = of([{ path: 'datasets' }]).pipe(delay(100));
+    url = of([{ path: 'models' }]).pipe(delay(100));
 }
 class MockGlobalStateStore {
     subscribe(fn: any) {
@@ -51,39 +52,31 @@ class MockGlobalStateStore {
 
 }
 
-describe('AoGroupWsViewComponent', () => {
-    let component: AoGroupWsViewComponent;
-    let fixture: ComponentFixture<AoGroupWsViewComponent>;
+
+describe('AoModelsViewComponent', () => {
+    let component: AoModelsViewComponent;
+    let fixture: ComponentFixture<AoModelsViewComponent>;
 
     beforeEach(async(() => {
         TestBed.configureTestingModule({
-            declarations: [AoGroupWsViewComponent],
-            imports: [FormsModule, RouterTestingModule, MatListModule],
+            declarations: [AoModelsViewComponent],
+            imports: [RouterTestingModule, MatGridListModule],
             providers: [
                 { provide: AoApiClientService, useClass: MockAoApiClientService },
                 { provide: ActivatedRoute, useClass: MockActivatedRoute },
-                { provide: AoGlobalStateStore, useClass: MockGlobalStateStore }]
+                { provide: AoGlobalStateStore, useClass: MockGlobalStateStore }
+            ]
         })
             .compileComponents();
     }));
 
     beforeEach(() => {
-        fixture = TestBed.createComponent(AoGroupWsViewComponent);
+        fixture = TestBed.createComponent(AoModelsViewComponent);
         component = fixture.componentInstance;
+        fixture.detectChanges();
     });
 
     it('should create', () => {
-        fixture.detectChanges();
         expect(component).toBeTruthy();
     });
-
-    it('should load 1 items', async(() => {
-        fixture.detectChanges();
-        fixture.whenStable().then(() => {
-            fixture.detectChanges();
-            expect(component.items.length).toEqual(1);
-            expect(component.items[0].attributes.workspace_id).toEqual('ws1');
-        });
-    }));
-
 });
