@@ -9,8 +9,6 @@ from django.utils.translation import ugettext_lazy as _
 from .usermanager import UserManager
 from .items import ItemMixin
 
-USER_TYPE = "user"
-USER_PREFIX = "id_"  # an identity profile
 USER_THUMBNAIL_SIZE = 120  # thumbnail image size
 
 
@@ -26,9 +24,7 @@ class User(ItemMixin, AbstractUser):
     objects = UserManager()
 
     # Additional attributes (like profile information) are open ended and are stored as json
-    attributes = jsonfield.JSONField(
-        load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True
-    )
+    attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
 
     def __str__(self):
         return self.email

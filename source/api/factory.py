@@ -2,6 +2,7 @@ from rest_framework.exceptions import NotFound
 
 import api.models
 
+import analitico
 from analitico.utilities import logger
 
 ##
@@ -18,17 +19,17 @@ class ModelsFactory:
     def get_item_class_from_id(item_id: str):
         """ Returns item class from item id """
         assert item_id
-        if item_id.startswith(api.models.DATASET_PREFIX):
+        if item_id.startswith(analitico.DATASET_PREFIX):
             return api.models.Dataset
-        if item_id.startswith(api.models.ENDPOINT_PREFIX):
+        if item_id.startswith(analitico.ENDPOINT_PREFIX):
             return api.models.Endpoint
-        if item_id.startswith(api.models.JOB_PREFIX):
+        if item_id.startswith(analitico.JOB_PREFIX):
             return api.models.Job
-        if item_id.startswith(api.models.MODEL_PREFIX):
+        if item_id.startswith(analitico.MODEL_PREFIX):
             return api.models.Model
-        if item_id.startswith(api.models.RECIPE_PREFIX):
+        if item_id.startswith(analitico.RECIPE_PREFIX):
             return api.models.Recipe
-        if item_id.startswith(api.models.WORKSPACE_PREFIX):
+        if item_id.startswith(analitico.WORKSPACE_PREFIX):
             return api.models.Workspace
         logger.warning("ModelsFactory.get_class_from_id could not find class for id: " + item_id)
         return None
@@ -44,16 +45,16 @@ class ModelsFactory:
         """ Loads a model from database given its id whose prefix determines the model type, eg: ws_xxx for Workspace. """
         # TODO limit access to objects available with request credentials
         assert item_id
-        if item_id.startswith(api.models.DATASET_PREFIX):
+        if item_id.startswith(analitico.DATASET_PREFIX):
             return api.models.Dataset.objects.get(pk=item_id)
-        if item_id.startswith(api.models.ENDPOINT_PREFIX):
+        if item_id.startswith(analitico.ENDPOINT_PREFIX):
             return api.models.Endpoint.objects.get(pk=item_id)
-        if item_id.startswith(api.models.JOB_PREFIX):
+        if item_id.startswith(analitico.JOB_PREFIX):
             return api.models.Job.objects.get(pk=item_id)
-        if item_id.startswith(api.models.MODEL_PREFIX):
+        if item_id.startswith(analitico.MODEL_PREFIX):
             return api.models.Model.objects.get(pk=item_id)
-        if item_id.startswith(api.models.RECIPE_PREFIX):
+        if item_id.startswith(analitico.RECIPE_PREFIX):
             return api.models.Recipe.objects.get(pk=item_id)
-        if item_id.startswith(api.models.WORKSPACE_PREFIX):
+        if item_id.startswith(analitico.WORKSPACE_PREFIX):
             return api.models.Workspace.objects.get(pk=item_id)
         raise NotFound("ModelsFactory.from_id could not find id: " + item_id)

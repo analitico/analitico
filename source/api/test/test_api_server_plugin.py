@@ -16,6 +16,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
 
+import analitico
 import analitico.plugin
 import api.models
 from api.models import Job
@@ -41,9 +42,9 @@ class ServerPluginTests(APITestCase):
         self.setup_basics()
         try:
             url = reverse("api:workspace-list")
-            self.upload_items(url, api.models.WORKSPACE_PREFIX)
+            self.upload_items(url, analitico.WORKSPACE_PREFIX)
             url = reverse("api:dataset-list")
-            self.upload_items(url, api.models.DATASET_PREFIX)
+            self.upload_items(url, analitico.DATASET_PREFIX)
         except Exception as exc:
             print(exc)
             raise exc

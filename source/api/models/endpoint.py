@@ -9,6 +9,7 @@ from django.utils.crypto import get_random_string
 from rest_framework.exceptions import APIException, NotFound
 from rest_framework import status
 
+import analitico
 import analitico.plugin
 from analitico.plugin import PluginError
 from analitico.utilities import get_dict_dot, set_dict_dot, time_ms
@@ -22,12 +23,9 @@ from api.factory import ModelsFactory
 ## Endpoint
 ##
 
-ENDPOINT_TYPE = "endpoint"
-ENDPOINT_PREFIX = "ep_"
-
 
 def generate_endpoint_id():
-    return ENDPOINT_PREFIX + get_random_string()
+    return analitico.ENDPOINT_PREFIX + get_random_string()
 
 
 class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):

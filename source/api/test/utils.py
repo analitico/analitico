@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from api.models import Token, User
 
+import analitico
 from analitico.utilities import read_json, get_dict_dot
 
 # pylint: disable=no-member
@@ -28,7 +29,7 @@ class APITestCase(rest_framework.test.APITestCase):
         return os.path.join(ASSETS_PATH, asset_name)
 
     def get_items(self, item_type, token=None, status_code=status.HTTP_200_OK):
-        url = reverse("api:" + item_type + "-list")
+        url = reverse("api:" + item_type[len] + "-list")
         self.auth_token(token)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status_code)

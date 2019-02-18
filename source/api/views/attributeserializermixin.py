@@ -19,6 +19,8 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
+import analitico
+from analitico import TYPE_PREFIX
 from api.factory import ModelsFactory
 from api.models import ItemMixin, Job
 from analitico.utilities import logger
@@ -84,7 +86,7 @@ class AttributeSerializerMixin:
         if workspace_id:
             data["workspace_id"] = workspace_id
 
-        reformatted = {"type": item.type, "id": data.pop("id"), "attributes": data}
+        reformatted = {"type": TYPE_PREFIX + item.type, "id": data.pop("id"), "attributes": data}
 
         # add link to self
         reformatted["links"] = {"self": self.get_item_url(item)}
@@ -119,6 +121,10 @@ class AttributeSerializerMixin:
         # it will just have a regular dictionary with the data directly in it
         if "data" in data:
             data = data["data"]
+
+        if "type" in data:
+            assert data["type"].startswith(TYPE_PREFIX)
+            data["type"] = data["type"][len(TYPE_PREFIX) :]
 
         # works with input in json:api style (attributes) or flat json
         attributes = data.pop("attributes") if "attributes" in data else data.copy()
