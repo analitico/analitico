@@ -9,15 +9,10 @@ import api.utilities
 
 from api.models import User, USER_THUMBNAIL_SIZE
 from .attributeserializermixin import AttributeSerializerMixin
-from .assetviewsetmixin import AssetViewSetMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .jobviews import JobViewSetMixin
 
-import hashlib
-import urllib
 from libgravatar import Gravatar
-
-from analitico.utilities import set_dict_dot, get_dict_dot
 
 ##
 ## UserSerializer
@@ -68,11 +63,11 @@ class UserViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.Mod
 
     # Normally regex would look up a slug-like id, in this case we use
     # the email address so we need a special regex, eg: https://emailregex.com/
-    lookup_value_regex = "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
+    lookup_value_regex = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
 
     def get_queryset(self):
-        """ A user MUST be authenticated and only has access to objects he or his workspaces own. """
-        assert not self.request.user.is_anonymous
+        """ A user MUST be authenticated and only has access to his own user object (unless superuser) """
+        assert self.request.user.is_authenticated
         if self.request.user.is_superuser:
             return User.objects.all()
         return User.objects.filter(email=self.request.user.email)
