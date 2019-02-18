@@ -28,8 +28,6 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     isProcessing = false;
     assets: any;
     data: any;
-    // if the dataset has only one data it is a table
-    outputTableSchema: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
@@ -70,10 +68,10 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
                 });
         } */
         this.assets = this.item.attributes && this.item.attributes.assets;
-        this.data = this.item.attributes && this.item.attributes.data;
-        // if only one data, consider its schema as the table schema
-        if (this.data.length === 1 && this.data[0].schema) {
-            this.outputTableSchema = this.data[0].schema;
+        this.data = this.item.attributes && this.item.attributes.data &&
+            this.item.attributes.data.length > 0 && this.item.attributes.data[0];
+        if (this.data) {
+            this.data.jsonUrl = this.itemUrl + '/data/json';
         }
         this.loadPlugin();
     }

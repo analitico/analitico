@@ -9,18 +9,6 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 export class AoTableViewComponent implements OnInit {
 
     columns: any;
-
-    private _schema: any;
-    get schema() {
-        return this._schema;
-    }
-    @Input() set schema(val: string) {
-        if (val) {
-            this._schema = val;
-            this.initTable();
-        }
-    }
-
     private _data: any;
     get data() {
         return this._data;
@@ -41,39 +29,30 @@ export class AoTableViewComponent implements OnInit {
         this.initTable();
     }
 
-    private rowBuffer;
-    private rowSelection;
-    private rowModelType;
-    private paginationPageSize;
-    private cacheOverflowSize;
-    private maxConcurrentDatasourceRequests;
-    private infiniteInitialRowCount;
-    private maxBlocksInCache;
-    private cacheBlockSize;
 
-    constructor(protected  apiClient: AoApiClientService) {
-        this.rowBuffer = 0;
-        this.rowSelection = 'multiple';
+    private rowModelType: string;
+    private maxBlocksInCache: number;
+    private cacheBlockSize: number;
+    private cacheOverflowSize: number;
+    private gridParams: any;
+
+    constructor(protected apiClient: AoApiClientService) {
         this.rowModelType = 'infinite';
-        this.paginationPageSize = 5;
-        this.cacheOverflowSize = 2;
-        this.maxConcurrentDatasourceRequests = 1;
-        this.infiniteInitialRowCount = 1;
         this.maxBlocksInCache = 2;
+        this.cacheBlockSize = 25;
+        this.cacheOverflowSize = 100;
     }
 
     ngOnInit() {
-
-        this.initTable();
     }
 
     initTable() {
-        if (this._schema) {
+        if (this._data && this._data.schema) {
             this.columns = [];
             if (!this._isTransposed) {
                 // build array of columns using schema.columns
                 const that = this;
-                this._schema.columns.forEach(element => {
+                this._data.schema.columns.forEach(element => {
                     const col = {
                         headerName: element.name,
                         field: element.name
@@ -81,41 +60,36 @@ export class AoTableViewComponent implements OnInit {
                     that.columns.push(col);
                 });
             }
+            this.initData();
         }
     }
 
     onGridReady(params) {
-        const that = this;
-        const dataSource = {
-            rowCount: null,
-            // tslint:disable-next-line:no-shadowed-variable
-            getRows: function (params) {
-                console.log('asking for ' + params.startRow + ' to ' + params.endRow);
-                let query = that.data + '?page={page}&pageSize={pageSize}';
-                const page = (params.endRow / that.paginationPageSize) - 1;
-                query = query.replace('{page}', '' + page).replace('{pageSize}', that.paginationPageSize);
-                console.log('asking for ' + params.startRow + ' to ' + params.endRow + ' page ' + page + ' ' + query);
-                that.apiClient.get(query)
-                    .then((response) => {
-                        params.successCallback(response.data, -1);
-                    });
-                /*setTimeout(function () {
-                    const rowsThisPage = data.slice(params.startRow, params.endRow);
-                    let lastRow = -1;
-                    if (data.length <= params.endRow) {
-                        lastRow = data.length;
-                    }
-                    if (!this._isTransposed) {
-                        params.successCallback(rowsThisPage, lastRow);
-                    } else {
-                        // we need to build the table
-
-                    }
-                }, 500); */
-            }
-        };
-        params.api.setDatasource(dataSource);
-
+        this.gridParams = params;
+        this.initData();
     }
 
+    initData() {
+        const that = this;
+        if (this.gridParams && this._data) {
+            const dataSource = {
+                rowCount: null,
+                // tslint:disable-next-line:no-shadowed-variable
+                getRows: function (params) {
+                    let query = that._data.jsonUrl + '?page={page}&page_size={pageSize}&meta=True';
+                    const itemsRequired = params.endRow - params.startRow;
+                    const page = (params.endRow / itemsRequired) - 1;
+                    query = query.replace('{page}', '' + page).replace('{pageSize}', '' + itemsRequired);
+                    // console.log('asking for ' + params.startRow + ' to ' + params.endRow + ' page ' + page + ' ' + query);
+                    that.apiClient.get(query)
+                        .then((response: any) => {
+                            // https://www.ag-grid.com/javascript-grid-infinite-scrolling/
+                            // lastRow should be the index of the last row if known, otherwise -1
+                            params.successCallback(response.data, -1);
+                        });
+                }
+            };
+            this.gridParams.api.setDatasource(dataSource);
+        }
+    }
 }

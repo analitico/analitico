@@ -9,7 +9,7 @@
                     <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" [strokeWidth]="4"></mat-progress-spinner>
                 </button>
     
-                <app-ao-table-view [schema]="outputTableSchema" [data]="itemUrl + '/data/json'"></app-ao-table-view>
+                <app-ao-table-view [data]="data"></app-ao-table-view>
             </div>
         </div>
 
@@ -18,28 +18,7 @@
         <div [fileUploadInputFor]="fileUploadQueue" class="ao-upload-drop-zone">
 
         </div>
-        <div class="ao-padding-10">
-            <div class="ao-margin-top-bottom">
-                <mat-expansion-panel [expanded]="true">
-                    <mat-expansion-panel-header>
-                        <mat-panel-title>
-                            Assets
-                        </mat-panel-title>
-                    </mat-expansion-panel-header>
-                    <app-ao-nav-list [items]="assets"></app-ao-nav-list>
-                </mat-expansion-panel>
-            </div>
-            <div class="ao-margin-top-bottom">
-                <mat-expansion-panel [expanded]="true">
-                    <mat-expansion-panel-header>
-                        <mat-panel-title>
-                            Data
-                        </mat-panel-title>
-                    </mat-expansion-panel-header>
-                    <app-ao-nav-list [items]="data"></app-ao-nav-list>
-                </mat-expansion-panel>
-            </div>
-        </div>
+        
     </mat-sidenav>
 </mat-sidenav-container>
 
