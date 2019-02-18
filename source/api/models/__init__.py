@@ -10,3 +10,4 @@ from .recipe import Recipe, RECIPE_PREFIX, RECIPE_TYPE
 from .model import Model, MODEL_PREFIX, MODEL_TYPE
 from .job import Job, JobRunner, JOB_PREFIX, JOB_TYPE
 from .endpoint import Endpoint, ENDPOINT_PREFIX, ENDPOINT_TYPE
+from .user import User, USER_PREFIX, USER_TYPE, USER_THUMBNAIL_SIZE

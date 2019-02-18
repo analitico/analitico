@@ -7,3 +7,4 @@ from .test_api_ping import PingApiTests
 from .test_api_swagger import SwaggerTests
 from .test_api_website import WebsiteTests
 from .test_api_recipe import RecipeTests
+from .test_api_user import UserTests

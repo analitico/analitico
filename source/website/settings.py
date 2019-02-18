@@ -110,8 +110,8 @@ try:
             "HOST": os.environ["ANALITICO_MYSQL_HOST"],
             "USER": os.environ["ANALITICO_MYSQL_USER"],
             "PASSWORD": os.environ["ANALITICO_MYSQL_PASSWORD"],
-            "CONN_MAX_AGE": 120, # connection stays on for two minutes
-            "OPTIONS": {"ssl_key": sql_ssl_key_path, "ssl_cert": sql_ssl_cert_path, "ssl_ca": sql_ssl_ca_path}
+            "CONN_MAX_AGE": 120,  # connection stays on for two minutes
+            "OPTIONS": {"ssl_key": sql_ssl_key_path, "ssl_cert": sql_ssl_cert_path, "ssl_ca": sql_ssl_ca_path},
         }
     }
 
@@ -119,11 +119,10 @@ try:
     # They can later be easily removed and rotated out of service
     # https://dev.mysql.com/doc/refman/5.5/en/mysql-ssl-set.html
 
-
     # Covers pytest, regular testing and django-coverage
     if sys.argv[0].endswith("pytest.py") or ("test" in sys.argv) or ("test_coverage" in sys.argv):
         DATABASES["default"]["ENGINE"] = "django.db.backends.sqlite3"
-        DATABASES["default"].pop("OPTIONS") # remove SSL configurations
+        DATABASES["default"].pop("OPTIONS")  # remove SSL configurations
 
     # We are keeping file storage cloud independent so that we can use whichever
     # cloud makes the most sense and also give customers an option to bring their own

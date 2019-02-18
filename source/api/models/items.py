@@ -19,7 +19,6 @@ from rest_framework.exceptions import APIException, NotFound
 import api.storage
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
-from .user import User
 
 # Most of the models have similar functionality and attributes so the most logical thing
 # would be to implement an abstract Model and then inherit for all the concrete subclasses.

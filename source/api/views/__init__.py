@@ -7,3 +7,4 @@ from .jobviews import JobViewSet
 from .recipeviews import RecipeViewSet
 from .modelviews import ModelViewSet
 from .endpointviews import EndpointViewSet
+from .userviews import UserViewSet
