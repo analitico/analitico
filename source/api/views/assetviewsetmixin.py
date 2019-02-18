@@ -138,7 +138,9 @@ class AssetViewSetMixin:
         item = self.get_object()
         factory = JobRunner(None, request)
         asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
+        
         df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
+        df = df.fillna('') # for now replace NaN with empty string
 
         data = {"meta": {"page": page, "page_records": len(df), "page_size": page_size}, "data": df.to_dict("records")}
 
