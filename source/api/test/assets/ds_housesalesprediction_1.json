@@ -1,5 +1,5 @@
 {
-	"type": "dataset",
+	"type": "analitico/dataset",
 	"id": "ds_housesalesprediction_1",
 	"attributes": {
 		"title": "",

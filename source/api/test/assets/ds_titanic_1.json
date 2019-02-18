@@ -1,5 +1,5 @@
 {
-	"type": "dataset",
+	"type": "analitico/dataset",
 	"id": "ds_titanic_1",
 	"attributes": {
 		"workspace_id": "ws_samples",

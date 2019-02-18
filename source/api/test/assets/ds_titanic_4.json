@@ -1,5 +1,5 @@
 {
-	"type": "dataset",
+	"type": "analitico/dataset",
 	"id": "ds_titanic_4",
 
 	"attributes": {

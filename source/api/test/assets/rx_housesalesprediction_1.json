@@ -1,5 +1,5 @@
 {
-	"type": "recipe",
+	"type": "analitico/recipe",
 	"id": "rx_housesalesprediction_1",
 	"attributes": {
 		"title": "A simple recipe to predict house prices, some unicode stuff èòà 15\u00f8C outside",
