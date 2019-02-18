@@ -1,34 +1,8 @@
-import io
-import os
-import os.path
-import numpy as np
-import pandas as pd
-import tempfile
-import random
-import string
-
-from django.conf import settings
-from django.test import TestCase
+from analitico import TYPE_PREFIX, USER_TYPE
 from django.urls import reverse
-from django.http.response import StreamingHttpResponse
-from django.utils.dateparse import parse_datetime
-from django.core.files.uploadedfile import SimpleUploadedFile
-
-import django.utils.http
-import django.core.files
-
 from rest_framework import status
 from rest_framework.test import APITestCase
-from analitico.utilities import read_json, get_dict_dot, time_ms, logger
-
-import analitico
-import analitico.plugin
-import api.models
-from api.models import User
 from .utils import APITestCase
-from analitico import ACTION_PROCESS, TYPE_PREFIX, USER_TYPE
-from api.pagination import MIN_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
-from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -48,6 +22,184 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user = response.data
         self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertEqual(user["id"], "user1@analitico.ai")
         self.assertTrue("attributes" in user)
         attributes = user["attributes"]
         self.assertTrue("password" not in attributes)
+        self.assertEqual(attributes["is_staff"], False)
+        self.assertEqual(attributes["is_superuser"], True)
+
+    def test_user_get_profile_user2(self):
+        url = reverse("api:user-me")
+        self.auth_token(self.token2)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = response.data
+        self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertEqual(user["id"], "user2@analitico.ai")
+        self.assertTrue("attributes" in user)
+        attributes = user["attributes"]
+        self.assertTrue("password" not in attributes)
+        self.assertEqual(attributes["is_staff"], False)
+        self.assertEqual(attributes["is_superuser"], False)
+
+    def test_user_get_profile_by_email(self):
+        self.auth_token(self.token1)
+        # self, ok!
+        url = reverse("api:user-detail", args=("user1@analitico.ai",))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # others, ok because admin
+        url = reverse("api:user-detail", args=("user2@analitico.ai",))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_get_profile_by_email_no_auth(self):
+        self.auth_token(self.token2)
+        # self, ok!
+        url = reverse("api:user-detail", args=("user2@analitico.ai",))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # others, deny because not admin
+        url = reverse("api:user-detail", args=("user1@analitico.ai",))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_create(self):
+        url = reverse("api:user-list")
+        self.auth_token(self.token1)
+        response = self.client.post(
+            url,
+            {
+                "type": "analitico/user",
+                "id": "paperino@disney.com",
+                "attributes": {
+                    "email": "paperino@disney.com",
+                    "first_name": "Paolino",
+                    "last_name": "Paperino",
+                    "shoe_size": 14,
+                },
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = response.data
+        self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertTrue("attributes" in user)
+        attributes = user["attributes"]
+        self.assertEqual(attributes["first_name"], "Paolino")
+        self.assertEqual(attributes["last_name"], "Paperino")
+        self.assertEqual(attributes["shoe_size"], 14)
+
+    def test_user_create_no_email(self):
+        url = reverse("api:user-list")
+        self.auth_token(self.token1)
+        user_without_id = {
+            "type": "analitico/user",
+            "attributes": {"first_name": "Paolino", "last_name": "Paperino", "shoe_size": 14},
+        }
+        response = self.client.post(url, user_without_id, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.data
+        self.assertTrue("error" in data)
+        error = data["error"]
+        self.assertEqual(error["status"], "400")
+
+    def test_user_create_then_retrieve(self):
+        url = reverse("api:user-list")
+        self.auth_token(self.token1)
+        response = self.client.post(
+            url,
+            {
+                "type": "analitico/user",
+                "id": "paperino@disney.com",
+                "attributes": {"first_name": "Paolino", "last_name": "Paperino", "shoe_size": 14},  # extra attribute
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse("api:user-detail", args=("paperino@disney.com",))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = response.data
+        self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertTrue("attributes" in user)
+        attributes = user["attributes"]
+        self.assertEqual(attributes["first_name"], "Paolino")
+        self.assertEqual(attributes["last_name"], "Paperino")
+        self.assertEqual(attributes["shoe_size"], 14)
+
+    def test_user_modify_then_retrieve(self):
+        self.auth_token(self.token2)
+        url = reverse("api:user-detail", args=("user2@analitico.ai",))
+        changes = {"id": "user2@analitico.ai", "first_name": "Mickey", "shoe_size": 8}
+        response = self.client.put(url, changes, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check changes
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = response.data
+        self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertTrue("attributes" in user)
+        attributes = user["attributes"]
+        self.assertEqual(attributes["first_name"], "Mickey")
+        self.assertEqual(attributes["last_name"], "")
+        self.assertEqual(attributes["shoe_size"], 8)
+
+        # remove name and shoe_size
+        changes = {"id": "user2@analitico.ai", "first_name": "", "shoe_size": None}
+        response = self.client.put(url, changes, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check changes
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = response.data
+        self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertTrue("attributes" in user)
+        attributes = user["attributes"]
+        self.assertEqual(attributes["first_name"], "")
+        self.assertTrue("shoe_size" not in attributes)
+
+    def test_user_modify_other_user_no_auth(self):
+        """ Authenticate as user2@analitico.ai (a regular user) then try to modify user1@analitico.ai """
+        self.auth_token(self.token2)
+        url = reverse("api:user-detail", args=("user1@analitico.ai",))
+        changes = {"id": "user1@analitico.ai", "first_name": "Mickey", "shoe_size": 8}
+        response = self.client.put(url, changes, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_modify_other_user_as_superuser(self):
+        """ Authenticate as user1@analitico.ai (a super user) then try to modify user2@analitico.ai """
+        self.auth_token(self.token1)
+        url = reverse("api:user-detail", args=("user2@analitico.ai",))
+        changes = {"id": "user2@analitico.ai", "first_name": "Mickey", "shoe_size": 8}
+        response = self.client.put(url, changes, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_delete(self):
+        self.auth_token(self.token1)
+        url = reverse("api:user-detail", args=("user1@analitico.ai",))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        # now try to retrieve deleted user, token should also have been deleted
+        # so we should get a 401 (not a regular 404)
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_delete_other_user_no_auth(self):
+        self.auth_token(self.token2)
+        url = reverse("api:user-detail", args=("user1@analitico.ai",))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_delete_other_user_as_superuser(self):
+        self.auth_token(self.token1)
+        url = reverse("api:user-detail", args=("user2@analitico.ai",))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        # now retrieve deleted user
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

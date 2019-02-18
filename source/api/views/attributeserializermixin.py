@@ -22,7 +22,7 @@ from rest_framework import status
 import analitico
 from analitico import TYPE_PREFIX
 from api.factory import ModelsFactory
-from api.models import ItemMixin, Job
+from api.models import ItemMixin, Job, User
 from analitico.utilities import logger
 
 # Django Serializers
@@ -44,7 +44,12 @@ class AttributeSerializerMixin:
     def get_item_url(self, item):
         """ Returns absolute url to given item using the same endpoint the request came in through """
         assert isinstance(item, ItemMixin)
-        url = reverse("api:" + item.type + "-detail", args=(item.id,))
+
+        item_id = item.id
+        if isinstance(item, User):
+            item_id = item.email
+
+        url = reverse("api:" + item.type + "-detail", args=(item_id,))
         request = self.context.get("request")
         if request:
             url = request.build_absolute_uri(url)
@@ -54,14 +59,8 @@ class AttributeSerializerMixin:
     def get_item_id_url(self, item_id):
         """ Returns absolute url to given item (by id) using the same endpoint the request came in through """
         assert isinstance(item_id, str)
-        item_type = ModelsFactory.get_item_type_from_id(item_id)
-        if item_type:
-            url = reverse("api:" + item_type + "-detail", args=(item_id,))
-            request = self.context.get("request")
-            if request:
-                url = request.build_absolute_uri(url)
-                url = url.replace("http://", "https://")
-            return url, item_type
+        item = ModelsFactory.from_id(item_id, self.request)
+        return self.get_item_url(item) if item else None
 
     def get_item_asset_url(self, item, asset_class, asset_id):
         """ Returns absolute url to given item's asset """

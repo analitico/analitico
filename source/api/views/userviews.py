@@ -17,6 +17,8 @@ import hashlib
 import urllib
 from libgravatar import Gravatar
 
+from analitico.utilities import set_dict_dot, get_dict_dot
+
 ##
 ## UserSerializer
 ##
@@ -29,7 +31,7 @@ class UserSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
     class Meta:
         model = User
-        exclude = ("attributes", "password", "user_permissions", "groups")
+        exclude = ("attributes", "email", "password", "user_permissions", "groups")
         lookup_field = "email"
 
     def to_representation(self, item):
@@ -63,6 +65,17 @@ class UserViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.Mod
     item_class = api.models.User
     serializer_class = UserSerializer
     lookup_field = "email"
+
+    # Normally regex would look up a slug-like id, in this case we use
+    # the email address so we need a special regex, eg: https://emailregex.com/
+    lookup_value_regex = "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
+
+    def get_queryset(self):
+        """ A user MUST be authenticated and only has access to objects he or his workspaces own. """
+        assert not self.request.user.is_anonymous
+        if self.request.user.is_superuser:
+            return User.objects.all()
+        return User.objects.filter(email=self.request.user.email)
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=False, url_name="me", url_path="me")
