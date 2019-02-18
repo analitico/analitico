@@ -242,7 +242,7 @@ class DatasetTests(APITestCase):
         self.assertTrue("schema" in meta)
         self.assertEqual(len(meta["schema"]["columns"]), 12)
 
-    def test_dataset_upoload_process_data(self):
+    def test_dataset_upload_process_data(self):
         """ Test uploading csv then requesting to process it with data/process endpoint """
         # upload titanic_1.csv
         asset_url, asset_response = self._upload_titanic("ds_titanic_4")

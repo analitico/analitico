@@ -59,8 +59,8 @@ class AttributeSerializerMixin:
     def get_item_id_url(self, item_id):
         """ Returns absolute url to given item (by id) using the same endpoint the request came in through """
         assert isinstance(item_id, str)
-        item = ModelsFactory.from_id(item_id, self.request)
-        return self.get_item_url(item) if item else None
+        item = ModelsFactory.from_id(item_id)
+        return self.get_item_url(item) if item else None, item.type
 
     def get_item_asset_url(self, item, asset_class, asset_id):
         """ Returns absolute url to given item's asset """
