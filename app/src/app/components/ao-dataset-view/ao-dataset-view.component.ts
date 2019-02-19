@@ -46,6 +46,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
 
     onLoad() {
+        super.onLoad();
         console.log('onLoad');
         this.uploadAssetUrl = environment.apiUrl + '/datasets/' + this.item.id + '/assets';
         // clear the view

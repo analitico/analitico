@@ -1,0 +1,31 @@
+<div class="ao-padding">
+    <mat-card class="ao-card">
+        <mat-card-content  *ngIf="item && item.attributes">
+            <p>
+                <b> {{(item.attributes && item.attributes.title) || item.id}}</b>
+            </p>
+            <p>
+                Receipe id: {{item.attributes.recipe_id}}
+            </p>
+            <p>
+                <b>Training plugins</b><br>
+                Training: {{item.attributes.training.plugins.training}} <br>
+                Prediction: {{item.attributes.training.plugins.prediction}}
+            </p>
+            <p>
+                <b>Data</b> <br>
+                Source records: {{item.attributes.training.data.source_records | number}}<br>
+                Training records: {{item.attributes.training.data.training_records | number}}<br>
+                Test records: {{item.attributes.training.data.test_records | number}}<br>
+                Dropped records: {{item.attributes.training.data.dropped_records | number}}<br>
+            </p>
+            <div *ngIf="item.attributes && item.attributes.training && item.attributes.training.scores">
+                <b>Scores</b>
+                <div *ngFor="let prop of item.attributes.training.scores | keyvalue">
+                    {{prop.key}}: {{prop.value | json}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+</div>

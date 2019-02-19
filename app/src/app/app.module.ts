@@ -18,7 +18,7 @@ import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
 import {
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
     MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule, MatOptionModule,
-    MatExpansionModule, MatTableModule, MatPaginatorModule, MatGridListModule
+    MatExpansionModule, MatTableModule, MatPaginatorModule, MatGridListModule, MatSortModule
 } from '@angular/material';
 import { NgJsonEditorModule } from 'ang-jsoneditor';
 // PLUGINS
@@ -37,7 +37,8 @@ import { AgGridModule } from 'ag-grid-angular';
 import { AoDatasetsViewComponent } from './components/ao-datasets-view/ao-datasets-view.component';
 import { AoGroupWsViewComponent } from './components/ao-group-ws-view/ao-group-ws-view.component';
 import { AoModelsViewComponent } from './components/ao-models-view/ao-models-view.component';
-
+import { FlexLayoutModule } from '@angular/flex-layout';
+import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.component';
 
 @NgModule({
     declarations: [
@@ -60,7 +61,7 @@ import { AoModelsViewComponent } from './components/ao-models-view/ao-models-vie
         AoDatasetsViewComponent,
         AoGroupWsViewComponent,
         AoModelsViewComponent,
-
+        AoModelViewComponent
     ],
     imports: [
         BrowserModule,
@@ -85,7 +86,9 @@ import { AoModelsViewComponent } from './components/ao-models-view/ao-models-vie
         MatTableModule,
         MatPaginatorModule,
         AgGridModule.withComponents([]),
-        MatGridListModule
+        MatGridListModule,
+        FlexLayoutModule,
+        MatSortModule
     ],
     providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,

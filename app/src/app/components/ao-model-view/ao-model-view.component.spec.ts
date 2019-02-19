@@ -38,11 +38,11 @@ class MockAoApiClientService {
 
 // mock ActivateRoute returning url and params
 class MockActivatedRoute {
-    url = of([{ path: 'dataset' }]);
+    url = of([{ path: 'models' }]);
     params = of({ id: '1' });
 }
 
-describe('AoDatasetViewComponent', () => {
+describe('AoModelViewComponent', () => {
     let component: AoDatasetViewComponent;
     let fixture: ComponentFixture<AoDatasetViewComponent>;
 
@@ -51,7 +51,7 @@ describe('AoDatasetViewComponent', () => {
             declarations: [AoDatasetViewComponent, AoMatFileUploadQueueComponent, AoFileUploadInputForDirective,
                 AoNavListComponent, AoMatFileUploadComponent, AoAnchorDirective, AoTableViewComponent],
             imports: [MatProgressSpinnerModule, MatSidenavModule, MatIconModule, MatListModule,
-                MatSnackBarModule, BrowserAnimationsModule, MatExpansionModule, AgGridModule.withComponents([])],
+                MatSnackBarModule, BrowserAnimationsModule],
             providers: [
                 { provide: AoApiClientService, useClass: MockAoApiClientService },
                 { provide: ActivatedRoute, useClass: MockActivatedRoute }

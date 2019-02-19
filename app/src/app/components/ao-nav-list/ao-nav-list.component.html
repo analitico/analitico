@@ -1,5 +1,5 @@
 <div>
-    <mat-nav-list>
+    <mat-nav-list dense>
         <mat-list-item *ngFor="let item of items">
             <a matLine (click)="selectItem(item)" title="{{item.id}}">
                 {{(item.attributes && item.attributes.title) || item.id}}

@@ -7,10 +7,11 @@ import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 
+
 @Component({
-  selector: 'app-ao-models-view',
-  templateUrl: './ao-models-view.component.html',
-  styleUrls: ['./ao-models-view.component.css']
+    selector: 'app-ao-models-view',
+    templateUrl: './ao-models-view.component.html',
+    styleUrls: ['./ao-models-view.component.css']
 })
 export class AoModelsViewComponent extends AoGroupWsViewComponent implements OnInit {
 
@@ -21,10 +22,13 @@ export class AoModelsViewComponent extends AoGroupWsViewComponent implements OnI
 
     ngOnInit() {
         super.ngOnInit();
+        this.displayedColumns = ['id', 'attributes.title', 'attributes.recipe_id', 'attributes.created_at',
+            'attributes.training.scores.best_score.learn.RMSE'];
     }
 
     onLoad() {
         // look at workspace and filter
         super.onLoad();
+
     }
 }

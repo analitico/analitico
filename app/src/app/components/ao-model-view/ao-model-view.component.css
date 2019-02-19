@@ -1,0 +1,19 @@
+.sidenav-container {
+    height: 100%;
+}
+
+.sidenav {
+    width: 100px;
+}
+
+@media (min-width: 768px) {
+    .sidenav {
+        width: 180px;
+    }
+}
+
+.ao-upload-drop-zone{
+    width: 200px;
+    height: 200px;
+    background-color: rgb(0,0,0,0.5);
+}
