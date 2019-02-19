@@ -1,7 +1,7 @@
 #!/bin/bash
 # exit if error
 set -e
-# Build and test execution
+
 echo "Injecting env"
 source analitico-env
 cd /home/www/analitico

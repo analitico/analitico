@@ -1,12 +1,21 @@
 /* You can add global styles to this file, and also import other style files */
+
 @import "~jsoneditor/dist/jsoneditor.min.css";
-.jsoneditor-poweredBy{
+@import "~ag-grid-community/dist/styles/ag-grid.css";
+@import "~ag-grid-community/dist/styles/ag-theme-material.css";
+.jsoneditor-poweredBy {
     /* hide watermark */
     display: none;
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}
 
 .ao-spacer {
     flex: 1 1 auto;
@@ -46,14 +55,14 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     text-decoration: none;
 }
 
-
-.ao-logo sup{
+.ao-logo sup {
     font-size: 12px;
     position: relative;
     top: -8px;
 }
 
 /* remove backdrop when opening drawer*/
+
 .mat-drawer-backdrop {
     opacity: 0;
 }
@@ -62,30 +71,41 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     height: 100%;
 }
 
-
-.ao-pipeline-plugin-container{
+.ao-pipeline-plugin {
     border: 1px solid #eeeeee;
 }
 
-.ao-text-center{
+.ao-text-center {
     text-align: center;
 }
 
-.ao-padding{
+.ao-padding {
     padding: 30px;
 }
 
-.ao-plugin-container{
+.ao-padding-10 {
+    padding: 10px;
+}
+
+.ao-margin-top-bottom {
+    margin: 40px 0;
+}
+
+.ao-margin-bottom {
+    margin-bottom: 40px;
+}
+
+.ao-plugin-container {
     margin: 30px auto;
 }
 
-.ao-upload-drop-zone{
+.ao-upload-drop-zone {
     width: 80%;
     min-height: 200px;
     border: 1px solid #eeeeee;
 }
 
-.ao-upload-queue{
+.ao-upload-queue {
     position: fixed;
     bottom: 0;
     right: 0;
@@ -98,6 +118,35 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     border: 1px solid #eeeeee;
 }
 
-.ao-upload-queue button{
+.ao-upload-queue button {
     display: none;
+}
+
+.ao-left-side-nav a {
+    font-size: 14px !important;
+}
+
+.ao-toolbar-workspace-selector {
+    width: 200px !important;
+    margin-right: 40px;
+    font-size: 14px;
+    text-align: right;
+}
+
+.ao-toolbar-workspace-selector .mat-select-value {
+    padding-right: 8px;
+}
+
+.ao-card {
+    margin-bottom: 20px;
+    min-height: 180px;
+}
+
+.ao-clickable{
+    cursor: pointer;
+}
+
+.ao-profile-icon{
+    background-repeat: no-repeat;
+    background-size: 100%;
 }

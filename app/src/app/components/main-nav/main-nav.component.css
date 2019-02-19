@@ -25,3 +25,10 @@
 .ao-toolbar {
     z-index: 998 !important;
 }
+
+.mat-divider{
+    margin: 20px 0;
+}
+
+
+

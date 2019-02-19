@@ -32,10 +32,10 @@ export class AoNavListComponent implements OnInit {
             this.processItems();
         }
     }
-    get items() {
+    get items(): Array<any> {
         return this._items;
     }
-    @Input() set items(items: any) {
+    @Input() set items(items: Array<any>) {
         this._items = items;
         this.processItems();
     }
@@ -68,10 +68,14 @@ export class AoNavListComponent implements OnInit {
 
     processItems() {
         if (this._items && this._items.length > 0) {
-            this._items.sort(this._sortFunction);
+
             if (this._filter) {
                 // apply filter
                 this._items = AoNavListComponent.filterItems(this._items, this._filter);
+            }
+            // sort items
+            if (this._sortFunction) {
+                this._items.sort(this._sortFunction);
             }
         }
     }

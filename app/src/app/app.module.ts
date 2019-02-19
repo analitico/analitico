@@ -17,7 +17,8 @@ import { AoViewComponent } from './components/ao-view/ao-view.component';
 import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
 import {
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
-    MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule
+    MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule, MatOptionModule,
+    MatExpansionModule, MatTableModule, MatPaginatorModule, MatGridListModule, MatSortModule
 } from '@angular/material';
 import { NgJsonEditorModule } from 'ang-jsoneditor';
 // PLUGINS
@@ -30,7 +31,15 @@ import { AoMatFileUploadComponent } from './components/ao-mat-file-upload/ao-mat
 import { AoMatFileUploadQueueComponent } from './components/ao-mat-file-upload-queue/ao-mat-file-upload-queue.component';
 import { AoFileUploadInputForDirective } from './directives/ao-file-upload-input-for/ao-file-upload-input-for.directive';
 import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-nav-list-from-url.component';
-
+import { AoRecipePipelinePluginComponent } from './plugins/ao-recipe-pipeline-plugin/ao-recipe-pipeline-plugin.component';
+import { AoTableViewComponent } from './components/ao-table-view/ao-table-view.component';
+import { AgGridModule } from 'ag-grid-angular';
+import { AoDatasetsViewComponent } from './components/ao-datasets-view/ao-datasets-view.component';
+import { AoGroupWsViewComponent } from './components/ao-group-ws-view/ao-group-ws-view.component';
+import { AoModelsViewComponent } from './components/ao-models-view/ao-models-view.component';
+import { FlexLayoutModule } from '@angular/flex-layout';
+import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.component';
+import { AoGroupViewComponent } from './components/ao-group-view/ao-group-view.component';
 
 @NgModule({
     declarations: [
@@ -47,7 +56,14 @@ import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-
         AoMatFileUploadComponent,
         AoMatFileUploadQueueComponent,
         AoFileUploadInputForDirective,
-        AoNavListFromUrlComponent
+        AoNavListFromUrlComponent,
+        AoRecipePipelinePluginComponent,
+        AoTableViewComponent,
+        AoDatasetsViewComponent,
+        AoGroupWsViewComponent,
+        AoModelsViewComponent,
+        AoModelViewComponent,
+        AoGroupViewComponent
     ],
     imports: [
         BrowserModule,
@@ -65,11 +81,20 @@ import { AoNavListFromUrlComponent } from './components/ao-nav-list-from-url/ao-
         MatSnackBarModule,
         FormsModule,
         NgJsonEditorModule,
-        MatProgressSpinnerModule
+        MatProgressSpinnerModule,
+        MatSelectModule,
+        MatOptionModule,
+        MatExpansionModule,
+        MatTableModule,
+        MatPaginatorModule,
+        AgGridModule.withComponents([]),
+        MatGridListModule,
+        FlexLayoutModule,
+        MatSortModule
     ],
     providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,
-        AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent],
+        AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent],
     bootstrap: [AppComponent]
 })
 export class AppModule {

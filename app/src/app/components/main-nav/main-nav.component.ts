@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
+import { setDefaultService } from 'selenium-webdriver/edge';
 
 @Component({
     selector: 'app-main-nav',
@@ -17,12 +18,15 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 export class MainNavComponent implements OnInit, OnDestroy {
 
     userInitial: string;
+    userPhotoUrl: string;
     userBadgeIconUrl: string;
     globalStateObserverSubscription: any; // keeps reference of observer subscription for cleanup
-    datasetsFilter: any;
+    workspaceFilter: any;
     workspaces: any;
+    workspace: any;
+    selectedWorkspace: any;
     datasetTitle: string;
-    workspaceName: string;
+    newItemParams: any;
 
     isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
         .pipe(
@@ -38,7 +42,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
         this.globalStateObserverSubscription = this.globalState.subscribe(this.onGlobalStateUpdate.bind(this));
         // load workspaces
         this.loadWorkspaces();
-
+        this.getUser();
     }
 
     loadWorkspaces() {
@@ -50,7 +54,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
                     let workspace = this.workspaces[0];
                     this.workspaces.forEach(w => {
                         // if we have ws_test workspace, select this (for testing)
-                        if (w.id === 'ws_giovannitest') {
+                        if (w.id === 'ws_s24') {
                             workspace = w;
                             return false;
                         }
@@ -71,45 +75,64 @@ export class MainNavComponent implements OnInit, OnDestroy {
     onGlobalStateUpdate() {
         // retrieve user
         const user = this.globalState.getProperty('user');
-        if (user && user.username) {
-            // set firstname initial into badge at top right
-            this.userInitial = user.username[0].toUpperCase();
-        } else {
-            this.userInitial = null;
+        this.userInitial = null;
+        if (user) {
+            if (user.attributes.photos && user.attributes.photos.length > 0) {
+                this.userPhotoUrl = user.attributes.photos[0].value;
+            } else if (user.attributes.first_name) {
+                // set firstname initial into badge at top right
+                this.userInitial = user.attributes.first_name[0].toUpperCase();
+            }
+
         }
-        // if we have a workspace we want to notify it
+
         const workspace = this.globalState.getProperty('workspace');
-        if (workspace) {
-            this.changeWorkspace(workspace);
+        // if the workspace is changed
+        if (this.workspace !== workspace) {
+            // update
+            this.selectedWorkspace = workspace;
+            this.workspace = workspace;
+            // set params for creating new items
+            this.newItemParams = {workspace_id: workspace.id};
+            this.setWorkspacefilter();
         }
     }
 
-    changeWorkspace(workspace: any) {
-        this.workspaceName = workspace.id;
-        // add a filter to the dataset list
-        this.datasetsFilter = { 'attributes.workspace': workspace.id };
+    // called by select input control
+    changedWorkspace() {
+        // set new workspace
+        this.globalState.setProperty('workspace', this.selectedWorkspace);
     }
 
-    // create a new dataset
-    createDataset() {
-        const workspace = this.globalState.getProperty('workspace');
-        const params = { 'workspace': workspace.id, attributes: {}};
-        if (this.datasetTitle) {
-            params.attributes['title'] = this.datasetTitle;
-        }
-        this.apiClient.post('/datasets', params)
-            .then((response: any) => {
-                // refresh dataset list
-                this.changeWorkspace(workspace);
-            });
+    // set a filter for children components (datasets/recipes/models/etc...)
+    setWorkspacefilter() {
+        this.workspaceFilter = { 'attributes.workspace_id': this.workspace.id };
     }
 
     // define default sort function on created_at attributes
-    sortDatasetsFunction = function (a, b) {
+    sortByCreatedAtDescFunction = function (a, b) {
         try {
+            if (!a.attributes || !b.attributes || !a.attributes.created_at || !b.attributes.created_at) {
+                return -1;
+            }
             return a.attributes.created_at > b.attributes.created_at ? -1 : 1;
         } catch (e) {
             console.error(e);
         }
     };
+
+    getUser() {
+        this.apiClient.get('/users/me')
+            .then((response: any) => {
+                // notify new user
+                this.globalState.setProperty('user', response.data);
+            })
+            .catch((response: any) => {
+                if (response.status === 401) {
+                    // redirect to login
+                    window.location.href = '/accounts/login/';
+                }
+            });
+    }
+
 }

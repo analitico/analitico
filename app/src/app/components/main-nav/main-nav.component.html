@@ -7,20 +7,53 @@
             <a routerLink="/">analitico<sup>ai</sup></a>
         </span>
         <div class="ao-spacer"></div>
-        <a mat-mini-fab routerLink="/profile">{{ userInitial }}</a>
+        <mat-select placeholder="Workspace" [(ngModel)]="selectedWorkspace" (selectionChange)="changedWorkspace()"
+            class="ao-toolbar-workspace-selector">
+            <mat-option *ngFor="let workspace of workspaces" [value]="workspace">
+                {{(workspace.attributes && workspace.attributes.title) || workspace.id}}
+            </mat-option>
+        </mat-select>
+        <a mat-mini-fab routerLink="/profile" [ngStyle]="{'background-image':'url(' + userPhotoUrl + ')'}" class="ao-profile-icon">{{ userInitial }}</a>
     </mat-toolbar>
     <mat-sidenav-container class="sidenav-container">
         <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'" [mode]="(isHandset$ | async) ? 'over' : 'side'"
             [opened]="!(isHandset$ | async)">
             <!--<mat-nav-list (click)="drawer.close()"> -->
-                <div class="ao-padding">
-                    <p>{{workspaceName}}</p>
-                    <h3>Datasets</h3>
-                    <input [(ngModel)]="datasetTitle" type="text">
-                    <button (click)="createDataset()">new dataset</button>
-                    <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="datasetsFilter" [sort]="sortDatasetsFunction"></app-ao-nav-list-from-url>
+            <div class="ao-padding ao-left-side-nav">
+                <div class="ao-margin-bottom">
+
+                    <a routerLink="/datasets"><h3>Datasets</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
+
                 </div>
-            
+
+                <div class="ao-margin-top-bottom">
+
+                    <a routerLink="/recipes"><h3>Recipes</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
+
+                </div>
+
+                <div class="ao-margin-top-bottom">
+
+                    <a routerLink="/models"><h3> Models</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [allowItemCreation]="false"></app-ao-nav-list-from-url>
+
+                </div>
+
+
+                <div class="ao-margin-top-bottom">
+
+                    <a routerLink="/endpoints"><h3>Endpoints</h3></a>
+
+                    <app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
+
+                </div>
+            </div>
+
         </mat-sidenav>
         <mat-sidenav-content>
             <ng-content (click)="drawer.close()"></ng-content>

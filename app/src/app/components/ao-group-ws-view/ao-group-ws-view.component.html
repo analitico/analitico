@@ -1,0 +1,33 @@
+<div class="ao-padding">
+    <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
+        <mat-card *ngFor="let item of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card">
+            <mat-card-content>
+                <p>
+                    <b> {{(item.attributes && item.attributes.title) || item.id}}</b>
+                </p>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <div>
+        <table mat-table [dataSource]="tableDS" matSort class="mat-elevation-z8" style="width: 100%;">
+            <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Id </th>
+                <td mat-cell *matCellDef="let element"> {{element.id}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="attributes.title">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
+                <td mat-cell *matCellDef="let element"> {{element.attributes.title}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="attributes.created_at">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Created At </th>
+                <td mat-cell *matCellDef="let element"> {{element.attributes.created_at | date:'medium'}} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" routerLink="./{{row.id}}" class="ao-clickable"></tr>
+        </table>
+    </div>
+</div>

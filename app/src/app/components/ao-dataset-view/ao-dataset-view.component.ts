@@ -27,6 +27,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     uploadAssetUrl: string;
     isProcessing = false;
     assets: any;
+    data: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
@@ -45,6 +46,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
 
     onLoad() {
+        super.onLoad();
         console.log('onLoad');
         this.uploadAssetUrl = environment.apiUrl + '/datasets/' + this.item.id + '/assets';
         // clear the view
@@ -67,6 +69,11 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
                 });
         } */
         this.assets = this.item.attributes && this.item.attributes.assets;
+        this.data = this.item.attributes && this.item.attributes.data &&
+            this.item.attributes.data.length > 0 && this.item.attributes.data[0];
+        if (this.data) {
+            this.data.jsonUrl = this.itemUrl + '/data/json';
+        }
         this.loadPlugin();
     }
 
@@ -136,6 +143,6 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     }
 
     assetUploaded() {
-       // this.process();
+        // this.process();
     }
 }

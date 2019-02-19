@@ -1,0 +1,11 @@
+<ag-grid-angular 
+    style="width: 100%; height:500px;" 
+    class="ag-theme-material"
+    [columnDefs]="columns"
+    [rowDeselection]="true"
+    [rowModelType]="rowModelType"
+    [cacheOverflowSize]="cacheOverflowSize"
+    [maxBlocksInCache]="maxBlocksInCache"
+    [cacheBlockSize]="cacheBlockSize"
+    (gridReady)="onGridReady($event)">
+</ag-grid-angular>
