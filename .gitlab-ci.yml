@@ -36,11 +36,11 @@ build_dev:
     - git config --global credential.helper 'store --file=/.git-credentials'
     # clone the repo
     - git clone --recurse-submodules https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git 
+    - cd analitico
     # check out corrent commit
     - git checkout --recurse-submodules $CI_COMMIT_SHA
     # remove credentials
     - rm /.git-credentials
-    - cd analitico
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # export ANALITICO ENV
