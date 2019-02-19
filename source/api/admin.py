@@ -90,5 +90,5 @@ class JobAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
-    search_fields = ("id", "title", "description", "attributes")
+    search_fields = ("id", "title", "description", "attributes", "status", "action")
     ordering = ("-updated_at",)
