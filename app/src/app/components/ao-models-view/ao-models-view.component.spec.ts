@@ -1,7 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AoModelsViewComponent } from './ao-models-view.component';
-import { MatGridListModule } from '@angular/material';
+import { MatCardModule, MatTableModule } from '@angular/material';
 import { RouterTestingModule } from '@angular/router/testing';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { ActivatedRoute } from '@angular/router';
@@ -60,7 +60,7 @@ describe('AoModelsViewComponent', () => {
     beforeEach(async(() => {
         TestBed.configureTestingModule({
             declarations: [AoModelsViewComponent],
-            imports: [RouterTestingModule, MatGridListModule],
+            imports: [RouterTestingModule, MatCardModule, MatTableModule],
             providers: [
                 { provide: AoApiClientService, useClass: MockAoApiClientService },
                 { provide: ActivatedRoute, useClass: MockActivatedRoute },

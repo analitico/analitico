@@ -50,7 +50,7 @@ describe('AoNavListFromUrlComponent', () => {
         tick();
         fixture.detectChanges();
         const list: HTMLElement = fixture.nativeElement;
-        const a = list.querySelector('a');
+        const a = list.querySelector('.ao-nav-list-item');
         expect(a.textContent.trim()).toEqual('id1');
     }));
 });
