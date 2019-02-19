@@ -1,5 +1,5 @@
 from rest_framework.exceptions import NotFound
-
+from django.core.validators import validate_email
 import api.models
 
 import analitico
@@ -57,4 +57,9 @@ class ModelsFactory:
             return api.models.Recipe.objects.get(pk=item_id)
         if item_id.startswith(analitico.WORKSPACE_PREFIX):
             return api.models.Workspace.objects.get(pk=item_id)
+        try:
+            validate_email(item_id)
+            return api.models.User.objects.get(email=item_id)
+        except validate_email.ValidationError:
+            pass
         raise NotFound("ModelsFactory.from_id could not find id: " + item_id)
