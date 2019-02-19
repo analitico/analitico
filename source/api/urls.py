@@ -1,8 +1,12 @@
 import os
 
 from django.urls import path
-from rest_framework import routers
+from rest_framework import routers, urls
+from rest_framework.decorators import api_view
+from rest_framework.request import Request
+from rest_framework.response import Response
 
+import analitico.utilities
 import api.views
 
 
@@ -11,6 +15,14 @@ app_name = "api"
 description_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "description.md")
 with open(description_filename) as f:
     description = f.read()
+
+
+@api_view()
+def runtime(request: Request):
+    """ Returns a dictionary of runtime environment """
+    runtime = analitico.utilities.get_runtime()
+    return Response({ "type": "analitico/runtime", **runtime})
+
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.SimpleRouter(trailing_slash=False)
@@ -24,4 +36,4 @@ router.register("tokens", api.views.TokenViewSet, basename="token")  # handles a
 router.register("users", api.views.UserViewSet, basename="user")  # user profiles
 router.register("workspaces", api.views.WorkspaceViewSet, basename="workspace")  # provides grouping
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [path("runtime", runtime)]

@@ -103,6 +103,6 @@ class Command(BaseCommand):
             if max_secs > 0 and int(time_ms(started_ms) / 1000) >= max_secs:
                 logger.info("Max-secs: %ds expired, bye", max_secs)
                 return WORKER_SUCCESS
-        
+
         logger.info("Stop requested, bye")
         return WORKER_SUCCESS
