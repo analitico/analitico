@@ -39,6 +39,7 @@ import { AoGroupWsViewComponent } from './components/ao-group-ws-view/ao-group-w
 import { AoModelsViewComponent } from './components/ao-models-view/ao-models-view.component';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.component';
+import { AoGroupViewComponent } from './components/ao-group-view/ao-group-view.component';
 
 @NgModule({
     declarations: [
@@ -61,7 +62,8 @@ import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.c
         AoDatasetsViewComponent,
         AoGroupWsViewComponent,
         AoModelsViewComponent,
-        AoModelViewComponent
+        AoModelViewComponent,
+        AoGroupViewComponent
     ],
     imports: [
         BrowserModule,

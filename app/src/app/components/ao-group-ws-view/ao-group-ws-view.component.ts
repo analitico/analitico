@@ -19,9 +19,9 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     private workspace: any;
     private originalItems: any;
     // bar with top items
-    protected topItems = [];
-    protected displayedColumns: string[] = ['id', 'attributes.title', 'attributes.created_at'];
-    protected tableDS;
+    topItems = [];
+    displayedColumns: string[] = ['id', 'attributes.title', 'attributes.created_at'];
+    tableDS;
 
     @ViewChild(MatSort) sort: MatSort;
     @Input() newItemTitle: string;

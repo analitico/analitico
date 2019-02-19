@@ -30,11 +30,11 @@ export class AoTableViewComponent implements OnInit {
     }
 
 
-    private rowModelType: string;
-    private maxBlocksInCache: number;
-    private cacheBlockSize: number;
-    private cacheOverflowSize: number;
-    private gridParams: any;
+    rowModelType: string;
+    maxBlocksInCache: number;
+    cacheBlockSize: number;
+    cacheOverflowSize: number;
+    gridParams: any;
 
     constructor(protected apiClient: AoApiClientService) {
         this.rowModelType = 'infinite';
