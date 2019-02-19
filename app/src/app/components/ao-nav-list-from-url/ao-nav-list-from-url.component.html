@@ -1,7 +1,13 @@
 <div>
     <mat-nav-list dense>
+        <mat-list-item *ngIf="allowItemCreation">
+            <a matLine (click)="createNewItem()" title="Create new">
+                new
+            </a>
+        </mat-list-item>
         <mat-list-item *ngFor="let item of items">
-            <a matLine routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)" title="{{item.id}}">
+            <a matLine routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)"
+                title="{{item.id}}">
                 {{(item.attributes && item.attributes.title) || item.id}}
             </a>
         </mat-list-item>

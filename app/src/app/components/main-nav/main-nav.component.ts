@@ -26,6 +26,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
     workspace: any;
     selectedWorkspace: any;
     datasetTitle: string;
+    newItemParams: any;
 
     isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
         .pipe(
@@ -91,6 +92,8 @@ export class MainNavComponent implements OnInit, OnDestroy {
             // update
             this.selectedWorkspace = workspace;
             this.workspace = workspace;
+            // set params for creating new items
+            this.newItemParams = {workspace_id: workspace.id};
             this.setWorkspacefilter();
         }
     }

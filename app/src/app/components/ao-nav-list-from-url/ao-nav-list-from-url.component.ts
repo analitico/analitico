@@ -4,6 +4,7 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoNavListComponent } from 'src/app/components/ao-nav-list/ao-nav-list.component';
+import { Router } from '@angular/router';
 
 @Component({
     selector: 'app-ao-nav-list-from-url',
@@ -12,7 +13,7 @@ import { AoNavListComponent } from 'src/app/components/ao-nav-list/ao-nav-list.c
 })
 export class AoNavListFromUrlComponent extends AoNavListComponent implements OnInit {
 
-    constructor(protected apiClient: AoApiClientService) {
+    constructor(protected apiClient: AoApiClientService, private router: Router) {
         super();
     }
 
@@ -39,6 +40,9 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
         }
     }
 
+    @Input() newItemParams: any;
+    @Input() allowItemCreation = true;
+
     ngOnInit() {
     }
 
@@ -51,6 +55,15 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
                     this.processItems();
                 });
         }
+    }
+
+    createNewItem() {
+        this.apiClient.post(this._url, this.newItemParams)
+            .then((response: any) => {
+                // refresh list
+                this.loadListFromUrl();
+                this.router.navigate([this._url + '/' + response.data.id]);
+            });
     }
 
     // delete an item using DELETE request
