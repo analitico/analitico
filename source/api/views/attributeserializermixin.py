@@ -102,9 +102,14 @@ class AttributeSerializerMixin:
                         # to a connected item, like a recipe_id for a model or a
                         # model_id for an endpoint, etc. we implement HATEAOS by
                         # introducing automatic links to all related items endpoints
-                        item_url, _ = self.get_item_id_url(value)
-                        if item_url:
-                            reformatted["links"][key[:-3]] = item_url
+                        try:
+                            item_url, _ = self.get_item_id_url(value)
+                            if item_url:
+                                reformatted["links"][key[:-3]] = item_url
+                        except Exception as exc:
+                            message = "AttributeSerializerMixin.to_representation - error building link for " + value
+                            logger.warning(message, exc_info=exc)
+                            pass
 
         # add links to /assets and /data
         for asset_class in ("assets", "data"):
