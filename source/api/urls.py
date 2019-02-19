@@ -21,7 +21,7 @@ with open(description_filename) as f:
 def runtime(request: Request):
     """ Returns a dictionary of runtime environment """
     runtime = analitico.utilities.get_runtime()
-    return Response({ "type": "analitico/runtime", **runtime})
+    return Response({"type": "analitico/runtime", **runtime})
 
 
 # Routers provide an easy way of automatically determining the URL conf.
