@@ -59,7 +59,7 @@ class JobRunner(analitico.manager.PluginManager):
     def __init__(self, job, request, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.job = job
-        self.request = request
+        self.request = request  # optional
 
     def create_plugin(self, name: str, **kwargs):
         """
