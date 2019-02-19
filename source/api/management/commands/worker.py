@@ -43,6 +43,7 @@ class Command(BaseCommand):
         # TODO use tags to further filter jobs
         # TODO order by time posted desc
         jobs = Job.objects.filter(status=Job.JOB_STATUS_CREATED)
+        # TODO implement status switch to processing with atomic transactional guarantee
         return jobs[0] if len(jobs) > 0 else None
 
     def add_arguments(self, parser):
