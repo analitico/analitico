@@ -18,6 +18,7 @@ coreschema==0.0.4
 cryptography==2.4.2
 decorator==4.3.0
 defusedxml==0.5.0
+distro==1.4.0
 Django==2.1.5
 django-allauth==0.38.0
 django-cors-headers==2.4.0
