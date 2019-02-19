@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
+import { setDefaultService } from 'selenium-webdriver/edge';
 
 @Component({
     selector: 'app-main-nav',
@@ -17,6 +18,7 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 export class MainNavComponent implements OnInit, OnDestroy {
 
     userInitial: string;
+    userPhotoUrl: string;
     userBadgeIconUrl: string;
     globalStateObserverSubscription: any; // keeps reference of observer subscription for cleanup
     workspaceFilter: any;
@@ -39,7 +41,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
         this.globalStateObserverSubscription = this.globalState.subscribe(this.onGlobalStateUpdate.bind(this));
         // load workspaces
         this.loadWorkspaces();
-
+        this.getUser();
     }
 
     loadWorkspaces() {
@@ -72,11 +74,15 @@ export class MainNavComponent implements OnInit, OnDestroy {
     onGlobalStateUpdate() {
         // retrieve user
         const user = this.globalState.getProperty('user');
-        if (user && user.username) {
-            // set firstname initial into badge at top right
-            this.userInitial = user.username[0].toUpperCase();
-        } else {
-            this.userInitial = null;
+        this.userInitial = null;
+        if (user) {
+            if (user.attributes.photos && user.attributes.photos.length > 0) {
+                this.userPhotoUrl = user.attributes.photos[0].value;
+            } else if (user.attributes.first_name) {
+                // set firstname initial into badge at top right
+                this.userInitial = user.attributes.first_name[0].toUpperCase();
+            }
+
         }
 
         const workspace = this.globalState.getProperty('workspace');
@@ -111,4 +117,19 @@ export class MainNavComponent implements OnInit, OnDestroy {
             console.error(e);
         }
     };
+
+    getUser() {
+        this.apiClient.get('/users/me')
+            .then((response: any) => {
+                // notify new user
+                this.globalState.setProperty('user', response.data);
+            })
+            .catch((response: any) => {
+                if (response.status === 401) {
+                    // redirect to login
+                    window.location.href = '/accounts/login/';
+                }
+            });
+    }
+
 }
