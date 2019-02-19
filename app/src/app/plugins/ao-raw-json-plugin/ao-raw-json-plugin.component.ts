@@ -30,12 +30,11 @@ export class AoRawJsonPluginComponent extends AoPluginComponent implements OnIni
         }
     }
 
-    /** called when, after a change, a valid JSON is present in the editor
-     *  if the JSON is not valid this is not called
-    */
+    // called when, after a change, a valid JSON is present in the editor
+    // if the JSON is not valid this is not called
     onEditorChange(data: any) {
-        // change my data
-        this.setData(this.editor.get());
+        // store changes from editor
+        this.updateData(this.editor.get());
     }
 
 }

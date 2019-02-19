@@ -13,7 +13,7 @@
                     </mat-progress-spinner>
                 </button>
 
-                <app-ao-table-view [data]="data"></app-ao-table-view>
+                <app-ao-table-view [data]="data" *ngIf="data"></app-ao-table-view>
             </div>
         </div>
 

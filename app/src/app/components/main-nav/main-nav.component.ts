@@ -93,7 +93,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
             this.selectedWorkspace = workspace;
             this.workspace = workspace;
             // set params for creating new items
-            this.newItemParams = {workspace_id: workspace.id};
+            this.newItemParams = { workspace_id: workspace.id };
             this.setWorkspacefilter();
         }
     }
@@ -128,10 +128,10 @@ export class MainNavComponent implements OnInit, OnDestroy {
                 this.globalState.setProperty('user', response.data);
             })
             .catch((response: any) => {
-                if (response.status === 401) {
-                    // redirect to login
-                    window.location.href = '/accounts/login/';
-                }
+
+                // redirect to login
+                window.location.href = '/accounts/login/';
+
             });
     }
 

@@ -30,6 +30,7 @@ export class AoPipelinePluginComponent extends AoPluginComponent {
 
     setData(data: any) {
         super.setData(data);
+        // if it contains plugins -> load them
         if (data && data.plugins) {
             this.plugins = data.plugins;
             this.loadPlugins();
@@ -63,7 +64,7 @@ export class AoPipelinePluginComponent extends AoPluginComponent {
             // send data
             instance.setData(pluginData);
             // subscribe to update
-            instance.onNewDataSubject.subscribe(this.onNewData.bind(this, index));
+            instance.onNewDataSubject.subscribe(this.onNewDataFromPlugin.bind(this, index));
         } else {
             throw new Error('Missing plugin, cannot build pipeline');
         }
@@ -71,9 +72,9 @@ export class AoPipelinePluginComponent extends AoPluginComponent {
 
     // when we receive data change notifications we want to update the correspondent data model and pass
     // the notification above
-    onNewData(index: number, pluginData: any): void {
+    onNewDataFromPlugin(pluginIndex: number, pluginData: any): void {
         // changed data in a specific plugin
-        this.plugins[index] = pluginData;
+        this.plugins[pluginIndex] = pluginData;
         // notify upper levels
         this.onNewDataSubject.next();
     }

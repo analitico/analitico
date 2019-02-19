@@ -16,7 +16,7 @@ import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
     templateUrl: './ao-dataset-view.component.html',
     styleUrls: ['./ao-dataset-view.component.css']
 })
-export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
+export class AoDatasetViewComponent extends AoViewComponent implements OnInit, OnDestroy {
     // this is the object where we will insert the child components
     @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
 
@@ -28,6 +28,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
     isProcessing = false;
     assets: any;
     data: any;
+    private newDataSubscriptions: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
@@ -43,6 +44,11 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
         super.ngOnInit();
         // get the view of the anchor component
         this.viewContainerRef = this.aoAnchor.viewContainerRef;
+        this.newDataSubscriptions = [];
+    }
+
+    ngOnDestroy() {
+        console.log('destroyed dataset ' + this.item.id);
     }
 
     onLoad() {
@@ -74,6 +80,12 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
         if (this.data) {
             this.data.jsonUrl = this.itemUrl + '/data/json';
         }
+        this.pluginData = null;
+        // unsubscribe to data notifications
+        this.newDataSubscriptions.forEach((sub: any) => {
+            sub.unsubscribe();
+        });
+        this.newDataSubscriptions = [];
         this.loadPlugin();
     }
 
@@ -97,14 +109,16 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit {
                 const instance = (<IAoPluginInstance>componentRef.instance);
                 // send data
                 instance.setData(this.pluginData);
-                // subscribe to update
-                instance.onNewDataSubject.subscribe(this.onNewData.bind(this));
+                // subscribe to updates from subcomponents
+                const sub = instance.onNewDataSubject.subscribe(this.onNewDataFromPlugin.bind(this));
+                // store subscriptions
+                this.newDataSubscriptions.push(sub);
             }
         }
     }
 
-    // called when the model is changed
-    onNewData(): void {
+    // called when the model is changed by plugins
+    onNewDataFromPlugin(): void {
         // we want to wait a bit before saving
         this.checkIfNeedToSave();
     }
