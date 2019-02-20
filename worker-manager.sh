@@ -1,9 +1,9 @@
 #!/bin/bash
 # Keep a fixed number of worker dockers running
 set -e
-
+source analitico-env
 $TOTAL_WORKERS = 4
-$DOCKER_PATH = $(</home/www/analitico/docker-path.txt)
+$DOCKER_PATH = 'registry.gitlab.com/analitico/analitico:'$ANALITICO_COMMIT_SHA
 # goes forever
 while true
 do
