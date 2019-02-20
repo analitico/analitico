@@ -84,7 +84,6 @@ deploy-staging:
     - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-add ~/.ssh/id_rsa
-    # ssh-keyscan -H $STAGING_SERVER_NAME >> ~/.ssh/known_hosts
   script:
     # pull new docker image and run
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker stop analitico; docker rm analitico; docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; docker image prune -f -a; docker run --name=analitico -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh"
@@ -92,15 +91,31 @@ deploy-staging:
 deploy-production:
   stage: deploy
   when: manual
-  image: google/cloud-sdk:latest
+  image: ubuntu:18.04
   only:
     - master
+  before_script:
+  ##
+  ## Install ssh-agent if not already installed, it is required by Docker.
+  ## (change apt-get to yum if you use an RPM-based image)
+  ##
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+  ##
+  ## Run ssh-agent (inside the build environment)
+  ##
+  - eval $(ssh-agent -s)
+
+  ##
+  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+  ## We're using tr to fix line endings which makes ed25519 keys work
+  ## without extra base64 encoding.
+  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+  ##
+  - mkdir -p ~/.ssh
+  - echo "$PRODUCTION_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-add ~/.ssh/id_rsa
   script:
-    # Authenticate using the service account stored here: https://gitlab.com/groups/{YOUR_GITLAB_PROJECT}/-/settings/ci_cd
-    - echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
-    - gcloud config set project $GCP_PROJECT_ID
-    # Deploy to Google Functions
-    - cp requirements.txt -t source
-    # gcloud functions deploy s24-order-sorting --entry-point handle_s24_order_sorting --source source --runtime python37 --trigger-http --region europe-west1
-    # gcloud functions deploy v1 --entry-point handle_api --source source --runtime python37 --trigger-http --region europe-west1
+    # pull new docker image and run
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$PRODUCTION_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker stop analitico; docker rm analitico; docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; docker image prune -f -a; docker run --name=analitico -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh"
