@@ -26,7 +26,7 @@ class ApiEndpointPipelinePlugin(EndpointPipelinePlugin):
         inputs = [{"data": "pandas.DataFrame"}]
         outputs = [{"predictions": "pandas.DataFrame"}]
 
-    def run(self, action=None, *args, **kwargs):
+    def run(self, *args, **kwargs):
         """ Process the plugins in sequence to run predictions """
         assert args[0] and isinstance(args[0], pandas.DataFrame)
 
@@ -35,7 +35,7 @@ class ApiEndpointPipelinePlugin(EndpointPipelinePlugin):
             raise PluginError("ApiEndpointPipelinePlugin - model_id to be used for inference is not configured", self)
 
         # read training information from disk
-        artifacts_path = self.manager.get_artifacts_directory()
+        artifacts_path = self.factory.get_artifacts_directory()
         training_path = os.path.join(artifacts_path, "training.json")
         training = read_json(training_path)
         assert training
@@ -46,6 +46,6 @@ class ApiEndpointPipelinePlugin(EndpointPipelinePlugin):
             self.set_attribute("plugins", [{"name": get_dict_dot(training, "plugins.prediction")}])
 
         # run the pipeline, return predictions
-        predictions = super().run(action, *args, **kwargs)
+        predictions = super().run(*args, **kwargs)
         assert predictions and isinstance(predictions, pandas.DataFrame)
         return predictions

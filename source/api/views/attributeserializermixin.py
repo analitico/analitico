@@ -21,7 +21,7 @@ from rest_framework import status
 
 import analitico
 from analitico import TYPE_PREFIX
-from api.factory import ModelsFactory
+from api.factory import factory
 from api.models import ItemMixin, Job, User
 from analitico.utilities import logger
 
@@ -41,26 +41,16 @@ class AttributeSerializerMixin:
     new migrations and releases. Also different versions can coexist and ignore extra data.
     """
 
-    def get_item_url(self, item):
+    def get_item_url(self, item_id):
         """ Returns absolute url to given item using the same endpoint the request came in through """
-        assert isinstance(item, ItemMixin)
-
-        item_id = item.id
-        if isinstance(item, User):
-            item_id = item.email
-
-        url = reverse("api:" + item.type + "-detail", args=(item_id,))
+        assert item_id and isinstance(item_id, str), "AttributeSerializerMixin.get_item_url - item_id is not a string"
+        item_type = factory.get_item_type(item_id)
+        url = reverse("api:" + item_type + "-detail", args=(item_id,))
         request = self.context.get("request")
         if request:
             url = request.build_absolute_uri(url)
             url = url.replace("http://", "https://")
         return url
-
-    def get_item_id_url(self, item_id):
-        """ Returns absolute url to given item (by id) using the same endpoint the request came in through """
-        assert isinstance(item_id, str)
-        item = ModelsFactory.from_id(item_id)
-        return self.get_item_url(item) if item else None, item.type
 
     def get_item_asset_url(self, item, asset_class, asset_id):
         """ Returns absolute url to given item's asset """
@@ -88,7 +78,8 @@ class AttributeSerializerMixin:
         reformatted = {"type": TYPE_PREFIX + item.type, "id": data.pop("id"), "attributes": data}
 
         # add link to self
-        reformatted["links"] = {"self": self.get_item_url(item)}
+        item_id = item.id if not isinstance(item, User) else item.email
+        reformatted["links"] = {"self": self.get_item_url(item_id)}
 
         # add additional attributes from json dict
         if item.attributes:
@@ -103,7 +94,7 @@ class AttributeSerializerMixin:
                         # model_id for an endpoint, etc. we implement HATEAOS by
                         # introducing automatic links to all related items endpoints
                         try:
-                            item_url, _ = self.get_item_id_url(value)
+                            item_url = self.get_item_url(value)
                             if item_url:
                                 reformatted["links"][key[:-3]] = item_url
                         except Exception as exc:

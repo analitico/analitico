@@ -8,6 +8,6 @@ from .workspace import Workspace
 from .dataset import Dataset
 from .recipe import Recipe
 from .model import Model
-from .job import Job, JobRunner
+from .job import Job
 from .endpoint import Endpoint
 from .user import User, USER_THUMBNAIL_SIZE

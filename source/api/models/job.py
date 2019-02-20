@@ -17,181 +17,18 @@ from django.db import transaction
 
 from .items import ItemMixin
 from .workspace import Workspace
-from api.factory import ModelsFactory
 
 import analitico
-import analitico.manager
 import analitico.plugin
 import analitico.utilities
 import api.plugin
+
+from api.factory import ServerFactory
 
 
 def generate_job_id():
     """ All Job.id have jb_ prefix followed by a random string """
     return analitico.JOB_PREFIX + django.utils.crypto.get_random_string()
-
-
-##
-## JobRunner
-##
-
-# analitico://item_type/item_id/asset_class/asset_id, eg: analitico://dataset/ds_xxx/assets/data.csv
-ANALITICO_ASSET_RE = (
-    r"analitico:\/\/(?P<item_type>[\a-z]+)s\/(?P<item_id>[\w]+)\/(?P<asset_class>data|assets)\/(?P<asset_id>[-\w\.]+)"
-)
-
-
-class JobRunner(analitico.manager.PluginManager):
-    """ An IPluginManager used to run plugins in the context of a server Job """
-
-    # Job currently being executed
-    job = None
-
-    # Request that originated the job run (optional)
-    request = None
-
-    # Target of job being run
-    item = None
-
-    # Owner of target item (used for storage, access rights, etc)
-    workspace = None
-
-    def __init__(self, job, request, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.job = job
-        self.request = request  # optional
-
-    def create_plugin(self, name: str, **kwargs):
-        """
-        Create a plugin given its name and the environment it will run in.
-        Any additional parameters passed to this method will be passed to the
-        plugin initialization code and will be stored as a plugin setting.
-        """
-        klass = self._get_class_from_fully_qualified_name(name, globals=globals())
-        if not klass:
-            raise analitico.plugin.PluginError("JobRunner - can't find plugin: " + name)
-        return (klass)(manager=self, **kwargs)
-
-    def get_temporary_directory(self):
-        """ Temporary directory that can be used while a job runs and is deleted afterwards """
-        if self._temporary_directory is None:
-            self._temporary_directory = tempfile.mkdtemp(prefix=self.job.id + "_")
-        return self._temporary_directory
-
-    def get_cache_asset(self, item, asset_class, asset_id):
-        """ 
-        Returns filename of cached asset after downloading it if necessary. 
-        File should be used as read only and copied if it needs to be modified.
-        """
-        asset = item._get_asset_from_id(asset_class, asset_id, raise404=True)
-        assert asset
-        # name of the file in cache is determined by its hash so all files are unique and
-        # we do not need to check versions, eg. if we have it with the correct name it's
-        # the correct version and we can save a rountrip to check with the server
-        storage_file = os.path.join(self.get_cache_directory(), "cache_" + asset["hash"])
-
-        # if not in cache already download it from storage
-        if not os.path.isfile(storage_file):
-            storage = item.storage
-            assert storage
-            storage_path = asset["path"]
-            storage_obj, storage_stream = storage.download_object_via_stream(storage_path)
-            storage_temp_file = storage_file + ".tmp_" + django.utils.crypto.get_random_string()
-            with open(storage_temp_file, "wb") as f:
-                for b in storage_stream:
-                    f.write(b)
-            os.rename(storage_temp_file, storage_file)
-        return storage_file
-
-    def get_url_stream(self, url):
-        """ Job runner retrieves assets directly from cloud storage while using super for regular URLs """
-        # temporarily while all internal urls are updated prepend analitico://
-        if url.startswith("workspaces/ws_"):
-            url = "analitico://" + url
-
-        # job runner reads assets straight from cloud storage
-        match = re.search(ANALITICO_ASSET_RE, url)
-        if match:
-            # find asset indicated in the url
-            item_id = match.group("item_id")
-            asset_class = match.group("asset_class")
-            asset_id = match.group("asset_id")
-
-            # TODO should check that current requestor has access rights to this item
-            item = ModelsFactory.from_id(item_id)
-
-            # replace shorthand /data/csv with /data/data.csv
-            wants_json = False
-            if asset_class == "data":
-                if asset_id == "csv":
-                    asset_id = "data.csv"
-                if asset_id == "info":
-                    asset_id = "data.csv"
-                    wants_json = True
-
-            asset = item._get_asset_from_id(asset_class, asset_id, raise404=True)
-            if wants_json:
-                asset_json = json.dumps(asset)
-                return io.StringIO(asset_json)
-
-            storage = item.storage
-            if not storage:
-                raise analitico.plugin.PluginError(
-                    "JobRunner.get_url_stream - storage is not configured correctly for item: " + self.item.id
-                )
-            storage_path = asset["path"]
-            storage_obj, storage_stream = storage.download_object_via_stream(storage_path)
-
-            # download stream to a cache file then hand over stream to file
-            # the temporary file is named after the hash of the file contents in storage.
-            # if we already have a file in cache with the same name, we can be assured that
-            # its contents are the same as the requested file and we can serve directly from file.
-            storage_file = os.path.join(self.get_cache_directory(), "cache_" + storage_obj.hash)
-            if not os.path.isfile(storage_file):
-                storage_temp_file = storage_file + ".tmp_" + django.utils.crypto.get_random_string()
-                with open(storage_temp_file, "wb") as f:
-                    for b in storage_stream:
-                        f.write(b)
-                os.rename(storage_temp_file, storage_file)
-            return open(storage_file, "rb")
-
-        # base class handles regular URLs
-        return super().get_url_stream(url)
-
-    def upload_artifacts(self, item):
-        """ Uploads all files in the artifacts directory to the given item's data assets """
-        directory = self.get_artifacts_directory()
-        for path in os.listdir(directory):
-            fullpath = os.path.join(directory, path)
-            # process only files (skip directories and .info files)
-            if os.path.isfile(fullpath) and not path.endswith(".info"):
-                path_size = os.path.getsize(fullpath)
-                with open(fullpath, "rb") as f:
-                    # if asset has a .info companion read as extra info on the asset
-                    extras_path = fullpath + ".info"
-                    extras = analitico.utilities.read_json(extras_path) if os.path.isfile(extras_path) else None
-                    # upload asset and extras, item will take care of saving to database
-                    item.upload_asset_stream(f, "data", path, path_size, None, path, extras)
-
-    def run(self):
-        """ Runs job then collects artifacts """
-        try:
-            self.job.status = Job.JOB_STATUS_RUNNING
-            self.job.save()
-
-            self.item = self.job.get_item(self.request)
-            self.workspace = self.item.workspace if self.item.workspace else self.item
-
-            # item runs the job
-            self.item.run(job=self.job, runner=self)
-            self.item.save()
-
-            self.job.status = Job.JOB_STATUS_COMPLETED
-        except Exception as exc:
-            self.job.status = Job.JOB_STATUS_FAILED
-            raise exc
-        finally:
-            self.job.save()
 
 
 ##
@@ -252,10 +89,6 @@ class Job(ItemMixin, models.Model):
     # The item that is the target of this job (eg. model that is trained, dataset that is processed, etc)
     item_id = models.SlugField(blank=True)
 
-    def get_item(self, request=None):
-        """ Returns the target of this job (eg: dataset to be processed, model to be trained, etc) """
-        return ModelsFactory.from_id(self.item_id, request)
-
     ## Properties
 
     @property
@@ -273,6 +106,19 @@ class Job(ItemMixin, models.Model):
 
     def run(self, request, **kwargs):
         """ Runs the job, collects and uploads artifacts, returns the updated job """
-        with JobRunner(self, request, **kwargs) as runner:
-            runner.run()
-        return self
+        try:
+            with ServerFactory(job=self, request=request, **kwargs) as factory:
+                self.status = Job.JOB_STATUS_RUNNING
+                self.save()
+
+                # item runs the job
+                item = factory.get_item(self.item_id)
+                item.run(job=self, factory=factory)
+                item.save()
+
+                self.status = Job.JOB_STATUS_COMPLETED
+        except Exception as exc:
+            self.status = Job.JOB_STATUS_FAILED
+            raise exc
+        finally:
+            self.save()

@@ -11,13 +11,13 @@ from rest_framework import status
 
 import analitico
 import analitico.plugin
+from analitico import IFactory
 from analitico.plugin import PluginError
 from analitico.utilities import get_dict_dot, set_dict_dot, time_ms
 from .user import User
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
-from .job import Job, JobRunner
-from api.factory import ModelsFactory
+from .job import Job
 
 ##
 ## Endpoint
@@ -53,14 +53,10 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
     attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
 
     ##
-    ## Prediction
-    ##
-
-    ##
     ## Jobs
     ##
 
-    def run(self, job: Job, runner: JobRunner, **kwargs):
+    def run(self, job: Job, factory: IFactory, **kwargs):
         """ Run job actions on the recipe """
         try:
             # process action runs recipe and creates a trained model
@@ -76,20 +72,20 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                 model_id = self.get_attribute("model_id")
                 if not model_id:
                     raise PluginError("Endpoint.run - model_id to be used for prediction is not configured")
-                model = ModelsFactory.from_id(model_id)  # TODO pass request to check auth
+                model = factory.get_item(model_id)  # TODO pass request to check auth
                 assert model
 
                 # restore /data artifacts used by plugin to run prediction
                 assets_ms = time_ms()
-                artifacts_path = runner.get_artifacts_directory()
+                artifacts_path = factory.get_artifacts_directory()
                 for asset in model.get_attribute("data"):
-                    cache_path = runner.get_cache_asset(model, "data", asset["id"])
+                    cache_path = factory.get_cache_asset(model, "data", asset["id"])
                     artifact_path = os.path.join(artifacts_path, asset["id"])
                     os.symlink(cache_path, artifact_path)
                 assets_ms = time_ms(assets_ms)
 
                 # create dataframe from request data
-                request = runner.request
+                request = factory.request
                 assert request and request.data and request.data["data"]
                 data = request.data["data"]
                 if isinstance(data, dict):
@@ -97,8 +93,8 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                 data_df = pd.DataFrame.from_records(data)
 
                 # plugin run prediction pipeline and returns predictions as dataframe
-                plugin = runner.create_plugin(**plugin_settings)
-                results = plugin.run(job.action, data_df)
+                plugin = factory.get_plugin(**plugin_settings)
+                results = plugin.run(data_df, action=job.action)
 
                 # additional information
                 results["records"] = data

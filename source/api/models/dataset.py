@@ -16,6 +16,7 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 
+from analitico import IFactory
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from analitico.schema import generate_schema
 
@@ -60,7 +61,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job, runner, **kwargs):
+    def run(self, job, factory: IFactory, **kwargs):
         """ Run job actions on the dataset """
         try:
             # process action runs plugin to generate and save data.csv and its schema
@@ -91,7 +92,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                             break
 
                 if plugin_settings:
-                    plugin = runner.create_plugin(**plugin_settings)
+                    plugin = factory.get_plugin(**plugin_settings)
                     # plugin will produce pandas dataframe and create data.csv, data.csv.info
                     df = plugin.run()
                     if new_plugin:
@@ -105,7 +106,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                             self.set_attribute("plugin", plugin_settings)
                             self.save()
                     # upload processing artifacts to /data
-                    runner.upload_artifacts(self)
+                    factory.upload_artifacts(self)
             self.save()
         except Exception as exc:
             raise exc

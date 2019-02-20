@@ -7,7 +7,6 @@ import api.models
 import api.utilities
 
 from api.models import Dataset, Job
-from api.factory import ModelsFactory
 
 from .assetviewsetmixin import AssetViewSetMixin
 from .attributeserializermixin import AttributeSerializerMixin
@@ -34,6 +33,7 @@ from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
 from api.models import ItemMixin, Job
+from api.factory import factory
 from analitico.utilities import logger, get_dict_dot
 
 ##
@@ -53,13 +53,14 @@ class JobSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
         data = super().to_representation(item)
 
         # Payload as its own dictionary:
-        # pros: easier to find among attributes
-        # cons: breaks pattern with other items
+        # - pros: easier to find among attributes
+        # - cons: breaks pattern with other items
         # payload = data["attributes"].pop("payload", None)
         # data["payload"] = payload
 
         if "links" in data and item.item_id:
-            item_url, item_type = self.get_item_id_url(item.item_id)
+            item_type = factory.get_item_type(item.item_id)
+            item_url = self.get_item_url(item.item_id)
             if item_url:
                 data["links"][item_type] = item_url
         return data

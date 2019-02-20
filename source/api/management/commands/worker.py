@@ -1,9 +1,9 @@
 import os
 import time
 
-from api.models import Job, JobRunner
+from api.models import Job
 from analitico.utilities import logger, time_ms
-from api.factory import ModelsFactory
+from api.factory import ServerFactory
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -26,17 +26,17 @@ class Command(BaseCommand):
     # TODO implement external quit signal?
     running = True
 
-    def run_job(self, job_id) -> Job:
+    def run_job(self, job) -> Job:
         """ Run job with given id """
         try:
-            logger.info("Job_id: %s, started", job_id)
+            logger.info("Job_id: %s, started", job.id)
             started_ms = time_ms()
-            job = ModelsFactory.from_id(job_id)
-            job.run(request=None)
-            logger.info("Job_id: %s, completed in %d ms", job_id, time_ms(started_ms))
+            with ServerFactory(job=job, request=None) as factory:
+                job.run(request=None)
+            logger.info("Job_id: %s, completed in %d ms", job.id, time_ms(started_ms))
             return job
         except Exception as exc:
-            logger.warning("Job_id: %s, failed", job_id, exc_info=exc)
+            logger.warning("Job_id: %s, failed", job.id, exc_info=exc)
             raise exc
 
     def get_pending_job(self, **options):

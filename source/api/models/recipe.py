@@ -16,7 +16,7 @@ from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .user import User
 from .items import ItemMixin
 from .workspace import Workspace
-from .job import Job, JobRunner
+from .job import Job
 from .model import Model
 
 #
@@ -56,7 +56,7 @@ class Recipe(ItemMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job: Job, runner: JobRunner, **kwargs):
+    def run(self, job: Job, factory: analitico.IFactory, **kwargs):
         """ Run job actions on the recipe """
         try:
             # process action runs recipe and creates a trained model
@@ -65,7 +65,7 @@ class Recipe(ItemMixin, models.Model):
                 if not plugin_settings:
                     raise APIException("Recipe.run - the recipe has no configured plugins", status.HTTP_400_BAD_REQUEST)
 
-                plugin = runner.create_plugin(**plugin_settings)
+                plugin = factory.get_plugin(**plugin_settings)
                 results = plugin.run(action=job.action)
 
                 # create a model which will host training results and assets
@@ -74,8 +74,8 @@ class Recipe(ItemMixin, models.Model):
 
                 # upload artifacts to model (not to the recipe!)
                 # a recipe has a one to many relation with trained models
-                artifacts = runner.get_artifacts_directory()
-                runner.upload_artifacts(model)
+                artifacts = factory.get_artifacts_directory()
+                factory.upload_artifacts(model)
                 shutil.rmtree(artifacts, ignore_errors=True)
 
                 # store training results, link model to recipe and job

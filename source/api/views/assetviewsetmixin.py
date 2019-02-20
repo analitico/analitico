@@ -21,9 +21,10 @@ from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
 from analitico.utilities import logger, get_csv_row_count
-from api.models import ItemMixin, Job, JobRunner, ASSETS_CLASS_DATA
+from api.models import ItemMixin, Job, ASSETS_CLASS_DATA
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
+from api.factory import ServerFactory
 
 ##
 ## AssetViewSetMixin - a mixin for uploading and downloading assets
@@ -136,8 +137,9 @@ class AssetViewSetMixin:
         offset = page * page_size
         # retrieve only the requested chunk from cached copy of storage asset on local disk
         item = self.get_object()
-        factory = JobRunner(None, request)
-        asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
+
+        with ServerFactory(request=request) as factory:
+            asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
 
         df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
         df = df.fillna("")  # for now replace NaN with empty string
