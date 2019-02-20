@@ -26,7 +26,7 @@ class ApiEndpointPipelinePlugin(EndpointPipelinePlugin):
         inputs = [{"data": "pandas.DataFrame"}]
         outputs = [{"predictions": "pandas.DataFrame"}]
 
-    def run(self, *args, **kwargs):
+    def run(self, *args, action=None, **kwargs):
         """ Process the plugins in sequence to run predictions """
         assert args[0] and isinstance(args[0], pandas.DataFrame)
 
@@ -46,6 +46,6 @@ class ApiEndpointPipelinePlugin(EndpointPipelinePlugin):
             self.set_attribute("plugins", [{"name": get_dict_dot(training, "plugins.prediction")}])
 
         # run the pipeline, return predictions
-        predictions = super().run(*args, **kwargs)
+        predictions = super().run(*args, action=action, **kwargs)
         assert predictions and isinstance(predictions, pandas.DataFrame)
         return predictions
