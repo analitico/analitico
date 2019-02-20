@@ -157,6 +157,6 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit, O
     }
 
     assetUploaded() {
-        // this.process();
+        this.process();
     }
 }
