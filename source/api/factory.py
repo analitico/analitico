@@ -90,7 +90,7 @@ class ServerFactory(analitico.factory.Factory):
             os.rename(storage_temp_file, storage_file)
         return storage_file
 
-    def get_url_stream(self, url):
+    def get_url_stream(self, url, binary=False):
         """ Job runner retrieves assets directly from cloud storage while using super for regular URLs """
         # temporarily while all internal urls are updated prepend analitico://
         if url.startswith("workspaces/ws_"):
