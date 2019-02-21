@@ -106,8 +106,8 @@ class Job(ItemMixin, models.Model):
 
     def run(self, request, **kwargs):
         """ Runs the job, collects and uploads artifacts, returns the updated job """
-        try:
-            with ServerFactory(job=self, request=request, **kwargs) as factory:
+        with ServerFactory(job=self, request=request, **kwargs) as factory:
+            try:
                 self.status = Job.JOB_STATUS_RUNNING
                 self.save()
 
@@ -117,8 +117,9 @@ class Job(ItemMixin, models.Model):
                 item.save()
 
                 self.status = Job.JOB_STATUS_COMPLETED
-        except Exception as exc:
-            self.status = Job.JOB_STATUS_FAILED
-            raise exc
-        finally:
-            self.save()
+            except Exception as exc:
+                self.status = Job.JOB_STATUS_FAILED
+                factory.error("Job.run - error while running job " + self.id + " on item " + self.item_id, exc_info=exc)
+                raise exc
+            finally:
+                self.save()
