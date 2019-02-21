@@ -135,24 +135,24 @@ class AssetViewSetMixin:
         page = int(request.GET.get("page", 0))
         page_size = max(MIN_PAGE_SIZE, min(MAX_PAGE_SIZE, int(request.GET.get("page_size", DEFAULT_PAGE_SIZE))))
         offset = page * page_size
+
         # retrieve only the requested chunk from cached copy of storage asset on local disk
-        item = self.get_object()
-
         with ServerFactory(request=request) as factory:
-            asset_file = factory.get_cache_asset(item, ASSETS_CLASS_DATA, "data.csv")
+            item = self.get_object()
 
-        df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
-        df = df.fillna("")  # for now replace NaN with empty string
+            asset_file = factory.get_cache_asset(item, asset_class, asset_id)
+            df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
+            df = df.fillna("")  # for now replace NaN with empty string
 
-        data = {"meta": {"page": page, "page_records": len(df), "page_size": page_size}, "data": df.to_dict("records")}
+            data = {"meta": {"page": page, "page_records": len(df), "page_size": page_size}, "data": df.to_dict("records")}
 
-        # extra metadata could be expensive so we leave the option to opt out for performance
-        if get_query_parameter_as_bool(request, "meta", True):
-            rows = get_csv_row_count(asset_file)  # file needs to be read end to end
-            data["meta"]["total_pages"] = int((rows + page_size - 1) / page_size)
-            data["meta"]["total_records"] = rows
-        # return records and information on current page
-        return Response(data)
+            # extra metadata could be expensive so we leave the option to opt out for performance
+            if get_query_parameter_as_bool(request, "meta", True):
+                rows = get_csv_row_count(asset_file)  # file needs to be read end to end
+                data["meta"]["total_pages"] = int((rows + page_size - 1) / page_size)
+                data["meta"]["total_records"] = rows
+            # return records and information on current page
+            return Response(data)
 
     #
     # ViewSet actions
