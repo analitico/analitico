@@ -97,9 +97,9 @@ try:
     SECRET_KEY = os.environ["ANALITICO_SECRET_KEY"]
 
     # We connect to MySQL using SSL so we need the proper certificates
-    sql_ssl_key_path = "../../ssl/cloudsql/client-key.pem"
-    sql_ssl_cert_path = "../../ssl/cloudsql/client-cert.pem"
-    sql_ssl_ca_path = "../../ssl/cloudsql/client-ca.pem"
+    sql_ssl_key_path = os.path.join(BASE_DIR, "../../ssl/cloudsql/client-key.pem")
+    sql_ssl_cert_path = os.path.join(BASE_DIR, "../../ssl/cloudsql/client-cert.pem")
+    sql_ssl_ca_path = os.path.join(BASE_DIR, "../../ssl/cloudsql/client-ca.pem")
 
     # MySQL database
     DATABASES = {

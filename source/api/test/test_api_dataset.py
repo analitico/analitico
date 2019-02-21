@@ -93,7 +93,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset1["id"], "titanic_1.csv")
         self.assertEqual(ds_asset1["filename"], "titanic_1.csv")
         self.assertEqual(ds_asset1["content_type"], "text/csv")
-        self.assertEqual(ds_asset1["size"], 61194)
+        self.assertEqual(ds_asset1["size"], 61216)
 
         # check dataset again, this time should have assets
         ds_response2 = self.client.get(ds_url, format="json")
@@ -105,7 +105,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset2["id"], "titanic_1.csv")
         self.assertEqual(ds_asset2["filename"], "titanic_1.csv")
         self.assertEqual(ds_asset2["content_type"], "text/csv")
-        self.assertEqual(ds_asset2["size"], 61194)
+        self.assertEqual(ds_asset2["size"], 61216)
 
     def test_dataset_job_action_unsupported(self):
         """ Test requesting a job with an action that is not supported """

@@ -144,7 +144,10 @@ class AssetViewSetMixin:
             df = pd.read_csv(asset_file, skiprows=range(1, offset + 1), nrows=page_size)
             df = df.fillna("")  # for now replace NaN with empty string
 
-            data = {"meta": {"page": page, "page_records": len(df), "page_size": page_size}, "data": df.to_dict("records")}
+            data = {
+                "meta": {"page": page, "page_records": len(df), "page_size": page_size},
+                "data": df.to_dict("records"),
+            }
 
             # extra metadata could be expensive so we leave the option to opt out for performance
             if get_query_parameter_as_bool(request, "meta", True):
