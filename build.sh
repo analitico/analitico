@@ -6,7 +6,7 @@ echo "Injecting env"
 source analitico-env
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US:en
-export LC_ALL=en_US.UTF-8
+export LC_CTYPE=en_US.UTF-8
 
 echo "Installing requirements"
 source venv/bin/activate
