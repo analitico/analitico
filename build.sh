@@ -4,6 +4,9 @@ set -e
 # Build and test execution
 echo "Injecting env"
 source analitico-env
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US:en
+export LC_ALL=en_US.UTF-8
 
 echo "Installing requirements"
 source venv/bin/activate
