@@ -140,7 +140,7 @@ class ServerFactory(analitico.factory.Factory):
                     for b in storage_stream:
                         f.write(b)
                 os.rename(storage_temp_file, storage_file)
-            return open(storage_file, "rb")
+            return open(storage_file)
 
         # base class handles regular URLs
         return super().get_url_stream(url)
