@@ -1,8 +1,9 @@
 <div>
-    <span class="file-info">{{fileName}}({{fileSize}})</span>
+    <span class="file-info ao-float-left" style="font-size:14px;">{{fileName}}</span>
     <section class="">
-        <mat-progress-spinner class="" [value]="progressPercentage" [diameter]="20" [strokeWidth]="4"></mat-progress-spinner>
-        <mat-icon class="action" (click)="remove()">cancel</mat-icon>
+        <mat-icon class="action ao-float-rigth" (click)="remove()" style="margin-left: 8px;">close</mat-icon>
+        <mat-progress-spinner class="ao-float-rigth" [value]="progressPercentage" [diameter]="22" [strokeWidth]="2"></mat-progress-spinner>
+        
     </section>
-    <span class="file-info">{{progressPercentage}}%</span><span> {{loaded}} of {{total}}</span>
+    <!--<span class="file-info">{{progressPercentage}}%</span><span> {{loaded}} of {{total}}</span>-->
 </div>

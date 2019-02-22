@@ -1,4 +1,9 @@
 <div *ngIf="isVisible" class="ao-upload-queue">
-    <mat-icon (click)="close()">close</mat-icon>
-<ng-content></ng-content>
+    <mat-icon (click)="close()" style="float: right;">close</mat-icon>
+    <div style="margin-top: 40px;">
+        <ng-content>
+
+        </ng-content>
+    </div>
+
 </div>

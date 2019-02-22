@@ -130,7 +130,6 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
     }
 
     remove(): void {
-        console.log('remove');
         if (this.fileUploadSubscription) {
             this.fileUploadSubscription.unsubscribe();
         }

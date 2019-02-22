@@ -108,7 +108,7 @@ body {
     right: 0;
     width: 300px;
     max-height: 400px;
-    padding: 40px;
+    padding: 20px;
     background-color: #ffffff;
     overflow-y: auto;
     z-index: 2;
@@ -227,3 +227,12 @@ td .mat-progress-spinner {
 /*.mat-sort-header-button {
     margin: 0 auto;
 } */
+
+.ao-float-rigth{
+    float: right;
+}
+
+
+.ao-float-left{
+    float: left;
+}
