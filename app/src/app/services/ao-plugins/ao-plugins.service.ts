@@ -20,8 +20,8 @@ export class AoPluginsService {
                 return AoDataframePipelinePluginComponent;
             case 'RecipePipelinePlugin':
                 return AoRecipePipelinePluginComponent;
-            /*case 'CsvDataframeSourcePlugin':
-                return AoCsvDataframeSourcePluginComponent; */
+            case 'CsvDataframeSourcePlugin':
+                return AoCsvDataframeSourcePluginComponent;
             default:
                 // not supported plugin are managed with a raw json editor
                 return AoRawJsonPluginComponent;
