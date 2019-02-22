@@ -160,7 +160,7 @@ export class AoPipelinePluginComponent extends AoPluginComponent implements Afte
             // movingPlugin.notValidPosition = true;
             console.log('cannot move here');
         } else {
-            movingPlugin.notValidPosition = false;
+            // movingPlugin.notValidPosition = false;
         }
 
     }
