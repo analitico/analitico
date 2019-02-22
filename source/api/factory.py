@@ -75,19 +75,14 @@ class ServerFactory(analitico.factory.Factory):
         # name of the file in cache is determined by its hash so all files are unique and
         # we do not need to check versions, eg. if we have it with the correct name it's
         # the correct version and we can save a rountrip to check with the server
-        storage_file = os.path.join(self.get_cache_directory(), "cache_" + asset["hash"])
+        storage_file = self.get_cache_filename(asset["hash"])
 
         # if not in cache already download it from storage
         if not os.path.isfile(storage_file):
             storage = item.storage
             assert storage
-            storage_path = asset["path"]
-            storage_obj, storage_stream = storage.download_object_via_stream(storage_path)
-            storage_temp_file = storage_file + ".tmp_" + django.utils.crypto.get_random_string()
-            with open(storage_temp_file, "wb") as f:
-                for b in storage_stream:
-                    f.write(b)
-            os.rename(storage_temp_file, storage_file)
+            _, storage_stream = storage.download_object_via_stream(asset["path"])
+            _, storage_file = self.get_cached_stream(storage_stream, asset["hash"])
         return storage_file
 
     def get_url_stream(self, url, binary=False):
@@ -120,28 +115,8 @@ class ServerFactory(analitico.factory.Factory):
             if wants_json:
                 asset_json = json.dumps(asset)
                 return io.StringIO(asset_json)
-
-            storage = item.storage
-            if not storage:
-                raise analitico.plugin.PluginError(
-                    "ServerFactory.get_url_stream - storage is not configured correctly for item: " + self.item.id
-                )
-            storage_path = asset["path"]
-            storage_obj, storage_stream = storage.download_object_via_stream(storage_path)
-
-            # download stream to a cache file then hand over stream to file
-            # the temporary file is named after the hash of the file contents in storage.
-            # if we already have a file in cache with the same name, we can be assured that
-            # its contents are the same as the requested file and we can serve directly from file.
-            storage_file = os.path.join(self.get_cache_directory(), "cache_" + storage_obj.hash)
-            if not os.path.isfile(storage_file):
-                storage_temp_file = storage_file + ".tmp_" + django.utils.crypto.get_random_string()
-                with open(storage_temp_file, "wb") as f:
-                    for b in storage_stream:
-                        f.write(b)
-                os.rename(storage_temp_file, storage_file)
-            return open(storage_file)
-
+            cache_filename = self.get_cache_asset(item, asset_class, asset_id)
+            return open(cache_filename, "rb")
         # base class handles regular URLs
         return super().get_url_stream(url)
 
