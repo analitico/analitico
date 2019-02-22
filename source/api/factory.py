@@ -150,25 +150,30 @@ class ServerFactory(analitico.factory.Factory):
     def get_item(self, item_id):
         """ Loads a model from database given its id whose prefix determines the model type, eg: ws_xxx for Workspace. """
         # TODO limit access to objects available with request credentials
-        assert item_id
-        if item_id.startswith(analitico.DATASET_PREFIX):
-            return api.models.Dataset.objects.get(pk=item_id)
-        if item_id.startswith(analitico.ENDPOINT_PREFIX):
-            return api.models.Endpoint.objects.get(pk=item_id)
-        if item_id.startswith(analitico.JOB_PREFIX):
-            return api.models.Job.objects.get(pk=item_id)
-        if item_id.startswith(analitico.MODEL_PREFIX):
-            return api.models.Model.objects.get(pk=item_id)
-        if item_id.startswith(analitico.RECIPE_PREFIX):
-            return api.models.Recipe.objects.get(pk=item_id)
-        if item_id.startswith(analitico.WORKSPACE_PREFIX):
-            return api.models.Workspace.objects.get(pk=item_id)
+        assert isinstance(item_id, str), "Factory.get_item - item_id should be a string with a valid item identifier"
+        try:
+            if item_id.startswith(analitico.DATASET_PREFIX):
+                return api.models.Dataset.objects.get(pk=item_id)
+            if item_id.startswith(analitico.ENDPOINT_PREFIX):
+                return api.models.Endpoint.objects.get(pk=item_id)
+            if item_id.startswith(analitico.JOB_PREFIX):
+                return api.models.Job.objects.get(pk=item_id)
+            if item_id.startswith(analitico.MODEL_PREFIX):
+                return api.models.Model.objects.get(pk=item_id)
+            if item_id.startswith(analitico.RECIPE_PREFIX):
+                return api.models.Recipe.objects.get(pk=item_id)
+            if item_id.startswith(analitico.WORKSPACE_PREFIX):
+                return api.models.Workspace.objects.get(pk=item_id)
+        except Exception as exc:
+            self.warning("get_item: could not find item %s", item_id)
+            raise exc
         try:
             validate_email(item_id)
             return api.models.User.objects.get(email=item_id)
         except validate_email.ValidationError:
             pass
-        raise NotFound("ServerFactory.get_item - could not find: " + item_id)
+        self.warning("get_item: could not find item type for %s", item_id)
+        raise NotFound("ServerFactory.get_item - could not find given item type " + item_id)
 
 
 # shared instance of server side factory
