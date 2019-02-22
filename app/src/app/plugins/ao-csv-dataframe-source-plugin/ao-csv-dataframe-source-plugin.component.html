@@ -1,5 +1,15 @@
-<mat-card class="ao-plugin-container ao-csv-datafrane-source-plugin ao-csv-datafrane-source-plugin-container">
-    <span>{{data.name}}</span>
+<mat-card class="ao-plugin-container ao-csv-dataframe-source-plugin ao-csv-dataframe-source-plugin-container">
+    <div style="overflow: auto; width: 100%; max-height: 400px;">
+        <table mat-table [dataSource]="tableDS" class="mat-elevation-z8" style="width: 100%;">
+            <ng-container matColumnDef="{{column}}" *ngFor="let column of displayedColumns; let i = index" [sticky]="i===0">
+                <th mat-header-cell *matHeaderCellDef> {{column}} </th>
+                <td mat-cell *matCellDef="let element" style="text-align: left;"> {{element[column]}} </td>
+            </ng-container>
 
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;">
+            </tr>
+        </table>
+    </div>
 
 </mat-card>

@@ -1,14 +1,14 @@
 <mat-sidenav-container class="ao-dataset-view-sidenav-container sidenav-container">
     <mat-sidenav-content>
 
-        <div class="ao-text-center">
-            <h4 class="mat-h4">{{title}}</h4>
-            <div class="ao-padding">
+        <div class="ao-padding">
+            <h4 class="mat-h4 ao-text-center">{{title}}</h4>
+            <div class="">
                 <div *ngIf="!pluginData">
                     <div [fileUploadInputFor]="fileUploadQueue" class="ao-upload-drop-zone"></div>
                 </div>
                 <ng-template app-ao-anchor></ng-template>
-                <div style="margin: 20px auto;">
+                <div style="margin: 20px auto;" class="ao-text-center">
                     <!-- save button -->
                     <button mat-raised-button (click)="save()" style="margin: 10px">Save</button>
                     <!-- Process button -->
@@ -18,8 +18,8 @@
                         </mat-progress-spinner>
                     </button>
                 </div>
-
-
+                <hr>
+                <h4 class="mat-h4 ao-text-center">Output</h4>
                 <app-ao-table-view [data]="data" *ngIf="data"></app-ao-table-view>
             </div>
         </div>
