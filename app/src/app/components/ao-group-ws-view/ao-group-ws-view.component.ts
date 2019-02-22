@@ -84,7 +84,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
         }
     }
 
-    // create a new dataset
+    // create a new item
     createItem() {
         const workspace = this.globalState.getProperty('workspace');
         const params = { 'workspace_id': workspace.id, attributes: {} };
@@ -96,5 +96,19 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
                 // reload
                 super.loadItems();
             });
+    }
+
+    deleteItem(item, $event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+        
+        if (confirm('Delete?')) {
+            this.apiClient.delete(this.baseUrl + '/' + item.id)
+                .then((response: any) => {
+                    // reload
+                    super.loadItems();
+                });
+        }
+
     }
 }

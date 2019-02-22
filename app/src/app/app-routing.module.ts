@@ -7,7 +7,7 @@ import { AoModelsViewComponent } from './components/ao-models-view/ao-models-vie
 import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.component';
 
 const routes: Routes = [
-    { path: 'datasets', component: AoGroupWsViewComponent },
+    { path: 'datasets', component: AoDatasetsViewComponent },
     { path: 'recipes', component: AoGroupWsViewComponent },
     { path: 'models', component: AoModelsViewComponent },
     { path: 'endpoints', component: AoGroupWsViewComponent },
