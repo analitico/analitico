@@ -101,9 +101,9 @@ try:
     sql_ssl_cert_path = os.path.join(BASE_DIR, "../../ssl/cloudsql/client-cert.pem")
     sql_ssl_ca_path = os.path.join(BASE_DIR, "../../ssl/cloudsql/client-ca.pem")
 
-    assert os.path.isfile(sql_ssl_key_path), sql_ssl_key_path + " is missing, please install"
-    assert os.path.isfile(sql_ssl_cert_path), sql_ssl_cert_path + " is missing, please install"
-    assert os.path.isfile(sql_ssl_ca_path), sql_ssl_ca_path + " is missing, please install"
+    # assert os.path.isfile(sql_ssl_key_path), sql_ssl_key_path + " is missing, please install"
+    # assert os.path.isfile(sql_ssl_cert_path), sql_ssl_cert_path + " is missing, please install"
+    # assert os.path.isfile(sql_ssl_ca_path), sql_ssl_ca_path + " is missing, please install"
 
     # MySQL database
     DATABASES = {
