@@ -71,8 +71,6 @@ body {
     height: 100%;
 }
 
-
-
 .ao-text-center {
     text-align: center;
 }
@@ -188,23 +186,24 @@ body {
     margin: 0 !important;
 }
 
-.aonovalid{
+.aonovalid {
     border: 2px solid red !important;
 }
-.ao-invisible{
+
+.ao-invisible {
     opacity: 0;
 }
 
-.ao-dataset-view-sidenav{
+.ao-dataset-view-sidenav {
     padding: 20px;
 }
 
-.ao-new-plugin{
+.ao-new-plugin {
     font-size: 11px;
     cursor: move;
 }
 
-.ao-plugin-delete-button{
+.ao-plugin-delete-button {
     position: absolute;
     bottom: 10px;
     right: 10px;
@@ -214,3 +213,17 @@ body {
     z-index: 1;
     cursor: pointer;
 }
+
+td .mat-progress-spinner {
+    float: right;
+    margin-top: 6px;
+}
+
+.ao-group-ws-table-delete-button {
+    float: right;
+    margin: 7px 0 0 10px;
+}
+
+/*.mat-sort-header-button {
+    margin: 0 auto;
+} */
