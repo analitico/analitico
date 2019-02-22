@@ -15,7 +15,7 @@
         </mat-select>
         <a mat-mini-fab routerLink="/profile" [ngStyle]="{'background-image':'url(' + userPhotoUrl + ')'}" class="ao-profile-icon">{{ userInitial }}</a>
     </mat-toolbar>
-    <mat-sidenav-container class="sidenav-container">
+    <mat-sidenav-container class="sidenav-container" [class.ao-invisible]="!initialized">
         <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'" [mode]="(isHandset$ | async) ? 'over' : 'side'"
             [opened]="!(isHandset$ | async)">
             <!--<mat-nav-list (click)="drawer.close()"> -->

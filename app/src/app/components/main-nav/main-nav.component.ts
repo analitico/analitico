@@ -27,6 +27,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
     selectedWorkspace: any;
     datasetTitle: string;
     newItemParams: any;
+    initialized = false;
 
     isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
         .pipe(
@@ -40,29 +41,57 @@ export class MainNavComponent implements OnInit, OnDestroy {
         this.userInitial = null;
         const that = this;
         this.globalStateObserverSubscription = this.globalState.subscribe(this.onGlobalStateUpdate.bind(this));
-        // load workspaces
-        this.loadWorkspaces();
-        this.getUser();
+        // check user logged
+        this.getUser()
+            .then(() => {
+                this.initialized = true;
+                // load workspaces
+                return this.loadWorkspaces();
+            })
+            .then(() => {
+                const lastWorkspaceId = localStorage.getItem('workspaceId');
+                if (lastWorkspaceId) {
+                    const lastWorkspace = this.getWorkspaceById(lastWorkspaceId);
+                    if (lastWorkspace) {
+                        // set last workspace
+                        return this.setWorkspace(lastWorkspace);
+                    }
+                }
+                if (this.workspaces.length > 0) {
+                    // set first workspace
+                    this.setWorkspace(this.workspaces[0]);
+                }
+            });
+
     }
 
     loadWorkspaces() {
-        this.apiClient.get('/workspaces')
+        return this.apiClient.get('/workspaces')
             .then((response: any) => {
                 this.workspaces = response.data;
-                if (this.workspaces.length > 0) {
-                    // pick up first workspace
-                    let workspace = this.workspaces[0];
-                    this.workspaces.forEach(w => {
-                        // if we have ws_test workspace, select this (for testing)
-                        if (w.id === 'ws_s24') {
-                            workspace = w;
-                            return false;
-                        }
-                    });
-                    // set workspace
-                    this.globalState.setProperty('workspace', workspace);
-                }
             });
+    }
+
+    getWorkspaceById(workspaceId) {
+        for (let i = 0; i < this.workspaces.length; i++) {
+            if (this.workspaces[i].id === workspaceId) {
+                return this.workspaces[i];
+            }
+        }
+        return false;
+    }
+
+    // called by select input control
+    changedWorkspace() {
+        // set new workspace
+        this.setWorkspace(this.selectedWorkspace);
+    }
+
+    setWorkspace(workspace) {
+        // set workspace
+        this.globalState.setProperty('workspace', workspace);
+        // save id
+        localStorage.setItem('workspaceId', workspace.id);
     }
 
     ngOnDestroy() {
@@ -98,11 +127,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
         }
     }
 
-    // called by select input control
-    changedWorkspace() {
-        // set new workspace
-        this.globalState.setProperty('workspace', this.selectedWorkspace);
-    }
+
 
     // set a filter for children components (datasets/recipes/models/etc...)
     setWorkspacefilter() {
@@ -122,7 +147,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
     };
 
     getUser() {
-        this.apiClient.get('/users/me')
+        return this.apiClient.get('/users/me')
             .then((response: any) => {
                 // notify new user
                 this.globalState.setProperty('user', response.data);
