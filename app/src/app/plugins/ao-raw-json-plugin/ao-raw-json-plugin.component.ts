@@ -3,15 +3,12 @@ import { JsonEditorComponent, JsonEditorOptions } from 'ang-jsoneditor';
 import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 
 @Component({
-    selector: 'app-ao-raw-json-plugin',
     templateUrl: './ao-raw-json-plugin.component.html',
     styleUrls: ['./ao-raw-json-plugin.component.css']
 })
 export class AoRawJsonPluginComponent extends AoPluginComponent implements OnInit {
     @ViewChild(JsonEditorComponent) editor: JsonEditorComponent;
     editorOptions: JsonEditorOptions;
-    // the editor component will be bound to another variable to avoid refreshing
-    editorData: any;
     constructor() {
         super();
         // initialize JSON editor
@@ -23,18 +20,22 @@ export class AoRawJsonPluginComponent extends AoPluginComponent implements OnIni
     ngOnInit() {
     }
 
-    setData(data: any) {
-        super.setData(data);
-        if (!this.editorData) {
-            this.editorData = this.data;
-        }
-    }
-
     // called when, after a change, a valid JSON is present in the editor
     // if the JSON is not valid this is not called
     onEditorChange(data: any) {
-        // store changes from editor
-        this.updateData(this.editor.get());
+        const that = this;
+        // this is a special case because we need to completely replace the object
+        // but in JS there is no *pointer
+        // remove all keys
+        Object.keys(this.data).forEach(function (key) { delete that.data[key]; });
+        // copy all keys
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                this.data[key] = data[key];
+            }
+        }
+        // notify change
+        this.notifyChange();
     }
 
 }
