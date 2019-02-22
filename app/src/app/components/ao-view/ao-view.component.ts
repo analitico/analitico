@@ -81,7 +81,7 @@ export class AoViewComponent implements OnInit, OnDestroy {
             }
             that.apiClient.patch(that.baseUrl + '/' + that.item.id, that.item)
                 .then((response: any) => {
-                    that.item = response.data;
+                    // that.item = response.data;
                     that.onSaved();
                     resolve(response.data);
                     // refresh
