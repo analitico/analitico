@@ -7,7 +7,7 @@
                     <b> {{(model.attributes && model.attributes.title) || model.id}}</b>
                 </p>
                 <p>
-                    Best score: <b>{{model.attributes.training.scores &&
+                    Best score: <b>{{model.attributes && model.attributes.training && model.attributes.training.scores &&
                         model.attributes.training.scores.best_score.learn.RMSE}}</b>
                 </p>
             </mat-card-content>
@@ -43,7 +43,7 @@
 
             <ng-container matColumnDef="attributes.training.scores.best_score.learn.RMSE">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Score </th>
-                <td mat-cell *matCellDef="let element"> {{element.attributes.training.scores.best_score.learn.RMSE}}
+                <td mat-cell *matCellDef="let element"> {{element.attributes.training && element.attributes.training.scores.best_score.learn.RMSE}}
                 </td>
             </ng-container>
 

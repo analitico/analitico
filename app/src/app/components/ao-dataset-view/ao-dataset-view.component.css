@@ -3,12 +3,12 @@
 }
 
 .sidenav {
-    width: 100px;
+    width: 10%;
 }
 
 @media (min-width: 768px) {
     .sidenav {
-        width: 180px;
+        width: 20%;
     }
 }
 

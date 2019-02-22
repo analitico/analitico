@@ -40,6 +40,7 @@ import { AoModelsViewComponent } from './components/ao-models-view/ao-models-vie
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.component';
 import { AoGroupViewComponent } from './components/ao-group-view/ao-group-view.component';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @NgModule({
     declarations: [
@@ -90,7 +91,8 @@ import { AoGroupViewComponent } from './components/ao-group-view/ao-group-view.c
         AgGridModule.withComponents([]),
         MatGridListModule,
         FlexLayoutModule,
-        MatSortModule
+        MatSortModule,
+        DragDropModule
     ],
     providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,

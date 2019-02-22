@@ -7,12 +7,16 @@ import { Subject } from 'rxjs';
 export class AoPluginComponent {
     // plugin data change will be notified using subject
     onNewDataSubject: Subject<any>;
-    data: any = { name: '' };
+    data: any;
 
     constructor() {
         this.onNewDataSubject = new Subject();
     }
 
+    // used to get the plugin data
+    getData() {
+        return this.data;
+    }
     // used to set the plugin data
     setData(data: any) {
         // store data
@@ -23,8 +27,12 @@ export class AoPluginComponent {
     updateData(data: any) {
         // store data
         this.data = data;
+        this.notifyChange();
+    }
+
+    notifyChange() {
         // notify data update to subscribers
-        this.onNewDataSubject.next(data);
+        this.onNewDataSubject.next();
     }
 }
 

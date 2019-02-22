@@ -71,9 +71,7 @@ body {
     height: 100%;
 }
 
-.ao-pipeline-plugin {
-    border: 1px solid #eeeeee;
-}
+
 
 .ao-text-center {
     text-align: center;
@@ -97,6 +95,7 @@ body {
 
 .ao-plugin-container {
     margin: 30px auto;
+    padding: 40px !important;
 }
 
 .ao-upload-drop-zone {
@@ -142,11 +141,76 @@ body {
     min-height: 180px;
 }
 
-.ao-clickable{
+.ao-clickable {
     cursor: pointer;
 }
 
-.ao-profile-icon{
+.ao-profile-icon {
     background-repeat: no-repeat;
     background-size: 100%;
+}
+
+.ao-draggable-plugin {
+    position: relative;
+}
+
+.ao-draggable-plugin-handle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #ccc;
+    cursor: move;
+    width: 24px;
+    height: 24px;
+    z-index: 1;
+}
+
+.cdk-drag-preview {
+    /*box-sizing: border-box;
+    border-radius: 4px;
+    box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12); */
+}
+
+.cdk-drag-placeholder {
+    opacity: 0;
+}
+
+.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.ao-pipeline-plugin .cdk-drop-list-dragging .ao-draggable-plugin:not(.cdk-drag-placeholder) {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.ao-pipeline-plugin {
+    padding: 8px !important;
+    margin: 0 !important;
+}
+
+.aonovalid{
+    border: 2px solid red !important;
+}
+.ao-invisible{
+    opacity: 0;
+}
+
+.ao-dataset-view-sidenav{
+    padding: 20px;
+}
+
+.ao-new-plugin{
+    font-size: 11px;
+    cursor: move;
+}
+
+.ao-plugin-delete-button{
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: #ccc;
+    width: 24px;
+    height: 24px;
+    z-index: 1;
+    cursor: pointer;
 }

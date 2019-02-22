@@ -7,12 +7,12 @@
             <p>
                 Receipe id: {{item.attributes.recipe_id}}
             </p>
-            <p>
+            <p *ngIf="item.attributes.training">
                 <b>Training plugins</b><br>
-                Training: {{item.attributes.training.plugins.training}} <br>
-                Prediction: {{item.attributes.training.plugins.prediction}}
+                Training: {{item.attributes.training && item.attributes.training.plugins.training}} <br>
+                Prediction: {{item.attributes.training && item.attributes.training.plugins.prediction}}
             </p>
-            <p>
+            <p *ngIf="item.attributes.training">
                 <b>Data</b> <br>
                 Source records: {{item.attributes.training.data.source_records | number}}<br>
                 Training records: {{item.attributes.training.data.training_records | number}}<br>

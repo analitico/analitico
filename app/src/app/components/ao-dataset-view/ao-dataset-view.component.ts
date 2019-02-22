@@ -29,6 +29,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit, O
     assets: any;
     data: any;
     private newDataSubscriptions: any;
+    plugins: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         private componentFactoryResolver: ComponentFactoryResolver,
@@ -45,6 +46,7 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit, O
         // get the view of the anchor component
         this.viewContainerRef = this.aoAnchor.viewContainerRef;
         this.newDataSubscriptions = [];
+        this.loadPlugins();
     }
 
     ngOnDestroy() {
@@ -53,7 +55,6 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit, O
 
     onLoad() {
         super.onLoad();
-        console.log('onLoad');
         this.uploadAssetUrl = environment.apiUrl + '/datasets/' + this.item.id + '/assets';
         // clear the view
         this.viewContainerRef.clear();
@@ -137,26 +138,63 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit, O
 
     // execute the process command on the dataset and refresh status when finished
     process() {
-        const that = this;
+        if (this.isProcessing) {
+            return;
+        }
         this.isProcessing = true;
-        this.apiClient.post('/datasets/' + this.item.id + '/data/process', {})
-            .then((response: any) => {
-                const jobId = response.data.id;
-                // set a watcher for this job
-                this.jobService.watchJob(jobId)
-                    .subscribe({
-                        next(data: any) {
-                            if (data.status !== 'processing') {
-                                that.isProcessing = false;
-                                // reload
-                                that.loadItem();
-                            }
-                        }
+        this.saveItem()
+            .then(() => {
+                const that = this;
+                this.apiClient.post('/datasets/' + this.item.id + '/data/process', {})
+                    .then((response: any) => {
+                        const jobId = response.data.id;
+                        // set a watcher for this job
+                        this.jobService.watchJob(jobId)
+                            .subscribe({
+                                next(data: any) {
+                                    if (data.status !== 'processing') {
+                                        that.isProcessing = false;
+                                        // reload
+                                        that.loadItem();
+                                    }
+                                }
+                            });
+                    })
+                    .catch(() => {
+                        this.isProcessing = false;
                     });
+            })
+            .catch(() => {
+                this.isProcessing = false;
             });
     }
 
     assetUploaded() {
         this.process();
+    }
+
+    // fake plugin list (should be retrieved using api)
+    _getPlugins(): any {
+        return new Promise(function (resolve, reject) {
+            const plugins = [{
+                'type': 'analitico/plugin',
+                'name': 'analitico.plugin.AugmentDatesDataframePlugin',
+            }];
+            resolve({
+                data: plugins
+            });
+        });
+    }
+
+    // load plugin list
+    loadPlugins() {
+        this._getPlugins()
+            .then((response) => {
+                this.plugins = response.data;
+            });
+    }
+
+    save() {
+        this.saveItem();
     }
 }
