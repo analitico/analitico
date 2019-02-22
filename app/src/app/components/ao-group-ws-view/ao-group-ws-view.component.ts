@@ -101,7 +101,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     deleteItem(item, $event) {
         $event.preventDefault();
         $event.stopPropagation();
-        
+
         if (confirm('Delete?')) {
             this.apiClient.delete(this.baseUrl + '/' + item.id)
                 .then((response: any) => {
@@ -110,5 +110,16 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
                 });
         }
 
+    }
+
+    saveItem(item) {
+        return this.apiClient.patch(this.baseUrl + '/' + item.id, item)
+            .then((response: any) => {
+
+            });
+    }
+
+    changeItemTitle(item) {
+        return this.saveItem(item);
     }
 }
