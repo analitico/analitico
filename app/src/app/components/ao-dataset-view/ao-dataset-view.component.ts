@@ -170,7 +170,12 @@ export class AoDatasetViewComponent extends AoViewComponent implements OnInit, O
     }
 
     assetUploaded() {
-        this.process();
+        // we need to reload the item because it has assets info attached
+        this.loadItem()
+            .then(() => {
+                // now we process to get the source plugin (if discovered)
+                this.process();
+            });
     }
 
     // fake plugin list (should be retrieved using api)

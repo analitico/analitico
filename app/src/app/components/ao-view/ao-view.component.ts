@@ -61,7 +61,7 @@ export class AoViewComponent implements OnInit, OnDestroy {
 
     // loads the json object
     loadItem() {
-        this.apiClient.get(this.itemUrl)
+        return this.apiClient.get(this.itemUrl)
             .then((response: any) => {
                 this.item = response.data;
                 this.onLoad();
