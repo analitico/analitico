@@ -3,7 +3,7 @@ import time
 
 from api.models import Job
 from analitico.utilities import logger, time_ms
-from api.factory import ServerFactory
+from api.factory import ServerFactory, factory
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -31,8 +31,7 @@ class Command(BaseCommand):
         try:
             logger.info("Job_id: %s, started", job.id)
             started_ms = time_ms()
-            with ServerFactory(job=job, request=None) as factory:
-                job.run(request=None)
+            job.run(request=None, action=job.action)
             logger.info("Job_id: %s, completed in %d ms", job.id, time_ms(started_ms))
             return job
         except Exception as exc:
@@ -66,7 +65,8 @@ class Command(BaseCommand):
         if len(options["job_id"]) > 0:
             for job_id in options["job_id"]:
                 try:
-                    self.run_job(job_id)
+                    job = factory.get_item(job_id)
+                    self.run_job(job)
                 except:
                     return WORKER_ERROR
             logger.info("Completed command line jobs, bye")
@@ -83,7 +83,7 @@ class Command(BaseCommand):
                 job = self.get_pending_job(**options)
                 if job:
                     processed_jobs = processed_jobs + 1
-                    self.run_job(job.id)
+                    self.run_job(job)
                     # no delay before next job
                 else:
                     if time_ms(idle_ms) > 15 * 1000:
