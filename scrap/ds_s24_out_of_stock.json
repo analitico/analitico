@@ -1,0 +1,89 @@
+{
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.DataframePipelinePlugin",
+        "plugins": [
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                "source": {
+                    "content_type": "text/csv",
+                    "url": "analitico://workspaces/ws_s24/datasets/ds_s24_order_detail/data/csv"
+                }
+            },
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.FusionDataframePlugin",
+                "notes": "Merge 'order_detail' (left) with 'order' (right) to retrieve 'order.store_id'",
+                "merge": {
+                    "on": "order_id",
+                    "how": "left"
+                },
+                "plugins": [
+                    {
+                        "type": "analitico/plugin",
+                        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                        "source": {
+                            "content_type": "text/csv",
+                            "url": "analitico://workspaces/ws_s24/datasets/ds_s24_order/data/csv",
+                            "schema": {
+                                "columns": [
+                                    {
+                                        "name": "id",
+                                        "rename": "order_id"
+                                    },
+                                    {
+                                        "name": "store_id"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.FusionDataframePlugin",
+                "notes": "Merge 'order_detail+order' (left) with 'store' (right) to retrieve store details",
+                "merge": {
+                    "on": "store_id",
+                    "how": "left"
+                },
+                "plugins": [
+                    {
+                        "type": "analitico/plugin",
+                        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                        "source": {
+                            "content_type": "text/csv",
+                            "url": "analitico://workspaces/ws_s24/datasets/ds_s24_store/data/csv",
+                            "schema": {
+                                "columns": [
+                                    {
+                                        "name": "id",
+                                        "rename": "store_id"
+                                    },
+                                    {
+                                        "name": "name",
+                                        "rename": "store_name"
+                                    },
+                                    {
+                                        "name": "area",
+                                        "rename": "store_area"
+                                    },
+                                    {
+                                        "name": "province",
+                                        "rename": "store_province"
+                                    },
+                                    {
+                                        "name": "ref_id",
+                                        "rename": "store_ref_id"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
