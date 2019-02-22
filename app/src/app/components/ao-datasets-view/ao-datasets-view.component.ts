@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { AoGroupWsViewComponent } from 'src/app/components/ao-group-ws-view/ao-group-ws-view.component';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
@@ -15,8 +15,8 @@ export class AoDatasetsViewComponent extends AoGroupWsViewComponent implements O
     displayedColumns: string[] = ['id', 'attributes.title', 'attributes.created_at', 'actions'];
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
-        protected globalState: AoGlobalStateStore, private jobService: AoJobService) {
-        super(route, apiClient, globalState);
+        protected globalState: AoGlobalStateStore, protected jobService: AoJobService, protected router: Router) {
+        super(route, apiClient, globalState, router);
     }
 
     ngOnInit() {

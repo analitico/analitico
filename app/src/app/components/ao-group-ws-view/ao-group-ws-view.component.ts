@@ -3,7 +3,7 @@
  */
 import { Component, OnInit, OnDestroy, Input, ViewChild } from '@angular/core';
 import { AoGroupViewComponent } from 'src/app/components/ao-group-view/ao-group-view.component';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { MatSort, MatTableDataSource } from '@angular/material';
@@ -27,7 +27,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     @Input() newItemTitle: string;
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
-        protected globalState: AoGlobalStateStore) {
+        protected globalState: AoGlobalStateStore, protected router: Router) {
         super(route, apiClient);
     }
 
@@ -85,16 +85,17 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     }
 
     // create a new item
-    createItem() {
+    addItem() {
         const workspace = this.globalState.getProperty('workspace');
-        const params = { 'workspace_id': workspace.id, attributes: {} };
+        const params = { attributes: { 'workspace_id': workspace.id } };
         if (this.newItemTitle) {
             params.attributes['title'] = this.newItemTitle;
         }
         this.apiClient.post(this.baseUrl, params)
             .then((response: any) => {
-                // reload
-                super.loadItems();
+                // go to new item page
+                this.router.navigate([this.baseUrl + '/' + response.data.id]);
+                // super.loadItems();
             });
     }
 

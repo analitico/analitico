@@ -8,7 +8,13 @@
             </mat-card-content>
         </mat-card>
     </div>
-
+    <div style="margin: 40px 0; float:right;">
+        <a mat-mini-fab class="ao-add-item-button">
+            <i class="material-icons" (click)="addItem()">
+                add
+            </i>
+        </a>
+    </div>
     <div>
         <table mat-table [dataSource]="tableDS" matSort class="mat-elevation-z8" style="width: 100%;">
             <ng-container matColumnDef="id">
@@ -25,7 +31,8 @@
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
                 <td mat-cell *matCellDef="let element" (click)="$event.stopPropagation()">
                     <mat-form-field class="example-full-width">
-                        <input matInput placeholder=""  [(ngModel)]="element.attributes.title" (change)="changeItemTitle(element)">
+                        <input matInput placeholder="" [(ngModel)]="element.attributes.title"
+                            (change)="changeItemTitle(element)">
                     </mat-form-field>
                 </td>
             </ng-container>
@@ -54,4 +61,5 @@
             </tr>
         </table>
     </div>
+
 </div>
