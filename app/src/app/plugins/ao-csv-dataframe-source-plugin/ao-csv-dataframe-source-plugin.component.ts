@@ -37,25 +37,37 @@ export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
     }
 
     buildTable() {
-        this.displayedColumns = ['columnName'];
+        // add first column for column names
+        this.displayedColumns = ['Column'];
         const tableRows = [];
+        // to keep reference of the table rows during loop
         const tableRowsDic = {};
+        // for each column in the schema -> add rows
         this.data.source.schema.columns.forEach(col => {
-            const dic = {columnName: col.name};
+            const dic = { Column: col.name };
             tableRows.push(dic);
-            // keeps reference
+            // keep reference
             tableRowsDic[col.name] = dic;
         });
+
         this.rows.forEach((row, index) => {
-            // add column
+            // for each row add a column with the index as the header
             this.displayedColumns.push('' + index);
+            // for each column of the schema
             this.data.source.schema.columns.forEach(col => {
-                // get row for this column
+                // get row for this column in the transposed table
                 const rowForColumn = tableRowsDic[col.name];
-                // copy column value in row index position
+                // copy value in row index position
                 rowForColumn[index] = row[col.name];
             });
         });
+        // assign data source to table
         this.tableDS = new MatTableDataSource(tableRows);
+        console.log(this.data.source.schema.columns);
+    }
+
+    columnTypeChanged() {
+        // notify change
+        this.notifyChange();
     }
 }
