@@ -6,6 +6,7 @@ import { AoGroupWsViewComponent } from './components/ao-group-ws-view/ao-group-w
 import { AoModelsViewComponent } from './components/ao-models-view/ao-models-view.component';
 import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.component';
 import { AoRecipeViewComponent } from './components/ao-recipe-view/ao-recipe-view.component';
+import { AoEndpointViewComponent } from './components/ao-endpoint-view/ao-endpoint-view.component';
 
 const routes: Routes = [
     { path: 'datasets', component: AoDatasetsViewComponent },
@@ -14,8 +15,8 @@ const routes: Routes = [
     { path: 'endpoints', component: AoGroupWsViewComponent },
     { path: 'datasets/:id', component: AoDatasetViewComponent },
     { path: 'recipes/:id', component: AoRecipeViewComponent },
-    { path: 'models/:id', component: AoModelViewComponent }
-
+    { path: 'models/:id', component: AoModelViewComponent },
+    { path: 'endpoints/:id', component: AoEndpointViewComponent }
 ];
 
 @NgModule({

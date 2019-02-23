@@ -43,6 +43,8 @@ import { AoGroupViewComponent } from './components/ao-group-view/ao-group-view.c
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AoRecipeViewComponent } from './components/ao-recipe-view/ao-recipe-view.component';
 import { AoPipelineViewComponent } from './components/ao-pipeline-view/ao-pipeline-view.component';
+import { AoEndpointViewComponent } from './components/ao-endpoint-view/ao-endpoint-view.component';
+import { AoEndpointPipelinePluginComponent } from './plugins/ao-endpoint-pipeline-plugin/ao-endpoint-pipeline-plugin.component';
 
 @NgModule({
     declarations: [
@@ -68,7 +70,9 @@ import { AoPipelineViewComponent } from './components/ao-pipeline-view/ao-pipeli
         AoModelViewComponent,
         AoGroupViewComponent,
         AoRecipeViewComponent,
-        AoPipelineViewComponent
+        AoPipelineViewComponent,
+        AoEndpointViewComponent,
+        AoEndpointPipelinePluginComponent
     ],
     imports: [
         BrowserModule,
@@ -100,7 +104,7 @@ import { AoPipelineViewComponent } from './components/ao-pipeline-view/ao-pipeli
     ],
     providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,
-        AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent],
+        AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent, AoEndpointPipelinePluginComponent],
     bootstrap: [AppComponent]
 })
 export class AppModule {

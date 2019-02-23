@@ -5,6 +5,7 @@ import { AoDataframePipelinePluginComponent } from 'src/app/plugins/ao-dataframe
 import { AoCsvDataframeSourcePluginComponent } from 'src/app/plugins/ao-csv-dataframe-source-plugin/ao-csv-dataframe-source-plugin.component';
 import { AoRawJsonPluginComponent } from 'src/app/plugins/ao-raw-json-plugin/ao-raw-json-plugin.component';
 import { AoRecipePipelinePluginComponent } from 'src/app/plugins/ao-recipe-pipeline-plugin/ao-recipe-pipeline-plugin.component';
+import { AoEndpointPipelinePluginComponent } from 'src/app/plugins/ao-endpoint-pipeline-plugin/ao-endpoint-pipeline-plugin.component';
 @Injectable({
     providedIn: 'root'
 })
@@ -20,6 +21,8 @@ export class AoPluginsService {
                 return AoDataframePipelinePluginComponent;
             case 'RecipePipelinePlugin':
                 return AoRecipePipelinePluginComponent;
+            case 'EndpointPipelinePlugin':
+                return AoEndpointPipelinePluginComponent;
             case 'CsvDataframeSourcePlugin':
                 return AoCsvDataframeSourcePluginComponent;
             default:
