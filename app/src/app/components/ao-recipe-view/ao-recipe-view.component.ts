@@ -45,14 +45,26 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
             const plugins = [{
                 'type': 'analitico/plugin',
                 'name': 'analitico.plugin.CatBoostRegressorPlugin',
+                'parameters': {
+                    'iterations': 50,
+                    'learning_rate': 1,
+                    'depth0': 8
+                  },
+                  'data': {
+                    'label': ''
+                  }
             },
             {
                 'type': 'analitico/plugin',
                 'name': 'analitico.plugin.CatBoostClassifierPlugin',
-            },
-            {
-                'type': 'analitico/plugin',
-                'name': 'analitico.plugin.PippoPluto',
+                'parameters': {
+                    'iterations': 50,
+                    'learning_rate': 1,
+                    'depth0': 8
+                  },
+                  'data': {
+                    'label': ''
+                  }
             }
 
             ];

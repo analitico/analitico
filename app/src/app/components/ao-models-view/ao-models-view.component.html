@@ -31,7 +31,7 @@
 
             <ng-container matColumnDef="attributes.recipe_id">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Recipe </th>
-                <td mat-cell *matCellDef="let element"> {{element.attributes.recipe_id}} </td>
+                <td mat-cell *matCellDef="let element" routerLink="../recipes/{{element.attributes.recipe_id}}" > {{element.attributes.recipe_id}} </td>
             </ng-container>
 
 
