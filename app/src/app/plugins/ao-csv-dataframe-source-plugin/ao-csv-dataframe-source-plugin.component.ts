@@ -28,6 +28,7 @@ export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
 
     loadSource() {
         // load first 100 rows
+        // TODO find a better way to get the URL
         const url = this.data.source.url.substring(this.data.source.url.indexOf('/datasets')) + '?format=json&page=0&page_size=100';
         this.apiClient.get(url)
             .then((response: any) => {
