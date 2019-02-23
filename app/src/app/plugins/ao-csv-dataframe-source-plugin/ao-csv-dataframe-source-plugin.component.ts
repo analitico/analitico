@@ -1,5 +1,6 @@
 /**
- * CsvDataframeSourcePlugin is used to upload a csv file that will be available
+ * CsvDataframeSourcePlugin is used to observe and edit data types of
+ * data coming from a csv file that will be available
  * as a data source for further processing in the platform
  */
 import { Component, OnInit, OnDestroy } from '@angular/core';
