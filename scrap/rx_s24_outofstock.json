@@ -1,0 +1,104 @@
+{
+  "plugin":{
+    "type":"analitico/plugin",
+    "name":"analitico.plugin.RecipePipelinePlugin",
+    "plugins":[
+      {
+        "type":"analitico/plugin",
+        "name":"analitico.plugin.CsvDataframeSourcePlugin",
+        "source":{
+          "content_type":"text/csv",
+          "url":"analitico://datasets/ds_s24_outofstock/data/data.csv",
+          "schema":{
+            "columns":[
+              {
+                "name":"id",
+                "rename": "odt_id",
+                "type":"string"
+              },
+              {
+                "name":"ean",
+                "rename": "odt_ean",
+                "type":"category"
+              },
+              {
+                "name":"name",
+                "rename": "odt_name",
+                "type":"string"
+              },
+              {
+                "name":"category_id",
+                "rename":"odt_category_id",
+                "type":"category"
+              },
+              {
+                "name":"category_name",
+                "rename":"odt_category_name",
+                "type":"category"
+              },
+              {
+                "name":"replaceable",
+                "rename":"odt_replaceable",
+                "type":"category"
+              },
+              {
+                "name":"variable_weight",
+                "rename":"odt_variable_weight",
+                "type":"float"
+              },
+              {
+                "name":"price",
+                "rename":"odt_price",
+                "type":"float"
+              },
+              {
+                "name":"price_per_type",
+                "rename":"odt_price_per_type",
+                "type":"float"
+              },
+              {
+                "name":"surcharge_fixed",
+                "rename":"odt_surcharge_fixed",
+                "type":"float"
+              },
+              {
+                "name":"touched_at",
+                "rename":"odt_touched_at",
+                "type":"datetime"
+              },
+              {
+                "name":"status",
+                "rename":"odt_status",
+                "type":"category"
+              },
+              {
+                "name":"order_id",
+                "rename": "ord_id",
+                "type":"integer"
+              }
+            ]
+          }
+    
+
+
+
+        }
+      },
+      {
+        "type":"analitico/plugin",
+        "name":"s24.plugin.OutOfStockPreprocessPlugin"
+      },
+      {
+        "type":"analitico/plugin",
+        "name":"analitico.plugin.CatBoostClassificatorPlugin",
+        "parameters":{
+          "iterations":50,
+          "learning_rate":1
+        },
+        "data":{
+          "label":"pay_time.min"
+        }
+      }
+    ]
+  }
+}
