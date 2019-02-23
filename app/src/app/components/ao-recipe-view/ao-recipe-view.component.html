@@ -16,8 +16,14 @@
                     </button>
                 </div>
                 <hr>
-                <h4 class="mat-h4 ao-text-center">Output</h4>
-             
+                <h4 class="mat-h4 ao-text-center">Models</h4>
+                <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
+               
+                    <mat-card *ngFor="let model of models"  fxFlex="0 1 calc(25% - 14px)" class="ao-card  ao-clickable" routerLink="/models/{{model.id}}">
+                        {{model.title || model.id}}
+                    </mat-card>
+                </div>
+                
             </div>
         </div>
 

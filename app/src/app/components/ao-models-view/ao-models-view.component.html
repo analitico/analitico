@@ -1,7 +1,7 @@
 <div class="ao-padding">
     <h3>Models</h3>
     <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <mat-card *ngFor="let model of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card">
+        <mat-card *ngFor="let model of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card ao-clickable" routerLink="/models/{{model.id}}">
             <mat-card-content>
                 <p>
                     <b> {{(model.attributes && model.attributes.title) || model.id}}</b>

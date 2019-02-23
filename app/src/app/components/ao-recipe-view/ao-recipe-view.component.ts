@@ -16,6 +16,7 @@ import { AoPipelineViewComponent } from '../ao-pipeline-view/ao-pipeline-view.co
 export class AoRecipeViewComponent extends AoPipelineViewComponent implements OnInit, OnDestroy {
 
     isProcessing = false;
+    models: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         protected componentFactoryResolver: ComponentFactoryResolver,
@@ -32,8 +33,21 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
 
     onLoad() {
         super.onLoad();
+        this.loadModels();
     }
 
+    loadModels() {
+        this.apiClient.get('/models')
+            .then((response: any) => {
+                this.models = [];
+                response.data.forEach(model => {
+                    if (model.attributes.recipe_id === this.item.id) {
+                        this.models.push(model);
+                    }
+                });
+            });
+
+    }
 
     process() {
 
@@ -49,10 +63,10 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
                     'iterations': 50,
                     'learning_rate': 1,
                     'depth0': 8
-                  },
-                  'data': {
+                },
+                'data': {
                     'label': ''
-                  }
+                }
             },
             {
                 'type': 'analitico/plugin',
@@ -61,10 +75,10 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
                     'iterations': 50,
                     'learning_rate': 1,
                     'depth0': 8
-                  },
-                  'data': {
+                },
+                'data': {
                     'label': ''
-                  }
+                }
             }
 
             ];

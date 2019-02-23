@@ -1,6 +1,6 @@
 <div class="ao-padding">
     <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <mat-card *ngFor="let item of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card">
+        <mat-card *ngFor="let item of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card  ao-clickable" routerLink="/datasets/{{item.id}}">
             <mat-card-content>
                 <p>
                     <b> {{(item.attributes && item.attributes.title) || item.id}}</b>

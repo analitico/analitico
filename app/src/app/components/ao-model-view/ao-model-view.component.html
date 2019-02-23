@@ -4,9 +4,8 @@
             <p>
                 <b> {{(item.attributes && item.attributes.title) || item.id}}</b>
             </p>
-            <p>
-                Receipe id: {{item.attributes.recipe_id}}
-            </p>
+            <p *ngIf="item && item.attributes">Recipe <a routerLink="/recipes/{{item.attributes.recipe_id}}">{{item.attributes.recipe_id}}</a></p>
+         
             <p *ngIf="item.attributes.training">
                 <b>Training plugins</b><br>
                 Training: {{item.attributes.training && item.attributes.training.plugins.training}} <br>
