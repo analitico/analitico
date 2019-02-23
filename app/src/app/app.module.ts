@@ -41,6 +41,8 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { AoModelViewComponent } from './components/ao-model-view/ao-model-view.component';
 import { AoGroupViewComponent } from './components/ao-group-view/ao-group-view.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { AoRecipeViewComponent } from './components/ao-recipe-view/ao-recipe-view.component';
+import { AoPipelineViewComponent } from './components/ao-pipeline-view/ao-pipeline-view.component';
 
 @NgModule({
     declarations: [
@@ -64,7 +66,9 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
         AoGroupWsViewComponent,
         AoModelsViewComponent,
         AoModelViewComponent,
-        AoGroupViewComponent
+        AoGroupViewComponent,
+        AoRecipeViewComponent,
+        AoPipelineViewComponent
     ],
     imports: [
         BrowserModule,

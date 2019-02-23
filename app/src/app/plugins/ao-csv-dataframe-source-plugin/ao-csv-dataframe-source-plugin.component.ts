@@ -65,7 +65,6 @@ export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
         });
         // assign data source to table
         this.tableDS = new MatTableDataSource(tableRows);
-        console.log(this.data.source.schema.columns);
     }
 
     columnTypeChanged() {

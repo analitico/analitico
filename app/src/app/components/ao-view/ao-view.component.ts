@@ -23,7 +23,7 @@ export class AoViewComponent implements OnInit, OnDestroy {
     baseUrl: string;
     itemUrl: string;
 
-    constructor(private route: ActivatedRoute, protected apiClient: AoApiClientService) {
+    constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService) {
 
     }
 

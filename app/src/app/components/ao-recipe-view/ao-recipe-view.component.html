@@ -1,0 +1,34 @@
+<mat-sidenav-container class="ao-recipe-view-sidenav-container sidenav-container">
+    <mat-sidenav-content>
+
+        <div class="ao-padding">
+            <h4 class="mat-h4 ao-text-center">{{title}}</h4>
+            <div class="">
+                <ng-template app-ao-anchor></ng-template>
+                <div style="margin: 20px auto;" class="ao-text-center">
+                    <!-- save button -->
+                    <button mat-raised-button (click)="save()" style="margin: 10px">Save</button>
+                    <!-- Process button -->
+                    <button mat-raised-button (click)="process()" style="margin: 10px">Process
+                        <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20"
+                            [strokeWidth]="4">
+                        </mat-progress-spinner>
+                    </button>
+                </div>
+                <hr>
+                <h4 class="mat-h4 ao-text-center">Output</h4>
+                <app-ao-table-view [data]="data" *ngIf="data"></app-ao-table-view>
+            </div>
+        </div>
+
+    </mat-sidenav-content>
+    <mat-sidenav mode="side" position="end" [opened]="true" class="ao-recipe-view-sidenav sidenav">
+        <div class="" cdkDropList [cdkDropListConnectedTo]="['ao-plugin-destination']" [cdkDropListData]="plugins">
+            <div *ngFor="let plugin of plugins" cdkDrag class="ao-new-plugin">
+                <mat-card>
+                    {{plugin.name.replace('analitico.plugin.', '')}}
+                </mat-card>
+            </div>
+        </div>
+    </mat-sidenav>
+</mat-sidenav-container>
