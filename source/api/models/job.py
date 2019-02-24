@@ -119,7 +119,9 @@ class Job(ItemMixin, models.Model):
                 self.status = Job.JOB_STATUS_COMPLETED
             except Exception as exc:
                 self.status = Job.JOB_STATUS_FAILED
-                factory.error("Job.run - error while running job " + self.id + " on item " + self.item_id, exc_info=exc)
+                factory.error(
+                    "Job.run - error while running job " + self.id + " on item " + self.item_id, exception=exc
+                )
                 raise exc
             finally:
                 self.save()
