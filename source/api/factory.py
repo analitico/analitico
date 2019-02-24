@@ -137,7 +137,9 @@ class ServerFactory(analitico.factory.Factory):
                 with open(fullpath, "rb") as f:
                     # if asset has a .info companion read as extra info on the asset
                     extras_path = fullpath + ".info"
-                    extras = analitico.utilities.read_json(extras_path) if os.path.isfile(extras_path) else None
+                    extras = analitico.utilities.read_json(extras_path) if os.path.isfile(extras_path) else {}
+                    if fullpath.endswith(".csv") and "rows" not in extras:
+                        extras["rows"] = analitico.utilities.get_csv_row_count(fullpath)
                     # upload asset and extras, item will take care of saving to database
                     item.upload_asset_stream(f, "data", path, path_size, None, path, extras)
 
