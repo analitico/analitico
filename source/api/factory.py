@@ -31,7 +31,7 @@ import api.plugin
 try:
     # import plugins for Supermercato24 (if available)
     import s24.plugin
-except:
+except Exception as exc:
     pass
 
 # pylint: disable=no-member

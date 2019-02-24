@@ -53,7 +53,7 @@ def api_exception_handler(exc: Exception, context) -> Response:
     # other exceptions may be things we didn't foresee so report as 500
     logger.error(exc)
     # response = exception_handler(exc, context)
-    #return Response({"error": {"status": "500", "code": type(exc).__name__, "detail": repr(exc)}}, 500)
+    # return Response({"error": {"status": "500", "code": type(exc).__name__, "detail": repr(exc)}}, 500)
     return Response({"error": {"status": "500", "code": type(exc).__name__, "detail": str(exc)}}, 500)
 
 
