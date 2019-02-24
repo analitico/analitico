@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.DatasetTests",
+                "api.test.DatasetTests.test_dataset_upload_process_data",
                 "-v",
                 "2"
             ],
@@ -77,12 +77,12 @@
             "name": "Worker (django)",
             "type": "python",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/manage.py",
+            "cwd": "${workspaceFolder}/source",
+            "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
             "args": [
-                "trainer",
-                "trn_c8C9o5BSKrps"
+                "worker",
+                "jb_ds_s24_outofstock"
             ],
             "django": true
         }

@@ -13,10 +13,70 @@
             },
             {
                 "type": "analitico/plugin",
+                "name": "analitico.plugin.TransformDataframePlugin",
+                "schema": {
+                    "columns": [
+                        {
+                            "name": "id",
+                            "rename": "odt_id"
+                        },
+                        {
+                            "name": "ean",
+                            "rename": "odt_ean"
+                        },
+                        {
+                            "name": "name",
+                            "rename": "odt_name"
+                        },
+                        {
+                            "name": "category_id",
+                            "rename": "category_id"
+                        },
+                        {
+                            "name": "category_name",
+                            "rename": "odt_category_name"
+                        },
+                        {
+                            "name": "replaceable",
+                            "rename": "odt_replaceable"
+                        },
+                        {
+                            "name": "variable_weight",
+                            "rename": "odt_variable_weight"
+                        },
+                        {
+                            "name": "price",
+                            "rename": "odt_price"
+                        },
+                        {
+                            "name": "price_per_type",
+                            "rename": "odt_price_per_type"
+                        },
+                        {
+                            "name": "surcharge_fixed",
+                            "rename": "odt_surcharge_fixed"
+                        },
+                        {
+                            "name": "touched_at",
+                            "rename": "odt_touched_at"
+                        },
+                        {
+                            "name": "status",
+                            "rename": "odt_status"
+                        },
+                        {
+                            "name": "order_id",
+                            "rename": "ord_id"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "analitico/plugin",
                 "name": "analitico.plugin.FusionDataframePlugin",
                 "notes": "Merge 'order_detail' (left) with 'order' (right) to retrieve 'order.store_id'",
                 "merge": {
-                    "on": "order_id",
+                    "on": "ord_id",
                     "how": "left"
                 },
                 "plugins": [
@@ -30,10 +90,11 @@
                                 "columns": [
                                     {
                                         "name": "id",
-                                        "rename": "order_id"
+                                        "rename": "ord_id"
                                     },
                                     {
-                                        "name": "store_id"
+                                        "name": "store_id",
+                                        "rename": "sto_id"
                                     }
                                 ]
                             }
@@ -46,7 +107,7 @@
                 "name": "analitico.plugin.FusionDataframePlugin",
                 "notes": "Merge 'order_detail+order' (left) with 'store' (right) to retrieve store details",
                 "merge": {
-                    "on": "store_id",
+                    "on": "sto_id",
                     "how": "left"
                 },
                 "plugins": [
@@ -60,23 +121,26 @@
                                 "columns": [
                                     {
                                         "name": "id",
-                                        "rename": "store_id"
+                                        "rename": "sto_id"
                                     },
                                     {
                                         "name": "name",
-                                        "rename": "store_name"
+                                        "rename": "sto_name"
                                     },
                                     {
                                         "name": "area",
-                                        "rename": "store_area"
+                                        "rename": "sto_area",
+                                        "type": "category"
                                     },
                                     {
                                         "name": "province",
-                                        "rename": "store_province"
+                                        "rename": "sto_province",
+                                        "type": "category"
                                     },
                                     {
                                         "name": "ref_id",
-                                        "rename": "store_ref_id"
+                                        "rename": "sto_ref_id",
+                                        "type": "category"
                                     }
                                 ]
                             }
