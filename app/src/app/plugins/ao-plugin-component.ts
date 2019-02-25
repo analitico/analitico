@@ -8,6 +8,7 @@ export class AoPluginComponent {
     // plugin data change will be notified using subject
     onNewDataSubject: Subject<any>;
     data: any;
+    sourcePluginData: any;
 
     constructor() {
         this.onNewDataSubject = new Subject();
@@ -33,6 +34,10 @@ export class AoPluginComponent {
     notifyChange() {
         // notify data update to subscribers
         this.onNewDataSubject.next();
+    }
+
+    setSourcePluginData(data: any) {
+        this.sourcePluginData = data;
     }
 }
 
