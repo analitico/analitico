@@ -8,50 +8,40 @@
         </span>
         <div class="ao-spacer"></div>
         <mat-select placeholder="Workspace" [(ngModel)]="selectedWorkspace" (selectionChange)="changedWorkspace()"
-            class="ao-toolbar-workspace-selector">
+            class="ao-toolbar-workspace-selector" *ngIf="workspaces && workspaces.length > 1">
             <mat-option *ngFor="let workspace of workspaces" [value]="workspace">
                 {{(workspace.attributes && workspace.attributes.title) || workspace.id}}
             </mat-option>
         </mat-select>
-        <a mat-mini-fab routerLink="/profile" [ngStyle]="{'background-image':'url(' + userPhotoUrl + ')'}" class="ao-profile-icon">{{ userInitial }}</a>
+        <a mat-mini-fab routerLink="/profile" [ngStyle]="{'background-image':'url(' + userPhotoUrl + ')'}"
+            class="ao-profile-icon">{{ userInitial }}</a>
     </mat-toolbar>
     <mat-sidenav-container class="sidenav-container" [class.ao-invisible]="!initialized">
-        <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'" [mode]="(isHandset$ | async) ? 'over' : 'side'"
-            [opened]="!(isHandset$ | async)">
+        <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+            [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="!(isHandset$ | async)">
             <!--<mat-nav-list (click)="drawer.close()"> -->
             <div class="ao-padding ao-left-side-nav">
-                <div class="ao-margin-bottom">
-
-                    <a routerLink="/datasets"><h3>Datasets</h3></a>
-
-                   <!-- <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
+                <mat-list>
+                    <!-- <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
                    -->
-                </div>
 
-                <div class="ao-margin-top-bottom">
-
-                    <a routerLink="/recipes"><h3>Recipes</h3></a>
-
-                    <!--<app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
-                    -->
-                </div>
-
-                <div class="ao-margin-top-bottom">
-
-                    <a routerLink="/models"><h3> Models</h3></a>
-
-                    <!--<app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [allowItemCreation]="false"></app-ao-nav-list-from-url>
-                    -->
-                </div>
-
-
-                <div class="ao-margin-top-bottom">
-
-                    <a routerLink="/endpoints"><h3>Endpoints</h3></a>
-
-                    <!--<app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
-                    -->
-                </div>
+                    <mat-list-item routerLink="/datasets">
+                        <mat-icon mat-list-icon>list_alt</mat-icon>
+                        <h4 mat-line>Datasets</h4>
+                    </mat-list-item>
+                    <mat-list-item routerLink="/recipes">
+                        <mat-icon mat-list-icon>receipt_outline</mat-icon>
+                        <h4 mat-line>Recipes</h4>
+                    </mat-list-item>
+                    <mat-list-item routerLink="/models">
+                        <mat-icon mat-list-icon>folder_outline</mat-icon>
+                        <h4 mat-line>Models</h4>
+                    </mat-list-item>
+                    <mat-list-item routerLink="/endpoints">
+                        <mat-icon mat-list-icon>cloud_outline</mat-icon>
+                        <h4 mat-line>Endpoints</h4>
+                    </mat-list-item>
+                </mat-list>
             </div>
 
         </mat-sidenav>
