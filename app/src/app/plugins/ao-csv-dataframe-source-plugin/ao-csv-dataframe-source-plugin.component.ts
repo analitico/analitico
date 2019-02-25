@@ -44,6 +44,19 @@ export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
         const tableRows = [];
         // to keep reference of the table rows during loop
         const tableRowsDic = {};
+
+        if (!this.data.source.schema) {
+            this.data.source.schema = { columns: []};
+            // build from data
+            const firstDataRow = this.rows[0];
+            for (const key in firstDataRow) {
+                if (firstDataRow.hasOwnProperty(key)) {
+                    this.data.source.schema.columns.push({
+                        name: key
+                    });
+                }
+            }
+        }
         // for each column in the schema -> add rows
         this.data.source.schema.columns.forEach(col => {
             const dic = { Column: col.name };
