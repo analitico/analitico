@@ -1,6 +1,6 @@
 <div>
     <div class="ao-nav-list-item">
-        <a routerLink="{{_url}}" routerLinkActive="active" 
+        <a routerLink="{{url}}" routerLinkActive="active" 
             [routerLinkActiveOptions]="{exact: true}" title="{{title}}" (dblclick)="toggleList($event)">
             <mat-icon (click)="toggleList($event);" class="ao-arrow-icon">
                 {{isCollapsed ? 'arrow_right' : 'arrow_drop_down'}}
@@ -13,7 +13,7 @@
     </div>
     <div class="ao-nav-list-children" [class.ao-collapsed]="isCollapsed">
         <div *ngFor="let item of items" class="ao-nav-list-item">
-            <a routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)"
+            <a routerLink="{{url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)"
                 title="{{(item.attributes && item.attributes.title) || item.id}}">
                 {{(item.attributes && item.attributes.title) || item.id}}
             </a>
