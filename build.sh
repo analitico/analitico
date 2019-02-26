@@ -2,6 +2,7 @@
 # exit if error
 set -e
 # Build and test execution
+cd /home/www/analitico/
 echo "Injecting env"
 source analitico-env
 export LANG=C.UTF-8
@@ -24,29 +25,13 @@ echo "$ANALITICO_MYSQL_SSL_CERT" | base64 -d -w0 | tr -d '\r' > /home/www/ssl/cl
 echo "$ANALITICO_MYSQL_SSL_KEY" | base64 -d -w0 | tr -d '\r' > /home/www/ssl/cloudsql/client-key.pem
 chmod 644 /home/www/ssl/cloudsql/*
 
-echo "Installing requirements"
-source venv/bin/activate
-pip3 install -r requirements.txt
-
-cd source
-
-echo "Build Static"
-./manage.py collectstatic --noinput
-
-echo "Running python tests"
-./manage.py test
-
-echo "Install angular modules"
-cd /home/www/analitico/app
-npm install
-
-echo "Execute Angular tests"
-#ng test
-
-echo "Build Angular app"
-ng build --prod --outputHashing=all
-
-# make tmp and subfolders public
-chmod -R 777 /tmp
+# build static python and test
+./build-python.sh
+# build documentation
+./build-docs.sh
+# test angular app
+./test-app.sh
+# build angular app for production
+./build-app.sh
 
 echo "Done"
