@@ -12,7 +12,7 @@ import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 })
 export class AoDatasetsViewComponent extends AoGroupWsViewComponent implements OnInit {
 
-    displayedColumns: string[] = ['id', 'attributes.title', 'attributes.created_at', 'actions'];
+    displayedColumns: string[] = ['attributes.title', 'attributes.created_at', 'actions'];
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected globalState: AoGlobalStateStore, protected jobService: AoJobService, protected router: Router) {

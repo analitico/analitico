@@ -1,7 +1,8 @@
 <div class="ao-padding">
     <h3>Models</h3>
     <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <mat-card *ngFor="let model of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card ao-clickable" routerLink="/models/{{model.id}}">
+        <mat-card *ngFor="let model of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card ao-clickable"
+            routerLink="/models/{{model.id}}">
             <mat-card-content>
                 <p>
                     <b> {{(model.attributes && model.attributes.title) || model.id}}</b>
@@ -18,20 +19,21 @@
         <table mat-table [dataSource]="tableDS" matSort class="mat-elevation-z8" style="width: 100%;">
 
 
-            <ng-container matColumnDef="id">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Id </th>
-                <td mat-cell *matCellDef="let element"> {{element.id}} </td>
-            </ng-container>
-
             <ng-container matColumnDef="attributes.title">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
-                <td mat-cell *matCellDef="let element"> {{element.attributes.title}} </td>
+                <td mat-cell *matCellDef="let element">
+                    <mat-form-field class="example-full-width">
+                        <input matInput placeholder="{{element.id}}" [(ngModel)]="element.attributes.title"
+                            (change)="changeItemTitle(element)" (click)="$event.stopPropagation()">
+                    </mat-form-field>
+                </td>
             </ng-container>
 
 
             <ng-container matColumnDef="attributes.recipe_id">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Recipe </th>
-                <td mat-cell *matCellDef="let element" routerLink="/recipes/{{element.attributes.recipe_id}}" > {{element.attributes.recipe_id}} </td>
+                <td mat-cell *matCellDef="let element" routerLink="/recipes/{{element.attributes.recipe_id}}">
+                    {{element.attributes.recipe_id}} </td>
             </ng-container>
 
 
@@ -43,12 +45,14 @@
 
             <ng-container matColumnDef="attributes.training.scores.best_score.learn.RMSE">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Score </th>
-                <td mat-cell *matCellDef="let element"> {{element.attributes.training && element.attributes.training.scores.best_score.learn.RMSE}}
+                <td mat-cell *matCellDef="let element">
+                    {{element.attributes.training && element.attributes.training.scores.best_score.learn.RMSE}}
                 </td>
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" routerLink="./{{row.id}}" class="ao-clickable"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" routerLink="./{{row.id}}" class="ao-clickable">
+            </tr>
         </table>
     </div>
 </div>

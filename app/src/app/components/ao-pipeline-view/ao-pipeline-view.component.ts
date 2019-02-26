@@ -104,7 +104,7 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
     // called when the model is changed by plugins
     onNewDataFromPlugin(): void {
         // we want to wait a bit before saving
-        this.checkIfNeedToSave();
+        // this.checkIfNeedToSave();
     }
     // wait a bit before automatically saving changes to object
     checkIfNeedToSave() {

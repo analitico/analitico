@@ -17,22 +17,13 @@
     </div>
     <div>
         <table mat-table [dataSource]="tableDS" matSort class="mat-elevation-z8" style="width: 100%;">
-            <ng-container matColumnDef="id">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Id </th>
-                <td mat-cell *matCellDef="let element">
-
-                    {{element.id}}
-
-
-                </td>
-            </ng-container>
 
             <ng-container matColumnDef="attributes.title">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
-                <td mat-cell *matCellDef="let element" (click)="$event.stopPropagation()">
-                    <mat-form-field class="example-full-width">
-                        <input matInput placeholder="" [(ngModel)]="element.attributes.title"
-                            (change)="changeItemTitle(element)">
+                <td mat-cell *matCellDef="let element" >
+                    <mat-form-field class="example-full-width" >
+                        <input matInput placeholder="{{element.id}}" [(ngModel)]="element.attributes.title"
+                            (change)="changeItemTitle(element)" (click)="$event.stopPropagation()">
                     </mat-form-field>
                 </td>
             </ng-container>

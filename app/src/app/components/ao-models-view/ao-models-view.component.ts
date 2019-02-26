@@ -22,7 +22,7 @@ export class AoModelsViewComponent extends AoGroupWsViewComponent implements OnI
 
     ngOnInit() {
         super.ngOnInit();
-        this.displayedColumns = ['id', 'attributes.title', 'attributes.recipe_id', 'attributes.created_at',
+        this.displayedColumns = ['attributes.title', 'attributes.recipe_id', 'attributes.created_at',
             'attributes.training.scores.best_score.learn.RMSE'];
     }
 

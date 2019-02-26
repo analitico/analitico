@@ -20,7 +20,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     private originalItems: any;
     // bar with top items
     topItems = [];
-    displayedColumns: string[] = ['id', 'attributes.title', 'attributes.created_at'];
+    displayedColumns: string[] = ['attributes.title', 'attributes.created_at'];
     tableDS;
 
     @ViewChild(MatSort) sort: MatSort;
