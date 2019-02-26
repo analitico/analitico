@@ -8,12 +8,9 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from api.models import Token, User
-
-import analitico
 from analitico.utilities import read_json, get_dict_dot
 
 # pylint: disable=no-member
-
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
