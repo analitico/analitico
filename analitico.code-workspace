@@ -26,7 +26,7 @@
 			"sdk/build": true
 		},
 		"python.unitTest.cwd": "source",
-		"python.unitTest.unittestEnabled": true,
-		"editor.fontFamily": "'Ubuntu Mono', 'Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback'"
+		"editor.fontFamily": "'Ubuntu Mono', 'Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback'",
+		"python.unitTest.pyTestEnabled": true
 	}
 }

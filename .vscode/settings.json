@@ -9,7 +9,6 @@
     ],
     "python.unitTest.pyTestEnabled": true,
     "python.unitTest.nosetestsEnabled": false,
-    "python.unitTest.unittestEnabled": true,
     "python.pythonPath": "venv/bin/python",
     "python.envFile": "${workspaceFolder}/source/.env",
     "python.unitTest.cwd": "${workspaceFolder}/source",
