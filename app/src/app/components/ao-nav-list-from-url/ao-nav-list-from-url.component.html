@@ -1,15 +1,22 @@
 <div>
-    <mat-nav-list dense>
-        <mat-list-item *ngIf="allowItemCreation">
-            <a matLine (click)="createNewItem()" title="Create new">
-                new
-            </a>
-        </mat-list-item>
-        <mat-list-item *ngFor="let item of items">
-            <a matLine routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)"
-                title="{{item.id}}" class="ao-nav-list-item">
+    <div class="ao-nav-list-item">
+        <a routerLink="{{_url}}" routerLinkActive="active" 
+            [routerLinkActiveOptions]="{exact: true}" title="{{title}}" (dblclick)="toggleList($event)">
+            <mat-icon (click)="toggleList($event);" class="ao-arrow-icon">
+                {{isCollapsed ? 'arrow_right' : 'arrow_drop_down'}}
+            </mat-icon>
+             <mat-icon *ngIf="icon" class="ao-icon">
+                {{icon}}
+            </mat-icon>
+            {{title}}
+        </a>
+    </div>
+    <div class="ao-nav-list-children" [class.ao-collapsed]="isCollapsed">
+        <div *ngFor="let item of items" class="ao-nav-list-item">
+            <a routerLink="{{_url}}/{{item.id}}" routerLinkActive="active" (click)="selectItem(item)"
+                title="{{(item.attributes && item.attributes.title) || item.id}}">
                 {{(item.attributes && item.attributes.title) || item.id}}
             </a>
-        </mat-list-item>
-    </mat-nav-list>
+        </div>
+    </div>
 </div>

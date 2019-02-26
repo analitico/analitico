@@ -19,6 +19,7 @@ export class AoNavListComponent implements OnInit {
     protected _filter: any;
     protected _sortFunction: any;
     protected _items: any;
+    @Input() title: string;
 
     @Input() set filter(val: any) {
         if (val) {

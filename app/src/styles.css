@@ -15,7 +15,9 @@ html, body {
 body {
     margin: 0;
     font-family: Roboto, "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
+
 
 .ao-spacer {
     flex: 1 1 auto;
@@ -71,8 +73,10 @@ body {
     height: 100%;
 }
 
-.sidenav{
-    padding: 20px;
+@media (min-width: 768px) {
+    .sidenav {
+        width: 256px !important;
+    }
 }
 
 .ao-text-center {
@@ -121,10 +125,6 @@ body {
 
 .ao-upload-queue button {
     display: none;
-}
-
-.ao-left-side-nav a {
-    font-size: 14px !important;
 }
 
 .ao-toolbar-workspace-selector {
@@ -248,4 +248,70 @@ td .mat-progress-spinner {
 
 .ao-bold {
     font-weight: bold;
+}
+
+.ao-nav-list-item {
+    display: block;
+    color: #5f6368;
+}
+
+.ao-nav-list-item a {
+    text-decoration: none;
+    font-size: 13px;
+    word-wrap: none;
+    white-space: nowrap;
+    color: #5f6368;
+    display: block;
+    overflow: hidden;
+    height: 38px;
+}
+
+.ao-nav-list-item .ao-icon {
+    padding-right: 6px;
+}
+
+.ao-nav-list-item .ao-arrow-icon{
+    color: #5f6368 !important;
+}
+
+.ao-left-side-nav {
+    max-width: 100%;
+    padding-right: 24px;
+    padding-top: 50px;
+}
+
+.ao-nav-list-item a.active {
+    background-color: rgb(232, 240, 254);
+    border-top-right-radius: 66px;
+    border-bottom-right-radius: 66px;
+    color: #1967d2;
+    font-weight: 600;
+}
+
+.ao-nav-list-item a {
+    padding-left: 10px;
+    user-select: none;
+    padding-right: 10px;
+}
+
+
+.ao-nav-list-children .ao-nav-list-item a {
+    padding-left: 68px;
+    height: 30px;
+    line-height: 30px;
+    text-overflow: ellipsis;
+}
+
+.ao-nav-list-children {
+    transition: linear 350ms;
+    overflow: hidden;
+}
+
+.ao-collapsed {
+    height: 0;
+}
+
+app-ao-nav-list-from-url mat-icon {
+    top: 8px;
+    position: relative;
 }

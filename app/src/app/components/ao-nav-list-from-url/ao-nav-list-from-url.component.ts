@@ -15,6 +15,7 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
 
     constructor(protected apiClient: AoApiClientService, private router: Router) {
         super();
+        this.isCollapsed = true;
     }
 
     private _url: any;
@@ -42,12 +43,15 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
 
     @Input() newItemParams: any;
     @Input() allowItemCreation = true;
+    isCollapsed: any;
+    @Input() icon: string;
 
     ngOnInit() {
     }
 
     // loads an url  that provides a list of objects with id and title properties
     loadListFromUrl() {
+        this._items = [];
         if (this._url) {
             this.apiClient.get(this._url)
                 .then((response: any) => {
@@ -72,6 +76,14 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
             .then((response: any) => {
                 this.loadListFromUrl();
             });
+    }
+
+    toggleList() {
+        if (this.isCollapsed) {
+            // reload
+            this.loadListFromUrl();
+        }
+        this.isCollapsed = !this.isCollapsed;
     }
 
 }

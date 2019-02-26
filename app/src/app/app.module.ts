@@ -18,7 +18,7 @@ import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
 import {
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
     MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule, MatOptionModule,
-    MatExpansionModule, MatTableModule, MatPaginatorModule, MatGridListModule, MatSortModule
+    MatExpansionModule, MatTableModule, MatSortModule
 } from '@angular/material';
 import { NgJsonEditorModule } from 'ang-jsoneditor';
 // PLUGINS
@@ -95,9 +95,7 @@ import { AoEndpointPipelinePluginComponent } from './plugins/ao-endpoint-pipelin
         MatOptionModule,
         MatExpansionModule,
         MatTableModule,
-        MatPaginatorModule,
         AgGridModule.withComponents([]),
-        MatGridListModule,
         FlexLayoutModule,
         MatSortModule,
         DragDropModule

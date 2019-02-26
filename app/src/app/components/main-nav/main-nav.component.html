@@ -20,28 +20,14 @@
         <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
             [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="!(isHandset$ | async)">
             <!--<mat-nav-list (click)="drawer.close()"> -->
-            <div class="ao-padding ao-left-side-nav">
-                <mat-list>
-                    <!-- <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams"></app-ao-nav-list-from-url>
-                   -->
-
-                    <mat-list-item routerLink="/datasets">
-                        <mat-icon mat-list-icon>list_alt</mat-icon>
-                        <h4 mat-line>Datasets</h4>
-                    </mat-list-item>
-                    <mat-list-item routerLink="/recipes">
-                        <mat-icon mat-list-icon>receipt_outline</mat-icon>
-                        <h4 mat-line>Recipes</h4>
-                    </mat-list-item>
-                    <mat-list-item routerLink="/models">
-                        <mat-icon mat-list-icon>folder_outline</mat-icon>
-                        <h4 mat-line>Models</h4>
-                    </mat-list-item>
-                    <mat-list-item routerLink="/endpoints">
-                        <mat-icon mat-list-icon>cloud_outline</mat-icon>
-                        <h4 mat-line>Endpoints</h4>
-                    </mat-list-item>
-                </mat-list>
+            <div class="ao-left-side-nav">
+            
+                <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Datasets'" [icon]="'list_alt'"></app-ao-nav-list-from-url>
+                <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Recipes'" [icon]="'receipt_outline'"></app-ao-nav-list-from-url>
+                <app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Models'" [icon]="'folder_outline'"></app-ao-nav-list-from-url>
+                <app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Endpoints'" [icon]="'cloud_outline'"></app-ao-nav-list-from-url>
+                   
+                
             </div>
 
         </mat-sidenav>
