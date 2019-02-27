@@ -33,9 +33,9 @@ from api.factory import ServerFactory
 # /assets or /data
 ASSET_CLASS_RE = r"(?P<asset_class>(assets|data))$"
 # /assets or /data plus a filename with extension
-ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256}\.[\w]{1,12})$"
+ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{1,256}\.[\w]{1,12})$"
 # /assets or /data plus a filename with extension and /info
-ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{4,256}\.[\w]{1,12})/info$"
+ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{1,256}\.[\w]{1,12})/info$"
 
 
 class AssetViewSetMixin:
