@@ -2,7 +2,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AoPipelinePluginComponent } from './ao-pipeline-plugin.component';
 
-describe('AoViewComponent', () => {
+describe('AoPipelinePluginComponent', () => {
   let component: AoPipelinePluginComponent;
   let fixture: ComponentFixture<AoPipelinePluginComponent>;
 

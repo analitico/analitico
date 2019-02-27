@@ -10,7 +10,16 @@ class MockAoApiClientService {
         return new Promise((resolve, reject) => {
             resolve({
                 data: [{
-                    id: 'id1'
+                    id: 'id1',
+                    attributes: {
+                        title: 'Title id 1'
+                    }
+                },
+                {
+                    id: 'id2',
+                    attributes: {
+                        title: 'Title id 2'
+                    }
                 }]
             });
         });
@@ -45,12 +54,17 @@ describe('AoNavListFromUrlComponent', () => {
         expect(component).toBeTruthy();
     });
 
-    it('should have <a> with item id', fakeAsync(() => {
+    it('should have elements', fakeAsync(() => {
+        component.title = 'Dataset';
         component.url = 'myurl';
         tick();
         fixture.detectChanges();
-        const list: HTMLElement = fixture.nativeElement;
-        const a = list.querySelector('.ao-nav-list-item');
-        expect(a.textContent.trim()).toEqual('id1');
+        const ne: HTMLElement = fixture.nativeElement;
+        const titleElement = ne.querySelector('.ao-nav-list-item span');
+        expect(titleElement.textContent.trim()).toEqual('Dataset');
+        const children = ne.querySelectorAll('.ao-nav-list-children .ao-nav-list-item');
+        expect(children.length).toBe(2);
+        expect(children[0].textContent.trim()).toBe('Title id 1');
+        expect(children[1].textContent.trim()).toBe('Title id 2');
     }));
 });

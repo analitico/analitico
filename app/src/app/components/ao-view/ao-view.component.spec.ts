@@ -6,23 +6,22 @@ import { delay, concatMap } from 'rxjs/operators';
 import { of, from } from 'rxjs';
 
 class MockAoApiClientService {
+    data =  {
+        id: 'id1'
+    };
     get(url: any) {
         return new Promise((resolve, reject) => {
             resolve({
-                data: {
-                    id: 'id1'
-                }
+                data: this.data
             });
         });
 
     }
     patch(url: string) {
+        this.data['saved'] = true;
         return new Promise((resolve, reject) => {
             resolve({
-                data: {
-                    id: 'id1',
-                    saved: true
-                }
+                data: this.data
             });
         });
     }
@@ -84,8 +83,11 @@ describe('AoViewComponent', () => {
         component.saveItem();
         tick(1000);
         fixture.detectChanges();
+        expect(spy).toHaveBeenCalled();
+        component.loadItem();
+        tick(1000);
+        fixture.detectChanges();
         expect(component.objectId).toEqual('2');
         expect(component.item.saved).toBeTruthy();
-        expect(spy).toHaveBeenCalled();
     }));
 });

@@ -1,4 +1,4 @@
-/*import { async, ComponentFixture, TestBed, fakeAsync, tick, flushMicrotasks } from '@angular/core/testing';
+import { async, ComponentFixture, TestBed, fakeAsync, tick, flushMicrotasks } from '@angular/core/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AoRecipeViewComponent } from './ao-recipe-view.component';
 import {
@@ -91,4 +91,3 @@ describe('AoRecipeViewComponent', () => {
         });
     }));
 });
-*/

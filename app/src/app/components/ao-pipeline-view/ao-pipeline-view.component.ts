@@ -120,7 +120,9 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
     }
 
     _getPlugins(): any {
-
+        return new Promise((resolve, reject) => {
+            resolve([]);
+        });
     }
 
     // load plugin list

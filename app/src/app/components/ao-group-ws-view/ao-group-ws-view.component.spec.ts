@@ -7,7 +7,8 @@ import { of } from 'rxjs';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { FormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
-import { MatCardModule, MatListModule, MatTableModule } from '@angular/material';
+import { MatCardModule, MatListModule, MatTableModule, MatFormField, MatFormFieldModule, MatInputModule } from '@angular/material';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 class MockAoApiClientService {
     get(url: any) {
         return new Promise((resolve, reject) => {
@@ -58,7 +59,7 @@ describe('AoGroupWsViewComponent', () => {
     beforeEach(async(() => {
         TestBed.configureTestingModule({
             declarations: [AoGroupWsViewComponent],
-            imports: [FormsModule, RouterTestingModule, MatListModule, MatCardModule, MatTableModule],
+            imports: [FormsModule, RouterTestingModule, MatListModule, MatCardModule, MatTableModule, MatInputModule, NoopAnimationsModule],
             providers: [
                 { provide: AoApiClientService, useClass: MockAoApiClientService },
                 { provide: ActivatedRoute, useClass: MockActivatedRoute },
