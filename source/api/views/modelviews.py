@@ -32,7 +32,7 @@ class ModelSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 ##
 
 
-class ModelViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class ModelViewSet(ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A trained machine learning model with its training information and file assets """
 
     item_class = api.models.Model
