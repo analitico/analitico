@@ -66,10 +66,12 @@ class Recipe(ItemMixin, models.Model):
                     raise APIException("Recipe.run - the recipe has no configured plugins", status.HTTP_400_BAD_REQUEST)
 
                 plugin = factory.get_plugin(**plugin_settings)
-                results = plugin.run(action=job.action)
+                training = plugin.run(action=job.action)
 
-                # create a model which will host training results and assets
+                # create a model which will host the recipe pipeline,
+                # training results and training artifacts as assets
                 model = Model(workspace=self.workspace)
+                model.set_attribute("plugin", plugin_settings)
                 model.save()
 
                 # upload artifacts to model (not to the recipe!)
@@ -81,7 +83,7 @@ class Recipe(ItemMixin, models.Model):
                 # store training results, link model to recipe and job
                 model.set_attribute("recipe_id", self.id)
                 model.set_attribute("job_id", job.id)
-                model.set_attribute("training", results)
+                model.set_attribute("training", training)
                 model.save()
 
                 # job will return information linking to the trained model
