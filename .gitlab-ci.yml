@@ -41,8 +41,6 @@ build_dev:
     # check out corrent commit because repo may have gone further
     - git checkout --recurse-submodules $CI_COMMIT_SHA
     # clone secrets
-    - cd .. 
-    # pwd /builds/analitico/
     - git clone https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-ci.git 
     # we have /builds/analitico/analitico-ci
     # remove credentials
