@@ -2,16 +2,21 @@
 # Build static documentation
 # exit if error
 set -e
-# importing env
-source /home/www/analitico-ci/analitico-env.sh
-export LANG=C.UTF-8
-export LC_CTYPE=C.UTF-8
 
-cd /home/www/analitico/
 echo "Installing requirements"
 source venv/bin/activate
 pip3 install -r requirements.txt
 
-cd /home/www/analitico/documentation
-# build docs
-mkdocs build
+# build s24 docs
+pushd .
+cd integrations/s24/documentation
+mkdocs build --clean
+popd
+
+# build analitico docs
+pushd .
+cd documentation
+mkdocs build --clean
+ln -s ../../integrations/s24/documentation/site site/s24
+
+popd
