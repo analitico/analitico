@@ -1,7 +1,7 @@
 <mat-card class="ao-item-base-view"  routerLink="{{route}}">
     <mat-form-field>
         <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
-            (change)="changeItemTitle()" (click)="$event.stopPropagation()">
+            (change)="changeItemTitle($event)" (click)="$event.stopPropagation()">
     </mat-form-field>
 
     
