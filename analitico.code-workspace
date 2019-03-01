@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../analitico-ops"
+		},
+		{
+			"path": "/home/gionata/github/analitico-ci"
 		}
 	],
 	"settings": {
