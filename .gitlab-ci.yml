@@ -49,8 +49,6 @@ build_dev:
     - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    # come back to allow docker to find Dockerfile
-    - cd analitico
     # build docker image
     - docker build --pull -t $BUILD_IMAGE_URL .
     # push the image to gitlab registry
