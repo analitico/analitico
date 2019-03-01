@@ -6,7 +6,17 @@
         <span class="ao-logo ao-logo-font ao-main-nav-logo">
             <a routerLink="/">analitico<sup>ai</sup></a>
         </span>
+        <div class="ao-home-search-box">
+            <i class="material-icons">
+                search
+            </i>
+            <div>
+                <input type="text" placeholder="Search" [(ngModel)]="searchQueryInput" (change)="search()"/>
+            </div>
+
+        </div>
         <div class="ao-spacer"></div>
+
         <mat-select placeholder="Workspace" [(ngModel)]="selectedWorkspace" (selectionChange)="changedWorkspace()"
             class="ao-toolbar-workspace-selector" *ngIf="workspaces && workspaces.length > 1">
             <mat-option *ngFor="let workspace of workspaces" [value]="workspace">
@@ -21,13 +31,21 @@
             [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="!(isHandset$ | async)">
             <!--<mat-nav-list (click)="drawer.close()"> -->
             <div class="ao-left-side-nav">
-            
-                <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Datasets'" [icon]="'list_alt'"></app-ao-nav-list-from-url>
-                <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Recipes'" [icon]="'receipt_outline'"></app-ao-nav-list-from-url>
-                <app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Models'" [icon]="'folder_outline'"></app-ao-nav-list-from-url>
-                <app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter" [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Endpoints'" [icon]="'cloud_outline'"></app-ao-nav-list-from-url>
-                   
-                
+
+                <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter"
+                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Datasets'"
+                    [icon]="'list_alt'"></app-ao-nav-list-from-url>
+                <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter"
+                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Recipes'"
+                    [icon]="'receipt_outline'"></app-ao-nav-list-from-url>
+                <app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter"
+                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Models'"
+                    [icon]="'folder_outline'"></app-ao-nav-list-from-url>
+                <app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter"
+                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Endpoints'"
+                    [icon]="'cloud_outline'"></app-ao-nav-list-from-url>
+
+
             </div>
 
         </mat-sidenav>

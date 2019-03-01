@@ -1,29 +1,65 @@
 <div class="ao-padding">
     <mat-card class="ao-card">
-        <mat-card-content  *ngIf="item && item.attributes">
-            <p>
+        <mat-card-content *ngIf="item && item.attributes">
+            <div class="ao-padding">
                 <b> {{(item.attributes && item.attributes.title) || item.id}}</b>
-            </p>
-            <p *ngIf="item && item.attributes">Recipe <a routerLink="/recipes/{{item.attributes.recipe_id}}">{{item.attributes.recipe_id}}</a></p>
-         
-            <p *ngIf="item.attributes.training">
-                <b>Training plugins</b><br>
+            </div>
+            <div *ngIf="item && item.attributes" class="ao-padding">Recipe <a
+                    routerLink="/recipes/{{item.attributes.recipe_id}}">{{item.attributes.recipe_id}}</a>
+            </div>
+
+            <div *ngIf="item.attributes.training" class="ao-padding">
+                <b>Plugins</b><br>
                 Training: {{item.attributes.training && item.attributes.training.plugins.training}} <br>
                 Prediction: {{item.attributes.training && item.attributes.training.plugins.prediction}}
-            </p>
-            <p *ngIf="item.attributes.training">
+            </div>
+            <div *ngIf="item.attributes.training" class="ao-padding">
                 <b>Data</b> <br>
                 Source records: {{item.attributes.training.data.source_records | number}}<br>
                 Training records: {{item.attributes.training.data.training_records | number}}<br>
                 Test records: {{item.attributes.training.data.test_records | number}}<br>
                 Dropped records: {{item.attributes.training.data.dropped_records | number}}<br>
-            </p>
-            <div *ngIf="item.attributes && item.attributes.training && item.attributes.training.scores">
+            </div>
+            
+            <div *ngIf="item.attributes && item.attributes.training && item.attributes.training.scores"
+                class="ao-padding">
                 <b>Scores</b>
-                <div *ngFor="let prop of item.attributes.training.scores | keyvalue">
-                    {{prop.key}}: {{prop.value | json}}
+                <div *ngIf="item.attributes.training.scores.log_loss">
+                    <p>Log loss: {{item.attributes.training.scores.log_loss}}</p>
+                    <p>Accuracy score: {{item.attributes.training.scores.accuracy_score}}</p>
+                    <p>Best iteration: {{item.attributes.training.scores.best_iteration}}</p>
+                    <p>Best score: learn: {{item.attributes.training.scores.best_score.learn.Logloss}} / validation:
+                        {{item.attributes.training.scores.best_score.validation_0.Logloss}}</p>
+
+                </div>
+                <div class="ao-padding">
+                    <div>
+                        <b>Classes</b>
+                        <div *ngFor="let class of item.attributes.training.data.classes">
+                            <p><b>{{class}}</b></p>
+                            <div
+                                *ngFor="let prop of item.attributes.training.scores.classification_report[class] | keyvalue">
+                                <p>{{prop.key}}: {{prop.value | json}}</p>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div style="margin-top: 80px;">
+                        <b>Other Classes</b>
+                        <div *ngFor="let el of item.attributes.training.scores.classification_report | keyvalue">
+                            <div *ngIf="item.attributes.training.data.classes.indexOf(el.key) < 0">
+                                <p>{{el.key}}</p>
+                                <div
+                                    *ngFor="let prop of item.attributes.training.scores.classification_report[el.key] | keyvalue">
+                                    {{prop.key}}: {{prop.value | json}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+
         </mat-card-content>
     </mat-card>
 

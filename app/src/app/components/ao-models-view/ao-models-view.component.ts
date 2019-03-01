@@ -6,6 +6,7 @@ import { AoGroupWsViewComponent } from '../ao-group-ws-view/ao-group-ws-view.com
 import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 
 @Component({
@@ -16,8 +17,9 @@ import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-gl
 export class AoModelsViewComponent extends AoGroupWsViewComponent implements OnInit {
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
-        protected globalState: AoGlobalStateStore,  protected router: Router) {
-        super(route, apiClient, globalState, router);
+        protected globalState: AoGlobalStateStore,  protected router: Router,
+        protected itemService: AoItemService) {
+        super(route, apiClient, globalState, router, itemService);
     }
 
     ngOnInit() {

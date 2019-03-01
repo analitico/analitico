@@ -18,7 +18,7 @@ import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
 import {
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
     MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule, MatOptionModule,
-    MatExpansionModule, MatTableModule, MatSortModule
+    MatExpansionModule, MatTableModule, MatSortModule, MatDialog, MatDialogModule, MatProgressBarModule, MatMenuModule
 } from '@angular/material';
 import { NgJsonEditorModule } from 'ang-jsoneditor';
 // PLUGINS
@@ -45,6 +45,12 @@ import { AoRecipeViewComponent } from './components/ao-recipe-view/ao-recipe-vie
 import { AoPipelineViewComponent } from './components/ao-pipeline-view/ao-pipeline-view.component';
 import { AoEndpointViewComponent } from './components/ao-endpoint-view/ao-endpoint-view.component';
 import { AoEndpointPipelinePluginComponent } from './plugins/ao-endpoint-pipeline-plugin/ao-endpoint-pipeline-plugin.component';
+import { AoHomeViewComponent } from './components/ao-home-view/ao-home-view.component';
+import { AoItemViewComponent } from './components/ao-item-view/ao-item-view.component';
+import { AoModelListViewComponent } from './components/ao-model-list-view/ao-model-list-view.component';
+import { AoDialogComponent } from './components/ao-dialog/ao-dialog.component';
+import { AoItemService } from './services/ao-item/ao-item.service';
+import { AoItemBaseViewComponent } from './components/ao-item-base-view/ao-item-base-view.component';
 
 @NgModule({
     declarations: [
@@ -72,7 +78,12 @@ import { AoEndpointPipelinePluginComponent } from './plugins/ao-endpoint-pipelin
         AoRecipeViewComponent,
         AoPipelineViewComponent,
         AoEndpointViewComponent,
-        AoEndpointPipelinePluginComponent
+        AoEndpointPipelinePluginComponent,
+        AoHomeViewComponent,
+        AoItemViewComponent,
+        AoModelListViewComponent,
+        AoDialogComponent,
+        AoItemBaseViewComponent
     ],
     imports: [
         BrowserModule,
@@ -98,11 +109,15 @@ import { AoEndpointPipelinePluginComponent } from './plugins/ao-endpoint-pipelin
         AgGridModule.withComponents([]),
         FlexLayoutModule,
         MatSortModule,
-        DragDropModule
+        DragDropModule,
+        MatDialogModule,
+        MatProgressBarModule,
+        MatMenuModule
     ],
-    providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService],
+    providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService, AoItemService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,
-        AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent, AoEndpointPipelinePluginComponent],
+        AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent,
+        AoEndpointPipelinePluginComponent, AoModelListViewComponent, AoDialogComponent, AoItemBaseViewComponent],
     bootstrap: [AppComponent]
 })
 export class AppModule {

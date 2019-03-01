@@ -9,15 +9,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { environment } from '../../../environments/environment';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 import { AoPipelineViewComponent } from '../ao-pipeline-view/ao-pipeline-view.component';
+import { AoRefreshable } from 'src/app/ao-refreshable';
 
 @Component({
     templateUrl: './ao-dataset-view.component.html',
     styleUrls: ['./ao-dataset-view.component.css']
 })
-export class AoDatasetViewComponent extends AoPipelineViewComponent implements OnInit, OnDestroy {
-
-
-
+export class AoDatasetViewComponent extends AoPipelineViewComponent implements OnInit, OnDestroy, AoRefreshable {
 
     uploadAssetUrl: string;
     isProcessing = false;
@@ -31,6 +29,10 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
         protected snackBar: MatSnackBar,
         protected jobService: AoJobService) {
         super(route, apiClient, componentFactoryResolver, pluginsService, snackBar);
+    }
+
+    refresh() {
+        super.refresh();
     }
 
     ngOnInit() {

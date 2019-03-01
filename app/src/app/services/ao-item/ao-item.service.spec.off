@@ -1,0 +1,12 @@
+import { TestBed } from '@angular/core/testing';
+
+import { AoItemService } from './ao-item.service';
+
+describe('AoItemService', () => {
+  beforeEach(() => TestBed.configureTestingModule({}));
+
+  it('should be created', () => {
+    const service: AoItemService = TestBed.get(AoItemService);
+    expect(service).toBeTruthy();
+  });
+});

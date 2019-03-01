@@ -8,6 +8,7 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { MatSort, MatTableDataSource } from '@angular/material';
 import * as _ from 'lodash';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     selector: 'app-ao-group-ws-view',
@@ -27,7 +28,8 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     @Input() newItemTitle: string;
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
-        protected globalState: AoGlobalStateStore, protected router: Router) {
+        protected globalState: AoGlobalStateStore, protected router: Router,
+        protected itemService: AoItemService) {
         super(route, apiClient);
     }
 
@@ -73,14 +75,8 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     }
 
     filterItems() {
-        const filteredItems = [];
         if (this.originalItems && this.originalItems.length > 0) {
-            this.originalItems.forEach(element => {
-                if (element.attributes.workspace_id === this.workspace.id) {
-                    filteredItems.push(element);
-                }
-            });
-            this.items = filteredItems;
+            this.items = this.itemService.filterItemsByDictionary(this.originalItems, { 'attributes.workspace_id': this.workspace.id });
         }
     }
 

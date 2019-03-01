@@ -4,6 +4,7 @@
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Injectable } from '@angular/core';
+import { AoMessageBoxService } from '../ao-message-box/ao-message-box';
 
 @Injectable({
     providedIn: 'root',
@@ -11,12 +12,12 @@ import { Injectable } from '@angular/core';
 
 export class AoApiClientService {
 
-    constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient, private messageBox: AoMessageBoxService) { }
 
     get(url: string, options?: any): any {
         options = this.getDefaultOptions(options);
         return new Promise((resolve, reject) => {
-            this.http.get(environment.apiUrl + url, options)
+            this.http.get(this.getUrl(url), options)
                 .subscribe(
                     response => {
                         this.parseResponse(response, resolve);
@@ -30,7 +31,7 @@ export class AoApiClientService {
     post(url: string, body: any, options?: any): any {
         options = this.getDefaultOptions(options);
         return new Promise((resolve, reject) => {
-            this.http.post(environment.apiUrl + url, body, options)
+            this.http.post(this.getUrl(url), body, options)
                 .subscribe(
                     response => {
                         this.parseResponse(response, resolve);
@@ -44,7 +45,7 @@ export class AoApiClientService {
     put(url: string, body: any, options?: any): any {
         options = this.getDefaultOptions(options);
         return new Promise((resolve, reject) => {
-            this.http.put(environment.apiUrl + url, body, options)
+            this.http.put(this.getUrl(url), body, options)
                 .subscribe(
                     response => {
                         this.parseResponse(response, resolve);
@@ -58,7 +59,7 @@ export class AoApiClientService {
     patch(url: string, body: any, options?: any): any {
         options = this.getDefaultOptions(options);
         return new Promise((resolve, reject) => {
-            this.http.patch(environment.apiUrl + url, body, options)
+            this.http.patch(this.getUrl(url), body, options)
                 .subscribe(
                     response => {
                         this.parseResponse(response, resolve);
@@ -72,7 +73,7 @@ export class AoApiClientService {
     delete(url: string, options?: any): any {
         options = this.getDefaultOptions(options);
         return new Promise((resolve, reject) => {
-            this.http.delete(environment.apiUrl + url, options)
+            this.http.delete(this.getUrl(url), options)
                 .subscribe(
                     response => {
                         this.parseResponse(response, resolve);
@@ -97,6 +98,17 @@ export class AoApiClientService {
             }
         }
         return null;
+    }
+
+    /**
+     * Check if url is relative and append the api prefix
+     * @param url an url
+     */
+    private getUrl(url) {
+        if (url.indexOf('http://') === 0 || url.indexOf('https://') === 0) {
+            return url;
+        }
+        return environment.apiUrl + url;
     }
 
     /**
@@ -134,6 +146,7 @@ export class AoApiClientService {
         const status = response.status;
         // if (res.status === 401 || res.status === 403) {
         // if not authenticated
+        this.messageBox.show(response.message, 'API error: HTTP ' + response.status);
         reject(response);
     }
 }

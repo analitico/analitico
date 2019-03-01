@@ -5,6 +5,7 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 
 import * as _ from 'lodash';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 
 @Component({
@@ -41,26 +42,7 @@ export class AoNavListComponent implements OnInit {
         this.processItems();
     }
 
-    constructor() { }
-
-
-    // filters an array of objects using a dictionary
-    static filterItems(items, filter): any {
-        return items.filter((item) => {
-            for (const filterKey in filter) {
-                if (filter.hasOwnProperty(filterKey)) {
-                    // get the value specified in the filter path
-                    const value = _.get(item, filterKey);
-                    const filterValue = filter[filterKey];
-                    // compare object value with filter value
-                    if (value !== filterValue) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        });
-    }
+    constructor(protected itemService: AoItemService) { }
 
 
     ngOnInit() {
@@ -72,7 +54,7 @@ export class AoNavListComponent implements OnInit {
 
             if (this._filter) {
                 // apply filter
-                this._items = AoNavListComponent.filterItems(this._items, this._filter);
+                this._items = this.itemService.filterItemsByDictionary(this._items, this._filter);
             }
             // sort items
             if (this._sortFunction) {

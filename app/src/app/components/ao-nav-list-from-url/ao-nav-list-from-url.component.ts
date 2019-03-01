@@ -1,10 +1,11 @@
 /**
- * A nav-list component that load object list from a url
+ * A nav-list "Google Drive style" component that load object list from a url
  */
 import { Component, OnInit, Input } from '@angular/core';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoNavListComponent } from 'src/app/components/ao-nav-list/ao-nav-list.component';
 import { Router } from '@angular/router';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     selector: 'app-ao-nav-list-from-url',
@@ -13,8 +14,8 @@ import { Router } from '@angular/router';
 })
 export class AoNavListFromUrlComponent extends AoNavListComponent implements OnInit {
 
-    constructor(protected apiClient: AoApiClientService, private router: Router) {
-        super();
+    constructor(protected apiClient: AoApiClientService, private router: Router, protected itemService: AoItemService) {
+        super(itemService);
         this.isCollapsed = true;
     }
 
@@ -25,19 +26,19 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
     @Input() set url(val: string) {
         if (val) {
             this._url = val;
-            this.loadListFromUrl();
+            this.loadlistIfNotCollapsed();
         }
     }
     @Input() set filter(val: any) {
         if (val) {
             this._filter = val;
-            this.loadListFromUrl();
+            this.loadlistIfNotCollapsed();
         }
     }
     @Input() set sort(val: any) {
         if (val) {
             this._sortFunction = val;
-            this.loadListFromUrl();
+            this.loadlistIfNotCollapsed();
         }
     }
 
@@ -47,6 +48,12 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
     @Input() icon: string;
 
     ngOnInit() {
+    }
+
+    loadlistIfNotCollapsed() {
+        if (!this.isCollapsed) {
+            this.loadListFromUrl();
+        }
     }
 
     // loads an url  that provides a list of objects with id and title properties
@@ -78,7 +85,9 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
             });
     }
 
-    toggleList() {
+    toggleList($event) {
+        $event.stopPropagation();
+        $event.preventDefault();
         if (this.isCollapsed) {
             // reload
             this.loadListFromUrl();

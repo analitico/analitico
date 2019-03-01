@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     selector: 'app-ao-datasets-view',
@@ -15,8 +16,9 @@ export class AoDatasetsViewComponent extends AoGroupWsViewComponent implements O
     displayedColumns: string[] = ['attributes.title', 'attributes.created_at', 'actions'];
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
-        protected globalState: AoGlobalStateStore, protected jobService: AoJobService, protected router: Router) {
-        super(route, apiClient, globalState, router);
+        protected globalState: AoGlobalStateStore, protected jobService: AoJobService, protected router: Router,
+        protected itemService: AoItemService) {
+        super(route, apiClient, globalState, router, itemService);
     }
 
     ngOnInit() {

@@ -23,23 +23,25 @@ body {
     overflow: visible;
     width: 16px;
 }
+
 ::-webkit-scrollbar-button {
     height: 0;
     width: 0;
 }
+
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,.2);
+    background-color: rgba(0, 0, 0, .2);
     background-clip: padding-box;
     border: solid transparent;
     border-width: 1px 1px 1px 6px;
     min-height: 28px;
     padding: 100px 0 0;
-    -webkit-box-shadow: inset 1px 1px 0 rgba(0,0,0,.1), inset 0 -1px 0 rgba(0,0,0,.07);
-    box-shadow: inset 1px 1px 0 rgba(0,0,0,.1), inset 0 -1px 0 rgba(0,0,0,.07);
+    -webkit-box-shadow: inset 1px 1px 0 rgba(0, 0, 0, .1), inset 0 -1px 0 rgba(0, 0, 0, .07);
+    box-shadow: inset 1px 1px 0 rgba(0, 0, 0, .1), inset 0 -1px 0 rgba(0, 0, 0, .07);
 }
 
 ::-webkit-scrollbar-track {
@@ -299,7 +301,7 @@ td .mat-progress-spinner {
     padding-right: 6px;
 }
 
-.ao-nav-list-item .ao-arrow-icon{
+.ao-nav-list-item .ao-arrow-icon {
     color: #5f6368 !important;
 }
 
@@ -323,7 +325,6 @@ td .mat-progress-spinner {
     padding-right: 10px;
 }
 
-
 .ao-nav-list-children .ao-nav-list-item a {
     padding-left: 68px;
     height: 30px;
@@ -343,4 +344,63 @@ td .mat-progress-spinner {
 app-ao-nav-list-from-url mat-icon {
     top: 8px;
     position: relative;
+}
+
+.ao-home-search-box{
+    width: 400px;
+    background-color: #ffffff;
+    margin-left: 60px;
+    border-radius: 4px;
+}
+.ao-home-search-box div{ 
+    padding: 0 40px;
+}
+.ao-home-search-box i{
+    color: #000000;
+    font-size: 24px;
+    vertical-align: middle;
+    padding: 8px;
+    opacity: .54;
+    float: left;
+}
+.ao-home-search-box input{
+    border: 0;
+    height: 100%;
+    margin-left: 0;
+    font-size: 16px;
+    outline: none !important;
+    width: 100%;
+    padding-top: 10px;
+}
+/**
+    Item list views styles
+**/
+
+.ao-home-view {
+    padding: 40px;
+}
+
+.ao-home-item {
+    margin-bottom: 40px;
+}
+
+.ao-item-list-view {
+    padding: 40px;
+    position: relative;
+}
+.ao-item-list-view-more{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.ao-item-list-view  .mat-form-field{
+    display: inline-block;
+}
+
+.ao-list-view-key1{
+    display: inline-block;
+
+    width: 40%;
 }

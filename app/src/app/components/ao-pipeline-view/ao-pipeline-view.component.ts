@@ -6,6 +6,7 @@ import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.direct
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
 import { MatSnackBar } from '@angular/material';
+import { AoRefreshable } from 'src/app/ao-refreshable';
 
 @Component({
     selector: 'app-ao-pipeline-view',
@@ -13,7 +14,7 @@ import { MatSnackBar } from '@angular/material';
     styleUrls: ['./ao-pipeline-view.component.css']
 })
 
-export class AoPipelineViewComponent extends AoViewComponent implements OnInit, OnDestroy, AfterViewInit {
+export class AoPipelineViewComponent extends AoViewComponent implements OnInit, OnDestroy, AfterViewInit, AoRefreshable {
     // this is the object where we will insert the child components
     @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
     newDataSubscriptions: any;
@@ -33,6 +34,11 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
     ngOnInit() {
         super.ngOnInit();
         this.newDataSubscriptions = [];
+        this.loadPlugins();
+    }
+
+    refresh() {
+        super.refresh();
         this.loadPlugins();
     }
 
@@ -88,9 +94,9 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
                 const componentFactory = this.componentFactoryResolver.resolveComponentFactory(plugin);
                 // add the component to the anchor view
                 const componentRef = this.viewContainerRef.createComponent(componentFactory);
-                (<IAoPluginInstance>componentRef.instance).pluginsService = this.pluginsService;
-                // get data subject
                 const instance = (<IAoPluginInstance>componentRef.instance);
+                // inject plugin service
+                instance.pluginsService = this.pluginsService;
                 // send data
                 instance.setData(this.pluginData);
                 // subscribe to updates from subcomponents

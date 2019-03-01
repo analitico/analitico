@@ -9,13 +9,14 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { take } from 'rxjs/operators';
+import { AoRefreshable } from 'src/app/ao-refreshable';
 
 @Component({
     selector: 'app-ao-view',
     templateUrl: './ao-view.component.html',
     styleUrls: ['./ao-view.component.css']
 })
-export class AoViewComponent implements OnInit, OnDestroy {
+export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
     urlSubscription: any;
     activatedRouteSubscription: any;
     objectId: string;
@@ -40,6 +41,10 @@ export class AoViewComponent implements OnInit, OnDestroy {
         if (this.activatedRouteSubscription) {
             this.activatedRouteSubscription.unsubscribe();
         }
+    }
+
+    refresh() {
+        this.loadItem();
     }
 
     // When id change reload object

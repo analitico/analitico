@@ -5,10 +5,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { setDefaultService } from 'selenium-webdriver/edge';
+import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
     selector: 'app-main-nav',
@@ -28,6 +29,10 @@ export class MainNavComponent implements OnInit, OnDestroy {
     datasetTitle: string;
     newItemParams: any;
     initialized = false;
+    // bound to the search text box
+    searchQueryInput: string;
+    queryParamsSubscription: any;
+    query: string;
 
     isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
         .pipe(
@@ -35,12 +40,18 @@ export class MainNavComponent implements OnInit, OnDestroy {
         );
 
     constructor(private breakpointObserver: BreakpointObserver, private globalState: AoGlobalStateStore,
-        private apiClient: AoApiClientService) { }
+        private apiClient: AoApiClientService, protected router: Router, protected route: ActivatedRoute) { }
 
     ngOnInit() {
         this.userInitial = null;
         const that = this;
         this.globalStateObserverSubscription = this.globalState.subscribe(this.onGlobalStateUpdate.bind(this));
+        // subscribe to query parameters subscription
+        this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
+
+            this.searchQueryInput = params.q;
+
+        });
         // check user logged
         this.getUser()
             .then(() => {
@@ -64,6 +75,17 @@ export class MainNavComponent implements OnInit, OnDestroy {
             });
 
     }
+
+    ngOnDestroy() {
+        // unsubscribe to avoid memory leaks
+        if (this.globalStateObserverSubscription) {
+            this.globalStateObserverSubscription.unsubscribe();
+        }
+        if (this.queryParamsSubscription) {
+            this.queryParamsSubscription.unsubscribe();
+        }
+    }
+
 
     loadWorkspaces() {
         return this.apiClient.get('/workspaces')
@@ -94,12 +116,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
         localStorage.setItem('workspaceId', workspace.id);
     }
 
-    ngOnDestroy() {
-        // unsubscribe to avoid memory leaks
-        if (this.globalStateObserverSubscription) {
-            this.globalStateObserverSubscription.unsubscribe();
-        }
-    }
+
 
     onGlobalStateUpdate() {
         // retrieve user
@@ -158,6 +175,15 @@ export class MainNavComponent implements OnInit, OnDestroy {
                 window.location.href = '/accounts/login/';
 
             });
+    }
+
+    // perform a search into the workspace
+    search() {
+        let queryParams = {};
+        if (this.searchQueryInput) {
+            queryParams = { q: this.searchQueryInput };
+        }
+        this.router.navigate(['.'], { queryParams: queryParams });
     }
 
 }
