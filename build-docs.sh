@@ -3,7 +3,7 @@
 # exit if error
 set -e
 # importing env
-source /home/www/analitico/analitico-env
+source /home/www/analitico-ci/analitico-env.sh
 export LANG=C.UTF-8
 export LC_CTYPE=C.UTF-8
 

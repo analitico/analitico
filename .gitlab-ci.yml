@@ -37,20 +37,25 @@ build_dev:
     # clone the repo
     - git clone --recurse-submodules https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git 
     - cd analitico
-    # check out corrent commit
+    # pwd /builds/analitico/analitico
+    # check out corrent commit because repo may have gone further
     - git checkout --recurse-submodules $CI_COMMIT_SHA
+    # clone secrets
+    - cd .. 
+    # pwd /builds/analitico/
+    - git clone https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-ci.git 
+    # we have /builds/analitico/analitico-ci
     # remove credentials
     - rm /.git-credentials
+    # add commit sha to the env script
+    - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    # export ANALITICO ENV
-    - export -p | grep ANALITICO_ > analitico-env
-    # add commit sha to the env
-    - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-env 
     # build docker image
     - docker build --pull -t $BUILD_IMAGE_URL .
     # push the image to gitlab registry
     - docker push $BUILD_IMAGE_URL
+    - rm -R -f analitico-ci
   only:
     - master
 
