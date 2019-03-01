@@ -76,6 +76,7 @@ export class AoItemViewComponent implements OnInit, AfterViewInit {
                 const instance = (<IAoItemView>componentRef.instance);
                 // inject plugin service
                 instance.item = this.item;
+                instance.type = this.type;
             }
         }
     }

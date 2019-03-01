@@ -4,6 +4,7 @@ import { AoNavListFromUrlComponent } from './ao-nav-list-from-url.component';
 import { RouterModule } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { RouterTestingModule } from '@angular/router/testing';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 class MockAoApiClientService {
     get(url: any) {
@@ -39,7 +40,7 @@ describe('AoNavListFromUrlComponent', () => {
         TestBed.configureTestingModule({
             declarations: [AoNavListFromUrlComponent],
             imports: [MatListModule, RouterModule, MatIconModule, RouterTestingModule],
-            providers: [{ provide: AoApiClientService, useClass: MockAoApiClientService }]
+            providers: [{ provide: AoApiClientService, useClass: MockAoApiClientService }, AoItemService]
         })
             .compileComponents();
     }));

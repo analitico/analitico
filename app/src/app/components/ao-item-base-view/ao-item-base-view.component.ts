@@ -9,7 +9,9 @@ import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 })
 export class AoItemBaseViewComponent implements OnInit, IAoItemView {
     _item: any;
+    _type: any;
     route: string;
+
     constructor(protected itemService: AoItemService) { }
 
     get item(): any {
@@ -18,6 +20,13 @@ export class AoItemBaseViewComponent implements OnInit, IAoItemView {
     @Input() set item(item: any) {
         this._item = item;
         this.onLoad();
+    }
+
+    get type(): string {
+        return this._type;
+    }
+    @Input() set type(type: string) {
+        this._type = type;
     }
 
     ngOnInit() {

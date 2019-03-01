@@ -384,6 +384,11 @@ app-ao-nav-list-from-url mat-icon {
     margin-bottom: 40px;
 }
 
+.ao-item-base-view{
+    width: 200px;
+    min-height: 150px;
+}
+
 .ao-item-list-view {
     padding: 40px;
     position: relative;

@@ -1,20 +1,16 @@
 <div class="ao-padding">
     <h3>Models</h3>
     <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <mat-card *ngFor="let model of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card ao-clickable"
-            routerLink="/models/{{model.id}}">
-            <mat-card-content>
-                <p>
-                    <b> {{(model.attributes && model.attributes.title) || model.id}}</b>
-                </p>
-                <p>
-                    Best score: <b>{{model.attributes && model.attributes.training && model.attributes.training.scores &&
-                        model.attributes.training.scores.best_score.learn.RMSE}}</b>
-                </p>
-            </mat-card-content>
-        </mat-card>
+        <app-ao-item-view [item]="item" type="preview" *ngFor="let item of topItems" fxFlex="0 1 calc(25% - 14px)">
+        </app-ao-item-view>
     </div>
-
+    <div style="margin: 40px 0; float:right;">
+            <a mat-mini-fab class="ao-add-item-button">
+                <i class="material-icons" (click)="addItem()">
+                    add
+                </i>
+            </a>
+        </div>
     <div>
         <table mat-table [dataSource]="tableDS" matSort class="mat-elevation-z8" style="width: 100%;">
 

@@ -1,12 +1,7 @@
 <div class="ao-padding">
     <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <mat-card *ngFor="let item of topItems" fxFlex="0 1 calc(25% - 14px)" class="ao-card  ao-clickable" routerLink="/datasets/{{item.id}}">
-            <mat-card-content>
-                <p>
-                    <b> {{(item.attributes && item.attributes.title) || item.id}}</b>
-                </p>
-            </mat-card-content>
-        </mat-card>
+        <app-ao-item-view [item]="item" type="preview" *ngFor="let item of topItems" fxFlex="0 1 calc(25% - 14px)">
+        </app-ao-item-view>
     </div>
     <div style="margin: 40px 0; float:right;">
         <a mat-mini-fab class="ao-add-item-button">
@@ -20,8 +15,8 @@
 
             <ng-container matColumnDef="attributes.title">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
-                <td mat-cell *matCellDef="let element" >
-                    <mat-form-field class="example-full-width" >
+                <td mat-cell *matCellDef="let element">
+                    <mat-form-field class="example-full-width">
                         <input matInput placeholder="{{element.id}}" [(ngModel)]="element.attributes.title"
                             (change)="changeItemTitle(element)" (click)="$event.stopPropagation()">
                     </mat-form-field>

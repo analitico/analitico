@@ -4,4 +4,5 @@
  */
 export interface IAoItemView {
     item: any;
+    type: any;
 }

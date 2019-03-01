@@ -5,8 +5,15 @@
                 <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
                     (change)="changeItemTitle($event)" (click)="$event.stopPropagation()">
             </mat-form-field>
+            <div>
+                <a routerLink="/recipes/{{item.attributes.recipe_id}}">
+                    {{item.attributes.recipe_id}}
+                </a>
+            </div>
+
         </div>
         <div fxFlex="0 1 calc(33% - 14px)">
+
         </div>
         <div fxFlex="0 1 calc(33% - 14px)" style="text-align: right;">
             <div *ngIf="key1Value !== undefined && key1Value !== null" class="ao-list-view-key1">
@@ -16,7 +23,8 @@
             </div>
         </div>
     </div>
-    <div class="ao-item-list-view-more"  [matMenuTriggerFor]="menu" (click)="$event.preventDefault(); $event.stopPropagation()">
+    <div class="ao-item-list-view-more" [matMenuTriggerFor]="menu"
+        (click)="$event.preventDefault(); $event.stopPropagation()">
         <i class="material-icons">
             more_horiz
         </i>
