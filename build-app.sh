@@ -5,7 +5,7 @@ set -e
 
 echo "Install angular modules"
 cd /home/www/analitico/app
-npm install --only=prod
+npm install
 
 echo "Build Angular app"
 ng build --prod --outputHashing=all

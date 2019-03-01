@@ -5,7 +5,7 @@ set -e
 
 echo "Install angular modules"
 cd /home/www/analitico/app
-npm install --only=prod
+npm install
 
 echo "Execute Angular tests"
 #ng test
