@@ -1,12 +1,12 @@
 import collections
 import jsonfield
 
-from django.contrib.auth.models import Group
 from django.db import models
 from django.utils.crypto import get_random_string
 
 import analitico
-from analitico.utilities import get_dict_dot, set_dict_dot, logger
+
+from analitico.utilities import logger
 from .user import User
 
 ##

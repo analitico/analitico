@@ -1,19 +1,16 @@
 import collections
 import jsonfield
-import os.path
-import os
 import shutil
 
-from django.contrib.auth.models import Group
 from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
-from rest_framework.exceptions import APIException, NotFound
+from rest_framework.exceptions import APIException
 from rest_framework import status
 
 import analitico
+
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
-from .user import User
 from .items import ItemMixin
 from .workspace import Workspace
 from .job import Job
