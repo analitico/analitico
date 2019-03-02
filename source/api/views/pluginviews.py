@@ -4,17 +4,18 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from api.factory import factory
+from .attributeserializermixin import AttributeSerializerMixin
 
 
 class PluginSerializer(serializers.Serializer):
     """ Serializer doesn't actually serialize a plugin but rather its IPlugin.Meta information """
 
     def to_representation(self, item):
-        data = OrderedDict({"type": "analitico/plugin"})
+        data = OrderedDict({"type": "analitico/plugin", "attributes": {}})
         for attr in ("name", "title", "description", "inputs", "outputs", "algorithm"):
             value = getattr(item.Meta, attr, None)
             if value:
-                data[attr] = value
+                data["attributes"][attr] = value
         return data
 
 
