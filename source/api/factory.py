@@ -28,11 +28,8 @@ import api.models
 
 import api.plugin
 
-try:
-    # import plugins for Supermercato24 (if available)
-    import s24.plugin
-except Exception as exc:
-    pass
+# import plugins for Supermercato24 (if available)
+import s24.plugin
 
 # pylint: disable=no-member
 
@@ -142,14 +139,6 @@ class ServerFactory(analitico.factory.Factory):
                         extras["rows"] = analitico.utilities.get_csv_row_count(fullpath)
                     # upload asset and extras, item will take care of saving to database
                     item.upload_asset_stream(f, "data", path, path_size, None, path, extras)
-
-    ##
-    ## Plugin
-    ##
-
-    def get_plugin(self, name: str, globals=globals(), **kwargs):
-        """ Pass this contect to plugin creator so it can instanciate server plugins too """
-        return super().get_plugin(name, globals, **kwargs)
 
     ##
     ## Factory methods

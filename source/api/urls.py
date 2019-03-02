@@ -35,5 +35,6 @@ router.register("recipes", api.views.RecipeViewSet, basename="recipe")  # machin
 router.register("tokens", api.views.TokenViewSet, basename="token")  # handles access
 router.register("users", api.views.UserViewSet, basename="user")  # user profiles
 router.register("workspaces", api.views.WorkspaceViewSet, basename="workspace")  # provides grouping
+router.register("plugins", api.views.PluginViewSet, basename="plugin")  # extension plugins
 
 urlpatterns = router.urls + [path("runtime", runtime)]
