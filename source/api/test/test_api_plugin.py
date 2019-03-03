@@ -22,4 +22,4 @@ class PluginTests(APITestCase):
         self.assertEqual(len(plugins), len(data))
 
         for i, plugin in enumerate(plugins):
-            self.assertEqual(data[i]["name"], plugin)
+            self.assertEqual(data[i]["attributes"]["name"], plugin)
