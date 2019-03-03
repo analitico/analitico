@@ -87,7 +87,7 @@ deploy-staging:
     - ssh-add ~/.ssh/id_rsa
   script:
     # pull new docker image and run
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; docker stop analitico; docker rm analitico; docker run --name=analitico -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; docker image prune -f -a"
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; docker stop analitico; docker rm analitico; docker run --name=analitico --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; docker image prune -f -a"
 
 deploy-production:
   stage: deploy
