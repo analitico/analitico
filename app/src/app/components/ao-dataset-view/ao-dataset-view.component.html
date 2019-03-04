@@ -4,23 +4,32 @@
         <div class="ao-padding">
             <h4 class="mat-h4 ao-text-center">{{title}}</h4>
             <div class="">
-                <div *ngIf="!pluginData">
-                    <div [fileUploadInputFor]="fileUploadQueue" class="ao-upload-drop-zone"></div>
+                <div *ngIf="!pluginData" style="position: relative;">
+                    <div [fileUploadInputFor]="fileUploadQueue" class="ao-upload-drop-zone" [uploadUrl]="uploadAssetUrl"
+                        [uploaded]="assetUploaded">
+                        <i class="material-icons ao-text-center">
+                            backup_outline
+                        </i>
+
+                        <span>Drop your file here</span>
+                    </div>
                 </div>
-                <ng-template app-ao-anchor></ng-template>
-                <div style="margin: 20px auto;" class="ao-text-center">
-                    <!-- save button -->
-                    <button mat-raised-button (click)="save()" style="margin: 10px">Save</button>
-                    <!-- Process button -->
-                    <button mat-raised-button (click)="process()" style="margin: 10px">Process
-                        <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20"
-                            [strokeWidth]="4">
-                        </mat-progress-spinner>
-                    </button>
+                <div [class.ao-invisible]="!pluginData">
+                    <ng-template app-ao-anchor></ng-template>
+                    <div style="margin: 20px auto;" class="ao-text-center">
+                        <!-- save button -->
+                        <button mat-raised-button (click)="save()" style="margin: 10px">Save</button>
+                        <!-- Process button -->
+                        <button mat-raised-button (click)="process()" style="margin: 10px">Process
+                            <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20"
+                                [strokeWidth]="4">
+                            </mat-progress-spinner>
+                        </button>
+                    </div>
+                    <hr>
+                    <h4 class="mat-h4 ao-text-center">Output</h4>
+                    <app-ao-table-view [data]="data" *ngIf="data"></app-ao-table-view>
                 </div>
-                <hr>
-                <h4 class="mat-h4 ao-text-center">Output</h4>
-                <app-ao-table-view [data]="data" *ngIf="data"></app-ao-table-view>
             </div>
         </div>
 
@@ -36,8 +45,9 @@
     </mat-sidenav>
 </mat-sidenav-container>
 
-
-<app-ao-mat-file-upload-queue #fileUploadQueue multiple>
-    <app-ao-mat-file-upload [file]="file" [id]="i" *ngFor="let file of fileUploadQueue.files; let i = index"
-        (uploaded)="assetUploaded()" [fileAlias]="'file'" [httpUrl]="uploadAssetUrl"></app-ao-mat-file-upload>
+<app-ao-mat-file-upload-queue #fileUploadQueue multiple id="ao-file-upload-queue">
+    <app-ao-mat-file-upload [file]="fileItem.file" [id]="i"
+        *ngFor="let fileItem of fileUploadQueue.files; let i = index"
+        (uploaded)="fileItem.uploaded ? fileItem.uploaded() : true" [fileAlias]="'file'" [httpUrl]="fileItem.uploadUrl">
+    </app-ao-mat-file-upload>
 </app-ao-mat-file-upload-queue>

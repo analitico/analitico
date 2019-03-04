@@ -86,7 +86,7 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
             });
     }
 
-    assetUploaded() {
+    assetUploaded = () => {
         // we need to reload the item because it has assets info attached
         this.loadItem()
             .then(() => {

@@ -8,13 +8,14 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { take } from 'rxjs/operators';
+import { AoRefreshable } from 'src/app/ao-refreshable';
 
 @Component({
     selector: 'app-ao-group-view',
     templateUrl: './ao-group-view.component.html',
     styleUrls: ['./ao-group-view.component.css']
 })
-export class AoGroupViewComponent implements OnInit, OnDestroy {
+export class AoGroupViewComponent implements OnInit, OnDestroy, AoRefreshable {
     urlSubscription: any;
     items: any;
     baseUrl: string;
@@ -55,4 +56,9 @@ export class AoGroupViewComponent implements OnInit, OnDestroy {
     }
 
     onLoad(): void { }
+
+
+    refresh() {
+        this.loadItems();
+    }
 }

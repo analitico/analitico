@@ -34,23 +34,6 @@ export class AoMatFileUploadQueueComponent implements OnDestroy, AfterViewInit {
 
     public files: Array<any> = [];
 
-    /* Http request input bindings */
-    @Input()
-    httpUrl: string;
-
-    @Input()
-    httpRequestHeaders: HttpHeaders | {
-        [header: string]: string | string[];
-    } = new HttpHeaders();
-
-    @Input()
-    httpRequestParams: HttpParams | {
-        [param: string]: string | string[];
-    } = new HttpParams();
-
-    @Input()
-    fileAlias = 'file';
-
     isVisible = false;
 
     ngAfterViewInit() {
@@ -72,8 +55,8 @@ export class AoMatFileUploadQueueComponent implements OnDestroy, AfterViewInit {
         });
     }
 
-    add(file: any) {
-        this.files.push(file);
+    add(file: any, uploadUrl?: string, uploaded?: any) {
+        this.files.push({file: file, uploadUrl: uploadUrl, uploaded: uploaded});
         this.isVisible = true;
     }
 

@@ -11,7 +11,7 @@
                 search
             </i>
             <div>
-                <input type="text" placeholder="Search" [(ngModel)]="searchQueryInput" (change)="search()"/>
+                <input type="text" placeholder="Search" [(ngModel)]="searchQueryInput" (change)="search()" />
             </div>
 
         </div>
@@ -49,8 +49,14 @@
             </div>
 
         </mat-sidenav>
-        <mat-sidenav-content>
+        <mat-sidenav-content [fileUploadInputFor]="fileUploadQueue" [getUploadUrl]="getNewDatasetUploadUrl" [uploaded]="afterNewDatasetUploaded">
             <ng-content (click)="drawer.close()"></ng-content>
         </mat-sidenav-content>
     </mat-sidenav-container>
 </ng-container>
+
+
+<app-ao-mat-file-upload-queue #fileUploadQueue multiple id="ao-file-upload-queue">
+    <app-ao-mat-file-upload [file]="fileItem.file" [id]="i" *ngFor="let fileItem of fileUploadQueue.files; let i = index"
+        (uploaded)="fileItem.uploaded ? fileItem.uploaded(fileItem) : true" [fileAlias]="'file'" [httpUrl]="fileItem.uploadUrl"></app-ao-mat-file-upload>
+</app-ao-mat-file-upload-queue>

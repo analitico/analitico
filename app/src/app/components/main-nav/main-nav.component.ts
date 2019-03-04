@@ -186,4 +186,21 @@ export class MainNavComponent implements OnInit, OnDestroy {
         this.router.navigate(['.'], { queryParams: queryParams });
     }
 
+    // create a new dataset and return asset upload url
+    getNewDatasetUploadUrl = (file) => {
+        // create dataset
+        return this.apiClient.post('/datasets', { workspace_id: this.workspace.id })
+            .then((response: any) => {
+                return { file: file, url: '/api/datasets/' + response.data.id + '/assets' };
+            });
+    }
+
+    afterNewDatasetUploaded = (fileItem) => {
+        // open dataset view for the uploaded dataset
+        if (fileItem.uploadUrl) {
+            this.router.navigate(['/datasets/' + (fileItem.uploadUrl.substring(
+                fileItem.uploadUrl.indexOf('/datasets/') + 10).replace('/assets', ''))]);
+        }
+    }
+
 }

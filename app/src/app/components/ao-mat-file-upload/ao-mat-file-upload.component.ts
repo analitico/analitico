@@ -10,7 +10,7 @@ import { HttpClient, HttpEventType, HttpHeaders, HttpParams } from '@angular/com
     templateUrl: './ao-mat-file-upload.component.html',
     styleUrls: ['./ao-mat-file-upload.component.css']
 })
-export class AoMatFileUploadComponent implements OnInit, OnDestroy {
+export class AoMatFileUploadComponent implements OnInit {
 
     public isUploading = false;
 
@@ -136,8 +136,5 @@ export class AoMatFileUploadComponent implements OnInit, OnDestroy {
         this.removeEvent.emit(this);
     }
 
-    ngOnDestroy() {
-        console.log('file ' + this.fileName + ' destroyed...');
-    }
 
 }
