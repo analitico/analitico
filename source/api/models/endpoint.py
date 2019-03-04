@@ -106,10 +106,14 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                 if isinstance(data, dict):
                     data = [data]
                 try:
-                    # try converting data into a pandas dataframe
-                    df = pd.DataFrame.from_records(data)
-                    df_copy = df.copy()
-                    results = plugin.run(df, action=job.action)
+                    if self.get_attribute("input", None) == "custom":
+                        # pass json input to plugin as is
+                        results = plugin.run(data, action=job.action)
+                    else:
+                        # try converting data into a pandas dataframe
+                        df = pd.DataFrame.from_records(data)
+                        df_copy = df.copy()
+                        results = plugin.run(df, action=job.action)
                 except:
                     # TODO log warning or have special marker for endpoints that take data in unusual non tabular formats
                     results = plugin.run(data, action=job.action)
