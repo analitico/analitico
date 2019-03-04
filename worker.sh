@@ -3,7 +3,7 @@
 set -e
 
 echo "Injecting env"
-source analitico-env
+source /home/www/analitico-ci/analitico-env.sh
 cd /home/www/analitico
 
 echo "Start worker"
