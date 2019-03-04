@@ -23,6 +23,7 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
     item: any;
     baseUrl: string;
     itemUrl: string;
+    title: string;
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService) {
 
@@ -69,6 +70,7 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
         return this.apiClient.get(this.itemUrl)
             .then((response: any) => {
                 this.item = response.data;
+                this.title = (this.item.attributes && this.item.attributes.title) || this.item.id;
                 this.onLoad();
             })
             .catch((response) => {

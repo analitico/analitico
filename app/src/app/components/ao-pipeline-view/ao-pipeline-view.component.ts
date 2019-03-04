@@ -62,7 +62,6 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
         if (this.item && this.item.id && this.viewContainerRef) {
             // clear the view
             this.viewContainerRef.clear();
-            this.title = (this.item.attributes && this.item.attributes.title) || this.item.id;
 
             this.pluginData = null;
             // unsubscribe to data notifications of previous item
