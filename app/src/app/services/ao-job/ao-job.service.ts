@@ -31,8 +31,8 @@ export class AoJobService {
                 notifier.next({ status: response.data.attributes.status, job: response.data });
             })
             .catch((e) => {
-                // retry after a while
-                setTimeout(this.pollJob.bind(this, notifier), AoJobService.JOB_STATUS_POLL_INTERVAL);
+                // return exception
+                notifier.next({ status: 'exception', exception: e});
             });
     }
 }

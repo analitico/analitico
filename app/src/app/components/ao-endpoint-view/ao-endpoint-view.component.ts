@@ -113,20 +113,10 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         }
 
         this.isProcessing = true;
-        const that = this;
         this.apiClient.post('/endpoints/' + this.item.id + '/predict', inputData)
             .then((response: any) => {
-                const jobId = response.data.id;
-                // set a watcher for this job
-                this.jobService.watchJob(jobId)
-                    .subscribe({
-                        next(data: any) {
-                            if (data.status !== 'processing') {
-                                that.isProcessing = false;
-                            }
-                            this.gotPrediction(data);
-                        }
-                    });
+                this.isProcessing = false;
+                this.gotPrediction(response);
             })
             .catch(() => {
                 this.isProcessing = false;

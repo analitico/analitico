@@ -6,7 +6,7 @@
         <div class="ao-margin-top-bottom">
             <p>Input
                 <button mat-flat-button (click)="selectRandomSample()" style="margin: 10px" color="accent"
-                    *ngIf="predictionSamples && predictionSamples.length">Random</button>
+                    *ngIf="predictionSamples && predictionSamples.length">Pick some data for me!</button>
 
             </p>
             <json-editor [options]="editorOptions" [data]="inputData" #inputEditor></json-editor>
