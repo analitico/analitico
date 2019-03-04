@@ -1,7 +1,8 @@
 import os
 import os.path
 
-import rest_framework.test
+from rest_framework.test import APITestCase
+
 from rest_framework import status
 
 from django.urls import reverse
@@ -15,7 +16,7 @@ from analitico.utilities import read_json, get_dict_dot
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
 
-class APITestCase(rest_framework.test.APITestCase):
+class APITestCase(APITestCase):
     """ Base class for testing analitico APIs """
 
     def read_json_asset(self, path):
