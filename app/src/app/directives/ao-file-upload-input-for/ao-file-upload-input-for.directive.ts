@@ -41,12 +41,14 @@ export class AoFileUploadInputForDirective {
         }
     }
 
-    @HostListener('change')
-    public onChange(): any {
-        const files = this.element.nativeElement.files;
-        this.onFileSelected.emit(files);
-        this.addFilesToQueue(files);
-        this.element.nativeElement.value = '';
+    @HostListener('change', ['$event'])
+    public onChange(event: any): any {
+        if (this.element && this.element.nativeElement && this.element.nativeElement.files) {
+            const files = this.element.nativeElement.files;
+            this.onFileSelected.emit(files);
+            this.addFilesToQueue(files);
+            this.element.nativeElement.value = '';
+        }
     }
 
     @HostListener('drop', ['$event'])

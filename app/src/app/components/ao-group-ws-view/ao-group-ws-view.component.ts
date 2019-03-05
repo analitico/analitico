@@ -116,7 +116,9 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
             });
     }
 
-    changeItemTitle(item) {
+    changeItemTitle(item, $event) {
+        $event.stopPropagation();
+        $event.preventDefault();
         return this.saveItem(item);
     }
 }
