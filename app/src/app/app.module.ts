@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { NgModule, Injectable, ErrorHandler } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -18,7 +18,7 @@ import { AoAnchorDirective } from './directives/ao-anchor/ao-anchor.directive';
 import {
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
     MatCardModule, MatInputModule, MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule, MatOptionModule,
-    MatExpansionModule, MatTableModule, MatSortModule, MatDialog, MatDialogModule, MatProgressBarModule, MatMenuModule
+    MatExpansionModule, MatTableModule, MatSortModule, MatDialog, MatDialogModule, MatProgressBarModule, MatMenuModule, MatTabsModule
 } from '@angular/material';
 import { NgJsonEditorModule } from 'ang-jsoneditor';
 // PLUGINS
@@ -51,6 +51,22 @@ import { AoModelListViewComponent } from './components/ao-model-list-view/ao-mod
 import { AoDialogComponent } from './components/ao-dialog/ao-dialog.component';
 import { AoItemService } from './services/ao-item/ao-item.service';
 import { AoItemBaseViewComponent } from './components/ao-item-base-view/ao-item-base-view.component';
+
+import * as Sentry from '@sentry/browser';
+
+Sentry.init({
+  dsn: 'https://46fb6b3fc5a14466a97e612c012bf786@sentry.io/1408107'
+});
+
+@Injectable()
+export class SentryErrorHandler implements ErrorHandler {
+  constructor() {}
+  handleError(error) {
+    Sentry.captureException(error.originalError || error);
+    throw error;
+  }
+}
+
 
 @NgModule({
     declarations: [
@@ -112,9 +128,11 @@ import { AoItemBaseViewComponent } from './components/ao-item-base-view/ao-item-
         DragDropModule,
         MatDialogModule,
         MatProgressBarModule,
-        MatMenuModule
+        MatMenuModule,
+        MatTabsModule
     ],
-    providers: [AoGlobalStateStore, AoApiClientService, AoPluginsService, AoItemService],
+    providers: [{ provide: ErrorHandler, useClass: SentryErrorHandler },
+        AoGlobalStateStore, AoApiClientService, AoPluginsService, AoItemService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,
         AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent,
         AoEndpointPipelinePluginComponent, AoModelListViewComponent, AoDialogComponent, AoItemBaseViewComponent],
