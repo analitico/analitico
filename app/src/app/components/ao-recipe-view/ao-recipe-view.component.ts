@@ -8,6 +8,7 @@ import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 import { AoPipelineViewComponent } from '../ao-pipeline-view/ao-pipeline-view.component';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     templateUrl: './ao-recipe-view.component.html',
@@ -22,8 +23,9 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
         protected componentFactoryResolver: ComponentFactoryResolver,
         protected pluginsService: AoPluginsService,
         protected snackBar: MatSnackBar,
-        protected jobService: AoJobService) {
-        super(route, apiClient, componentFactoryResolver, pluginsService, snackBar);
+        protected jobService: AoJobService,
+        protected itemService: AoItemService) {
+        super(route, apiClient, componentFactoryResolver, pluginsService, snackBar, itemService);
     }
 
     ngOnInit() {

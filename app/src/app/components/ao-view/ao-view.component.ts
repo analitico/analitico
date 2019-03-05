@@ -10,6 +10,7 @@ import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { take } from 'rxjs/operators';
 import { AoRefreshable } from 'src/app/ao-refreshable';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     selector: 'app-ao-view',
@@ -25,7 +26,7 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
     itemUrl: string;
     title: string;
 
-    constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService) {
+    constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService, protected itemService: AoItemService) {
 
     }
 
@@ -82,19 +83,11 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
 
     saveItem() {
         const that = this;
-        return new Promise(function (resolve, reject) {
-            if (!that.item) {
-                reject(new Error('missing item'));
-            }
-            delete that.item._aoprivate;
-            that.apiClient.patch(that.baseUrl + '/' + that.item.id, that.item)
-                .then((response: any) => {
-                    that.onSaved();
-                    resolve(response.data);
-                })
-                .catch(reject);
-        });
-
+        return this.itemService.saveItem(this.item)
+            .then((response) => {
+                that.onSaved();
+                return response.data;
+            });
     }
 
     onLoad(): void { }

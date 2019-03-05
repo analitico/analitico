@@ -22,6 +22,7 @@ export class AoItemService {
     }
 
     saveItem(item) {
+        delete item._aoprivate;
         const url = item.links.self;
         return this.apiClient.patch(url, item)
             .then((response: any) => {

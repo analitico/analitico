@@ -7,6 +7,7 @@ import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
 import { MatSnackBar } from '@angular/material';
 import { AoRefreshable } from 'src/app/ao-refreshable';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     selector: 'app-ao-pipeline-view',
@@ -27,8 +28,9 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected componentFactoryResolver: ComponentFactoryResolver,
         protected pluginsService: AoPluginsService,
-        protected snackBar: MatSnackBar) {
-        super(route, apiClient);
+        protected snackBar: MatSnackBar,
+        protected itemService: AoItemService) {
+        super(route, apiClient, itemService);
     }
 
     ngOnInit() {

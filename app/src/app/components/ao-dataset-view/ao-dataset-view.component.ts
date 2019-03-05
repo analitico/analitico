@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 import { AoPipelineViewComponent } from '../ao-pipeline-view/ao-pipeline-view.component';
 import { AoRefreshable } from 'src/app/ao-refreshable';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     templateUrl: './ao-dataset-view.component.html',
@@ -27,8 +28,9 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
         protected componentFactoryResolver: ComponentFactoryResolver,
         protected pluginsService: AoPluginsService,
         protected snackBar: MatSnackBar,
-        protected jobService: AoJobService) {
-        super(route, apiClient, componentFactoryResolver, pluginsService, snackBar);
+        protected jobService: AoJobService,
+        protected itemService: AoItemService) {
+        super(route, apiClient, componentFactoryResolver, pluginsService, snackBar, itemService);
     }
 
     refresh() {

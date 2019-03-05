@@ -6,6 +6,7 @@ import { AoViewComponent } from 'src/app/components/ao-view/ao-view.component';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 
 @Component({
@@ -15,8 +16,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export class AoModelViewComponent extends AoViewComponent implements OnInit {
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
-        private snackBar: MatSnackBar) {
-        super(route, apiClient);
+        private snackBar: MatSnackBar,
+        protected itemService: AoItemService) {
+        super(route, apiClient, itemService);
     }
 
     ngOnInit() {

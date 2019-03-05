@@ -109,17 +109,10 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
 
     }
 
-    saveItem(item) {
-        return this.apiClient.patch(this.baseUrl + '/' + item.id, item)
-            .then((response: any) => {
-
-            });
-    }
-
     changeItemTitle(item, $event) {
         $event.stopPropagation();
         $event.preventDefault();
         $event.target.blur();
-        return this.saveItem(item);
+        return this.itemService.saveItem(item);
     }
 }

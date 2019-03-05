@@ -48,7 +48,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         protected messageBox: AoMessageBoxService,
         protected componentFactoryResolver: ComponentFactoryResolver,
         protected itemService: AoItemService) {
-        super(route, apiClient);
+        super(route, apiClient, itemService);
         // initialize JSON editor
         this.editorOptions = new JsonEditorOptions();
         this.editorOptions.modes = ['code']; // set all allowed modes
