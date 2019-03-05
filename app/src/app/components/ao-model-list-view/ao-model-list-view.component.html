@@ -1,21 +1,26 @@
 <mat-card class="ao-item-list-view ao-model-list-view" routerLink="{{route}}">
     <div class="container" fxLayout="row wrap" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <div fxFlex="0 1 calc(33% - 14px)">
-            <mat-form-field>
-                <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
-                    (change)="changeItemTitle($event)" (click)="$event.stopPropagation()">
-            </mat-form-field>
-            <div>
-                <a routerLink="/recipes/{{item.attributes.recipe_id}}">
+        <div fxFlex="0 1 calc(25% - 14px)">
+            <p>
+                {{title}}
+            </p>
+           
+
+        </div>
+        <div fxFlex="0 1 calc(25% - 14px)">
+            <p><a mat-button routerLink="/recipes/{{item.attributes.recipe_id}}">
                     {{item.attributes.recipe_id}}
                 </a>
-            </div>
+            </p>
+            <p>
+                {{item.attributes.training.algorithm}}
+            </p>
 
         </div>
-        <div fxFlex="0 1 calc(33% - 14px)">
-
+        <div fxFlex="0 1 calc(25% - 14px)">
+            <p>{{item.attributes.updated_at | date:'dd-MM-yyyy HH:mm:ss'}}</p>
         </div>
-        <div fxFlex="0 1 calc(33% - 14px)" style="text-align: right;">
+        <div fxFlex="0 1 calc(25% - 14px)" style="text-align: right;">
             <div *ngIf="key1Value !== undefined && key1Value !== null" class="ao-list-view-key1">
                 <p>{{key1Name}}</p>
                 <p style="font-size:20px;">{{key1Value}}</p>

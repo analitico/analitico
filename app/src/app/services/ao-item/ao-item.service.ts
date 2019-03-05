@@ -102,4 +102,59 @@ export class AoItemService {
             return true;
         });
     }
+
+    /**
+     * Get algorithm used by model
+     * @param model model
+     */
+    getModelAlgorithm(model) {
+        try {
+            return model.attributes.training.algorithm;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get KPI values of model
+     * @param model model
+     */
+    getModelKPIValues(model) {
+        const algo = this.getModelAlgorithm(model);
+        // "algorithm": "ml/binary-classification"
+        const kpi = [];
+        try {
+            switch (algo) {
+                case 'ml/binary-classification':
+                    kpi.push({
+                        name: 'Log loss',
+                        value: model.attributes.training.scores.log_loss
+                    });
+                    break;
+                default:
+                    kpi.push({
+                        name: 'Test',
+                        value: 'test'
+                    });
+                    break;
+            }
+        } catch (e) {
+        }
+        return kpi;
+
+    }
+
+    /**
+     * Get models and augment
+     */
+    getModels() {
+        return this.apiClient.get('/models')
+            .then((response) => {
+                const models = response.data;
+                models.forEach(model => {
+                    model._aoprivate = { kpi: this.getModelKPIValues(model) };
+                });
+                return models;
+            });
+    }
 }

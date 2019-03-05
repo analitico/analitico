@@ -86,6 +86,9 @@ export class AoTableViewComponent implements OnInit {
                             // https://www.ag-grid.com/javascript-grid-infinite-scrolling/
                             // lastRow should be the index of the last row if known, otherwise -1
                             params.successCallback(response.data, response.meta.total_records);
+                        })
+                        .catch((e) => {
+                            params.failCallback();
                         });
                 }
             };

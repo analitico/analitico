@@ -1,7 +1,7 @@
 /**
  * Dataset is used to process data through plugins.
  */
-import { Component, OnInit, OnDestroy, ComponentFactoryResolver, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ComponentFactoryResolver, ViewChild, AfterViewInit, ViewContainerRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
@@ -12,14 +12,21 @@ import { AoViewComponent } from '../ao-view/ao-view.component';
 import { JsonEditorOptions, JsonEditorComponent } from 'ang-jsoneditor';
 import { AoMessageBoxService } from 'src/app/services/ao-message-box/ao-message-box';
 import { AoRefreshable } from 'src/app/ao-refreshable';
+import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
+import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
+import { AoS24OrderSortingPredictionViewComponent } from 'src/app/plugins/ao-s24-order-sorting-prediction-view/ao-s24-order-sorting-prediction-view.component';
+import { MatSort, MatTableDataSource } from '@angular/material';
+import * as _ from 'lodash';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     templateUrl: './ao-endpoint-view.component.html',
     styleUrls: ['./ao-endpoint-view.component.css']
 })
-export class AoEndpointViewComponent extends AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
+export class AoEndpointViewComponent extends AoViewComponent implements OnInit, OnDestroy, AoRefreshable, AfterViewInit {
 
     @ViewChild('inputEditor') inputEditor: JsonEditorComponent;
+    @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
 
     isProcessing = false;
     prediction: any;
@@ -29,11 +36,18 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
     inputData: any;
     predictionData: any;
     predictionSamples: any;
+    predictionCustomViewComponent: any;
+    predictionCustomViewContainerRef: ViewContainerRef;
+    predictionCustomViewInstance: IAoPluginInstance;
+    alternativeModels: any;
+    tableModels: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         protected snackBar: MatSnackBar,
         protected jobService: AoJobService,
-        protected messageBox: AoMessageBoxService) {
+        protected messageBox: AoMessageBoxService,
+        protected componentFactoryResolver: ComponentFactoryResolver,
+        protected itemService: AoItemService) {
         super(route, apiClient);
         // initialize JSON editor
         this.editorOptions = new JsonEditorOptions();
@@ -50,13 +64,35 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
 
     }
 
+    ngAfterViewInit() {
+        // get the view of the anchor component
+        this.predictionCustomViewContainerRef = this.aoAnchor.viewContainerRef;
+        this.checkIfCustomViewCanBeLoaded();
+    }
+
+
     onLoad() {
         super.onLoad();
         this.predictionSamples = null;
         this.inputData = null;
         this.predictionData = null;
+        this.predictionCustomViewComponent = null;
+        this.model = null;
+        this.tableModels = null;
+        this.alternativeModels = null;
         // load model
         this.loadModel();
+    }
+
+    checkIfCustomViewCanBeLoaded() {
+        if (this.predictionCustomViewContainerRef && this.predictionCustomViewComponent) {
+            this.predictionCustomViewContainerRef.clear();
+            const componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.predictionCustomViewComponent);
+            // add the component to the anchor view
+            const componentRef = this.predictionCustomViewContainerRef.createComponent(componentFactory);
+            this.predictionCustomViewInstance = (<IAoPluginInstance>componentRef.instance);
+        }
+
     }
 
 
@@ -66,13 +102,43 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
             this.apiClient.get('/models/' + this.item.attributes.model_id)
                 .then((response) => {
                     this.model = response.data;
+                    this.loadAlternativeModels();
                     this.loadSamples();
+                    // check type of alghoritm and load component to view it
+                    switch (this.model.attributes.training.algorithm) {
+                        case 'ml/regression':
+                        case 's24/ordersorting':
+                            this.predictionCustomViewComponent = AoS24OrderSortingPredictionViewComponent;
+                            break;
+                    }
+                    this.checkIfCustomViewCanBeLoaded();
                 });
         }
     }
 
-    loadSamples() {
+    // find models with the same recipe_id for switching
+    loadAlternativeModels() {
+        this.itemService.getModels()
+            .then((models) => {
+                this.alternativeModels = [];
+                models.forEach(model => {
+                    if (model.attributes.recipe_id === this.model.attributes.recipe_id) {
+                        if (model.id === this.model.id) {
+                            this.alternativeModels.unshift(model);
+                        } else {
+                            this.alternativeModels.push(model);
+                        }
+                    }
+                });
 
+                // assign data source for the table
+                this.tableModels = new MatTableDataSource(this.alternativeModels);
+
+            });
+    }
+
+    // load sample data from trained model associated with this endpoint
+    loadSamples() {
         if (this.model && this.model.attributes.data) {
             let predictionSamples, trainingSamples;
             // look for training samples
@@ -99,7 +165,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
 
         }
     }
-    // execute the process command on the dataset and refresh status when finished
+    // execute the predict command on the endpoint
     predict() {
         if (this.isProcessing) {
             return;
@@ -116,23 +182,49 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         this.apiClient.post('/endpoints/' + this.item.id + '/predict', inputData)
             .then((response: any) => {
                 this.isProcessing = false;
-                this.gotPrediction(response);
+                this.gotPrediction(response.data);
             })
             .catch(() => {
                 this.isProcessing = false;
             });
 
     }
-
+    // set the prediction response and pass to the custom view component
     gotPrediction(data) {
         this.predictionData = data;
+        // set data to custom view
+        this.predictionCustomViewInstance.setData(data);
     }
 
+    // pick a random record among the predictionSamples to be used for prediction
     selectRandomSample() {
         if (this.predictionSamples && this.predictionSamples.length > 0) {
             const random = Math.floor(Math.random() * this.predictionSamples.length);
             this.inputData = { data: [this.predictionSamples[random]] };
         }
+    }
 
+    // ask to change the model associated with this endpoint
+    requestToSetNewModel(model, $event) {
+        $event.stopPropagation();
+        $event.preventDefault();
+        const subscription =
+            this.messageBox.show('Do you want to change the model associated with this endpoint?',
+                'Changing endpoint model', 'WARNING: this could affect your production data', 2)
+                .subscribe((response) => {
+                    subscription.unsubscribe();
+                    if (response.result === 'yes') {
+                        this.setModel(model);
+                    }
+                });
+    }
+
+    // sets the model_id of the endpoint and reloads item
+    setModel(model) {
+        this.item.attributes.model_id = model.id;
+        this.saveItem()
+            .then(() => {
+                this.loadItem();
+            });
     }
 }

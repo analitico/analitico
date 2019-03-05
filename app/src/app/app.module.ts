@@ -53,6 +53,7 @@ import { AoItemService } from './services/ao-item/ao-item.service';
 import { AoItemBaseViewComponent } from './components/ao-item-base-view/ao-item-base-view.component';
 
 import * as Sentry from '@sentry/browser';
+import { AoS24OrderSortingPredictionViewComponent } from './plugins/ao-s24-order-sorting-prediction-view/ao-s24-order-sorting-prediction-view.component';
 
 Sentry.init({
   dsn: 'https://46fb6b3fc5a14466a97e612c012bf786@sentry.io/1408107'
@@ -99,7 +100,8 @@ export class SentryErrorHandler implements ErrorHandler {
         AoItemViewComponent,
         AoModelListViewComponent,
         AoDialogComponent,
-        AoItemBaseViewComponent
+        AoItemBaseViewComponent,
+        AoS24OrderSortingPredictionViewComponent
     ],
     imports: [
         BrowserModule,
@@ -135,7 +137,8 @@ export class SentryErrorHandler implements ErrorHandler {
         AoGlobalStateStore, AoApiClientService, AoPluginsService, AoItemService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,
         AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent,
-        AoEndpointPipelinePluginComponent, AoModelListViewComponent, AoDialogComponent, AoItemBaseViewComponent],
+        AoEndpointPipelinePluginComponent, AoModelListViewComponent, AoDialogComponent, AoItemBaseViewComponent, 
+        AoS24OrderSortingPredictionViewComponent],
     bootstrap: [AppComponent]
 })
 export class AppModule {

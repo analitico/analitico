@@ -11,6 +11,7 @@ export class AoItemBaseViewComponent implements OnInit, IAoItemView {
     _item: any;
     _type: any;
     route: string;
+    title: string;
 
     constructor(protected itemService: AoItemService) { }
 
@@ -34,6 +35,7 @@ export class AoItemBaseViewComponent implements OnInit, IAoItemView {
 
     onLoad() {
         this.route = this.item.links.self.substring(this.item.links.self.indexOf('/api') + 4);
+        this.title = (this.item.attributes && this.item.attributes.title) ? this.item.attributes.title : this.item.id;
     }
 
     changeItemTitle($event) {

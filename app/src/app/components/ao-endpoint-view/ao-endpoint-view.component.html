@@ -1,15 +1,69 @@
-<div class="ao-padding">
-    <h4 class="mat-h4 ao-text-center">{{title}}</h4>
-    <p *ngIf="item && item.attributes">Model <a
-            routerLink="/models/{{item.attributes.model_id}}">{{item.attributes.model_id}}</a></p>
-    <div class="">
-        <div class="ao-margin-top-bottom">
+<div class="ao-endpoint-view ao-padding">
+
+    <h1 class="mat-h1" style="margin-bottom: 60px;">{{title}}</h1>
+    <section>
+        <h2 class="mat-h2">Available models</h2>
+        <div style="max-height: 300px; overflow: auto;">
+            <table mat-table [dataSource]="tableModels" class="mat-elevation-z8" style="width: 100%;"
+                *ngIf="tableModels">
+
+                <ng-container matColumnDef="title">
+                    <th mat-header-cell *matHeaderCellDef> Title </th>
+                    <td mat-cell *matCellDef="let element">
+                        {{element.attributes.title || element.id}}
+                    </td>
+                </ng-container>
+                <ng-container matColumnDef="recipeId">
+                    <th mat-header-cell *matHeaderCellDef> Recipe </th>
+                    <td mat-cell *matCellDef="let element" routerLink="/recipes/{{element.attributes.recipe_id}}">
+                        {{element.attributes.recipe_id}} </td>
+                </ng-container>
+                <ng-container matColumnDef="kpi0">
+                    <th mat-header-cell *matHeaderCellDef> KPI </th>
+                    <td mat-cell *matCellDef="let element">
+                        <p *ngFor="let kpi of element._aoprivate.kpi">
+                            {{kpi.name}}: {{kpi.value}}
+                        </p>
+
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="updatedAt">
+                    <th mat-header-cell *matHeaderCellDef> Updated At </th>
+                    <td mat-cell *matCellDef="let element">
+                        {{element.attributes.updated_at | date:'dd/MM/yyyy HH:mm:ss'}}
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef> Actions </th>
+                    <td mat-cell *matCellDef="let element">
+                        <button mat-raised-button color="primary" (click)="requestToSetNewModel(element, $event)"
+                            *ngIf="element.id !== model.id">Deploy</button>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row
+                    *matHeaderRowDef="['title', 'recipeId', 'kpi0', 'updatedAt', 'actions']; sticky: true">
+                </tr>
+                <tr mat-row *matRowDef="let row; columns: ['title', 'recipeId', 'kpi0', 'updatedAt', 'actions'];"
+                    routerLink="/models/{{row.id}}" class="ao-clickable"
+                    [class.ao-current-endpoint-model]="row.id === model.id">
+                </tr>
+            </table>
+        </div>
+    </section>
+    <section>
+        <h2 class="mat-h2">Test prediction</h2>
+        <div class="">
             <p>Input
                 <button mat-flat-button (click)="selectRandomSample()" style="margin: 10px" color="accent"
                     *ngIf="predictionSamples && predictionSamples.length">Pick some data for me!</button>
 
             </p>
-            <json-editor [options]="editorOptions" [data]="inputData" #inputEditor></json-editor>
+            <div class="ao-json-editor-container">
+                <json-editor [options]="editorOptions" [data]="inputData" #inputEditor></json-editor>
+            </div>
         </div>
         <div class="ao-margin-top-bottom ao-text-center">
             <button mat-raised-button (click)="predict()" style="margin: 10px" color="primary">Predict
@@ -18,13 +72,23 @@
         </div>
         <div class="ao-margin-top-bottom">
             <p>Prediction <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" style="display: inline-block; margin-left: 10px; margin-top: 4px; position: relative;
-                top: 4px;"
-                    [strokeWidth]="4">
+                top: 4px;" [strokeWidth]="4">
                 </mat-progress-spinner>
             </p>
-            <json-editor [options]="predictionEditorOptions" [data]="predictionData"></json-editor>
+
+            <mat-tab-group>
+                <mat-tab label="Table">
+                    <ng-template app-ao-anchor>
+                        Loading...
+                    </ng-template>
+                </mat-tab>
+                <mat-tab label="JSON">
+                    <div class="ao-json-editor-container">
+                        <json-editor [options]="predictionEditorOptions" [data]="predictionData"></json-editor>
+                    </div>
+                </mat-tab>
+
+            </mat-tab-group>
         </div>
-
-
-    </div>
+    </section>
 </div>

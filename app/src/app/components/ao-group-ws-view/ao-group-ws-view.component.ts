@@ -119,6 +119,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     changeItemTitle(item, $event) {
         $event.stopPropagation();
         $event.preventDefault();
+        $event.target.blur();
         return this.saveItem(item);
     }
 }

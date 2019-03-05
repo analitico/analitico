@@ -1,0 +1,33 @@
+<div class="ao-s4-order-sorting-prediction-view ao-padding">
+    <div *ngIf="data">
+        <div *ngIf="data && data.records.length > 1">
+            <p>Select record:</p>
+            <mat-select [(value)]="selectedRecord" style="width: 200px;" (selectionChange)="changeRecord(i)">
+                <mat-option [value]="record" *ngFor="let record of data.records; let i=index">{{i+1}}: {{record.ord_id}}
+                </mat-option>
+            </mat-select>
+        </div>
+        <div>
+            <p>Order id: {{selectedRecord.ord_id}}</p>
+            <p>Store ref_id: {{selectedRecord.sto_ref_id}}</p>
+            <p>Store name: {{selectedRecord.sto_name}}</p>
+            <p>Store area: {{selectedRecord.sto_area}}</p>
+            <p>Store province: {{selectedRecord.sto_province}}</p>
+        </div>
+        <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
+            <div fxFlex="0 1 calc(50% - 14px)">
+                <mat-list dense>
+                    <mat-list-item *ngFor="let detail of selectedRecord.details; let i=index">
+                        {{i+1}}: {{detail.odt_name}} ({{detail.odt_id}})</mat-list-item>
+                </mat-list>
+            </div>
+            <div fxFlex="0 1 calc(50% - 14px)">
+                <mat-list dense>
+                    <mat-list-item *ngFor="let detail of data.predictions[selectedRecordIndex].details; let i=index">
+                        {{i+1}}: {{detail.odt_name}} ({{detail.odt_id}})
+                    </mat-list-item>
+                </mat-list>
+            </div>
+        </div>
+    </div>
+</div>

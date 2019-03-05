@@ -86,6 +86,7 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
             if (!that.item) {
                 reject(new Error('missing item'));
             }
+            delete that.item._aoprivate;
             that.apiClient.patch(that.baseUrl + '/' + that.item.id, that.item)
                 .then((response: any) => {
                     that.onSaved();

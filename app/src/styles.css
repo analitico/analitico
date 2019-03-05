@@ -50,11 +50,11 @@ body {
     border-width: 0 0 0 4px;
 }
 
-.mat-drawer-container{
+.mat-drawer-container {
     background-color: #ffffff;
 }
 
-.mat-drawer-side{
+.mat-drawer-side {
     border-right: 0;
 }
 
@@ -135,6 +135,18 @@ body {
 }
 
 .ao-margin-bottom {
+    margin-bottom: 40px;
+}
+
+.ao-margin-top {
+    margin-top: 40px;
+}
+
+section{
+    margin-bottom: 90px;
+}
+
+section > .mat-h2{
     margin-bottom: 40px;
 }
 
@@ -353,16 +365,18 @@ app-ao-nav-list-from-url mat-icon {
     position: relative;
 }
 
-.ao-home-search-box{
+.ao-home-search-box {
     width: 400px;
     background-color: #ffffff;
     margin-left: 60px;
     border-radius: 4px;
 }
-.ao-home-search-box div{ 
+
+.ao-home-search-box div {
     padding: 0 40px;
 }
-.ao-home-search-box i{
+
+.ao-home-search-box i {
     color: #000000;
     font-size: 24px;
     vertical-align: middle;
@@ -370,7 +384,8 @@ app-ao-nav-list-from-url mat-icon {
     opacity: .54;
     float: left;
 }
-.ao-home-search-box input{
+
+.ao-home-search-box input {
     border: 0;
     height: 100%;
     margin-left: 0;
@@ -379,6 +394,7 @@ app-ao-nav-list-from-url mat-icon {
     width: 100%;
     padding-top: 10px;
 }
+
 /**
     Item list views styles
 **/
@@ -391,7 +407,7 @@ app-ao-nav-list-from-url mat-icon {
     margin-bottom: 40px;
 }
 
-.ao-item-base-view{
+.ao-item-base-view {
     width: 200px;
     min-height: 150px;
 }
@@ -400,19 +416,41 @@ app-ao-nav-list-from-url mat-icon {
     padding: 40px;
     position: relative;
 }
-.ao-item-list-view-more{
+
+.ao-item-list-view-more {
     position: absolute;
     top: 10px;
     right: 10px;
     cursor: pointer;
 }
 
-.ao-item-list-view  .mat-form-field{
+.ao-item-list-view .mat-form-field {
     display: inline-block;
 }
 
-.ao-list-view-key1{
+.ao-list-view-key1 {
     display: inline-block;
-
     width: 40%;
+}
+
+.ao-json-editor-container{
+    min-height: 200px;
+    overflow: auto;
+    resize: vertical;
+    padding: 8px;
+}
+json-editor, json-editor > div, .jsoneditor {
+   height: 100%;
+}
+
+.ao-s4-order-sorting-prediction-view .mat-list-item-content {
+    padding: 0 !important;
+}
+
+.ao-endpoint-view .ao-model-list-view{
+    margin: 20px 0;
+}
+
+.ao-current-endpoint-model {
+    background-color: rgb(232, 240, 254);
 }
