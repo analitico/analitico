@@ -2,7 +2,7 @@
  * Dataset is used to process data through plugins.
  */
 import { Component, OnInit, OnDestroy, ComponentFactoryResolver } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -29,7 +29,8 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
         protected pluginsService: AoPluginsService,
         protected snackBar: MatSnackBar,
         protected jobService: AoJobService,
-        protected itemService: AoItemService) {
+        protected itemService: AoItemService,
+        protected router: Router) {
         super(route, apiClient, componentFactoryResolver, pluginsService, snackBar, itemService);
     }
 
@@ -108,5 +109,34 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
                 data: plugins
             });
         });
+    }
+
+    // create a recipe using data of this dataset
+    createRecipe() {
+        if (this.item.attributes.data && this.item.attributes.data.length === 1 && this.item.attributes.data[0].schema) {
+            const recipe = {
+                attributes: {
+                    'workspace_id': this.item.attributes.workspace_id,
+                    'plugin': {
+                        'type': 'analitico/plugin',
+                        'name': 'analitico.plugin.RecipePipelinePlugin',
+                        'plugins': [{
+                            'type': 'analitico/plugin',
+                            'name': 'analitico.plugin.DatasetSourcePlugin',
+                            'source': {
+                                'dataset_id': this.item.id,
+                                'schema': this.item.attributes.data[0].schema
+                            }
+                        }]
+                    }
+                }
+
+            };
+
+            this.apiClient.post('/recipes', recipe)
+                .then((response) => {
+                    this.router.navigate(['/recipes/' + response.data.id]);
+                });
+        }
     }
 }
