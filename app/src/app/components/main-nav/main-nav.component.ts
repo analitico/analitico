@@ -10,6 +10,7 @@ import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-gl
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { setDefaultService } from 'selenium-webdriver/edge';
 import { Router, ActivatedRoute } from '@angular/router';
+import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
     selector: 'app-main-nav',
@@ -40,7 +41,8 @@ export class MainNavComponent implements OnInit, OnDestroy {
         );
 
     constructor(private breakpointObserver: BreakpointObserver, private globalState: AoGlobalStateStore,
-        private apiClient: AoApiClientService, protected router: Router, protected route: ActivatedRoute) { }
+        private apiClient: AoApiClientService, protected router: Router, protected route: ActivatedRoute, 
+        protected itemService: AoItemService) { }
 
     ngOnInit() {
         this.userInitial = null;
@@ -198,8 +200,24 @@ export class MainNavComponent implements OnInit, OnDestroy {
     afterNewDatasetUploaded = (fileItem) => {
         // open dataset view for the uploaded dataset
         if (fileItem.uploadUrl) {
-            this.router.navigate(['/datasets/' + (fileItem.uploadUrl.substring(
-                fileItem.uploadUrl.indexOf('/datasets/') + 10).replace('/assets', ''))]);
+            const datasetId = (fileItem.uploadUrl.substring(
+                fileItem.uploadUrl.indexOf('/datasets/') + 10).replace('/assets', ''));
+            // we can process this
+            const that = this;
+            return this.itemService.processDataset(datasetId)
+                .then((emitter: any) => {
+                    emitter.subscribe({
+                        next(data: any) {
+                            if (data.status === 'completed') {
+                                that.router.navigate(['/datasets/' + datasetId]);
+                            }
+                        }
+                    });
+                })
+                .catch(() => {
+
+                });
+
         }
     }
 

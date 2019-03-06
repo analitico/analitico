@@ -30,7 +30,7 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
         protected pluginsService: AoPluginsService,
         protected snackBar: MatSnackBar,
         protected itemService: AoItemService) {
-        super(route, apiClient, itemService);
+        super(route, apiClient, itemService, snackBar);
     }
 
     ngOnInit() {
@@ -121,10 +121,7 @@ export class AoPipelineViewComponent extends AoViewComponent implements OnInit, 
         this.saveTimeout = setTimeout(this.saveItem.bind(this), 3000);
     }
 
-    onSaved() {
-        // show a message
-        this.snackBar.open('Item has been saved', null, { duration: 3000 });
-    }
+
 
     _getPlugins(): any {
         return new Promise((resolve, reject) => {

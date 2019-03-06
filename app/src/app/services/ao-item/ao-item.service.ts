@@ -4,13 +4,14 @@
 import { Injectable } from '@angular/core';
 import { AoApiClientService } from '../ao-api-client/ao-api-client.service';
 import * as _ from 'lodash';
+import { AoJobService } from '../ao-job/ao-job.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AoItemService {
 
-    constructor(protected apiClient: AoApiClientService) { }
+    constructor(protected apiClient: AoApiClientService, protected jobService: AoJobService) { }
 
     // loads the json object
     loadItem(item, url?) {
@@ -224,5 +225,14 @@ export class AoItemService {
                 return response.data;
             });
 
+    }
+
+    processDataset(datasetId) {
+        return this.apiClient.post('/datasets/' + datasetId + '/data/process', {})
+            .then((response: any) => {
+                const jobId = response.data.id;
+                // set a watcher for this job
+                return this.jobService.watchJob(jobId);
+            });
     }
 }

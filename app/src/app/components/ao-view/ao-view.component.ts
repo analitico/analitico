@@ -11,6 +11,7 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 import { take } from 'rxjs/operators';
 import { AoRefreshable } from 'src/app/ao-refreshable';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
+import { MatSnackBar } from '@angular/material';
 
 @Component({
     selector: 'app-ao-view',
@@ -27,7 +28,10 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
     title: string;
     description: string;
 
-    constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService, protected itemService: AoItemService) {
+    constructor(protected route: ActivatedRoute,
+        protected apiClient: AoApiClientService,
+        protected itemService: AoItemService,
+        protected snackBar: MatSnackBar) {
 
     }
 
@@ -94,5 +98,8 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
 
     onLoad(): void { }
 
-    onSaved(): void { }
+    onSaved() {
+        // show a message
+        this.snackBar.open('Item has been saved', null, { duration: 3000 });
+    }
 }

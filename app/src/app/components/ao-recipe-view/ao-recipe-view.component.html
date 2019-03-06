@@ -3,7 +3,12 @@
 
         <div class="ao-padding">
             <section>
-                <h1 class="mat-h1" style="margin-bottom: 60px;">{{title}}</h1>
+                <h1 class="mat-h1">
+                    <mat-form-field *ngIf="item">
+                        <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
+                            (change)="$event.stopPropagation(); $event.preventDefault(); saveItem(); $event.target.blur();">
+                    </mat-form-field>
+                </h1>
                 <p *ngIf="description">{{description}}}</p>
                 <mat-form-field *ngIf="item && item.attributes">
                     <mat-label>Description</mat-label>
@@ -50,7 +55,8 @@
                         <ng-container matColumnDef="endpoint">
                             <th mat-header-cell *matHeaderCellDef> Endpoint </th>
                             <td mat-cell *matCellDef="let element">
-                                <a mat-button (click)="$event.preventDefault(); $event.stopPropagation();" *ngIf="element._aoprivate.endpoints.length > 0"
+                                <a mat-button (click)="$event.preventDefault(); $event.stopPropagation();"
+                                    *ngIf="element._aoprivate.endpoints.length > 0"
                                     routerLink="/endpoints/{{element._aoprivate.endpoints[0].id}}">{{element._aoprivate.endpoints[0].attributes.title || element._aoprivate.endpoints[0].id}}</a>
                             </td>
                         </ng-container>

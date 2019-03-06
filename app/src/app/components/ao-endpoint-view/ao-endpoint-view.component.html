@@ -1,6 +1,11 @@
 <div class="ao-item-view ao-endpoint-view ao-padding">
     <section>
-        <h1 class="mat-h1" style="margin-bottom: 60px;">{{title}}</h1>
+        <h1 class="mat-h1">
+            <mat-form-field *ngIf="item">
+                <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
+                    (change)="$event.stopPropagation(); $event.preventDefault(); saveItem(); $event.target.blur();">
+            </mat-form-field>
+        </h1>
         <p *ngIf="description">{{description}}}</p>
         <mat-form-field *ngIf="item && item.attributes">
             <mat-label>Description</mat-label>
@@ -88,7 +93,8 @@
         <h2 class="mat-h2">Test predictions</h2>
         <p class="mat-body">
             You can test your endpoint with sample data, or you can provide your own.<br>
-            Click the "Pick some data for me!" button or enter your json input data and the click the "Predict" button below.
+            Click the "Pick some data for me!" button or enter your json input data and the click the "Predict" button
+            below.
         </p>
         <div class="">
             <p>

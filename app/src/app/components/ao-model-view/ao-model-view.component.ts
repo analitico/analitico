@@ -24,7 +24,7 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
         private snackBar: MatSnackBar,
         protected itemService: AoItemService,
         protected router: Router) {
-        super(route, apiClient, itemService);
+        super(route, apiClient, itemService, snackBar);
     }
 
     ngOnInit() {
