@@ -451,6 +451,19 @@ json-editor, json-editor > div, .jsoneditor {
     margin: 20px 0;
 }
 
+.ao-endpoint-view mat-form-field{
+    width: 100%;
+}
+
+@media (min-width: 768px){
+    .ao-endpoint-view mat-form-field{
+        width: 400px;
+    }
+     
+}
+.ao-endpoint-view mat-form-field textarea{
+    min-height: 100px;
+}
 .ao-current-endpoint-model {
     background-color: rgb(232, 240, 254);
 }

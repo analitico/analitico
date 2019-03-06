@@ -1,9 +1,33 @@
 <div class="ao-endpoint-view ao-padding">
+    <section>
+        <h1 class="mat-h1" style="margin-bottom: 60px;">{{title}}</h1>
+        <p *ngIf="description">{{description}}}</p>
+        <mat-form-field *ngIf="item && item.attributes">
+            <mat-label>Description</mat-label>
+            <textarea matInput [(ngModel)]="item.attributes.description" (ngModelChange)="saveItem();"
+                placeholder="Type a description for your endpoint"></textarea>
+        </mat-form-field>
+    </section>
+    <section>
+        <p class="mat-body">Endpoint url</p>
+        <p class="mat-body">
+            <code>{{endpointUrl}}</code>
+        </p>
+        <p class="mat-body" *ngIf="recipe">This endpoint is using a trained model base on this recipe: <a mat-button routerLink="/recipes/{{recipe.id}}">{{ (recipe.attributes.title || recipe.id)}}</a>
 
-    <h1 class="mat-h1" style="margin-bottom: 60px;">{{title}}</h1>
+        </p>
+
+    </section>
     <section>
         <h2 class="mat-h2">Available models</h2>
-        <div style="max-height: 300px; overflow: auto;">
+        <p class="mat-body">This is the list of all the available trained models for this endpoint. <br>
+            The currently deployed model is highlighted in <span class="ao-current-endpoint-model"
+                style="display: inline-block; padding: 4px;">this color</span>.</p>
+        <p class="mat-body">
+            You can deploy another model using the   <button mat-raised-button color="primary" 
+            >Deploy</button> button next to the desired model.
+        </p>
+        <div class="ao-margin-top" style="max-height: 300px; overflow: auto;">
             <table mat-table [dataSource]="tableModels" class="mat-elevation-z8" style="width: 100%;"
                 *ngIf="tableModels">
 
@@ -13,11 +37,7 @@
                         {{element.attributes.title || element.id}}
                     </td>
                 </ng-container>
-                <ng-container matColumnDef="recipeId">
-                    <th mat-header-cell *matHeaderCellDef> Recipe </th>
-                    <td mat-cell *matCellDef="let element" routerLink="/recipes/{{element.attributes.recipe_id}}">
-                        {{element.attributes.recipe_id}} </td>
-                </ng-container>
+   
                 <ng-container matColumnDef="kpi0">
                     <th mat-header-cell *matHeaderCellDef> KPI </th>
                     <td mat-cell *matCellDef="let element">
@@ -44,9 +64,9 @@
                 </ng-container>
 
                 <tr mat-header-row
-                    *matHeaderRowDef="['title', 'recipeId', 'kpi0', 'updatedAt', 'actions']; sticky: true">
+                    *matHeaderRowDef="['title', 'kpi0', 'updatedAt', 'actions']; sticky: true">
                 </tr>
-                <tr mat-row *matRowDef="let row; columns: ['title', 'recipeId', 'kpi0', 'updatedAt', 'actions'];"
+                <tr mat-row *matRowDef="let row; columns: ['title', 'kpi0', 'updatedAt', 'actions'];"
                     routerLink="/models/{{row.id}}" class="ao-clickable"
                     [class.ao-current-endpoint-model]="row.id === model.id">
                 </tr>
@@ -54,9 +74,15 @@
         </div>
     </section>
     <section>
-        <h2 class="mat-h2">Test prediction</h2>
+        <h2 class="mat-h2">Test predictions</h2>
+        <p class="mat-body">
+            You can test your endpoint with sample data, or you can provide your own.<br>
+            Click the "Pick some data for me!" button or enter your json input data and the click the    <button mat-raised-button  color="primary">Predict
+                </button> button below.
+        </p>
         <div class="">
-            <p>Input
+            <p>
+                Input
                 <button mat-flat-button (click)="selectRandomSample()" style="margin: 10px" color="accent"
                     *ngIf="predictionSamples && predictionSamples.length">Pick some data for me!</button>
 
@@ -71,7 +97,8 @@
 
         </div>
         <div class="ao-margin-top-bottom">
-            <p>Prediction <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" style="display: inline-block; margin-left: 10px; margin-top: 4px; position: relative;
+            <p>Predictions
+                <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" style="display: inline-block; margin-left: 10px; margin-top: 4px; position: relative;
                 top: 4px;" [strokeWidth]="4">
                 </mat-progress-spinner>
             </p>

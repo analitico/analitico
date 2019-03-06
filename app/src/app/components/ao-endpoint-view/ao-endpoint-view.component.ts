@@ -41,6 +41,8 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
     predictionCustomViewInstance: IAoPluginInstance;
     alternativeModels: any;
     tableModels: any;
+    endpointUrl: string;
+    recipe: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         protected snackBar: MatSnackBar,
@@ -73,6 +75,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
 
     onLoad() {
         super.onLoad();
+        this.endpointUrl = 'https://' + location.hostname + '/api/endpoints/' + this.item.id + '/predict';
         this.predictionSamples = null;
         this.inputData = null;
         this.predictionData = null;
@@ -80,6 +83,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         this.model = null;
         this.tableModels = null;
         this.alternativeModels = null;
+        this.recipe = null;
         // load model
         this.loadModel();
     }
@@ -99,9 +103,11 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
     // loads the model associated with the endpoint
     loadModel() {
         if (this.item.attributes.model_id) {
-            this.apiClient.get('/models/' + this.item.attributes.model_id)
-                .then((response) => {
-                    this.model = response.data;
+            this.itemService.loadItem(null, '/models/' + this.item.attributes.model_id)
+                .then((model) => {
+                    this.model = model;
+                    this.loadRecipe();
+                    // load other models of same recipe
                     this.loadAlternativeModels();
                     this.loadSamples();
                     // check type of alghoritm and load component to view it
@@ -116,6 +122,16 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         }
     }
 
+    loadRecipe() {
+        this.recipe = null;
+        if (this.model.attributes && this.model.attributes.recipe_id) {
+            this.itemService.loadItem(null, '/recipes/' + this.model.attributes.recipe_id)
+                .then((recipe) => {
+                    this.recipe = recipe;
+                });
+        }
+    }
+
     // find models with the same recipe_id for switching
     loadAlternativeModels() {
         this.itemService.getModels()
@@ -124,6 +140,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
                 models.forEach(model => {
                     if (model.attributes.recipe_id === this.model.attributes.recipe_id) {
                         if (model.id === this.model.id) {
+                            // push current deployed model to the top of the list
                             this.alternativeModels.unshift(model);
                         } else {
                             this.alternativeModels.push(model);
