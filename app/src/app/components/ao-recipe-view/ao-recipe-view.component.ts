@@ -2,13 +2,15 @@
  * Dataset is used to process data through plugins.
  */
 import { Component, OnInit, OnDestroy, ComponentFactoryResolver } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 import { AoPipelineViewComponent } from '../ao-pipeline-view/ao-pipeline-view.component';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
+import { MatTableDataSource } from '@angular/material';
+import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 
 @Component({
     templateUrl: './ao-recipe-view.component.html',
@@ -18,13 +20,15 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
 
     isProcessing = false;
     models: any;
+    tableModels: any;
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         protected componentFactoryResolver: ComponentFactoryResolver,
         protected pluginsService: AoPluginsService,
         protected snackBar: MatSnackBar,
         protected jobService: AoJobService,
-        protected itemService: AoItemService) {
+        protected itemService: AoItemService,
+        protected router: Router) {
         super(route, apiClient, componentFactoryResolver, pluginsService, snackBar, itemService);
     }
 
@@ -39,20 +43,53 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
     }
 
     loadModels() {
-        this.apiClient.get('/models')
-            .then((response: any) => {
+        this.itemService.getModels()
+            .then((models: any) => {
                 this.models = [];
-                response.data.forEach(model => {
+                models.forEach(model => {
                     if (model.attributes.recipe_id === this.item.id) {
                         this.models.push(model);
                     }
                 });
+                // sort updated_at desc
+                this.models.sort(function (a, b) {
+                    return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
+                });
+                // assign data source for the table
+                this.tableModels = new MatTableDataSource(this.models);
             });
-
     }
 
-    process() {
-
+    train() {
+        if (this.isProcessing) {
+            return;
+        }
+        this.isProcessing = true;
+        this.saveItem()
+            .then(() => {
+                const that = this;
+                this.apiClient.post('/recipes/' + this.item.id + '/train', {})
+                    .then((response: any) => {
+                        const jobId = response.data.id;
+                        // set a watcher for this job
+                        this.jobService.watchJob(jobId)
+                            .subscribe({
+                                next(data: any) {
+                                    if (data.status !== 'processing') {
+                                        that.isProcessing = false;
+                                        // reload
+                                        that.loadItem();
+                                    }
+                                }
+                            });
+                    })
+                    .catch(() => {
+                        this.isProcessing = false;
+                    });
+            })
+            .catch(() => {
+                this.isProcessing = false;
+            });
     }
 
     // fake plugin list (should be retrieved using api)
@@ -88,6 +125,15 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
                 data: plugins
             });
         });
+    }
+
+    createEndpointForModel(model) {
+        this.itemService.createEndpointForModel(model)
+            .then((endpoint) => {
+                // open the endpoint page
+                this.router.navigate(['/endpoints/' + endpoint.id]);
+            });
+
     }
 
 }
