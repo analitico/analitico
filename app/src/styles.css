@@ -462,7 +462,7 @@ json-editor, json-editor > div, .jsoneditor {
      
 }
 .ao-item-view mat-form-field textarea{
-    min-height: 100px;
+    min-height: 60px;
 }
 .ao-current-endpoint-model {
     background-color: rgb(232, 240, 254);
