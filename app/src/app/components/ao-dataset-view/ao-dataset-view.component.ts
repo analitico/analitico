@@ -7,7 +7,6 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { environment } from '../../../environments/environment';
-import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 import { AoPipelineViewComponent } from '../ao-pipeline-view/ao-pipeline-view.component';
 import { AoRefreshable } from 'src/app/ao-refreshable';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
@@ -28,7 +27,7 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
         protected componentFactoryResolver: ComponentFactoryResolver,
         protected pluginsService: AoPluginsService,
         protected snackBar: MatSnackBar,
-        protected jobService: AoJobService,
+
         protected itemService: AoItemService,
         protected router: Router) {
         super(route, apiClient, componentFactoryResolver, pluginsService, snackBar, itemService);
@@ -65,20 +64,17 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
         this.saveItem()
             .then(() => {
                 const that = this;
-                this.apiClient.post('/datasets/' + this.item.id + '/data/process', {})
-                    .then((response: any) => {
-                        const jobId = response.data.id;
-                        // set a watcher for this job
-                        this.jobService.watchJob(jobId)
-                            .subscribe({
-                                next(data: any) {
-                                    if (data.status !== 'processing') {
-                                        that.isProcessing = false;
-                                        // reload
-                                        that.loadItem();
-                                    }
+                return this.itemService.processDataset(this.item.id)
+                    .then((emitter: any) => {
+                        emitter.subscribe({
+                            next(data: any) {
+                                if (data.status !== 'processing') {
+                                    that.isProcessing = false;
+                                    // reload
+                                    that.loadItem();
                                 }
-                            });
+                            }
+                        });
                     })
                     .catch(() => {
                         this.isProcessing = false;

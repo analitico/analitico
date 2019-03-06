@@ -1,9 +1,33 @@
-<mat-sidenav-container class="ao-dataset-view-sidenav-container sidenav-container">
+<mat-sidenav-container class="ao-item-view ao-dataset-view-sidenav-container sidenav-container">
     <mat-sidenav-content>
 
         <div class="ao-padding">
-            <h4 class="mat-h4 ao-text-center">{{title}}</h4>
-            <div class="">
+            <section>
+                <h1 class="mat-h1">
+                    <mat-form-field *ngIf="item">
+                        <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
+                            (change)="$event.stopPropagation(); $event.preventDefault(); saveItem(); $event.target.blur();">
+                    </mat-form-field>
+                </h1>
+                <p *ngIf="description">{{description}}}</p>
+                <mat-form-field *ngIf="item && item.attributes">
+                    <mat-label>Description</mat-label>
+                    <textarea matInput [(ngModel)]="item.attributes.description" (ngModelChange)="saveItem();"
+                        placeholder="Type a description for your recipe"></textarea>
+                </mat-form-field>
+            </section>
+            <section>
+                <h2 class="mat-h2">Build datasource</h2>
+                <p class="mat-body">You can import, clean and prepare your data using the plugins on the right.
+                    <br>
+                    Drag and drop, move and delete the plugins to build your datasource.
+                </p>
+                <p class="mat-body">
+                    When it is perfect, hit the "Create receipe" button below.
+                </p>
+                <p class="mat-body">
+                    To start, simply drag and drop your source file below (e.g. csv)
+                </p>
                 <div *ngIf="!pluginData" style="position: relative;">
                     <div [fileUploadInputFor]="fileUploadQueue" class="ao-upload-drop-zone" [uploadUrl]="uploadAssetUrl"
                         [uploaded]="assetUploaded">
@@ -15,12 +39,15 @@
                     </div>
                 </div>
                 <div [class.ao-invisible]="!pluginData">
+
                     <ng-template app-ao-anchor></ng-template>
                     <div style="margin: 20px auto;" class="ao-text-center">
                         <!-- save button -->
                         <button mat-raised-button (click)="save()" style="margin: 10px">Save</button>
+                    </div>
+                    <div style="margin: 20px auto;" class="ao-text-center">
                         <!-- Process button -->
-                        <button mat-raised-button (click)="process()" style="margin: 10px">Process
+                        <button mat-raised-button (click)="process()" style="margin: 10px" color="primary">Process
                             <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20"
                                 [strokeWidth]="4">
                             </mat-progress-spinner>
@@ -30,13 +57,14 @@
                     <h4 class="mat-h4 ao-text-center">Output</h4>
                     <app-ao-table-view [data]="data" *ngIf="data"></app-ao-table-view>
 
-                    <button mat-raised-button (click)="createRecipe()" *ngIf="item && item.attributes.data && item.attributes.data.length === 1 && item.attributes.data[0].schema" color="primary" 
-                    style="display: block; margin: 40px auto;">
+                    <button mat-raised-button (click)="createRecipe()"
+                        *ngIf="item && item.attributes.data && item.attributes.data.length === 1 && item.attributes.data[0].schema"
+                        color="primary" style="display: block; margin: 40px auto;">
                         Create recipe
 
                     </button>
                 </div>
-            </div>
+            </section>
         </div>
 
     </mat-sidenav-content>
