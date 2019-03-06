@@ -35,7 +35,8 @@ export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
             .then((response: any) => {
                 this.rows = response.data;
                 this.buildTable();
-            });
+            })
+            .catch((e) => {});
     }
 
     buildTable() {
