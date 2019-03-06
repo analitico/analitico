@@ -13,8 +13,12 @@ export class AoItemService {
     constructor(protected apiClient: AoApiClientService) { }
 
     // loads the json object
-    loadItem(item) {
-        const url = item.links.self;
+    loadItem(item, url?) {
+        // if not url
+        if (!url) {
+            // get from item links
+            url = item.links.self;
+        }
         return this.apiClient.get(url)
             .then((response: any) => {
                 return response.data;
@@ -22,6 +26,7 @@ export class AoItemService {
     }
 
     saveItem(item) {
+        // remove the _aoprivate key which is used by app but does not have to be stored
         delete item._aoprivate;
         const url = item.links.self;
         return this.apiClient.patch(url, item)
