@@ -156,6 +156,7 @@ export class AoItemService {
                 return items[i];
             }
         }
+        return null;
     }
 
     getItemsByAttribute(items, attribute, value) {
@@ -198,7 +199,16 @@ export class AoItemService {
                     };
 
                 });
-                return models;
+                return models.sort(function (a, b) {
+                    return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
+                });
+            });
+    }
+
+    getModelById(id) {
+        return this.getModels()
+            .then((models) => {
+                return this.getItemById(models, id);
             });
     }
 
