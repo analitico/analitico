@@ -150,17 +150,69 @@ export class AoItemService {
 
     }
 
+    getItemById(items, id) {
+        for (let i = 0, l = items.length; i < l; i++) {
+            if (items[i].id === id) {
+                return items[i];
+            }
+        }
+    }
+
+    getItemsByAttribute(items, attribute, value) {
+        const filteredItems = [];
+        for (let i = 0, l = items.length; i < l; i++) {
+            if (_.get(items[i], attribute) === value) {
+                filteredItems.push(items[i]);
+            }
+        }
+        return filteredItems;
+    }
+
     /**
-     * Get models and augment
+     * Get models width kpi, recipe and endpoints
      */
     getModels() {
-        return this.apiClient.get('/models')
-            .then((response) => {
-                const models = response.data;
+        let models = null;
+        let endpoints = null;
+        let recipes = null;
+        return Promise.all([
+            this.apiClient.get('/models')
+                .then((response) => {
+                    models = response.data;
+                }),
+            this.apiClient.get('/endpoints')
+                .then((response) => {
+                    endpoints = response.data;
+                }),
+            this.apiClient.get('/recipes')
+                .then((response) => {
+                    recipes = response.data;
+                })
+        ])
+            .then(() => {
                 models.forEach(model => {
-                    model._aoprivate = { kpi: this.getModelKPIValues(model) };
+                    model._aoprivate = {
+                        kpi: this.getModelKPIValues(model),
+                        recipe: this.getItemById(recipes, model.attributes.recipe_id),
+                        endpoints: this.getItemsByAttribute(endpoints, 'attributes.model_id', model.id)
+                    };
+
                 });
                 return models;
             });
+    }
+
+    /**
+     * Create a new endpoint for this model
+     * @param model the model
+     */
+    createEndpointForModel(model) {
+
+        const params = { attributes: { 'workspace_id': model.attributes.workspace_id, model_id: model.id } };
+        return this.apiClient.post('/endpoints', params)
+            .then((response) => {
+                return response.data;
+            });
+
     }
 }
