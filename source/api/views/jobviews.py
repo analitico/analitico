@@ -35,6 +35,7 @@ from rest_framework import status
 from api.models import ItemMixin, Job
 from api.factory import factory
 from analitico.utilities import logger, get_dict_dot
+from .logviews import LogViewSetMixin
 
 ##
 ## JobSerializer
@@ -126,7 +127,7 @@ class JobViewSetMixin:
 ##
 
 
-class JobViewSet(AssetViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class JobViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A job can be created, listed, updated, cancelled, etc. """
 
     item_class = api.models.Job

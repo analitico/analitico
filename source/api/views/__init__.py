@@ -9,3 +9,4 @@ from .modelviews import ModelViewSet
 from .endpointviews import EndpointViewSet
 from .userviews import UserViewSet
 from .pluginviews import PluginViewSet
+from .logviews import LogViewSet
