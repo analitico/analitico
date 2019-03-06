@@ -3,6 +3,7 @@ import jsonfield
 import django.utils.crypto
 import json
 import logging
+import logging.handlers
 import queue
 import datetime
 import pytz
@@ -58,6 +59,14 @@ class Log(ItemMixin, models.Model):
 
     # Additional attributes are stored as json (used by AttributeMixin)
     attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
+
+    @property
+    def name(self):
+        return self.get_attribute("name", None)
+
+    @property
+    def level_name(self):
+        return logging.getLevelName(self.level)
 
     def __str__(self):
         return self.id + " " + self.message
@@ -131,51 +140,54 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
 ##
 
 
-class LogQueueHandler(logging.handlers.QueueHandler):
-    """ This handler simply takes a log record, sticks it in the queue and returns w/o blocking """
-
-    pass
-
-
-class LogQueueListener(logging.handlers.QueueListener):
-    pass
-
-
 class LogHandler(logging.NullHandler):
     """ This handler takes log records and stores them on the server """
 
     def handle(self, record):
         try:
-            print("LogHandler - handle %s" % record.message)
             log = log_record_to_log(record)
             log.save()
-        except Exception:
+        except Exception as exc:
             try:
                 # we use atttributes to save in json a number of items
                 # that have been passed to the logger some of which may not
                 # be serializable to json. if this happens, we'll just encode
                 # basic types and move on
-                log.attributes = json.loads(json.dumps(log.attributes, skipkeys=True))
+                attrs = json.loads(json.dumps(log.attributes, skipkeys=True, default=lambda o: "NOT_SERIALIZABLE"))
+                log.attributes = attrs
                 log.save()
             except Exception:
                 # do not log errors here otherwise they will be captured by log handler, repeat, rinse, etc..
                 pass
 
 
-try:
-    # setup a log queue handler that enqueues records quickly w/o blocking
-    log_queue = queue.Queue(-1)  # no limit on size
-    log_queue_handler = LogQueueHandler(log_queue)
+# This handler simply takes a log record, sticks it in the queue and returns w/o blocking """
+class LogQueueHandler(logging.handlers.QueueHandler):
+    """ This handler runs LogHandler with a queue so it doesn't slow down client while logging """
+
+    log_handler = None
+    log_listener = None
+
+    def __init__(self, log_queue=None, **kwargs):
+        if log_queue is None:
+            log_queue = queue.Queue(-1)  # no limit on size
+        self.log_handler = LogHandler()
+        self.log_listener = logging.handlers.QueueListener(log_queue, self.log_handler)
+        self.log_listener.start()
+        return super().__init__(log_queue, **kwargs)
+
+
+##
+## Setup
+##
+
+log_queue_handler = None
+
+if log_queue_handler is None:
+    # create a log handler to sql database
+    log_queue_handler = LogQueueHandler()
     log_queue_handler.setLevel(logging.INFO)
-
-    # handler will be called in a separate thread
-    log_handler = LogHandler()
-
-    log_listener = LogQueueListener(log_queue, log_handler)
-    log_listener.start()
-
+    # add to root logger
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     root.addHandler(log_queue_handler)
-except Exception as exc:
-    print("ERROR " + str(exc))

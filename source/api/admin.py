@@ -97,6 +97,6 @@ class JobAdmin(admin.ModelAdmin):
 @admin.register(Log)
 class LogAdmin(admin.ModelAdmin):
     fields = ("id", "workspace", "item_id", "level", "message", "attributes")
-    list_display = ("id", "workspace", "item_id", "level", "message", "created_at")
-    search_fields = ("id", "workspace", "item_id", "level", "message", "attributes")
+    list_display = ("id", "workspace", "item_id", "name", "level", "level_name", "message", "created_at")
+    search_fields = ("id", "workspace", "item_id", "level", "message", "created_at")
     ordering = ("-created_at",)
