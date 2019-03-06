@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import ugettext_lazy as _
 
 from .models import User, Token
-from .models import Workspace, Dataset, Recipe, Job, Model, Endpoint
+from .models import Workspace, Dataset, Recipe, Job, Model, Endpoint, Log
 
 # TODO customize admin site
 # https://stackoverflow.com/questions/4938491/django-admin-change-header-django-administration-text/24983231#24983231
@@ -92,3 +92,11 @@ class JobAdmin(admin.ModelAdmin):
     )
     search_fields = ("id", "title", "description", "attributes", "status", "action")
     ordering = ("-updated_at",)
+
+
+@admin.register(Log)
+class LogAdmin(admin.ModelAdmin):
+    fields = ("id", "workspace", "item_id", "level", "message", "attributes")
+    list_display = ("id", "workspace", "item_id", "level", "message", "created_at")
+    search_fields = ("id", "workspace", "item_id", "level", "message", "attributes")
+    ordering = ("-created_at",)

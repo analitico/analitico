@@ -11,3 +11,4 @@ from .model import Model
 from .job import Job
 from .endpoint import Endpoint
 from .user import User, USER_THUMBNAIL_SIZE
+from .log import Log
