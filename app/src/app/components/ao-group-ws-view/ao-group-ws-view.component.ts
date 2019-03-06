@@ -30,7 +30,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected globalState: AoGlobalStateStore, protected router: Router,
         protected itemService: AoItemService) {
-        super(route, apiClient);
+        super(route, apiClient, itemService);
     }
 
     ngOnInit() {

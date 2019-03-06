@@ -41,7 +41,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
         );
 
     constructor(private breakpointObserver: BreakpointObserver, private globalState: AoGlobalStateStore,
-        private apiClient: AoApiClientService, protected router: Router, protected route: ActivatedRoute, 
+        private apiClient: AoApiClientService, protected router: Router, protected route: ActivatedRoute,
         protected itemService: AoItemService) { }
 
     ngOnInit() {
@@ -182,10 +182,10 @@ export class MainNavComponent implements OnInit, OnDestroy {
     // perform a search into the workspace
     search() {
         let queryParams = {};
-        if (this.searchQueryInput) {
-            queryParams = { q: this.searchQueryInput };
-        }
-        this.router.navigate(['.'], { queryParams: queryParams });
+
+        queryParams = { q: this.searchQueryInput };
+
+        this.router.navigate([], { queryParams: queryParams, relativeTo: this.route, queryParamsHandling: 'merge' });
     }
 
     // create a new dataset and return asset upload url
