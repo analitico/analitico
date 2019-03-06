@@ -68,7 +68,7 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
         this.saveItem()
             .then(() => {
                 const that = this;
-                this.apiClient.post('/recipes/' + this.item.id + '/train', {})
+                this.apiClient.post('/recipes/' + this.item.id + '/jobs/train', {})
                     .then((response: any) => {
                         const jobId = response.data.id;
                         // set a watcher for this job

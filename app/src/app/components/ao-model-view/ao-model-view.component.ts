@@ -21,7 +21,7 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
 
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
-        private snackBar: MatSnackBar,
+        protected snackBar: MatSnackBar,
         protected itemService: AoItemService,
         protected router: Router) {
         super(route, apiClient, itemService, snackBar);
