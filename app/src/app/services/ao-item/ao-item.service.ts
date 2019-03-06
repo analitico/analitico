@@ -170,10 +170,7 @@ export class AoItemService {
         return filteredItems;
     }
 
-    /**
-     * Get models width kpi, recipe and endpoints
-     */
-    getModels() {
+    getItems() {
         let models = null;
         let endpoints = null;
         let recipes = null;
@@ -192,19 +189,78 @@ export class AoItemService {
                 })
         ])
             .then(() => {
-                models.forEach(model => {
+                return { models: models, recipes: recipes, endpoints: endpoints };
+            });
+    }
+
+    augmentModels(models) {
+        if (Array.isArray(models)) {
+            for (let i = 0, l = models.length; i < l; i++) {
+                models[i] = this.augmentModels(models[i]);
+            }
+            return models;
+        } else {
+            const model = models;
+            if (!model._aoprivate) {
+                model._aoprivate = {};
+            }
+            model._aoprivate['kpi'] = this.getModelKPIValues(model);
+            return model;
+        }
+    }
+
+    /**
+     * Get models width kpi, recipe and endpoints
+     */
+    getModels() {
+        return this.getItems()
+            .then((items) => {
+                items.models.forEach(model => {
                     model._aoprivate = {
-                        kpi: this.getModelKPIValues(model),
-                        recipe: this.getItemById(recipes, model.attributes.recipe_id),
-                        endpoints: this.getItemsByAttribute(endpoints, 'attributes.model_id', model.id)
+                        recipe: this.getItemById(items.recipes, model.attributes.recipe_id),
+                        endpoints: this.getItemsByAttribute(items.endpoints, 'attributes.model_id', model.id)
                     };
+                    model = this.augmentModels(model);
 
                 });
-                return models.sort(function (a, b) {
+                return items.models.sort(function (a, b) {
                     return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
                 });
             });
     }
+
+    getRecipes() {
+        return this.getItems()
+            .then((items) => {
+                items.recipes.forEach(recipe => {
+                    // get recipe models
+                    recipe._aoprivate = {
+                        models: this.augmentModels(this.getItemsByAttribute(items.models, 'attributes.recipe_id', recipe.id))
+                    };
+
+                });
+                return items.recipes.sort(function (a, b) {
+                    return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
+                });
+            });
+    }
+
+    getEndpoints() {
+        return this.getItems()
+            .then((items) => {
+                items.endpoints.forEach(endpoint => {
+                    // look for endpoint model
+                    endpoint._aoprivate = {
+                        model: this.augmentModels(this.getItemById(items.models, endpoint.attributes.model_id))
+                    };
+
+                });
+                return items.endpoints.sort(function (a, b) {
+                    return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
+                });
+            });
+    }
+
 
     getModelById(id) {
         return this.getModels()

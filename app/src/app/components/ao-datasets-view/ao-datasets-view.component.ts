@@ -13,7 +13,7 @@ import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 })
 export class AoDatasetsViewComponent extends AoGroupWsViewComponent implements OnInit {
 
-    displayedColumns: string[] = ['attributes.title', 'attributes.created_at', 'actions'];
+    displayedColumns: string[] = ['attributes.title', 'attributes.updated_at', 'actions'];
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected globalState: AoGlobalStateStore, protected jobService: AoJobService, protected router: Router,
@@ -38,21 +38,22 @@ export class AoDatasetsViewComponent extends AoGroupWsViewComponent implements O
         }
         dataset.isProcessing = true;
         const that = this;
-        this.apiClient.post('/datasets/' + dataset.id + '/data/process', {})
-            .then((response: any) => {
-                const jobId = response.data.id;
-                // set a watcher for this job
-                this.jobService.watchJob(jobId)
-                    .subscribe({
-                        next(data: any) {
-                            if (data.status !== 'processing') {
-                                dataset.isProcessing = false;
-                            }
+        return this.itemService.processDataset(dataset.id)
+            .then((emitter: any) => {
+                emitter.subscribe({
+                    next(data: any) {
+                        if (data.status !== 'processing') {
+                            dataset.isProcessing = false;
+                            // refresh UI
+                            that.refresh();
                         }
-                    });
+                    }
+                });
             })
             .catch(() => {
                 dataset.isProcessing = false;
             });
+
+
     }
 }

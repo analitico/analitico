@@ -1,16 +1,14 @@
 <div class="ao-padding">
-    <div class="container" fxLayout="row" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <app-ao-item-view [item]="item" type="preview" *ngFor="let item of topItems" fxFlex="0 1 calc(25% - 14px)">
-        </app-ao-item-view>
-    </div>
-    <div style="margin: 40px 0; float:right;">
+    <h1 class="mat-h1">Datasets</h1>
+
+    <div class="ao-group-view-add-new-item-button">
         <a mat-mini-fab class="ao-add-item-button">
             <i class="material-icons" (click)="addItem()">
                 add
             </i>
         </a>
     </div>
-    <div>
+    <div class="ao-margin-top">
         <table mat-table [dataSource]="tableDS" matSort class="mat-elevation-z8" style="width: 100%;">
 
             <ng-container matColumnDef="attributes.title">
@@ -23,13 +21,13 @@
                 </td>
             </ng-container>
 
-            <ng-container matColumnDef="attributes.created_at">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Created At </th>
-                <td mat-cell *matCellDef="let element"> {{element.attributes.created_at | date:'medium'}} </td>
+            <ng-container matColumnDef="attributes.updated_at">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Updated at </th>
+                <td mat-cell *matCellDef="let element"> {{element.attributes.updated_at | date:'dd/MM/yyyy HH:mm:ss'}} </td>
             </ng-container>
 
             <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Actions </th>
+                <th mat-header-cell *matHeaderCellDef> Actions </th>
                 <td mat-cell *matCellDef="let element">
                     <button mat-raised-button (click)="process(element, $event)"
                         style="margin-right: 10px;">Process</button>

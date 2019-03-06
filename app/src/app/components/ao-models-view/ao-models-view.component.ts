@@ -17,15 +17,29 @@ import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 export class AoModelsViewComponent extends AoGroupWsViewComponent implements OnInit {
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
-        protected globalState: AoGlobalStateStore,  protected router: Router,
+        protected globalState: AoGlobalStateStore, protected router: Router,
         protected itemService: AoItemService) {
         super(route, apiClient, globalState, router, itemService);
     }
 
     ngOnInit() {
         super.ngOnInit();
-        this.displayedColumns = ['attributes.title', 'attributes.recipe_id', 'attributes.created_at',
-            'attributes.training.scores.best_score.learn.RMSE'];
+        this.displayedColumns = ['attributes.title', 'attributes.recipe_id', 'attributes.updated_at',
+            'attributes.training.scores.best_score.learn.RMSE', 'endpoint', 'actions'];
+    }
+
+    // loads items
+    loadItems() {
+        this.itemService.getModels()
+            .then((models: any) => {
+                this.items = models;
+                this.onLoad();
+            })
+            .catch((response) => {
+                if (response.status === 404) {
+                    window.location.href = '/app';
+                }
+            });
     }
 
     onLoad() {

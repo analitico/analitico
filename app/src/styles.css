@@ -467,3 +467,9 @@ json-editor, json-editor > div, .jsoneditor {
 .ao-current-endpoint-model {
     background-color: rgb(232, 240, 254);
 }
+
+.ao-group-view-add-new-item-button{
+    position: fixed;
+    bottom: 40px;
+    right: 70px;
+}

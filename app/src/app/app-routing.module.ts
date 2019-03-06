@@ -12,9 +12,10 @@ import { AoHomeViewComponent } from './components/ao-home-view/ao-home-view.comp
 const routes: Routes = [
     { path: '', component: AoHomeViewComponent },
     { path: 'datasets', component: AoDatasetsViewComponent },
-    { path: 'recipes', component: AoGroupWsViewComponent },
     { path: 'models', component: AoModelsViewComponent },
+    { path: 'recipes', component: AoGroupWsViewComponent },
     { path: 'endpoints', component: AoGroupWsViewComponent },
+
     { path: 'datasets/:id', component: AoDatasetViewComponent },
     { path: 'recipes/:id', component: AoRecipeViewComponent },
     { path: 'models/:id', component: AoModelViewComponent },
