@@ -70,7 +70,7 @@
                     <td mat-cell *matCellDef="let element">
                         <button mat-raised-button color="primary"
                             (click)="$event.stopPropagation(); $event.preventDefault(); requestToSetNewModel(element, $event)"
-                            *ngIf="element.id !== model.id && element._aoprivate.endpoints.length === 0">Deploy</button>
+                            *ngIf="element.id !== model.id">Deploy</button>
                     </td>
                 </ng-container>
 
