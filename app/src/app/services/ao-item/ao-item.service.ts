@@ -44,6 +44,10 @@ export class AoItemService {
     hasValueInProperty(obj, filterString) {
         if (typeof obj === 'object') {
             for (const key in obj) {
+                // do not look into _aoprivate to avoid infinite loop
+                if (key === '_aoprivate') {
+                    continue;
+                }
                 // optional check for properties from prototype chain
                 if (obj.hasOwnProperty(key)) {
                     const value = obj[key];
