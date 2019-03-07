@@ -9,6 +9,7 @@ from rest_framework.exceptions import APIException
 from rest_framework import status
 
 import analitico
+import analitico.plugin
 
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .items import ItemMixin
@@ -61,6 +62,13 @@ class Recipe(ItemMixin, models.Model):
                 plugin_settings = self.get_attribute("plugin")
                 if not plugin_settings:
                     raise APIException("Recipe.run - the recipe has no configured plugins", status.HTTP_400_BAD_REQUEST)
+
+                # apply an id to any plugin that may be missing one
+                # and save the recipe with the new plugin ids so that
+                # the job can track logged actions by each plugin
+                if analitico.plugin.apply_plugin_id(plugin_settings):
+                    self.set_attribute("plugin", plugin_settings)
+                    self.save()
 
                 plugin = factory.get_plugin(**plugin_settings)
                 training = plugin.run(action=job.action)
