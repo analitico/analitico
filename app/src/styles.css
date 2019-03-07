@@ -476,6 +476,7 @@ json-editor, json-editor > div, .jsoneditor {
     position: fixed;
     bottom: 40px;
     right: 70px;
+    z-index: 2;
 }
 
 .ao-home-view .ao-upload-drop-zone{
