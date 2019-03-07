@@ -99,7 +99,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
         $event.preventDefault();
         $event.stopPropagation();
 
-        if (confirm('Delete?')) {
+        if (confirm('Delete ' + item.id + '?')) {
             this.apiClient.delete(this.baseUrl + '/' + item.id)
                 .then((response: any) => {
                     // reload

@@ -1,13 +1,15 @@
 /**
  * Home view shows a summary of all the items contained in the workspace
  */
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoRefreshable } from 'src/app/ao-refreshable';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 
 import { ActivatedRoute } from '@angular/router';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
+import { MatTableDataSource, MatSort } from '@angular/material';
+import * as _ from 'lodash';
 
 @Component({
     selector: 'app-ao-home-view',
@@ -16,7 +18,7 @@ import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 })
 export class AoHomeViewComponent implements OnInit, OnDestroy, AoRefreshable {
 
-
+    @ViewChild(MatSort) sort: MatSort;
 
     constructor(protected apiClient: AoApiClientService, private globalState: AoGlobalStateStore, protected route: ActivatedRoute,
         protected itemService: AoItemService) {
@@ -27,6 +29,8 @@ export class AoHomeViewComponent implements OnInit, OnDestroy, AoRefreshable {
     workspace: any;
     queryParamsSubscription: any;
     query: string;
+    displayedColumns: string[] = ['type', 'attributes.title', 'attributes.updated_at'];
+    tableDS;
 
     ngOnInit() {
         // subscribe to query parameters changes to get search query
@@ -53,18 +57,34 @@ export class AoHomeViewComponent implements OnInit, OnDestroy, AoRefreshable {
     // fake method to return objects
     _getObjects() {
         this.items = [];
-        this.apiClient.get('/models')
-            .then(this.addItems.bind(this));
+        // only load on search
+        if (this.query) {
+            this.itemService.getItems()
+                .then((items) => {
+                    this.items = [];
+                    this.addItems(items.datasets);
+                    this.addItems(items.recipes);
+                    this.addItems(items.models);
+                    this.addItems(items.endpoints);
+                });
+        }
 
     }
 
-    addItems(response) {
-        this.items = [];
-        let items = this.itemService.filterItemsByDictionary(response.data, this.getWorkspacefilter());
+    addItems(items) {
+        // filter by workspace
+        items = this.itemService.filterItemsByDictionary(items, this.getWorkspacefilter());
         if (this.query) {
+            // filter by query
             items = this.itemService.filterItemsByString(items, this.query);
         }
         this.items = this.items.concat(items);
+        this.tableDS = new MatTableDataSource(this.items);
+        // table fields are nested in the dictionary, hence we need an accessor to the value from the column name for sorting purpose
+        this.tableDS.sortingDataAccessor = (item, property) => {
+            return _.get(item, property);
+        };
+        this.tableDS.sort = this.sort;
     }
 
     getWorkspacefilter() {
@@ -81,7 +101,6 @@ export class AoHomeViewComponent implements OnInit, OnDestroy, AoRefreshable {
 
     // receive refresh updates
     refresh() {
-        console.log('refresh');
         this.init();
     }
 

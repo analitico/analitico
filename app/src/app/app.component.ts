@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AoRefreshable } from './ao-refreshable';
 import { Router, NavigationEnd } from '@angular/router';
 
@@ -28,7 +28,6 @@ export class AppComponent implements OnDestroy {
                 }
                 // save this url
                 this.lastUrl = e.urlAfterRedirects;
-
             }
         });
     }

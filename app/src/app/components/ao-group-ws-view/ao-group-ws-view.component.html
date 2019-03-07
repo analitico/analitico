@@ -1,13 +1,6 @@
 <div class="ao-padding">
     <h1 class="mat-h1" style="text-transform: capitalize;">{{baseUrl.substring(1)}}</h1>
 
-    <div class="ao-group-view-add-new-item-button">
-        <a mat-mini-fab class="ao-add-item-button">
-            <i class="material-icons" (click)="addItem()">
-                add
-            </i>
-        </a>
-    </div>
     <div class="ao-margin-top">
         <table mat-table [dataSource]="tableDS" matSort class="mat-elevation-z8" style="width: 100%;">
 
@@ -27,9 +20,19 @@
             <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef> Actions </th>
                 <td mat-cell *matCellDef="let element">
-                    <i class="ao-group-ws-table-delete-button material-icons" (click)="deleteItem(element, $event)">
-                        clear
-                    </i>
+
+                    <button mat-icon-button [matMenuTriggerFor]="menu" class="ao-group-ws-table-delete-button"
+                        (click)="$event.preventDefault(); $event.stopPropagation();">
+                        <mat-icon>more_vert</mat-icon>
+                    </button>
+                    <mat-menu #menu="matMenu">
+                        <button mat-menu-item (click)="deleteItem(element, $event)">
+                            <mat-icon>delete</mat-icon>
+                            <span>delete</span>
+                        </button>
+                    </mat-menu>
+
+
                     <mat-progress-spinner mode="indeterminate" [class.ao-invisible]="!element.isProcessing"
                         [diameter]="22" [strokeWidth]="2">
                     </mat-progress-spinner>

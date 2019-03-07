@@ -41,6 +41,7 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
                 this.recipe = this.item._aoprivate.recipe;
                 this.title = (this.item.attributes && this.item.attributes.title) || this.item.id;
                 this.description = this.item.description;
+                this.alternativeModels = [];
                 this.onLoad();
             })
             .catch((response) => {

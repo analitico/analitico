@@ -253,6 +253,10 @@ section > .mat-h2{
     opacity: 0;
 }
 
+.ao-hidden {
+    visibility: hidden;
+}
+
 .ao-dataset-view-sidenav {
     padding: 20px;
 }
@@ -472,4 +476,23 @@ json-editor, json-editor > div, .jsoneditor {
     position: fixed;
     bottom: 40px;
     right: 70px;
+}
+
+.ao-home-view .ao-upload-drop-zone{
+    width: 100%;
+    overflow: hidden;
+}
+
+.ao-home-view .ao-upload-drop-zone div{
+    opacity: 0.6;
+    margin-top: 40px;
+    text-align: center;
+}
+
+.ao-home-view .material-icons{
+    margin: 100px auto 0 auto;
+    display: block;
+    width: 80px;
+    font-size: 80px;
+    opacity: 0.2;
 }

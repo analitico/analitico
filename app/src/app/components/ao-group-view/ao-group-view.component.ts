@@ -69,7 +69,7 @@ export class AoGroupViewComponent implements OnInit, OnDestroy, AoRefreshable {
             });
     }
 
-    onLoad(): void { 
+    onLoad(): void {
         if (this.query) {
             this.items = this.itemService.filterItemsByString(this.items, this.query);
         }
