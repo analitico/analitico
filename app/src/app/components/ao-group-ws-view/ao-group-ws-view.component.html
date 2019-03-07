@@ -13,7 +13,7 @@
 
             <ng-container matColumnDef="attributes.title">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
-                <td mat-cell *matCellDef="let element">
+                <td mat-cell *matCellDef="let element" title="{{element.id}}">
                     {{element.attributes.title || element.id}}
                 </td>
             </ng-container>

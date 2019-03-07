@@ -185,10 +185,15 @@ export class AoItemService {
      * Return the list of all item available to the user with their relationships
      */
     getItems() {
+        let datasets = null;
         let models = null;
         let endpoints = null;
         let recipes = null;
         return Promise.all([
+            this.apiClient.get('/datasets')
+                .then((response) => {
+                    datasets = response.data;
+                }),
             this.apiClient.get('/models')
                 .then((response) => {
                     models = response.data;
@@ -203,6 +208,13 @@ export class AoItemService {
                 })
         ])
             .then(() => {
+                datasets.forEach(dataset => {
+                    // get model recipe and endpoints
+                    dataset._aoprivate = {
+                        recipes: this.getItemsByAttribute(recipes, 'attributes.plugin.plugins[0].source.dataset_id', dataset.id)
+                    };
+                });
+
                 models.forEach(model => {
                     // get model recipe and endpoints
                     model._aoprivate = {
@@ -227,7 +239,7 @@ export class AoItemService {
                     };
 
                 });
-                const result = { models: models, recipes: recipes, endpoints: endpoints };
+                const result = { datasets: datasets, models: models, recipes: recipes, endpoints: endpoints };
                 console.log(result);
                 return result;
             });
