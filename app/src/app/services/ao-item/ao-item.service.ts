@@ -296,4 +296,11 @@ export class AoItemService {
                 return this.jobService.watchJob(jobId);
             });
     }
+
+    changeEndpointModel(endpoint, modelId) {
+        endpoint.attributes.model_id = modelId;
+        // remove old pipeline
+        delete endpoint.attributes.plugin;
+        return this.saveItem(endpoint);
+    }
 }

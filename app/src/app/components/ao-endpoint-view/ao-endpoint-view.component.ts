@@ -238,8 +238,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
 
     // sets the model_id of the endpoint and reloads item
     setModel(model) {
-        this.item.attributes.model_id = model.id;
-        this.saveItem()
+        return this.itemService.changeEndpointModel(this.item, model.id)
             .then(() => {
                 this.loadItem();
             });

@@ -196,9 +196,9 @@ export class MainNavComponent implements OnInit, OnDestroy {
                 return { file: file, url: '/api/datasets/' + response.data.id + '/assets' };
             });
     }
-
+    
+    // open dataset view for the uploaded dataset
     afterNewDatasetUploaded = (fileItem) => {
-        // open dataset view for the uploaded dataset
         if (fileItem.uploadUrl) {
             const datasetId = (fileItem.uploadUrl.substring(
                 fileItem.uploadUrl.indexOf('/datasets/') + 10).replace('/assets', ''));

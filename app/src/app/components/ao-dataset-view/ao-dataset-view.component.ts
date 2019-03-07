@@ -119,10 +119,10 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
                         'plugins': [{
                             'type': 'analitico/plugin',
                             'name': 'analitico.plugin.DatasetSourcePlugin',
-                            'source': {
+                            /* 'source': {
                                 'dataset_id': this.item.id,
                                 'schema': this.item.attributes.data[0].schema
-                            }
+                            } */
                         }]
                     }
                 }
