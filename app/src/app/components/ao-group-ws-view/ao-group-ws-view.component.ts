@@ -9,6 +9,7 @@ import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-gl
 import { MatSort, MatTableDataSource } from '@angular/material';
 import * as _ from 'lodash';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
+import { AoMessageBoxService } from 'src/app/services/ao-message-box/ao-message-box';
 
 @Component({
     selector: 'app-ao-group-ws-view',
@@ -29,7 +30,8 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected globalState: AoGlobalStateStore, protected router: Router,
-        protected itemService: AoItemService) {
+        protected itemService: AoItemService,
+        protected messageBox: AoMessageBoxService) {
         super(route, apiClient, itemService);
     }
 
@@ -96,16 +98,22 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     }
 
     deleteItem(item, $event) {
-        $event.preventDefault();
-        $event.stopPropagation();
+        const that = this;
 
-        if (confirm('Delete ' + item.id + '?')) {
-            this.apiClient.delete(this.baseUrl + '/' + item.id)
-                .then((response: any) => {
-                    // reload
-                    super.loadItems();
+        const subscription =
+            this.messageBox.show('Do you really want to delete item with id ' + item.id + '?', 'Delete confirmation', null, 2)
+                .subscribe((response) => {
+                    subscription.unsubscribe();
+                    if (response.result === 'yes') {
+                        that.apiClient.delete(this.baseUrl + '/' + item.id)
+                            .then((response: any) => {
+                                // reload
+                                that.loadItems();
+                            });
+                    }
                 });
-        }
+
+
 
     }
 

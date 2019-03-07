@@ -5,6 +5,7 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
+import { AoMessageBoxService } from 'src/app/services/ao-message-box/ao-message-box';
 
 @Component({
     selector: 'app-ao-datasets-view',
@@ -17,8 +18,9 @@ export class AoDatasetsViewComponent extends AoGroupWsViewComponent implements O
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected globalState: AoGlobalStateStore, protected jobService: AoJobService, protected router: Router,
-        protected itemService: AoItemService) {
-        super(route, apiClient, globalState, router, itemService);
+        protected itemService: AoItemService,
+        protected messageBox: AoMessageBoxService) {
+        super(route, apiClient, globalState, router, itemService, messageBox);
     }
 
     ngOnInit() {

@@ -7,6 +7,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
+import { AoMessageBoxService } from 'src/app/services/ao-message-box/ao-message-box';
 
 
 @Component({
@@ -18,8 +19,9 @@ export class AoModelsViewComponent extends AoGroupWsViewComponent implements OnI
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected globalState: AoGlobalStateStore, protected router: Router,
-        protected itemService: AoItemService) {
-        super(route, apiClient, globalState, router, itemService);
+        protected itemService: AoItemService,
+        protected messageBox: AoMessageBoxService) {
+        super(route, apiClient, globalState, router, itemService, messageBox);
     }
 
     ngOnInit() {
