@@ -34,6 +34,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
     searchQueryInput: string;
     queryParamsSubscription: any;
     query: string;
+    user: any;
 
     isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
         .pipe(
@@ -123,6 +124,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
     onGlobalStateUpdate() {
         // retrieve user
         const user = this.globalState.getProperty('user');
+        this.user = user;
         this.userInitial = null;
         if (user) {
             if (user.attributes.photos && user.attributes.photos.length > 0) {
@@ -196,7 +198,7 @@ export class MainNavComponent implements OnInit, OnDestroy {
                 return { file: file, url: '/api/datasets/' + response.data.id + '/assets' };
             });
     }
-    
+
     // open dataset view for the uploaded dataset
     afterNewDatasetUploaded = (fileItem) => {
         if (fileItem.uploadUrl) {
@@ -219,6 +221,10 @@ export class MainNavComponent implements OnInit, OnDestroy {
                 });
 
         }
+    }
+
+    logout() {
+        location.href = '/accounts/logout/';
     }
 
 }

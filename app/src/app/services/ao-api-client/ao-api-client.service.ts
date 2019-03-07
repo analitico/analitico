@@ -125,14 +125,15 @@ export class AoApiClientService {
         options.withCredentials = true;
         if (typeof options.headers === 'undefined') {
             options.headers = {};
-            if (typeof options.headers['Content-Type'] === 'undefined') {
-                options.headers['Content-Type'] = 'application/json';
-            }
-            const xToken = this.getCookie('csrftoken');
-            if (xToken) {
-                options.headers['X-CSRFTOKEN'] = xToken;
-            }
         }
+        if (typeof options.headers['Content-Type'] === 'undefined') {
+            options.headers['Content-Type'] = 'application/json';
+        }
+        const xToken = this.getCookie('csrftoken');
+        if (xToken) {
+            options.headers['X-CSRFTOKEN'] = xToken;
+        }
+
         return options;
     }
 

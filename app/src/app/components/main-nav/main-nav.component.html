@@ -23,8 +23,12 @@
                 {{(workspace.attributes && workspace.attributes.title) || workspace.id}}
             </mat-option>
         </mat-select>
-        <a mat-mini-fab routerLink="/profile" [ngStyle]="{'background-image':'url(' + userPhotoUrl + ')'}"
+        <a mat-mini-fab [matMenuTriggerFor]="userMenu" [ngStyle]="{'background-image':'url(' + userPhotoUrl + ')'}"
             class="ao-profile-icon">{{ userInitial }}</a>
+
+        <mat-menu #userMenu="matMenu">
+            <button mat-menu-item *ngIf="user" (click)="logout()">Logout</button>
+        </mat-menu>
     </mat-toolbar>
     <mat-sidenav-container class="sidenav-container" [class.ao-invisible]="!initialized">
         <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
@@ -49,7 +53,8 @@
             </div>
 
         </mat-sidenav>
-        <mat-sidenav-content [fileUploadInputFor]="fileUploadQueue" [getUploadUrl]="getNewDatasetUploadUrl" [uploaded]="afterNewDatasetUploaded">
+        <mat-sidenav-content [fileUploadInputFor]="fileUploadQueue" [getUploadUrl]="getNewDatasetUploadUrl"
+            [uploaded]="afterNewDatasetUploaded">
             <ng-content (click)="drawer.close()"></ng-content>
         </mat-sidenav-content>
     </mat-sidenav-container>
@@ -57,6 +62,8 @@
 
 
 <app-ao-mat-file-upload-queue #fileUploadQueue multiple id="ao-file-upload-queue">
-    <app-ao-mat-file-upload [file]="fileItem.file" [id]="i" *ngFor="let fileItem of fileUploadQueue.files; let i = index"
-        (uploaded)="fileItem.uploaded ? fileItem.uploaded(fileItem) : true" [fileAlias]="'file'" [httpUrl]="fileItem.uploadUrl"></app-ao-mat-file-upload>
+    <app-ao-mat-file-upload [file]="fileItem.file" [id]="i"
+        *ngFor="let fileItem of fileUploadQueue.files; let i = index"
+        (uploaded)="fileItem.uploaded ? fileItem.uploaded(fileItem) : true" [fileAlias]="'file'"
+        [httpUrl]="fileItem.uploadUrl"></app-ao-mat-file-upload>
 </app-ao-mat-file-upload-queue>
