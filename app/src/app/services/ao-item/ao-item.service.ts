@@ -189,7 +189,33 @@ export class AoItemService {
                 })
         ])
             .then(() => {
-                return { models: models, recipes: recipes, endpoints: endpoints };
+                models.forEach(model => {
+                    // get model recipe and endpoints
+                    model._aoprivate = {
+                        recipe: this.getItemById(recipes, model.attributes.recipe_id),
+                        endpoints: this.getItemsByAttribute(endpoints, 'attributes.model_id', model.id)
+                    };
+                    model = this.augmentModels(model);
+                });
+
+                recipes.forEach(recipe => {
+                    // get recipe models
+                    recipe._aoprivate = {
+                        models: this.getItemsByAttribute(models, 'attributes.recipe_id', recipe.id)
+                    };
+
+                });
+
+                endpoints.forEach(endpoint => {
+                    // get endpoint model
+                    endpoint._aoprivate = {
+                        model: this.getItemById(models, endpoint.attributes.model_id)
+                    };
+
+                });
+                const result = { models: models, recipes: recipes, endpoints: endpoints };
+                console.log(result);
+                return result;
             });
     }
 
@@ -201,6 +227,7 @@ export class AoItemService {
             return models;
         } else {
             const model = models;
+            // create private dictionary if it not exists
             if (!model._aoprivate) {
                 model._aoprivate = {};
             }
@@ -215,14 +242,6 @@ export class AoItemService {
     getModels() {
         return this.getItems()
             .then((items) => {
-                items.models.forEach(model => {
-                    model._aoprivate = {
-                        recipe: this.getItemById(items.recipes, model.attributes.recipe_id),
-                        endpoints: this.getItemsByAttribute(items.endpoints, 'attributes.model_id', model.id)
-                    };
-                    model = this.augmentModels(model);
-
-                });
                 return items.models.sort(function (a, b) {
                     return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
                 });
@@ -232,13 +251,6 @@ export class AoItemService {
     getRecipes() {
         return this.getItems()
             .then((items) => {
-                items.recipes.forEach(recipe => {
-                    // get recipe models
-                    recipe._aoprivate = {
-                        models: this.augmentModels(this.getItemsByAttribute(items.models, 'attributes.recipe_id', recipe.id))
-                    };
-
-                });
                 return items.recipes.sort(function (a, b) {
                     return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
                 });
@@ -248,13 +260,6 @@ export class AoItemService {
     getEndpoints() {
         return this.getItems()
             .then((items) => {
-                items.endpoints.forEach(endpoint => {
-                    // look for endpoint model
-                    endpoint._aoprivate = {
-                        model: this.augmentModels(this.getItemById(items.models, endpoint.attributes.model_id))
-                    };
-
-                });
                 return items.endpoints.sort(function (a, b) {
                     return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
                 });
