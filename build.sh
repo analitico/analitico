@@ -1,6 +1,7 @@
 #!/bin/bash
 # exit if error
 set -e
+su www
 # Build and test execution
 cd /home/www/analitico/
 # move analitico-ci out of analitico
