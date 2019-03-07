@@ -15,10 +15,7 @@
             <ng-container matColumnDef="attributes.title">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
                 <td mat-cell *matCellDef="let element">
-                    <mat-form-field class="example-full-width">
-                        <input matInput placeholder="{{element.id}}" [(ngModel)]="element.attributes.title"
-                            (change)="changeItemTitle(element, $event)" (click)="$event.stopPropagation()">
-                    </mat-form-field>
+                    {{element.attributes.title || element.id}}
                 </td>
             </ng-container>
 
@@ -57,16 +54,16 @@
             </ng-container>
 
             <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef> Actions </th>
-                    <td mat-cell *matCellDef="let element">
-                        <i class="ao-group-ws-table-delete-button material-icons" (click)="deleteItem(element, $event)">
-                            clear
-                        </i>
-                        <mat-progress-spinner mode="indeterminate" [class.ao-invisible]="!element.isProcessing"
-                            [diameter]="22" [strokeWidth]="2">
-                        </mat-progress-spinner>
-                    </td>
-                </ng-container>
+                <th mat-header-cell *matHeaderCellDef> Actions </th>
+                <td mat-cell *matCellDef="let element">
+                    <i class="ao-group-ws-table-delete-button material-icons" (click)="deleteItem(element, $event)">
+                        clear
+                    </i>
+                    <mat-progress-spinner mode="indeterminate" [class.ao-invisible]="!element.isProcessing"
+                        [diameter]="22" [strokeWidth]="2">
+                    </mat-progress-spinner>
+                </td>
+            </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;" routerLink="./{{row.id}}" class="ao-clickable">
