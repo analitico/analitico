@@ -151,6 +151,11 @@ export class AoItemService {
 
     }
 
+    /**
+     * Returns the item with a given id
+     * @param items array of items
+     * @param id required id
+     */
     getItemById(items, id) {
         for (let i = 0, l = items.length; i < l; i++) {
             if (items[i].id === id) {
@@ -160,6 +165,12 @@ export class AoItemService {
         return null;
     }
 
+    /**
+     * Filter a list of items using an Attibute,Value filter
+     * @param items array of items
+     * @param attribute attribute path
+     * @param value attribute value
+     */
     getItemsByAttribute(items, attribute, value) {
         const filteredItems = [];
         for (let i = 0, l = items.length; i < l; i++) {
@@ -170,6 +181,9 @@ export class AoItemService {
         return filteredItems;
     }
 
+    /**
+     * Return the list of all item available to the user with their relationships
+     */
     getItems() {
         let models = null;
         let endpoints = null;
@@ -219,6 +233,10 @@ export class AoItemService {
             });
     }
 
+    /**
+     * Augment the models with additional data
+     * @param models array of models
+     */
     augmentModels(models) {
         if (Array.isArray(models)) {
             for (let i = 0, l = models.length; i < l; i++) {
@@ -237,7 +255,7 @@ export class AoItemService {
     }
 
     /**
-     * Get models width kpi, recipe and endpoints
+     * Get models
      */
     getModels() {
         return this.getItems()
@@ -248,6 +266,9 @@ export class AoItemService {
             });
     }
 
+    /**
+     * Get recipes
+     */
     getRecipes() {
         return this.getItems()
             .then((items) => {
@@ -256,7 +277,9 @@ export class AoItemService {
                 });
             });
     }
-
+    /**
+     * Get endpoints
+     */
     getEndpoints() {
         return this.getItems()
             .then((items) => {
@@ -266,7 +289,10 @@ export class AoItemService {
             });
     }
 
-
+    /**
+     * Get the model with the providev id
+     * @param id require id
+     */
     getModelById(id) {
         return this.getModels()
             .then((models) => {
@@ -288,6 +314,10 @@ export class AoItemService {
 
     }
 
+    /**
+     * Process a dataset and returns a Subject that will emit processing progress
+     * @param datasetId dataset id
+     */
     processDataset(datasetId) {
         return this.apiClient.post('/datasets/' + datasetId + '/data/process', {})
             .then((response: any) => {
@@ -297,6 +327,13 @@ export class AoItemService {
             });
     }
 
+    /**
+     * Change the model associated with an endpoint.
+     * It will also reset the endpoint pipeline removing the attributes.plugin fiels
+     * The pipeline will be rebuilt using the model
+     * @param endpoint the endpoint object
+     * @param modelId new model id
+     */
     changeEndpointModel(endpoint, modelId) {
         endpoint.attributes.model_id = modelId;
         // remove old pipeline
