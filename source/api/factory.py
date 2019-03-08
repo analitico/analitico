@@ -47,14 +47,6 @@ ANALITICO_ASSET_RE = (
 class ServerFactory(analitico.factory.Factory):
     """ An IFactory used to run plugins in the context of a server with direct access to items via SQL """
 
-    @property
-    def job(self):
-        """ Job currently being executed (optional) """
-        return self.get_attribute("job")
-
-    # Owner of target item (used for storage, access rights, etc)
-    workspace = None
-
     def __init__(self, job=None, **kwargs):
         super().__init__(**kwargs)
         if job:
@@ -139,6 +131,19 @@ class ServerFactory(analitico.factory.Factory):
                         extras["rows"] = analitico.utilities.get_csv_row_count(fullpath)
                     # upload asset and extras, item will take care of saving to database
                     item.upload_asset_stream(f, "data", path, path_size, None, path, extras)
+
+    ##
+    ## Log methods
+    ##
+
+    def _prepare_log(self, msg, *args, **kwargs):
+        """ Add contextual items to the log record """
+        msg, args, kwargs = super()._prepare_log(msg, *args, **kwargs)
+        for item_name in ("endpoint", "token", "job", "request"):
+            item = self.get_attribute(item_name, None)
+            if item:
+                kwargs["extra"][item_name] = item
+        return msg, args, kwargs
 
     ##
     ## Factory methods

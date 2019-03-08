@@ -82,7 +82,7 @@ try:
                     "handlers": ["console"],
                     # 'handlers': ['console', 'sentry'],
                     # required to avoid double logging with root logger
-                    "propagate": False,
+                    "propagate": True,
                 },
             },
         }
@@ -124,7 +124,9 @@ try:
     # https://dev.mysql.com/doc/refman/5.5/en/mysql-ssl-set.html
 
     # Covers pytest, regular testing and django-coverage
+    IS_TESTING = False
     if sys.argv[0].endswith("pytest.py") or ("test" in sys.argv) or ("test_coverage" in sys.argv):
+        IS_TESTING = True
         DATABASES["default"]["ENGINE"] = "django.db.backends.sqlite3"
         DATABASES["default"].pop("OPTIONS")  # remove SSL configurations
 

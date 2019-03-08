@@ -23,6 +23,7 @@ import analitico.plugin
 import analitico.utilities
 import api.plugin
 
+from analitico import status
 from api.factory import ServerFactory
 
 
@@ -74,11 +75,11 @@ class Job(ItemMixin, models.Model):
     ##
 
     # Job.status supports these states
-    JOB_STATUS_CREATED = "created"
-    JOB_STATUS_RUNNING = "running"
-    JOB_STATUS_CANCELED = "canceled"
-    JOB_STATUS_COMPLETED = "completed"
-    JOB_STATUS_FAILED = "failed"
+    JOB_STATUS_CREATED = status.STATUS_CREATED
+    JOB_STATUS_RUNNING = status.STATUS_RUNNING
+    JOB_STATUS_CANCELED = status.STATUS_CANCELED
+    JOB_STATUS_COMPLETED = status.STATUS_COMPLETED
+    JOB_STATUS_FAILED = status.STATUS_FAILED
 
     # Current status, eg: created, processing, completed, failed
     status = models.SlugField(blank=True, default="created")
@@ -108,20 +109,30 @@ class Job(ItemMixin, models.Model):
         """ Runs the job, collects and uploads artifacts, returns the updated job """
         with ServerFactory(job=self, request=request, **kwargs) as factory:
             try:
-                self.status = Job.JOB_STATUS_RUNNING
+                self.status = status.STATUS_RUNNING
                 self.save()
+                factory.status(self, status.STATUS_RUNNING)
 
                 # item runs the job
                 item = factory.get_item(self.item_id)
+
+                # apply an id to any plugin that may be missing one
+                # and save the recipe with the new plugin ids so that
+                # the job can track logged actions by each plugin
+                plugin = item.get_attribute("plugin")
+                if analitico.plugin.apply_plugin_id(plugin):
+                    item.set_attribute("plugin", plugin)
+                    item.save()
+
                 item.run(job=self, factory=factory)
                 item.save()
 
-                self.status = Job.JOB_STATUS_COMPLETED
-            except Exception as exc:
-                self.status = Job.JOB_STATUS_FAILED
-                factory.error(
-                    "Job.run - error while running job " + self.id + " on item " + self.item_id, exception=exc
-                )
-                raise exc
-            finally:
+                self.status = status.STATUS_COMPLETED
                 self.save()
+                factory.status(self, status.STATUS_COMPLETED)
+
+            except Exception as e:
+                self.status = status.STATUS_FAILED
+                self.save()
+                factory.status(self, status.STATUS_FAILED)
+                factory.exception("An error occoured while running the job: %s", self.id, item=self, exception=e)
