@@ -9,9 +9,12 @@ import datetime
 import pytz
 
 from django.db import models
+from django.conf import settings
+from rest_framework.request import Request
 
 from .items import ItemMixin
 from .workspace import Workspace
+from .job import Job
 
 import analitico
 import analitico.plugin
@@ -45,8 +48,11 @@ class Log(ItemMixin, models.Model):
     # Log entry can be owned by workspace or can be system wide if None
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, blank=True, null=True)
 
+    # Log entry can be owned by a Job
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=True, null=True)
+
     # Item that generated this log entry (optional)
-    item_id = models.SlugField(blank=True, db_index=True)
+    item_id = models.SlugField(blank=True, null=True, db_index=True)
 
     # https://docs.python.org/3.7/library/logging.html?highlight=logging#logging-levels
     level = models.IntegerField(default=LOG_LEVEL_NOTSET, db_index=True)
@@ -119,18 +125,46 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
     attributes = log_record.__dict__
     attributes = {k: v for k, v in attributes.items() if v is not None}
 
-    if "item_id" in attributes:
-        log.item_id = attributes["item_id"]
-
-    # TODO add workspace from workspace_id
-    # TODO add user or user ip info like sentry
-
     # remove keys according to message level
     for key in LOG_RECORD_DROP_ALWAYS:
         attributes.pop(key, None)
     if log_record.levelno <= LOG_LEVEL_INFO:
         for key in LOG_RECORD_DROP_INFO:
             attributes.pop(key, None)
+
+    log.workspace = attributes.pop("workspace", None)
+    log.job = attributes.pop("job", None)
+    if log.job and not log.workspace:
+        log.workspace = log.job.workspace
+
+    # extract authorization details, caller details from Request
+    request = attributes.pop("request", None)
+    if request and isinstance(request, Request):
+        # TODO extract auth details, caller IP
+        pass
+
+    # convert items to xxx_id
+    for item_type in ("dataset", "recipe", "model", "endpoint", "plugin", "workspace", "item"):
+        item = attributes.pop(item_type, None)
+        if item:
+            try:
+                if item.id:
+                    attributes[item_type + "_id"] = item.id
+                if hasattr(item, "workspace") and not log.workspace:
+                    log.workspace = item.workspace
+            except Exception as e:
+                pass
+
+    # move item_id to its own field
+    log.item_id = attributes.pop("item_id", None)
+
+    exception = attributes.pop("exception", None)
+    if exception:
+        # TODO convert to json dictionary with all included inner exceptions
+        attributes["exception"] = str(exception)
+
+    # TODO add user or user ip info like sentry
+
     log.attributes = attributes
     return log
 
@@ -147,7 +181,8 @@ class LogHandler(logging.NullHandler):
         try:
             log = log_record_to_log(record)
             log.save()
-        except Exception as exc:
+            print("log, saved: %s" % record.message)
+        except Exception as e:
             try:
                 # we use atttributes to save in json a number of items
                 # that have been passed to the logger some of which may not
@@ -156,8 +191,10 @@ class LogHandler(logging.NullHandler):
                 attrs = json.loads(json.dumps(log.attributes, skipkeys=True, default=lambda o: "NOT_SERIALIZABLE"))
                 log.attributes = attrs
                 log.save()
-            except Exception:
+                print("log encoded/saved: %s" % record.message)
+            except Exception as e:
                 # do not log errors here otherwise they will be captured by log handler, repeat, rinse, etc..
+                print("log saving error: %s" % record.message)
                 pass
 
 
@@ -181,13 +218,25 @@ class LogQueueHandler(logging.handlers.QueueHandler):
 ## Setup
 ##
 
-log_queue_handler = None
+USE_LOG_QUEUE = False
 
-if log_queue_handler is None:
+log_handler = None
+
+if log_handler is None:
     # create a log handler to sql database
-    log_queue_handler = LogQueueHandler()
-    log_queue_handler.setLevel(logging.INFO)
+    if settings.IS_TESTING:
+        # no async queue while testing
+        log_handler = LogHandler()
+    else:
+        # handle logs asynchronously
+        log_handler = LogQueueHandler()
+
+    log_handler = LogQueueHandler()
+    log_handler.setLevel(logging.INFO)
     # add to root logger
     root = logging.getLogger()
     root.setLevel(logging.INFO)
-    root.addHandler(log_queue_handler)
+    root.addHandler(log_handler)
+
+logger = logging.getLogger("analitico")
+logger.info("status: running")
