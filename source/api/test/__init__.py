@@ -9,3 +9,4 @@ from .test_api_website import WebsiteTests
 from .test_api_recipe import RecipeTests
 from .test_api_user import UserTests
 from .test_api_plugin import PluginTests
+from .test_api_log import LogTests
