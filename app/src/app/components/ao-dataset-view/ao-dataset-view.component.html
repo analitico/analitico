@@ -4,12 +4,13 @@
         <div class="ao-padding">
             <section>
                 <h1 class="mat-h1">
+                    <p>Dataset</p>
                     <mat-form-field *ngIf="item">
                         <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
                             (change)="$event.stopPropagation(); $event.preventDefault(); saveItem(); $event.target.blur();">
                     </mat-form-field>
                 </h1>
-                <p *ngIf="description">{{description}}}</p>
+
                 <mat-form-field *ngIf="item && item.attributes">
                     <mat-label>Description</mat-label>
                     <textarea matInput [(ngModel)]="item.attributes.description" (ngModelChange)="saveItem();"

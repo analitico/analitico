@@ -77,7 +77,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         super.onLoad();
         this.endpointUrl = 'https://' + location.hostname + '/api/endpoints/' + this.item.id + '/predict';
         this.predictionSamples = null;
-        this.inputData = null;
+        this.inputData = { data: [] };
         this.predictionData = null;
         this.predictionCustomViewComponent = null;
         this.model = null;
@@ -191,8 +191,11 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         let inputData;
         try {
             inputData = this.inputEditor.get();
+            if (inputData.data.length === 0) {
+                throw new Error('no data');
+            }
         } catch (e) {
-            return this.messageBox.show('Please enter valid json', 'Invalid input data');
+            return this.messageBox.show('Please enter valid json.', 'Invalid input data');
         }
 
         this.isProcessing = true;

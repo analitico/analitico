@@ -1,19 +1,19 @@
 <div class="ao-item-view ao-endpoint-view ao-padding">
     <section>
         <h1 class="mat-h1">
+            <p>Endpoint</p> 
             <mat-form-field *ngIf="item">
                 <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
                     (change)="$event.stopPropagation(); $event.preventDefault(); saveItem(); $event.target.blur();">
             </mat-form-field>
         </h1>
-        <p *ngIf="description">{{description}}}</p>
+
         <mat-form-field *ngIf="item && item.attributes">
             <mat-label>Description</mat-label>
             <textarea matInput [(ngModel)]="item.attributes.description" (ngModelChange)="saveItem();"
                 placeholder="Type a description for your endpoint"></textarea>
         </mat-form-field>
-    </section>
-    <section>
+
         <p class="mat-body">Endpoint url</p>
         <p class="mat-body">
             <code>{{endpointUrl}}</code>
@@ -120,16 +120,17 @@
             </p>
 
             <mat-tab-group>
-                <mat-tab label="Table">
-                    <ng-template app-ao-anchor>
-                        Loading...
-                    </ng-template>
-                </mat-tab>
                 <mat-tab label="JSON">
                     <div class="ao-json-editor-container">
                         <json-editor [options]="predictionEditorOptions" [data]="predictionData"></json-editor>
                     </div>
                 </mat-tab>
+                <mat-tab label="Table">
+                    <ng-template app-ao-anchor>
+                        Not available
+                    </ng-template>
+                </mat-tab>
+
 
             </mat-tab-group>
         </div>

@@ -244,7 +244,6 @@ export class AoItemService {
 
                 });
                 const result = { datasets: datasets, models: models, recipes: recipes, endpoints: endpoints };
-                console.log(result);
                 return result;
             });
     }

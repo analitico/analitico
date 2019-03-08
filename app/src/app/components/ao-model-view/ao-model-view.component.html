@@ -1,21 +1,18 @@
 <div class="ao-item-view ao-model-view ao-padding">
     <section>
         <h1 class="mat-h1">
+                <p>Model</p> 
             <mat-form-field *ngIf="item">
                 <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
                     (change)="$event.stopPropagation(); $event.preventDefault(); saveItem(); $event.target.blur();">
             </mat-form-field>
         </h1>
-        <p *ngIf="description">{{description}}}</p>
+     
         <mat-form-field *ngIf="item && item.attributes">
             <mat-label>Description</mat-label>
             <textarea matInput [(ngModel)]="item.attributes.description" (ngModelChange)="saveItem();"
                 placeholder="Type a description for your model"></textarea>
         </mat-form-field>
-    </section>
-
-    <section>
-        <h2 class="mat-h2">Recipe</h2>
         <p class="mat-body" *ngIf="recipe">This model based on this recipe: <a mat-button
                 routerLink="/recipes/{{recipe.id}}">{{ (recipe.attributes.title || recipe.id)}}</a>
 
