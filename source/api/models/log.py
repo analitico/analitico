@@ -188,16 +188,13 @@ class LogHandler(logging.NullHandler):
         try:
             log = log_record_to_log(record)
             log.save()
-            print("log, saved: %s" % record.message)
         except Exception as e:
-            # do not log errors here otherwise they will be captured by log handler, repeat, rinse, etc..
-            print("log saving error: %s" % record.message)
-            pass
+            # do not log errors here otherwise they will be captured by log handler in an infinite loop
+            print("log saving error: %s, exception: %s" % (record.message, str(e)))
 
 
-# This handler simply takes a log record, sticks it in the queue and returns w/o blocking """
 class LogQueueHandler(logging.handlers.QueueHandler):
-    """ This handler runs LogHandler with a queue so it doesn't slow down client while logging """
+    """ This handler runs LogHandler with a queue so it doesn't slow down clients while logging """
 
     log_handler = None
     log_listener = None
