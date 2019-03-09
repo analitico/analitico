@@ -72,18 +72,7 @@ try:
             },
             "loggers": {
                 # root logger
-                "": {
-                    "level": "WARNING",
-                    "handlers": ["console"],
-                    #'handlers': ['console', 'sentry'],
-                },
-                "analitico": {
-                    "level": LOGLEVEL,
-                    "handlers": ["console"],
-                    # 'handlers': ['console', 'sentry'],
-                    # required to avoid double logging with root logger
-                    "propagate": True,
-                },
+                "": {"level": "INFO", "handlers": ["console"]}
             },
         }
     )
@@ -127,8 +116,9 @@ try:
     IS_TESTING = False
     if sys.argv[0].endswith("pytest.py") or ("test" in sys.argv) or ("test_coverage" in sys.argv):
         IS_TESTING = True
-        DATABASES["default"]["ENGINE"] = "django.db.backends.sqlite3"
-        DATABASES["default"].pop("OPTIONS")  # remove SSL configurations
+        DATABASES = {
+            "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "analitico.sqlite")}
+        }
 
     # We are keeping file storage cloud independent so that we can use whichever
     # cloud makes the most sense and also give customers an option to bring their own

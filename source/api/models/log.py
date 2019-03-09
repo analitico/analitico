@@ -165,7 +165,14 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
 
     # TODO add user or user ip info like sentry
 
-    log.attributes = attributes
+    # we use atttributes to save in json a number of items
+    # that have been passed to the logger some of which may not
+    # be serializable to json. if we apply these attributes to the JsonField
+    # it will crash on serialization. so we serialize/deserialize which is extra
+    # work but allows us to make sure everything can go through or has a NOT_SERIALIZABLE
+    # stuck on it
+    log.attributes = json.loads(json.dumps(attributes, skipkeys=True, default=lambda o: "NOT_SERIALIZABLE"))
+
     return log
 
 
@@ -183,19 +190,9 @@ class LogHandler(logging.NullHandler):
             log.save()
             print("log, saved: %s" % record.message)
         except Exception as e:
-            try:
-                # we use atttributes to save in json a number of items
-                # that have been passed to the logger some of which may not
-                # be serializable to json. if this happens, we'll just encode
-                # basic types and move on
-                attrs = json.loads(json.dumps(log.attributes, skipkeys=True, default=lambda o: "NOT_SERIALIZABLE"))
-                log.attributes = attrs
-                log.save()
-                print("log encoded/saved: %s" % record.message)
-            except Exception as e:
-                # do not log errors here otherwise they will be captured by log handler, repeat, rinse, etc..
-                print("log saving error: %s" % record.message)
-                pass
+            # do not log errors here otherwise they will be captured by log handler, repeat, rinse, etc..
+            print("log saving error: %s" % record.message)
+            pass
 
 
 # This handler simply takes a log record, sticks it in the queue and returns w/o blocking """
@@ -226,17 +223,16 @@ if log_handler is None:
     # create a log handler to sql database
     if settings.IS_TESTING:
         # no async queue while testing
+        print("log: created sync LogTestHandler")
         log_handler = LogHandler()
+        log_handler.setLevel(logging.DEBUG)
     else:
         # handle logs asynchronously
+        print("log: created async LogQueueHandler")
         log_handler = LogQueueHandler()
 
-    log_handler = LogQueueHandler()
     log_handler.setLevel(logging.INFO)
     # add to root logger
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     root.addHandler(log_handler)
-
-logger = logging.getLogger("analitico")
-logger.info("status: running")

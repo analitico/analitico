@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.DatasetTests.test_dataset_upload_process_data",
+                "api.test.test_api_log.LogTests",
                 "-v",
                 "2"
             ],
