@@ -25,6 +25,11 @@ from rest_framework.exceptions import APIException
 
 try:
 
+    # Covers pytest, regular testing and django-coverage
+    TESTING = False
+    if sys.argv[0].endswith("pytest.py") or ("test" in sys.argv) or ("test_coverage" in sys.argv):
+        TESTING = True
+
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = os.environ.get("ANALITICO_DEBUG", "False").lower() == "true"
 
@@ -55,27 +60,50 @@ try:
     LOGLEVEL = os.environ.get("LOGLEVEL", "info").upper()
 
     LOGGING_CONFIG = None
-    logging.config.dictConfig(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "console": {
-                    # exact format is not important, this is the minimum information
-                    "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
-                }
-            },
-            "handlers": {
-                "console": {"class": "logging.StreamHandler", "formatter": "console"},
-                # Add Handler for Sentry for `warning` and above
-                "sentry": {"level": "WARNING", "class": "raven.contrib.django.raven_compat.handlers.SentryHandler"},
-            },
-            "loggers": {
-                # root logger
-                "": {"level": "INFO", "handlers": ["console"]}
-            },
-        }
-    )
+    if TESTING:
+        logging.config.dictConfig(
+            {
+                "version": 1,
+                "disable_existing_loggers": False,
+                "formatters": {
+                    "console": {
+                        # exact format is not important, this is the minimum information
+                        "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+                    }
+                },
+                "handlers": {
+                    "console": {"class": "logging.StreamHandler", "formatter": "console"},
+                    # NO SENTRY
+                },
+                "loggers": {
+                    # root logger
+                    "": {"level": "DEBUG", "handlers": ["console"]}
+                },
+            }
+        )
+    else:
+        logging.config.dictConfig(
+            {
+                "version": 1,
+                "disable_existing_loggers": False,
+                "formatters": {
+                    "console": {
+                        # exact format is not important, this is the minimum information
+                        "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+                    }
+                },
+                "handlers": {
+                    "console": {"class": "logging.StreamHandler", "formatter": "console"},
+                    # Add Handler for Sentry for `warning` and above
+                    "sentry": {"level": "WARNING", "class": "raven.contrib.django.raven_compat.handlers.SentryHandler"},
+                },
+                "loggers": {
+                    # root logger
+                    "": {"level": "INFO", "handlers": ["console"]}
+                },
+            }
+        )
+
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
     # Project is always started with currenct directory in /analitico/source/
@@ -108,17 +136,15 @@ try:
         }
     }
 
+    if TESTING:
+        DATABASES = {
+            "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "analitico.sqlite")}
+        }
+
     # WARNING: Private sql keys are included in /conf
     # They can later be easily removed and rotated out of service
     # https://dev.mysql.com/doc/refman/5.5/en/mysql-ssl-set.html
 
-    # Covers pytest, regular testing and django-coverage
-    IS_TESTING = False
-    if sys.argv[0].endswith("pytest.py") or ("test" in sys.argv) or ("test_coverage" in sys.argv):
-        IS_TESTING = True
-        DATABASES = {
-            "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "analitico.sqlite")}
-        }
 
     # We are keeping file storage cloud independent so that we can use whichever
     # cloud makes the most sense and also give customers an option to bring their own

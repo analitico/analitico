@@ -221,7 +221,7 @@ log_handler = None
 
 if log_handler is None:
     # create a log handler to sql database
-    if settings.IS_TESTING:
+    if settings.TESTING:
         # no async queue while testing
         print("log: created sync LogTestHandler")
         log_handler = LogHandler()

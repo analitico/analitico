@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 # pylint: disable=no-member
 
 import api.models.log
-from api.models import Log, Recipe
+from api.models import *
 from api.factory import factory
 from api.models.log import *
 
@@ -99,3 +99,31 @@ class LogTests(APITestCase):
         self.assertEqual(logs[0].message, "info message 1, mickey")
         self.assertEqual(logs[0].item_id, recipe.id)
         self.assertEqual(logs[0].attributes["recipe_id"], recipe.id)
+
+    def test_log_formatting_plus_items(self):
+        """ Add various items to log and see them stored as item_id """
+        workspace = Workspace()
+        workspace.save()
+        recipe = Recipe()
+        recipe.workspace = workspace
+        recipe.save()
+        dataset = Dataset()
+        dataset.workspace = workspace
+        dataset.save()
+        job = Job()
+        job.workspace = workspace
+        job.save()
+
+        self.logger.info("info message %d, %s", 1, "mickey", recipe=recipe, item=recipe, job=job, dataset=dataset)
+        logs = Log.objects.all()
+
+        self.assertEqual(logs[0].level, logging.INFO)
+        self.assertEqual(logs[0].message, "info message 1, mickey")
+        self.assertEqual(logs[0].item_id, recipe.id)
+        self.assertEqual(logs[0].job.id, job.id)
+
+        self.assertEqual(logs[0].attributes["recipe_id"], recipe.id)
+        self.assertEqual(logs[0].attributes["dataset_id"], dataset.id)
+
+        # job_id should NOT be stored
+        self.assertIsNone(logs[0].attributes.get("job_id", None)) 
