@@ -24,6 +24,8 @@ from analitico.utilities import read_json, get_dict_dot, time_ms, logger
 import analitico
 import analitico.plugin
 import api.models
+
+from analitico.status import STATUS_RUNNING
 from api.models import Job
 from .utils import APITestCase
 from analitico import ACTION_PROCESS
@@ -129,7 +131,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
         self.assertEqual(job_data["attributes"]["workspace_id"], "ws_samples")
         self.assertEqual(job_data["attributes"]["action"], "dataset/process")
-        # self.assertEqual(job_data["attributes"]["status"], Job.JOB_STATUS_RUNNING)
+        # self.assertEqual(job_data["attributes"]["status"], STATUS_RUNNING)
 
     def test_dataset_job_action_process_with_extra_query_values(self):
         """ Test requesting a process action with additional query_values """

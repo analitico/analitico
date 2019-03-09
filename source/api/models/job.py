@@ -1,19 +1,9 @@
-"""
-Job - model for a synch or asynch task like training a model, doing a prediction, etc.
-"""
-
 import collections
 import jsonfield
 import django.utils.crypto
-import tempfile
-import os.path
-import io
-import re
-import json
-import io
+import logging
 
 from django.db import models
-from django.db import transaction
 
 from .items import ItemMixin
 from .workspace import Workspace
@@ -21,9 +11,9 @@ from .workspace import Workspace
 import analitico
 import analitico.plugin
 import analitico.utilities
-import api.plugin
 
-from analitico import status
+from analitico.constants import ACTION_TRAIN
+from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED
 from api.factory import ServerFactory
 
 
@@ -74,14 +64,7 @@ class Job(ItemMixin, models.Model):
     ## Custom fields specific to job
     ##
 
-    # Job.status supports these states
-    JOB_STATUS_CREATED = status.STATUS_CREATED
-    JOB_STATUS_RUNNING = status.STATUS_RUNNING
-    JOB_STATUS_CANCELED = status.STATUS_CANCELED
-    JOB_STATUS_COMPLETED = status.STATUS_COMPLETED
-    JOB_STATUS_FAILED = status.STATUS_FAILED
-
-    # Current status, eg: created, processing, completed, failed
+    # Current status, eg: created, processing, completed, failed (see analitico.status for values)
     status = models.SlugField(blank=True, default="created")
 
     # The type of job, or action, for example: workspace/process, model/train, endpoint/inference, etc
@@ -109,9 +92,14 @@ class Job(ItemMixin, models.Model):
         """ Runs the job, collects and uploads artifacts, returns the updated job """
         with ServerFactory(job=self, request=request, **kwargs) as factory:
             try:
-                self.status = status.STATUS_RUNNING
+                # log only warnings while predicting to avoid slowing down predictions
+                training = ACTION_TRAIN in self.action
+                if training:
+                    factory.set_logger_level(logging.WARNING)
+
+                self.status = STATUS_RUNNING
                 self.save()
-                factory.status(self, status.STATUS_RUNNING)
+                factory.status(self, STATUS_RUNNING)
 
                 # item runs the job
                 item = factory.get_item(self.item_id)
@@ -127,12 +115,12 @@ class Job(ItemMixin, models.Model):
                 item.run(job=self, factory=factory)
                 item.save()
 
-                self.status = status.STATUS_COMPLETED
-                self.save()
-                factory.status(self, status.STATUS_COMPLETED)
+                self.status = STATUS_COMPLETED
+                self.save()                
+                factory.status(self, STATUS_COMPLETED)
 
             except Exception as e:
-                self.status = status.STATUS_FAILED
+                self.status = STATUS_FAILED
                 self.save()
-                factory.status(self, status.STATUS_FAILED)
+                factory.status(self, STATUS_FAILED)
                 factory.exception("An error occoured while running the job: %s", self.id, item=self, exception=e)

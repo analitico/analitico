@@ -1,6 +1,8 @@
 import os
 import time
 
+from analitico.status import STATUS_CREATED
+
 from api.models import Job
 from analitico.utilities import logger, time_ms
 from api.factory import ServerFactory, factory
@@ -41,7 +43,7 @@ class Command(BaseCommand):
     def get_pending_job(self, **options):
         # TODO use tags to further filter jobs
         # TODO order by time posted desc
-        jobs = Job.objects.filter(status=Job.JOB_STATUS_CREATED)
+        jobs = Job.objects.filter(status=STATUS_CREATED)
         # TODO implement status switch to processing with atomic transactional guarantee
         return jobs[0] if len(jobs) > 0 else None
 

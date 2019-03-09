@@ -11,7 +11,7 @@ from rest_framework import status
 import analitico
 import analitico.plugin
 
-from analitico import status
+from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
 from analitico.exceptions import AnaliticoException
 from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from .items import ItemMixin
@@ -65,7 +65,7 @@ class Recipe(ItemMixin, models.Model):
                 if not plugin_settings:
                     raise AnaliticoException("The recipe has no configured plugins", recipe=self)
 
-                factory.status(self, status.STATUS_RUNNING)
+                factory.status(self, STATUS_RUNNING)
                 plugin = factory.get_plugin(**plugin_settings)
                 training = plugin.run(action=job.action)
 
@@ -93,13 +93,13 @@ class Recipe(ItemMixin, models.Model):
                 job.save()
 
             self.save()
-            factory.status(self, status.STATUS_COMPLETED)
+            factory.status(self, STATUS_COMPLETED)
 
         except AnaliticoException as e:
-            factory.status(self, status.STATUS_FAILED)
+            factory.status(self, STATUS_FAILED)
             e.extra["recipe"] = self
             raise e
 
         except Exception as e:
-            factory.status(self, status.STATUS_FAILED)
+            factory.status(self, STATUS_FAILED)
             factory.exception("An error occoured while training the recipe: %s", self.id, item=self, exception=e)

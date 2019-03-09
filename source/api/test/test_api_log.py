@@ -126,4 +126,4 @@ class LogTests(APITestCase):
         self.assertEqual(logs[0].attributes["dataset_id"], dataset.id)
 
         # job_id should NOT be stored
-        self.assertIsNone(logs[0].attributes.get("job_id", None)) 
+        self.assertIsNone(logs[0].attributes.get("job_id", None))

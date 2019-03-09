@@ -32,9 +32,11 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
+from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, STATUS_COMPLETED
+from analitico.utilities import logger, get_dict_dot
+
 from api.models import ItemMixin, Job
 from api.factory import factory
-from analitico.utilities import logger, get_dict_dot
 from .logviews import LogViewSetMixin
 
 ##
@@ -86,7 +88,7 @@ class JobViewSetMixin:
     def create_job(self, request, job_item, job_action, run_async=False):
         workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
         job_action = job_item.type + "/" + job_action
-        job_status = Job.JOB_STATUS_CREATED if run_async else Job.JOB_STATUS_RUNNING
+        job_status = STATUS_CREATED if run_async else STATUS_RUNNING
         job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=job_status)
         job.save()
         if not run_async:
@@ -96,7 +98,7 @@ class JobViewSetMixin:
     def create_job_response(self, request, job_item, job_action, run_async=False, just_payload=False):
         """ Runs a job and creates a response which can be the job itself or just its payload """
         job = self.create_job(request, job_item, job_action, run_async=run_async)
-        if job.status == Job.JOB_STATUS_COMPLETED and just_payload:
+        if job.status == STATUS_COMPLETED and just_payload:
             payload = job.payload
             payload["job_id"] = job.id
             return Response(payload)

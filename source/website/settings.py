@@ -90,7 +90,7 @@ try:
                     "console": {
                         # exact format is not important, this is the minimum information
                         "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-                        "datefmt" : "%H:%M:%S"
+                        "datefmt": "%H:%M:%S",
                     }
                 },
                 "handlers": {
@@ -104,7 +104,6 @@ try:
                 },
             }
         )
-
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
     # Project is always started with currenct directory in /analitico/source/
@@ -145,7 +144,6 @@ try:
     # WARNING: Private sql keys are included in /conf
     # They can later be easily removed and rotated out of service
     # https://dev.mysql.com/doc/refman/5.5/en/mysql-ssl-set.html
-
 
     # We are keeping file storage cloud independent so that we can use whichever
     # cloud makes the most sense and also give customers an option to bring their own
@@ -206,7 +204,7 @@ try:
         "allauth.socialaccount.providers.google",
         "allauth.socialaccount.providers.github",
         "allauth.socialaccount.providers.windowslive",
-        "corsheaders"
+        "corsheaders",
     ]
 
     MIDDLEWARE = [
@@ -243,16 +241,16 @@ try:
     CORS_ALLOW_CREDENTIALS = True
 
     CORS_ALLOW_HEADERS = (
-        'accept',
-        'accept-encoding',
-        'authorization',
-        'content-disposition',
-        'content-type',
-        'dnt',
-        'origin',
-        'user-agent',
-        'x-csrftoken',
-        'x-requested-with',
+        "accept",
+        "accept-encoding",
+        "authorization",
+        "content-disposition",
+        "content-type",
+        "dnt",
+        "origin",
+        "user-agent",
+        "x-csrftoken",
+        "x-requested-with",
     )
 
     WSGI_APPLICATION = "website.wsgi.application"
