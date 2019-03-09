@@ -19,7 +19,7 @@ from .job import Job
 import analitico
 import analitico.plugin
 import analitico.utilities
-
+import api.utilities
 
 LOG_LEVEL_NOTSET = 0
 LOG_LEVEL_DEBUG = 10
@@ -158,20 +158,16 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
     # move item_id to its own field
     log.item_id = attributes.pop("item_id", None)
 
+    # if an exception was attached which create this giant dictionary
+    # with all sorts of helpful debugging information to aid debugging
     exception = attributes.pop("exception", None)
     if exception:
-        # TODO convert to json dictionary with all included inner exceptions
-        attributes["exception"] = str(exception)
+        attributes["exception"] = api.utilities.exception_info_to_dict(exception)
 
     # TODO add user or user ip info like sentry
 
-    # we use atttributes to save in json a number of items
-    # that have been passed to the logger some of which may not
-    # be serializable to json. if we apply these attributes to the JsonField
-    # it will crash on serialization. so we serialize/deserialize which is extra
-    # work but allows us to make sure everything can go through or has a NOT_SERIALIZABLE
-    # stuck on it
-    log.attributes = json.loads(json.dumps(attributes, skipkeys=True, default=lambda o: "NOT_SERIALIZABLE"))
+    # some attributes may not be serializable so we filter them out before hand
+    log.attributes = analitico.utilities.json_sanitize_dict(attributes)
 
     return log
 
