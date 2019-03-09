@@ -162,7 +162,7 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
     # with all sorts of helpful debugging information to aid debugging
     exception = attributes.pop("exception", None)
     if exception:
-        attributes["exception"] = api.utilities.exception_info_to_dict(exception)
+        attributes["exception"] = api.utilities.exception_to_dict(exception)
 
     # TODO add user or user ip info like sentry
 

@@ -353,7 +353,7 @@ try:
 
     REST_FRAMEWORK = {
         # custom exception handler reports exception with specific formatting
-        "EXCEPTION_HANDLER": "api.utilities.api_exception_handler",
+        "EXCEPTION_HANDLER": "api.utilities.exception_to_response",
         #       'rest_framework_json_api.exceptions.exception_handler',
         "DEFAULT_PAGINATION_CLASS": "rest_framework_json_api.pagination.JsonApiPageNumberPagination",
         "DEFAULT_PARSER_CLASSES": (

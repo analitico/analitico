@@ -116,7 +116,7 @@ class Job(ItemMixin, models.Model):
                 item.save()
 
                 self.status = STATUS_COMPLETED
-                self.save()                
+                self.save()
                 factory.status(self, STATUS_COMPLETED)
 
             except Exception as e:
