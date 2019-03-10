@@ -1,11 +1,15 @@
 import os
 import time
 import logging
+import datetime
+import socket
 
-from analitico.status import STATUS_CREATED, STATUS_RUNNING
+from django.db import transaction
+from analitico.constants import WORKER_TYPE, WORKER_PREFIX
+from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
 
 from api.models import Job
-from analitico.utilities import time_ms
+from analitico.utilities import time_ms, get_runtime
 from api.factory import ServerFactory, factory
 
 from django.core.management.base import BaseCommand, CommandError
@@ -20,38 +24,57 @@ WORKER_ERROR = 100  # generic error code
 POLLING_DELAY_SHORT = 0.500  # delay between succesfull queue polls
 POLLING_DELAY_LONG = 5.0  # delay in case of errors
 
-# separate logs from worker
-logger = logging.getLogger("analitico.worker")
+
+def generate_worker_id():
+    now = datetime.datetime.utcnow()
+    return WORKER_PREFIX + socket.gethostname() + now.strftime("_%Y%m%d%H%M%S")
+
 
 class Command(BaseCommand):
     """ A django command used to run training jobs, either any pending ones or those specifically indicated """
+
+    id = None
 
     help = "A worker for asynchrous jobs like pipeline processing, model training, etc."
 
     # TODO implement external quit signal?
     running = True
 
+    def __init__(self, *args, **kwargs):
+        self.id = generate_worker_id()
+
+    def info(self, *args, **kwargs):
+        factory.logger.info(*args, item=self, runtime=get_runtime(), **kwargs)
+
+    def warning(self, *args, **kwargs):
+        factory.logger.warning(*args, item=self, runtime=get_runtime(), **kwargs)
+
     def run_job(self, job) -> Job:
         """ Run job with given id """
         try:
-            job.status = STATUS_RUNNING
-            job.save()
-
-            logger.info("job: %s, status: %s, action: %s", job.id, job.status, job.action)
+            self.info("worker: %s, job: %s, action: %s", job.status, job.id, job.action, job=job)
             started_ms = time_ms()
+
             job.run(request=None, action=job.action)
-            logger.info("job: %s, status: %s, action: %s, elapsed: %d ms", job.id, job.status, job.action, time_ms(started_ms))
+
+            message = "worker: %s, job: %s, action: %s, elapsed: %d ms"
+            self.info(message, job.status, job.id, job.action, time_ms(started_ms), job=job)
             return job
         except Exception as e:
-            logger.warning("job: %s, status: %s, action: %s", job.id, job.status, job.action, exc_info=e)
+            self.warning("worker: %s, job: %s, action: %s", job.status, job.id, job.action, job=job, exception=e)
             raise e
 
     def get_pending_job(self, **options):
         # TODO use tags to further filter jobs
         # TODO order by time posted desc
-        jobs = Job.objects.filter(status=STATUS_CREATED)
-        # TODO implement status switch to processing with atomic transactional guarantee
-        return jobs[0] if len(jobs) > 0 else None
+        with transaction.atomic():
+            jobs = Job.objects.filter(status=STATUS_CREATED)
+            if len(jobs) > 0:
+                job = jobs[0]
+                job.status = STATUS_RUNNING
+                job.save()
+                return job
+        return None
 
     def add_arguments(self, parser):
         # https://docs.djangoproject.com/en/2.1/howto/custom-management-commands/
@@ -67,17 +90,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """ Called when command is run will keep processing jobs """
-        logger.info("Worker started")
+        self.info("worker: started, id: %s", self.id)
 
         # if given a list of jobs to perform, run them then quit
         if len(options["job_id"]) > 0:
             for job_id in options["job_id"]:
                 try:
                     job = factory.get_item(job_id)
+                    job.status = STATUS_RUNNING
+                    job.save()
                     self.run_job(job)
                 except:
                     return WORKER_ERROR
-            logger.info("Completed command line jobs, bye")
+            self.info("worker: quitting, completed command line jobs, bye")
             return WORKER_SUCCESS
 
         max_jobs = options["max_jobs"]
@@ -94,8 +119,9 @@ class Command(BaseCommand):
                     self.run_job(job)
                     # no delay before next job
                 else:
-                    if time_ms(idle_ms) > 15 * 1000:
-                        logger.info("Uptime: %ds, no pending jobs", int(time_ms(started_ms) / 1000))
+                    if int(time_ms(idle_ms) / 1000) > 120:
+                        uptime_sec = int(time_ms(started_ms) / 1000)
+                        self.info("worker: idle, uptime: %d s", uptime_sec)
                         idle_ms = time_ms()
                     time.sleep(POLLING_DELAY_SHORT)
             except:
@@ -105,12 +131,12 @@ class Command(BaseCommand):
                 return WORKER_ERROR
 
             if max_jobs > 0 and processed_jobs >= max_jobs:
-                logger.info("Max-jobs: %d completed, bye", processed_jobs)
+                self.info("worker: quitting, max-jobs: %d completed, bye", processed_jobs)
                 return WORKER_SUCCESS
 
             if max_secs > 0 and int(time_ms(started_ms) / 1000) >= max_secs:
-                logger.info("Max-secs: %ds expired, bye", max_secs)
+                self.info("worker: quitting, max-secs: %d s expired, bye", max_secs)
                 return WORKER_SUCCESS
 
-        logger.info("Stop requested, bye")
+        self.info("worker: quitting, stop requested, bye")
         return WORKER_SUCCESS
