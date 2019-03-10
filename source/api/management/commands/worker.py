@@ -57,7 +57,7 @@ class Command(BaseCommand):
 
             job.run(request=None, action=job.action)
 
-            message = "worker: %s, job: %s, action: %s, elapsed: %d ms"
+            message = "worker: %s, job: %s, action: %s, elapsed: %dms"
             self.info(message, job.status, job.id, job.action, time_ms(started_ms), job=job)
             return job
         except Exception as e:
@@ -121,7 +121,7 @@ class Command(BaseCommand):
                 else:
                     if int(time_ms(idle_ms) / 1000) > 120:
                         uptime_sec = int(time_ms(started_ms) / 1000)
-                        self.info("worker: idle, uptime: %d s", uptime_sec)
+                        self.info("worker: idle, uptime: %ds", uptime_sec)
                         idle_ms = time_ms()
                     time.sleep(POLLING_DELAY_SHORT)
             except:
@@ -135,7 +135,7 @@ class Command(BaseCommand):
                 return WORKER_SUCCESS
 
             if max_secs > 0 and int(time_ms(started_ms) / 1000) >= max_secs:
-                self.info("worker: quitting, max-secs: %d s expired, bye", max_secs)
+                self.info("worker: quitting, max-secs: %ds expired, bye", max_secs)
                 return WORKER_SUCCESS
 
         self.info("worker: quitting, stop requested, bye")

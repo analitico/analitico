@@ -69,8 +69,8 @@ class ItemsTests(APITestCase):
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
-        self.assertEqual(item["error"]["code"], "Not Found")
-        self.assertIsNotNone(item["error"]["detail"])
+        self.assertEqual(item["error"]["code"], "not_found")
+        self.assertIsNotNone(item["error"]["title"])
         self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_get_without_authorization_as_admin(self):
@@ -110,8 +110,8 @@ class ItemsTests(APITestCase):
         patch_item = self.patch_item(
             analitico.WORKSPACE_TYPE, "ws_001", patch, self.token2, status_code=status.HTTP_404_NOT_FOUND
         )
-        self.assertEqual(patch_item["error"]["code"], "Not Found")
-        self.assertIsNotNone(patch_item["error"]["detail"])
+        self.assertEqual(patch_item["error"]["code"], "not_found")
+        self.assertIsNotNone(patch_item["error"]["title"])
         self.assertEqual(patch_item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_patch_made_up_attribute(self):
@@ -176,8 +176,8 @@ class ItemsTests(APITestCase):
 
         # no try and get deleted item, should return a 404
         item = self.delete_item(analitico.WORKSPACE_TYPE, "ws_001", self.token1, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(item["error"]["code"], "Not Found")
-        self.assertIsNotNone(item["error"]["detail"])
+        self.assertEqual(item["error"]["code"], "not_found")
+        self.assertIsNotNone(item["error"]["title"])
         self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_delete_without_authorization(self):
@@ -185,8 +185,8 @@ class ItemsTests(APITestCase):
         # the server should pretend it's not there (which it isn't for this user)
         # and return an item not found code of HTTP 404
         item = self.delete_item(analitico.WORKSPACE_TYPE, "ws_001", self.token2, status_code=status.HTTP_404_NOT_FOUND)
-        self.assertEqual(item["error"]["code"], "Not Found")
-        self.assertIsNotNone(item["error"]["detail"])
+        self.assertEqual(item["error"]["code"], "not_found")
+        self.assertIsNotNone(item["error"]["title"])
         self.assertEqual(item["error"]["status"], "404")  # a string, not a number
 
     def test_workspace_delete_without_authorization_as_admin(self):

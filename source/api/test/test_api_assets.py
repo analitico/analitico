@@ -161,7 +161,7 @@ class AssetsTests(APITestCase):
             url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "oh-my-missing-dog.jpg"))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-            self.assertTrue("oh-my-missing-dog.jpg" in response.data["error"]["detail"])
+            self.assertTrue("oh-my-missing-dog.jpg" in response.data["error"]["title"])
             self.assertEqual(response.data["error"]["status"], "404")
             self.assertEqual(response.data["error"]["code"], "not_found")
         except Exception as exc:

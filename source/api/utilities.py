@@ -36,36 +36,37 @@ from api.models import Token
 
 def exception_to_dict(exception: Exception, add_context=True, add_formatted=True, add_traceback=True) -> dict:
     """ Returns a dictionary with detailed information on the given exception and its inner (chained) exceptions """
+
+    # trying to adhere as much as possible to json:api specs here
+    # https://jsonapi.org/format/#errors
     d = OrderedDict(
         {
             "status": None,  # want this to go first
             "code": type(exception).__name__.lower(),
-            "message": str(exception.args[0]) if len(exception.args) > 0 else str(exception),
+            "title": str(exception.args[0]) if len(exception.args) > 0 else str(exception),
+            "meta": {},
         }
     )
 
-    if len(exception.args) > 1:
-        d["detail"] = exception.args
-
     if isinstance(exception, AnaliticoException):
-        d["status"] = exception.status_code
+        d["status"] = str(exception.status_code)
         d["code"] = exception.code
-        d["message"] = exception.message
+        d["title"] = exception.message
         if exception.extra and len(exception.extra) > 0:
-            d["detail"] = analitico.utilities.json_sanitize_dict(exception.extra)
+            d["meta"]["extra"] = analitico.utilities.json_sanitize_dict(exception.extra)
 
     if isinstance(exception, rest_framework.exceptions.APIException):
-        d["status"] = exception.status_code
+        d["status"] = str(exception.status_code)
         d["code"] = exception.get_codes()
-        d["message"] = exception.detail
-        d["detail"] = exception.get_full_details()
+        d["title"] = str(exception)
+        d["meta"]["extra"] = exception.get_full_details()
 
     if isinstance(exception, django.http.Http404):
         d["status"] = "404"
         d["code"] = "not_found"
 
     if add_context and exception.__context__:
-        d["context"] = exception_to_dict(
+        d["meta"]["context"] = exception_to_dict(
             exception.__context__, add_context=True, add_formatted=False, add_traceback=False
         )
 
@@ -74,14 +75,14 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
 
     if add_formatted:
         # printout of error condition
-        d["formatted"] = traceback.format_exception(type(exception), exception, exc_traceback)
+        d["meta"]["formatted"] = traceback.format_exception(type(exception), exception, exc_traceback)
 
     if add_traceback:
         # extract frame summaries from traceback and convert them
         # to list of dictionaries with file and line number information
-        d["traceback"] = []
+        d["meta"]["traceback"] = []
         for fs in traceback.extract_tb(exc_traceback, 20):
-            d["traceback"].append(
+            d["meta"]["traceback"].append(
                 OrderedDict(
                     {
                         "summary": "File '{}', line {}, in {}".format(fs.filename, fs.lineno, fs.name),
@@ -95,6 +96,8 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
 
     if d["status"] is None:
         d.pop("status")
+    if len(d["meta"]) < 1:
+        d.pop("meta")
     return d
 
 
