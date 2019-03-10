@@ -84,7 +84,7 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                         # if no persisted pipeline start with basic endpoint pipeline of nothing configured yet
                         plugin_settings = {
                             "type": analitico.plugin.PLUGIN_TYPE,
-                            "name": analitico.plugin.ENDPOINTp_PIPELINE_PLUGIN,
+                            "name": analitico.plugin.ENDPOINT_PIPELINE_PLUGIN,
                         }
 
                 # restore /data artifacts used by plugin to run prediction
