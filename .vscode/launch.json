@@ -74,7 +74,7 @@
             }
         },
         {
-            "name": "Worker (django)",
+            "name": "Worker",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/source",
@@ -82,7 +82,19 @@
             "console": "integratedTerminal",
             "args": [
                 "worker",
-                "jb_ds_s24_outofstock"
+            ],
+            "django": true
+        },
+        {
+            "name": "Worker (single job)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/source",
+            "program": "${workspaceFolder}/source/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "worker",
+                "jb_0rwHrO8vpTig"
             ],
             "django": true
         }

@@ -1,7 +1,7 @@
 import os
 import time
 
-from analitico.status import STATUS_CREATED
+from analitico.status import STATUS_CREATED, STATUS_RUNNING
 
 from api.models import Job
 from analitico.utilities import logger, time_ms
@@ -31,14 +31,17 @@ class Command(BaseCommand):
     def run_job(self, job) -> Job:
         """ Run job with given id """
         try:
-            logger.info("Job_id: %s, started", job.id)
+            job.status = STATUS_RUNNING
+            job.save()
+
+            logger.info("job: %s, status: %s, action: %s", job.id, job.status, job.action)
             started_ms = time_ms()
             job.run(request=None, action=job.action)
-            logger.info("Job_id: %s, completed in %d ms", job.id, time_ms(started_ms))
+            logger.info("job: %s, status: %s, action: %s, elapsed: %d ms", job.id, job.status, job.action, time_ms(started_ms))
             return job
-        except Exception as exc:
-            logger.warning("Job_id: %s, failed", job.id, exc_info=exc)
-            raise exc
+        except Exception as e:
+            logger.warning("job: %s, status: %s, action: %s", job.id, job.status, job.action, exc_info=e)
+            raise e
 
     def get_pending_job(self, **options):
         # TODO use tags to further filter jobs
