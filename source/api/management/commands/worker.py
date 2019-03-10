@@ -1,10 +1,11 @@
 import os
 import time
+import logging
 
 from analitico.status import STATUS_CREATED, STATUS_RUNNING
 
 from api.models import Job
-from analitico.utilities import logger, time_ms
+from analitico.utilities import time_ms
 from api.factory import ServerFactory, factory
 
 from django.core.management.base import BaseCommand, CommandError
@@ -19,6 +20,8 @@ WORKER_ERROR = 100  # generic error code
 POLLING_DELAY_SHORT = 0.500  # delay between succesfull queue polls
 POLLING_DELAY_LONG = 5.0  # delay in case of errors
 
+# separate logs from worker
+logger = logging.getLogger("analitico.worker")
 
 class Command(BaseCommand):
     """ A django command used to run training jobs, either any pending ones or those specifically indicated """

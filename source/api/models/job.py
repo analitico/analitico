@@ -12,7 +12,7 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 
-from analitico.constants import ACTION_TRAIN
+from analitico.constants import ACTION_TRAIN, ACTION_PREDICT
 from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED
 from api.factory import ServerFactory
 
@@ -93,8 +93,8 @@ class Job(ItemMixin, models.Model):
         with ServerFactory(job=self, request=request, **kwargs) as factory:
             try:
                 # log only warnings while predicting to avoid slowing down predictions
-                training = ACTION_TRAIN in self.action
-                if training:
+                predicting = ACTION_PREDICT in self.action
+                if predicting:
                     factory.set_logger_level(logging.WARNING)
 
                 self.status = STATUS_RUNNING
