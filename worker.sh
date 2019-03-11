@@ -1,13 +1,14 @@
 #!/bin/bash
+
+# start a python worker process
+
 # exit if error
 set -e
 
-echo "Injecting env"
+# Injecting env
 source /home/www/analitico-ci/analitico-env.sh
 cd /home/www/analitico
-
-echo "Start worker"
-
-#exec /home/www/analitico/conf/gunicorn_start.sh &
-
-echo "Done"
+# start virtual env
+source venv/bin/activate
+# run worker
+exec python3 source/manage.py worker
