@@ -11,7 +11,9 @@ import api.models
 import api.utilities
 
 from analitico import ACTION_PREDICT
+
 from api.models import Endpoint, Job
+from api.factory import ServerFactory
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .assetviewsetmixin import AssetViewSetMixin
@@ -45,8 +47,17 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets
     # The only action that can be performed on an endpoint is an inference
     job_actions = (ACTION_PREDICT,)
 
-    @action(methods=["post"], detail=True, url_name=ACTION_PREDICT, url_path=ACTION_PREDICT)
-    def predict(self, request, pk):
+    # deprecated
+    @action(methods=["post"], detail=True, url_name=ACTION_PREDICT + "OLD", url_path=ACTION_PREDICT + "OLD")
+    def predictOLD(self, request, pk):
         """ Runs a synchronous prediction on an endpoint """
         job_item = self.get_object()  # endpoint
         return self.create_job_response(request, job_item, ACTION_PREDICT, run_async=False, just_payload=True)
+
+    @action(methods=["post"], detail=True, url_name="predict", url_path="predict")
+    def predict(self, request, pk):
+        """ Runs a synchronous prediction on an endpoint """
+        with ServerFactory(request=request) as factory:
+            endpoint = self.get_object()
+            results = endpoint.run(None, factory)
+        return Response(results)
