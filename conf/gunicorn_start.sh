@@ -32,6 +32,7 @@ exec /home/www/analitico/venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
   --user $USER \
   --bind=unix:$SOCKFILE \
   --access-logfile /var/log/gunicorn/access.log \
+  --capture-output True \
   --error-logfile  /var/log/gunicorn/error.log \
   --access-logformat '%({X-Forwarded-For}i)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %({Content-Length}i)s %(L)s %(L)s "%(f)s" "%(a)s"'
 
