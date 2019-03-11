@@ -50,3 +50,10 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets
         """ Runs a synchronous prediction on an endpoint """
         job_item = self.get_object()  # endpoint
         return self.create_job_response(request, job_item, ACTION_PREDICT, run_async=False, just_payload=True)
+
+    @action(methods=["post"], detail=True, url_name="predict2", url_path="predict2")
+    def predict2(self, request, pk):
+        """ Runs a synchronous prediction on an endpoint """
+        endpoint = self.get_object()
+        results = endpoint.predict2(request)
+        return Response(results)
