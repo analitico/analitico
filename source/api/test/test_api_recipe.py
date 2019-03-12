@@ -164,9 +164,9 @@ class RecipeTests(APITestCase):
             endpoint = response.data
             endpoint_id = endpoint["id"]
             self.assertTrue(endpoint["id"].startswith(analitico.ENDPOINT_PREFIX))
-            self.assertEquals(endpoint["attributes"]["model_id"], model_id)
-            self.assertEquals(endpoint["attributes"]["plugin"]["type"], analitico.plugin.PLUGIN_TYPE)
-            self.assertEquals(endpoint["attributes"]["plugin"]["name"], analitico.plugin.ENDPOINT_PIPELINE_PLUGIN)
+            self.assertEqual(endpoint["attributes"]["model_id"], model_id)
+            self.assertEqual(endpoint["attributes"]["plugin"]["type"], analitico.plugin.PLUGIN_TYPE)
+            self.assertEqual(endpoint["attributes"]["plugin"]["name"], analitico.plugin.ENDPOINT_PIPELINE_PLUGIN)
 
             # load some data that we want to run predictions on
             num_predictions = 20  # number of test predictions to run

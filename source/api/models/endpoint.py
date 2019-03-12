@@ -60,7 +60,7 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
     def run(self, job: Job, factory: IFactory, **kwargs):
         """ Run predictions on the endpoint (with or without a Job) """
         try:
-             # bare bones logging to avoid slowing down predictions
+            # bare bones logging to avoid slowing down predictions
             factory.set_logger_level(logging.WARNING)
 
             # predict action creates a prediction from a trained model
@@ -143,4 +143,9 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
             return results
 
         except Exception as exc:
-            factory.exception("An error occoured while running predictions on %s/%s", code="prediction_error", item=self, model_id=model_id)
+            factory.exception(
+                "An error occoured while running predictions on %s/%s",
+                code="prediction_error",
+                item=self,
+                model_id=model_id,
+            )

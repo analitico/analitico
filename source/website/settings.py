@@ -354,8 +354,14 @@ try:
     REST_FRAMEWORK = {
         # custom exception handler reports exception with specific formatting
         "EXCEPTION_HANDLER": "api.utilities.exception_to_response",
-        #       'rest_framework_json_api.exceptions.exception_handler',
-        "DEFAULT_PAGINATION_CLASS": "rest_framework_json_api.pagination.JsonApiPageNumberPagination",
+        # calls with ?page=x or over fixed number of items will be paged
+        "DEFAULT_PAGINATION_CLASS": "api.pagination.AnaliticoPageNumberPagination",
+        # if you set a page size here all list queries will be paged, even
+        # when there are few items like in the case of workspaces or datasets
+        # instead we changed the pager to enable paging on demand or automatically
+        # enable it by default when the number of items exceed the max page size
+        # so we can avoid slowing down the server with huge unpaged requests
+        # "PAGE_SIZE": 100,
         "DEFAULT_PARSER_CLASSES": (
             #       'rest_framework_json_api.parsers.JSONParser',
             "rest_framework.parsers.JSONParser",
@@ -384,6 +390,7 @@ try:
             "api.renderers.JSONRenderer",  # jsonapi but simplified
         ),
         "TEST_REQUEST_DEFAULT_FORMAT": "json",
+        # APIs use Bearer tokens, app and site use sessions
         "DEFAULT_AUTHENTICATION_CLASSES": (
             "api.authentication.BearerAuthentication",
             "rest_framework.authentication.SessionAuthentication",

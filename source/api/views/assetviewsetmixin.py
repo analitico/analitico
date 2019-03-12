@@ -22,7 +22,7 @@ from rest_framework import status
 
 from analitico.utilities import logger, get_csv_row_count
 from api.models import ItemMixin, Job, ASSETS_CLASS_DATA
-from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE
+from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.factory import ServerFactory
 
@@ -132,8 +132,8 @@ class AssetViewSetMixin:
     def asset_download_csv_as_json_with_paging(self, request, pk, asset_class, asset_id):
         """ Returns a .csv asset converted to json records with paging support """
         # which page are we on, what size is each page
-        page = int(request.GET.get("page", 0))
-        page_size = max(MIN_PAGE_SIZE, min(MAX_PAGE_SIZE, int(request.GET.get("page_size", DEFAULT_PAGE_SIZE))))
+        page = int(request.GET.get(PAGE_PARAM, 0))
+        page_size = max(MIN_PAGE_SIZE, min(MAX_PAGE_SIZE, int(request.GET.get(PAGE_SIZE_PARAM, DEFAULT_PAGE_SIZE))))
         offset = page * page_size
 
         # retrieve only the requested chunk from cached copy of storage asset on local disk
@@ -145,7 +145,7 @@ class AssetViewSetMixin:
             df = df.fillna("")  # for now replace NaN with empty string
 
             data = {
-                "meta": {"page": page, "page_records": len(df), "page_size": page_size},
+                "meta": {PAGE_PARAM: page, "page_records": len(df), PAGE_SIZE_PARAM: page_size},
                 "data": df.to_dict("records"),
             }
 

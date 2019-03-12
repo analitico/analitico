@@ -57,8 +57,8 @@ class Log(ItemMixin, models.Model):
     # https://docs.python.org/3.7/library/logging.html?highlight=logging#logging-levels
     level = models.IntegerField(default=LOG_LEVEL_NOTSET, db_index=True)
 
-    # Log formatted message
-    message = models.TextField(blank=True)
+    # Log formatted message (using title so it's the same as all other models and also gets serialized outside attributes)
+    title = models.TextField(blank=True)
 
     # Time when created
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="created")
@@ -75,7 +75,7 @@ class Log(ItemMixin, models.Model):
         return logging.getLevelName(self.level)
 
     def __str__(self):
-        return self.id + " " + self.message
+        return self.id + " " + self.title
 
 
 ##
@@ -118,7 +118,7 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
     log = Log()
 
     log.level = log_record.levelno
-    log.message = log_record.message
+    log.title = log_record.message
     log.created_at = datetime.datetime.fromtimestamp(log_record.created, pytz.UTC)
 
     # create dictionary of attributes, remove unwanted keys

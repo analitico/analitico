@@ -9,6 +9,7 @@ import api.models.log
 from api.models import *
 from api.factory import factory
 from api.models.log import *
+from api.pagination import *
 
 from .utils import APITestCase
 
@@ -17,6 +18,9 @@ class LogTests(APITestCase):
     """ Test log operations like collecting logs and returning them as log entries via APIs """
 
     logger = factory.logger
+
+    def setUp(self):
+        self.setup_basics()
 
     def logs(self, n=None):
         """ Returns Log models stored by handler """
@@ -41,7 +45,7 @@ class LogTests(APITestCase):
 
         self.assertEqual(len(logs), 1)
         self.assertEqual(logs[0].id[: len(analitico.LOG_PREFIX)], analitico.LOG_PREFIX)
-        self.assertEqual(logs[0].message, "info message")
+        self.assertEqual(logs[0].title, "info message")
 
     def test_log_level(self):
         self.logger.debug("debug message")
@@ -61,7 +65,7 @@ class LogTests(APITestCase):
 
         self.assertEqual(logs[0].level, logging.INFO)
         self.assertEqual(logs[0].level_name, "INFO")
-        self.assertEqual(logs[0].message, "info message 1")
+        self.assertEqual(logs[0].title, "info message 1")
         self.assertEqual(logs[0].name, "analitico")
 
     def test_log_formatting_2(self):
@@ -69,14 +73,14 @@ class LogTests(APITestCase):
         logs = Log.objects.all()
 
         self.assertEqual(logs[0].level, logging.INFO)
-        self.assertEqual(logs[0].message, "info message 1, pippo")
+        self.assertEqual(logs[0].title, "info message 1, pippo")
 
     def test_log_formatting_plus_attrs(self):
         self.logger.info("info message %d, %s", 1, "mickey", more1="more_value")
         logs = Log.objects.all()
 
         self.assertEqual(logs[0].level, logging.INFO)
-        self.assertEqual(logs[0].message, "info message 1, mickey")
+        self.assertEqual(logs[0].title, "info message 1, mickey")
         self.assertEqual(logs[0].attributes["more1"], "more_value")
 
     def test_log_formatting_plus_recipe_1(self):
@@ -86,7 +90,7 @@ class LogTests(APITestCase):
         logs = Log.objects.all()
 
         self.assertEqual(logs[0].level, logging.INFO)
-        self.assertEqual(logs[0].message, "info message 1, mickey")
+        self.assertEqual(logs[0].title, "info message 1, mickey")
         self.assertEqual(logs[0].attributes["recipe_id"], recipe.id)
 
     def test_log_formatting_plus_recipe_2(self):
@@ -96,7 +100,7 @@ class LogTests(APITestCase):
         logs = Log.objects.all()
 
         self.assertEqual(logs[0].level, logging.INFO)
-        self.assertEqual(logs[0].message, "info message 1, mickey")
+        self.assertEqual(logs[0].title, "info message 1, mickey")
         self.assertEqual(logs[0].item_id, recipe.id)
         self.assertEqual(logs[0].attributes["recipe_id"], recipe.id)
 
@@ -118,7 +122,7 @@ class LogTests(APITestCase):
         logs = Log.objects.all()
 
         self.assertEqual(logs[0].level, logging.INFO)
-        self.assertEqual(logs[0].message, "info message 1, mickey")
+        self.assertEqual(logs[0].title, "info message 1, mickey")
         self.assertEqual(logs[0].item_id, recipe.id)
         self.assertEqual(logs[0].job.id, job.id)
 
