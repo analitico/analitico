@@ -35,35 +35,19 @@
             [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="!(isHandset$ | async)">
             <!--<mat-nav-list (click)="drawer.close()"> -->
             <div class="ao-left-side-nav">
+                <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter"
+                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Recipes'"
+                    [icon]="'receipt_outline'"></app-ao-nav-list-from-url>
 
                 <app-ao-nav-list-from-url [url]="'/datasets'" [filter]="workspaceFilter"
                     [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Datasets'"
                     [icon]="'list_alt'"></app-ao-nav-list-from-url>
-                <app-ao-nav-list-from-url [url]="'/recipes'" [filter]="workspaceFilter"
-                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Recipes'"
-                    [icon]="'receipt_outline'"></app-ao-nav-list-from-url>
-                <app-ao-nav-list-from-url [url]="'/models'" [filter]="workspaceFilter"
-                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Models'"
-                    [icon]="'folder_outline'"></app-ao-nav-list-from-url>
-                <app-ao-nav-list-from-url [url]="'/endpoints'" [filter]="workspaceFilter"
-                    [sort]="sortByCreatedAtDescFunction" [newItemParams]="newItemParams" [title]="'Endpoints'"
-                    [icon]="'cloud_outline'"></app-ao-nav-list-from-url>
-
 
             </div>
 
         </mat-sidenav>
-        <mat-sidenav-content [fileUploadInputFor]="fileUploadQueue" [getUploadUrl]="getNewDatasetUploadUrl"
-            [uploaded]="afterNewDatasetUploaded">
+        <mat-sidenav-content>
             <ng-content (click)="drawer.close()"></ng-content>
         </mat-sidenav-content>
     </mat-sidenav-container>
 </ng-container>
-
-
-<app-ao-mat-file-upload-queue #fileUploadQueue multiple id="ao-file-upload-queue">
-    <app-ao-mat-file-upload [file]="fileItem.file" [id]="i"
-        *ngFor="let fileItem of fileUploadQueue.files; let i = index"
-        (uploaded)="fileItem.uploaded ? fileItem.uploaded(fileItem) : true" [fileAlias]="'file'"
-        [httpUrl]="fileItem.uploadUrl"></app-ao-mat-file-upload>
-</app-ao-mat-file-upload-queue>

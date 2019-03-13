@@ -190,39 +190,6 @@ export class MainNavComponent implements OnInit, OnDestroy {
         this.router.navigate([], { queryParams: queryParams, relativeTo: this.route, queryParamsHandling: 'merge' });
     }
 
-    // create a new dataset and return asset upload url
-    getNewDatasetUploadUrl = (file) => {
-        // create dataset
-        return this.apiClient.post('/datasets', { workspace_id: this.workspace.id })
-            .then((response: any) => {
-                return { file: file, url: '/api/datasets/' + response.data.id + '/assets' };
-            });
-    }
-
-    // open dataset view for the uploaded dataset
-    afterNewDatasetUploaded = (fileItem) => {
-        if (fileItem.uploadUrl) {
-            const datasetId = (fileItem.uploadUrl.substring(
-                fileItem.uploadUrl.indexOf('/datasets/') + 10).replace('/assets', ''));
-            // we can process this
-            const that = this;
-            return this.itemService.processDataset(datasetId)
-                .then((emitter: any) => {
-                    emitter.subscribe({
-                        next(data: any) {
-                            if (data.status === 'completed') {
-                                that.router.navigate(['/datasets/' + datasetId]);
-                            }
-                        }
-                    });
-                })
-                .catch(() => {
-
-                });
-
-        }
-    }
-
     logout() {
         location.href = '/accounts/logout/';
     }
