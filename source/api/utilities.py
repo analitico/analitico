@@ -34,6 +34,10 @@ from api.models import Token
 ##
 
 
+def first_or_list(items):
+    return items[0] if items and len(items) == 1 else items
+
+
 def exception_to_dict(exception: Exception, add_context=True, add_formatted=True, add_traceback=True) -> dict:
     """ Returns a dictionary with detailed information on the given exception and its inner (chained) exceptions """
 
@@ -57,7 +61,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
 
     if isinstance(exception, rest_framework.exceptions.APIException):
         d["status"] = str(exception.status_code)
-        d["code"] = exception.get_codes()
+        d["code"] = first_or_list(exception.get_codes())
         d["title"] = str(exception)
         d["meta"]["extra"] = exception.get_full_details()
 
