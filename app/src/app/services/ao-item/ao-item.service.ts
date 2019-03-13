@@ -231,8 +231,16 @@ export class AoItemService {
                 recipes.forEach(recipe => {
                     // get recipe models
                     recipe._aoprivate = {
-                        models: this.getItemsByAttribute(models, 'attributes.recipe_id', recipe.id)
+                        models: this.getItemsByAttribute(models, 'attributes.recipe_id', recipe.id),
+                        endpoints: []
                     };
+
+                    // how find if recipe is related to endpoint
+                    recipe._aoprivate.models.forEach(model => {
+                        if (model._aoprivate.endpoints) {
+                            recipe._aoprivate.endpoints = recipe._aoprivate.endpoints.concat(model._aoprivate.endpoints);
+                        }
+                    });
 
                 });
 
@@ -270,6 +278,20 @@ export class AoItemService {
         }
     }
 
+
+    /**
+     * Get datasets
+     */
+    getDatasets() {
+        return this.getItems()
+            .then((items) => {
+                return items.datasets.sort(function (a, b) {
+                    return a.attributes.updated_at > b.attributes.updated_at ? -1 : 1;
+                });
+            });
+    }
+
+
     /**
      * Get models
      */
@@ -306,13 +328,24 @@ export class AoItemService {
     }
 
     /**
-     * Get the model with the providev id
+     * Get the model with the provided id
      * @param id require id
      */
     getModelById(id) {
         return this.getModels()
             .then((models) => {
                 return this.getItemById(models, id);
+            });
+    }
+
+    /**
+     * Get the recipe with the provided id
+     * @param id require id
+     */
+    getRecipeById(id) {
+        return this.getRecipes()
+            .then((recipes) => {
+                return this.getItemById(recipes, id);
             });
     }
 
