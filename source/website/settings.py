@@ -187,6 +187,7 @@ try:
         "website",
         "gunicorn",
         "rest_framework",
+        "django_filters",
         "drf_yasg",  # openapi schema generator
         "raven.contrib.django.raven_compat",
         "django.contrib.admin",
@@ -379,10 +380,10 @@ try:
             # Enforce strict validation on query parameters:
             # "rest_framework_json_api.filters.QueryParameterValidationFilter",
             "rest_framework_json_api.filters.OrderingFilter",
-            # "rest_framework_json_api.django_filters.DjangoFilterBackend",
+            "rest_framework_json_api.django_filters.DjangoFilterBackend",
             "rest_framework.filters.SearchFilter",
         ),
-        "SEARCH_PARAM": "search",
+        "SEARCH_PARAM": "filter[search]",
         "TEST_REQUEST_RENDERER_CLASSES": (
             #       'rest_framework_json_api.renderers.JSONRenderer',
             #       'rest_framework.renderers.JSONRenderer',

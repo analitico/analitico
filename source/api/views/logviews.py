@@ -1,6 +1,10 @@
 import rest_framework
 import rest_framework.viewsets
 
+from rest_framework_json_api import filters
+from rest_framework_json_api import django_filters
+from rest_framework.filters import SearchFilter
+
 from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -12,7 +16,7 @@ import api.utilities
 
 from api.models import Log
 from .attributeserializermixin import AttributeSerializerMixin
-from .itemviewsetmixin import ItemViewSetMixin
+from .itemviewsetmixin import ItemViewSetMixin, filterset
 
 # ItemSerializer and ItemViewSet for item APIs
 # pylint: disable=no-member
@@ -82,6 +86,14 @@ class LogViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
 
     item_class = api.models.Log
     serializer_class = LogSerializer
+    search_fields = ("item_id", "title", "attributes")
+    filterset_fields = {
+        "id": filterset.ALL,
+        "item_id": filterset.ALL,
+        "title": filterset.ALL,
+        "attributes": filterset.ATTRIBUTES,
+        "created_at": filterset.DATE,
+    }
 
     def get_queryset(self):
         """ A user only has access to log entries he or his workspaces owns. Superusers see all log entries. """

@@ -18,6 +18,22 @@ from .utils import APITestCase
 
 # https://kapeli.com/cheat_sheets/Python_unittest_Assertions.docset/Contents/Resources/Documents/index
 
+CHARACTERS = (
+    "Winnie-the-Pooh",
+    "Christopher Robin",
+    "Piglet",
+    "Eeyore",
+    "Kanga",
+    "Roo",
+    "Tigger",
+    "Rabbit",
+    "Owl",
+    "Bees",
+    "Heffalumps",
+    "Jagulars",
+)
+
+
 class FiltersTests(APITestCase):
     """ 
     Test APIs filters like paging, sorting, ordering, searching, etc... 
@@ -27,20 +43,22 @@ class FiltersTests(APITestCase):
 
     logger = factory.logger
 
-    def get_random_filtered_logs(self, filter, n=100):
-        """ Create some random log entries to be used for sorting various sorting, search, etc """
+    def get_random_filtered_logs(self, filter, n=100, asserts=True):
+        """ Create some random log entries to be used for sorting, search, etc """
         for i in range(0, n):
-            level = logging.INFO + random.randint(0,5)
-            title = "title " + "".join([random.choice(string.ascii_letters) for i in range(8)])
-            item_id = "pl_" + random.choice(string.digits) # fake plugin id (fewer choices so we have multiple logs per item_id)
+            level = logging.INFO + random.randint(0, 5)
+            title = random.choice(CHARACTERS) + " " + "".join([random.choice(string.ascii_letters) for i in range(8)])
+            item_id = "pl_" + random.choice(
+                string.digits
+            )  # fake plugin id (fewer choices so we have multiple logs per item_id)
             self.logger.log(level, title, item_id=item_id)
-
         assert filter[0] == "?"
         url = reverse("api:log-list") + filter
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), n)
+        if asserts:
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(len(response.data), n)
         return response.data
 
     def setUp(self):
@@ -134,60 +152,106 @@ class FiltersTests(APITestCase):
                 log_index = ((page - 1) * page_size) + i
                 self.assertEqual(log["attributes"]["title"], "log {}".format(log_index))
 
-
     def test_filters_sorting_by_title(self):
         data = self.get_random_filtered_logs("?sort=title")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i-1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_by_title_inverse(self):
         data = self.get_random_filtered_logs("?sort=-title")
         for i in range(1, len(data)):
-            self.assertGreaterEqual(data[i-1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertGreaterEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_item_then_title(self):
         data = self.get_random_filtered_logs("?sort=item_id,title")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i-1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-            if data[i-1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                self.assertLessEqual(data[i-1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
+            if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
+                self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_title_then_item(self):
         data = self.get_random_filtered_logs("?sort=title,item_id")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i-1]["attributes"]["title"], data[i]["attributes"]["title"])
-            if data[i-1]["attributes"]["title"] == data[i]["attributes"]["title"]:
-                self.assertLessEqual(data[i-1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
+            self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
+            if data[i - 1]["attributes"]["title"] == data[i]["attributes"]["title"]:
+                self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
 
     def test_filters_sorting_item_then_inverse_title(self):
         data = self.get_random_filtered_logs("?sort=item_id,-title")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i-1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-            if data[i-1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                self.assertGreaterEqual(data[i-1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
+            if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
+                self.assertGreaterEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_item_inverse_then_inverse_title(self):
         data = self.get_random_filtered_logs("?sort=-item_id,-title")
         for i in range(1, len(data)):
-            self.assertGreaterEqual(data[i-1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-            if data[i-1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                self.assertGreaterEqual(data[i-1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertGreaterEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
+            if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
+                self.assertGreaterEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_level_item_title(self):
         data = self.get_random_filtered_logs("?sort=level,item_id,title")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i-1]["attributes"]["level"], data[i]["attributes"]["level"])
-            if data[i-1]["attributes"]["level"] == data[i]["attributes"]["level"]:
-                self.assertLessEqual(data[i-1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-                if data[i-1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                    self.assertLessEqual(data[i-1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertLessEqual(data[i - 1]["attributes"]["level"], data[i]["attributes"]["level"])
+            if data[i - 1]["attributes"]["level"] == data[i]["attributes"]["level"]:
+                self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
+                if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
+                    self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_created_at(self):
         data = self.get_random_filtered_logs("?sort=created_at")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i-1]["attributes"]["created_at"], data[i]["attributes"]["created_at"])
+            self.assertLessEqual(data[i - 1]["attributes"]["created_at"], data[i]["attributes"]["created_at"])
 
     def test_filters_sorting_created_at_inverse(self):
         data = self.get_random_filtered_logs("?sort=-created_at")
         for i in range(1, len(data)):
-            self.assertGreaterEqual(data[i-1]["attributes"]["created_at"], data[i]["attributes"]["created_at"])
+            self.assertGreaterEqual(data[i - 1]["attributes"]["created_at"], data[i]["attributes"]["created_at"])
+
+    def test_filters_sorting_invalid_field(self):
+        for i in range(5):
+            self.logger.info("test invalid sort %d", 1)
+        url = reverse("api:log-list") + "?sort=bad"
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_text, "Bad Request")
+        self.assertEqual(response.data["error"]["status"], "400")
+        self.assertEqual(response.data["error"]["code"], "invalid")
+
+    def test_filters_title(self):
+        character = random.choice(CHARACTERS)
+        data = self.get_random_filtered_logs("?filter[search]=" + character, asserts=False)
+
+        # search models directly, compare numbers
+        logs = Log.objects.filter(title__contains=character).all()
+        self.assertEqual(len(logs), len(data))
+        for item in data:
+            self.assertIn(character, item["attributes"]["title"])
+
+
+    def test_filters_search_case_insensitive(self):
+        character = random.choice(CHARACTERS)
+        url = "?filter[search]=" + character.upper()
+        data = self.get_random_filtered_logs(url, asserts=False)
+
+        # search models directly, compare numbers
+        logs = Log.objects.filter(title__icontains=character).all()
+        self.assertEqual(len(logs), len(data))
+        for item in data:
+            self.assertIn(character, item["attributes"]["title"])
+
+
+    def OFFtest_filters_search_noresults(self):
+        url = "?filter[search]=MISSING"
+        data = self.get_random_filtered_logs(url, asserts=False)
+
+        # search models directly, compare numbers
+        logs = Log.objects.filter(title__icontains=character).all()
+        self.assertEqual(len(logs), len(data))
+
+        for item in data:
+            self.assertIn(character, item["attributes"]["title"])
+
