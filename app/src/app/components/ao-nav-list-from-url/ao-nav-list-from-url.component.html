@@ -1,8 +1,7 @@
 <div>
     <div class="ao-nav-list-item">
-        <a routerLink="{{url}}" routerLinkActive="active" 
-            [routerLinkActiveOptions]="{exact: true}" title="{{title}}" (dblclick)="toggleList($event)">
-            <mat-icon (click)="toggleList($event);" class="ao-arrow-icon">
+        <a title="{{title}}" (click)="toggleList($event)">
+            <mat-icon class="ao-arrow-icon">
                 {{isCollapsed ? 'arrow_right' : 'arrow_drop_down'}}
             </mat-icon>
              <mat-icon *ngIf="icon" class="ao-icon">
