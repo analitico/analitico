@@ -1,16 +1,10 @@
 import collections
-import datetime
-import jsonfield
 import os.path
 import mimetypes
 
-import django.core.files
-
-from django.contrib.auth.models import Group
 from django.db import models
 from django.utils.text import slugify
 from django.utils.timezone import now
-from django.utils.crypto import get_random_string
 from django.db import transaction
 
 from rest_framework import status

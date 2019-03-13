@@ -1,14 +1,13 @@
-from .user import User
-from .usermanager import UserManager
-from .token import Token
+from .user import User, USER_THUMBNAIL_SIZE  # NOQA
+from .usermanager import UserManager  # NOQA
+from .token import Token  # NOQA
 
 # These models share common structure and functionality via mixin
-from .items import ItemMixin, ASSETS_CLASS_ASSETS, ASSETS_CLASS_DATA
-from .workspace import Workspace
-from .dataset import Dataset
-from .recipe import Recipe
-from .model import Model
-from .job import Job
-from .endpoint import Endpoint
-from .user import User, USER_THUMBNAIL_SIZE
-from .log import Log
+from .items import ItemMixin, ASSETS_CLASS_ASSETS, ASSETS_CLASS_DATA  # NOQA
+from .workspace import Workspace  # NOQA
+from .dataset import Dataset  # NOQA
+from .recipe import Recipe  # NOQA
+from .model import Model  # NOQA
+from .job import Job  # NOQA
+from .endpoint import Endpoint  # NOQA
+from .log import Log  # NOQA

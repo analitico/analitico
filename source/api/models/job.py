@@ -12,7 +12,7 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 
-from analitico.constants import ACTION_TRAIN, ACTION_PREDICT
+from analitico.constants import ACTION_PREDICT
 from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED
 from api.factory import ServerFactory
 

@@ -4,16 +4,13 @@ import shutil
 
 from django.db import models
 from django.utils.crypto import get_random_string
-from django.utils.translation import ugettext_lazy as _
-from rest_framework.exceptions import APIException
-from rest_framework import status
 
 import analitico
 import analitico.plugin
 
 from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
 from analitico.exceptions import AnaliticoException
-from analitico.utilities import get_dict_dot, set_dict_dot, logger
+
 from .items import ItemMixin
 from .workspace import Workspace
 from .job import Job
@@ -32,7 +29,7 @@ class Recipe(ItemMixin, models.Model):
     """ A dataset contains a data source description, its metadata and its data """
 
     # Unique id has a type prefix + random string
-    id = models.SlugField(primary_key=True, default=generate_recipe_id, verbose_name=_("Id"))
+    id = models.SlugField(primary_key=True, default=generate_recipe_id)
 
     # Model is always owned by one and only one workspace
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)

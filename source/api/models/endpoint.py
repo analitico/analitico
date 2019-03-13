@@ -15,7 +15,6 @@ from analitico.constants import ACTION_PREDICT
 from analitico.plugin import PluginError
 from analitico.utilities import time_ms
 
-from api.factory import ServerFactory
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 from .job import Job
@@ -120,9 +119,8 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                 else:
                     # try converting data into a pandas dataframe
                     df = pd.DataFrame.from_records(data)
-                    df_copy = df.copy()
                     results = plugin.run(df, action=action)
-            except:
+            except Exception:
                 # TODO log warning or have special marker for endpoints that take data in unusual non tabular formats
                 results = plugin.run(data, action=action)
                 results["records"] = data
@@ -142,10 +140,11 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
 
             return results
 
-        except Exception as exc:
+        except Exception:
             factory.exception(
                 "An error occoured while running predictions on %s/%s",
                 code="prediction_error",
                 item=self,
+                endpoint_id=self.id,
                 model_id=model_id,
             )

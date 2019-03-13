@@ -1,26 +1,17 @@
 import collections
 import jsonfield
-import tempfile
-import pandas as pd
-import os
-import os.path
 
-from django.contrib.auth.models import Group
 from django.db import models
 from django.utils.crypto import get_random_string
-from django.utils.translation import ugettext_lazy as _
 from django.db import transaction
-from rest_framework.exceptions import APIException
 
 import analitico
 import analitico.plugin
 import analitico.utilities
 
 from analitico import IFactory
-from analitico.utilities import get_dict_dot, set_dict_dot, logger
 from analitico.schema import generate_schema
 
-from .user import User
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 

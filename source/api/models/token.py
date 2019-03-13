@@ -6,7 +6,6 @@ from django.utils.crypto import get_random_string
 
 import analitico
 
-from analitico.utilities import logger
 from .user import User
 
 ##

@@ -279,7 +279,7 @@ class FiltersTests(APITestCase):
         log = Log.objects.filter(title__icontains=character).first()
         url = reverse("api:log-list") + "?filter[title.contains]=" + log.title.upper()
         response = self.client.get(url, format="json")
-        self.assertEqual(len(response.data), 1) # mysql finds it anyway
+        self.assertEqual(len(response.data), 1)  # mysql finds it anyway
 
         # ?filter[title.contains] wrong case with case insensitive search
         log = Log.objects.filter(title__icontains=character).first()
@@ -287,5 +287,3 @@ class FiltersTests(APITestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["attributes"]["title"], log.title)
-
-

@@ -1,7 +1,6 @@
 import collections
 import jsonfield
 import django.utils.crypto
-import json
 import logging
 import logging.handlers
 import queue
@@ -150,7 +149,7 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
                     attributes[item_type + "_id"] = item.id
                 if hasattr(item, "workspace") and not log.workspace:
                     log.workspace = item.workspace
-            except Exception as e:
+            except Exception:
                 pass
 
     # move item_id to its own field
@@ -199,7 +198,7 @@ class LogQueueHandler(logging.handlers.QueueHandler):
         self.log_handler = LogHandler()
         self.log_listener = logging.handlers.QueueListener(log_queue, self.log_handler)
         self.log_listener.start()
-        return super().__init__(log_queue, **kwargs)
+        super().__init__(log_queue, **kwargs)
 
 
 ##

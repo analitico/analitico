@@ -10,8 +10,10 @@ import api.models
 import api.utilities
 from analitico.utilities import logger, get_dict_dot
 from api.models import Workspace, Dataset
+
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
+from .logviews import LogViewSetMixin
 
 ##
 ## WorkspaceSerializer
@@ -75,7 +77,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 ## pylint: disable=no-member
 
 
-class WorkspaceViewSet(AssetViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class WorkspaceViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ 
     List, detail, create, update and delete machine learning project trainings
 

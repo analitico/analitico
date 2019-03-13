@@ -39,7 +39,7 @@ def first_or_list(items):
         if items and len(items) == 1:
             return items[0]
     except:
-        pass # validation errors pass a dictionary so we just pass it through
+        pass  # validation errors pass a dictionary so we just pass it through
     return items
 
 
