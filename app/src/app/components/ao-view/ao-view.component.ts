@@ -96,6 +96,12 @@ export class AoViewComponent implements OnInit, OnDestroy, AoRefreshable {
             });
     }
 
+
+    changeItemTitle(title) {
+        this.item.attributes.title = title;
+        return this.itemService.saveItem(this.item);
+    }
+
     onLoad(): void { }
 
     onSaved() {
