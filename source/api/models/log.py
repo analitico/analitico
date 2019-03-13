@@ -93,8 +93,6 @@ LOG_RECORD_DROP_ALWAYS = (
     "msecs",
     "msg",
     "relativeCreated",
-    "item_id",
-    "relativeCreated",
 )
 
 # log record attributes that are dropped only when level is INFO or less
