@@ -378,11 +378,11 @@ try:
         "DEFAULT_FILTER_BACKENDS": (
             # Enforce strict validation on query parameters:
             # "rest_framework_json_api.filters.QueryParameterValidationFilter",
-            # "rest_framework_json_api.filters.OrderingFilter",
+            "rest_framework_json_api.filters.OrderingFilter",
             # "rest_framework_json_api.django_filters.DjangoFilterBackend",
             "rest_framework.filters.SearchFilter",
         ),
-        "SEARCH_PARAM": "filter[search]",
+        "SEARCH_PARAM": "search",
         "TEST_REQUEST_RENDERER_CLASSES": (
             #       'rest_framework_json_api.renderers.JSONRenderer',
             #       'rest_framework.renderers.JSONRenderer',

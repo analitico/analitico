@@ -22,14 +22,6 @@ class LogTests(APITestCase):
     def setUp(self):
         self.setup_basics()
 
-    def logs(self, n=None):
-        """ Returns Log models stored by handler """
-        return self.handler.logs[n] if n else self.handler.logs
-
-    def setUp(self):
-        self.setup_basics()
-        # self.handler.clear()
-
     def test_log_model(self):
         log = Log()
         log.id = "lg_001"
