@@ -35,7 +35,12 @@ from api.models import Token
 
 
 def first_or_list(items):
-    return items[0] if items and len(items) == 1 else items
+    try:
+        if items and len(items) == 1:
+            return items[0]
+    except:
+        pass # validation errors pass a dictionary so we just pass it through
+    return items
 
 
 def exception_to_dict(exception: Exception, add_context=True, add_formatted=True, add_traceback=True) -> dict:
