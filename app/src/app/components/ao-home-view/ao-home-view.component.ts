@@ -6,7 +6,7 @@ import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client
 import { AoRefreshable } from 'src/app/ao-refreshable';
 import { AoGlobalStateStore } from 'src/app/services/ao-global-state-store/ao-global-state-store.service';
 
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 import { MatTableDataSource, MatSort } from '@angular/material';
 import * as _ from 'lodash';
@@ -21,7 +21,8 @@ export class AoHomeViewComponent implements OnInit, OnDestroy, AoRefreshable {
     @ViewChild(MatSort) sort: MatSort;
 
     constructor(protected apiClient: AoApiClientService, private globalState: AoGlobalStateStore, protected route: ActivatedRoute,
-        protected itemService: AoItemService) {
+        protected itemService: AoItemService,
+        protected router: Router) {
         this.globalStateObserverSubscription = this.globalState.subscribe(this.onGlobalStateUpdate.bind(this));
     }
     globalStateObserverSubscription: any;
@@ -103,5 +104,22 @@ export class AoHomeViewComponent implements OnInit, OnDestroy, AoRefreshable {
     refresh() {
         this.init();
     }
+
+    // create a recipe using data of this dataset
+    createNewRecipe() {
+
+        const recipe = {
+            attributes: {
+                'workspace_id': this.workspace.id
+            }
+
+        };
+
+        this.apiClient.post('/recipes', recipe)
+            .then((response) => {
+                this.router.navigate(['/recipes/' + response.data.id]);
+            });
+    }
+
 
 }

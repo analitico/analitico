@@ -1,21 +1,10 @@
 <div class="ao-home-view">
     <div class="ao-padding">
         <div *ngIf="!query">
-            <div class="ao-upload-drop-zone">
-                <i class="material-icons ao-text-center">
-                    save_alt
-                </i>
-                <div>
-                    <p style="font-size: 20px;">
-                        Start uploading your data
-
-                    </p>
-                    <p>
-                        Try dropping a .csv file
-                    </p>
-                </div>
-            </div>
-
+            We show clusters of objects
+            <a mat-raised-button (click)="createNewRecipe()">
+                New recipe
+            </a>
         </div>
         <div *ngIf="query">
             <h1 class="mat-h1">Search: {{query}}</h1>
