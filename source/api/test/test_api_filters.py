@@ -231,7 +231,6 @@ class FiltersTests(APITestCase):
         for item in data:
             self.assertIn(character, item["attributes"]["title"])
 
-
     def test_filters_search_case_insensitive(self):
         character = random.choice(CHARACTERS)
         url = "?filter[search]=" + character.upper()
@@ -243,15 +242,50 @@ class FiltersTests(APITestCase):
         for item in data:
             self.assertIn(character, item["attributes"]["title"])
 
-
-    def OFFtest_filters_search_noresults(self):
+    def test_filters_search_noresults(self):
         url = "?filter[search]=MISSING"
         data = self.get_random_filtered_logs(url, asserts=False)
+        self.assertEqual(len(data), 0)
 
-        # search models directly, compare numbers
-        logs = Log.objects.filter(title__icontains=character).all()
-        self.assertEqual(len(logs), len(data))
+    def test_filters_filter_title_exact(self):
+        # search wuithout finding
+        character = random.choice(CHARACTERS)
+        url = "?filter[title]=" + character
+        data = self.get_random_filtered_logs(url, asserts=False)
+        self.assertEqual(len(data), 0)
 
-        for item in data:
-            self.assertIn(character, item["attributes"]["title"])
+        # search and find exact
+        log = Log.objects.filter(title__icontains=character).first()
+        url = reverse("api:log-list") + "?filter[title]=" + log.title
+        response = self.client.get(url, format="json")
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["attributes"]["title"], log.title)
+
+        # ?filter[title.contains] just character
+        log = Log.objects.filter(title__icontains=character).first()
+        url = reverse("api:log-list") + "?filter[title.contains]=" + character
+        response = self.client.get(url, format="json")
+        self.assertGreaterEqual(len(response.data), 1)
+        self.assertIn(character, response.data[0]["attributes"]["title"])
+
+        # ?filter[title.contains] full title
+        log = Log.objects.filter(title__icontains=character).first()
+        url = reverse("api:log-list") + "?filter[title.contains]=" + log.title
+        response = self.client.get(url, format="json")
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["attributes"]["title"], log.title)
+
+        # ?filter[title.contains] wrong case
+        log = Log.objects.filter(title__icontains=character).first()
+        url = reverse("api:log-list") + "?filter[title.contains]=" + log.title.upper()
+        response = self.client.get(url, format="json")
+        self.assertEqual(len(response.data), 1) # mysql finds it anyway
+
+        # ?filter[title.contains] wrong case with case insensitive search
+        log = Log.objects.filter(title__icontains=character).first()
+        url = reverse("api:log-list") + "?filter[title.icontains]=" + log.title.upper()
+        response = self.client.get(url, format="json")
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["attributes"]["title"], log.title)
+
 
