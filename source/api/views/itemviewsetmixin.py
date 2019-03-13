@@ -22,6 +22,17 @@ from rest_framework import status
 from api.models import ItemMixin, Job
 from analitico.utilities import logger
 
+
+class filterset:
+    """ Premade lists of filters to be used in filterset_fields """
+
+    # https://django-filter.readthedocs.io/en/latest/ref/filterset.html#declaring-filterable-fields
+    ALL = ("lt", "gt", "gte", "lte", "in", "icontains", "contains", "iexact", "exact")
+    DATE = ("lt", "gt", "gte", "lte", "in", "icontains", "contains", "iexact", "exact")
+    TEXT = ("lt", "gt", "gte", "lte", "in", "icontains", "contains", "iexact", "exact")
+    ATTRIBUTES = ("icontains", "contains", "iexact", "exact")
+
+
 ##
 ## ItemViewSetMixin
 ##
