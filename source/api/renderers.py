@@ -19,7 +19,8 @@ class JSONRenderer(rest_framework.renderers.JSONRenderer):
         # - test is sending multiple objects (array)
         # - response is sending single object
 
-        if data:
+        # an empty list is also valid response
+        if data or isinstance(data, list):
 
             if isinstance(data, dict):
                 if "error" not in data:
