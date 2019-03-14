@@ -7,7 +7,7 @@ from rest_framework.filters import SearchFilter
 
 from rest_framework import serializers
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action, permission_classes
 from rest_framework.exceptions import MethodNotAllowed
 
@@ -50,30 +50,21 @@ class LogSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class LogViewSetMixin:
-    """
-    This is a mixin used by other viewsets like WorkspaceViewSet and DatasetViewSet.
-    It provides the endpoint and methods needed to list log entries related to an item 
-    or to save log entries and associated them with the specific item.
-    """
+    """ Adds capability to list log entries related to an item """
 
+    # a user can only read logs attached to items that he owns
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="log-list", url_path="logs")
     def log_list(self, request, pk) -> Response:
         """ Returns a listing of log entries associated with this item. """
-        logs = Log.objects.filter(item_id=pk)
+        # we read the item here rather than just filtering with pk
+        # because we need to make sure the user making the call has
+        # the rights to access this item. if he can access the item
+        # then he can also access log items attached to that item
+        item = self.get_object()
+        logs = Log.objects.filter(item_id=item.id)
         logs_serializer = LogSerializer(logs, many=True)
         return Response(logs_serializer.data)
-
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["post"], detail=True, url_name="job-action", url_path=r"logs/(?P<job_action>[-\w.]{4,256})$")
-    def job_create(self, request, pk, job_action) -> Response:
-        """ Creates a job for this item and returns it. """
-        job_item = self.get_object()
-        if job_action in self.job_actions:
-            job = self.create_job(request, job_item, job_action)
-            jobs_serializer = LogSerializer(job)
-            return Response(jobs_serializer.data)
-        raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)
 
 
 ##
@@ -83,6 +74,9 @@ class LogViewSetMixin:
 
 class LogViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A log entry can be created, listed, updated, cancelled, etc. """
+
+    # staff can read all logs, users can read logs that belong to their workspaces
+    permission_classes = (IsAuthenticated,)
 
     item_class = api.models.Log
     serializer_class = LogSerializer
@@ -99,6 +93,6 @@ class LogViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
         """ A user only has access to log entries he or his workspaces owns. Superusers see all log entries. """
         if self.request.user.is_anonymous:
             return Log.objects.none()
-        if self.request.user.is_superuser:
+        if self.request.user.is_staff:  # NOTE: this is staff, not superuser
             return Log.objects.all()
         return Log.objects.filter(workspace__user=self.request.user)
