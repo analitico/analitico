@@ -45,7 +45,7 @@ class LogSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 ##
-## LogViewSetMixin - endpoints for listing log entries
+## LogViewSetMixin - mixin for listing log entries belonging to an item
 ##
 
 
@@ -62,9 +62,8 @@ class LogViewSetMixin:
         # the rights to access this item. if he can access the item
         # then he can also access log items attached to that item
         item = self.get_object()
-        logs = Log.objects.filter(item_id=item.id).order_by("-created_at")
-        logs_serializer = LogSerializer(logs, many=True)
-        return Response(logs_serializer.data)
+        logviewset = LogViewSet(request=request)
+        return logviewset.list_by_item_id(request, item.id)
 
 
 ##
@@ -91,8 +90,27 @@ class LogViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
 
     def get_queryset(self):
         """ A user only has access to log entries he or his workspaces owns. Superusers see all log entries. """
+
+        if hasattr(self, "item_id"):
+            return Log.objects.filter(item_id=self.item_id)
+
         if self.request.user.is_anonymous:
             return Log.objects.none()
         if self.request.user.is_staff:  # NOTE: this is staff, not superuser
             return Log.objects.all()
         return Log.objects.filter(workspace__user=self.request.user)
+
+    def list_by_item_id(self, request, item_id, **kwargs):
+        """ Returns logs belonging to a specific item_id with all filters applied """
+
+        # NOTE: caller needs to make sure user has access to item_id
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.filter(item_id=item_id)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = LogSerializer(queryset, many=True)
+        return Response(serializer.data)
