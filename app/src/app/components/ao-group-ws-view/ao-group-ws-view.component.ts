@@ -77,7 +77,7 @@ export class AoGroupWsViewComponent extends AoGroupViewComponent implements OnIn
     }
 
     filterItems() {
-        if (this.originalItems && this.originalItems.length > 0) {
+        if (this.originalItems && this.originalItems.length > 0 && this.workspace) {
             this.items = this.itemService.filterItemsByDictionary(this.originalItems, { 'attributes.workspace_id': this.workspace.id });
         }
     }

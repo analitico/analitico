@@ -4,7 +4,7 @@
  * Template is delegated to subclasses.
  */
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { take } from 'rxjs/operators';
@@ -17,11 +17,21 @@ import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
     styleUrls: ['./ao-group-view.component.css']
 })
 export class AoGroupViewComponent implements OnInit, OnDestroy, AoRefreshable {
-    urlSubscription: any;
     items: any;
     baseUrl: string;
     queryParamsSubscription: any;
     query: string;
+
+    private _url: any;
+    get url() {
+        return this._url;
+    }
+    @Input() set url(val: string) {
+        if (val) {
+            this._url = val;
+            this.loadItems();
+        }
+    }
 
     constructor(protected route: ActivatedRoute, protected apiClient: AoApiClientService,
         protected itemService: AoItemService) {
@@ -29,43 +39,27 @@ export class AoGroupViewComponent implements OnInit, OnDestroy, AoRefreshable {
     }
 
     ngOnInit() {
-        // take the first url value emitted which will be use as the base url
-        this.urlSubscription = this.route.url.pipe(take(1)).subscribe(this.onUrlChange.bind(this));
         this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
             if (this.query !== params.q) {
                 this.query = params.q;
                 this.refresh();
             }
-
         });
     }
 
     ngOnDestroy() {
-        if (this.urlSubscription) {
-            this.urlSubscription.unsubscribe();
-        }
         if (this.queryParamsSubscription) {
             this.queryParamsSubscription.unsubscribe();
         }
     }
 
-    // When id change reload object
-    onUrlChange(url: any) {
-        this.baseUrl = '/' + url[0].path;
-        this.loadItems();
-    }
 
     // loads items
     loadItems() {
-        this.apiClient.get(this.baseUrl)
+        this.apiClient.get(this.url)
             .then((response: any) => {
                 this.items = response.data;
                 this.onLoad();
-            })
-            .catch((response) => {
-                if (response.status === 404) {
-                    window.location.href = '/app';
-                }
             });
     }
 
