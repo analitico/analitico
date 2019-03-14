@@ -123,3 +123,81 @@ class LogTests(APITestCase):
 
         # job_id should NOT be stored
         self.assertIsNone(logs[0].attributes.get("job_id", None))
+
+    def test_log_authorizations(self):
+        """ Make sure each user can read logs of his own items, admins can read all logs """
+        ws1 = Workspace()
+        ws1.user = self.user1  # admin
+        ws1.save()
+        self.logger.info("Log something for workspace 1", item=ws1)
+
+        ws2 = Workspace()
+        ws2.user = self.user2  # regular user
+        ws2.save()
+        self.logger.info("Log something for workspace 2", item=ws2)
+
+        ws4 = Workspace()
+        ws4.user = self.user4  # staff user
+        ws4.save()
+        self.logger.info("Log something for workspace 4", item=ws4)
+
+        # /api/logs endpoint
+
+        self.auth_token(self.token1)  # admin reads all 3 logs
+        url = reverse("api:log-list")
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+
+        self.auth_token(self.token4)  # staff user reads all 3 logs
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+
+        self.auth_token(self.token2)  # regular user reads only item assigned to his workspace
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["attributes"]["title"], "Log something for workspace 2")
+
+        self.auth_token(self.token3)  # regular user reads only item assigned to his workspace, which is none
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+        # /api/workspaces/ws_xxx/logs
+
+        self.auth_token(self.token1)  # admin reads single log attached to his workspace
+        url = reverse("api:workspace-log-list", args=(ws1.id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["attributes"]["title"], "Log something for workspace 1")
+
+        self.auth_token(self.token1)  # admin CAN read log for other workspace
+        url = reverse("api:workspace-log-list", args=(ws2.id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["attributes"]["title"], "Log something for workspace 2")
+
+        self.auth_token(self.token2)  # user CAN read log for his workspace
+        url = reverse("api:workspace-log-list", args=(ws2.id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["attributes"]["title"], "Log something for workspace 2")
+
+        self.auth_token(self.token2)  # user CANNOT read log for others' workspaces
+        url = reverse("api:workspace-log-list", args=(ws4.id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["error"]["code"], "not_found")
+
+        # TODO decide if staff can read the workspace that ows the logs, currently only superuser can, not staff
+        # self.auth_token(self.token4) # staff CAN read logs for other's workspaces
+        # url = reverse("api:workspace-log-list", args=(ws2.id,))
+        # response = self.client.get(url, format="json")
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # self.assertEqual(len(response.data), 1)
+        # self.assertEqual(response.data[0]["attributes"]["title"], "Log something for workspace 2")
