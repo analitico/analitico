@@ -35,8 +35,10 @@ from rest_framework import status
 from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, STATUS_COMPLETED
 from analitico.utilities import logger, get_dict_dot
 
+from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.models import ItemMixin, Job
 from api.factory import factory
+
 from .logviews import LogViewSetMixin
 from .itemviewsetmixin import filterset
 
@@ -86,14 +88,22 @@ class JobViewSetMixin:
     # defined in subclass to list acceptable actions
     job_actions = ()
 
-    def create_job(self, request, job_item, job_action, run_async=False):
+    def create_job(self, request, job_item, job_action, run_async=True):
+
+        # explicit ?async=False in request can override default
+        run_async = get_query_parameter_as_bool(request, "async", run_async)
         workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
         job_action = job_item.type + "/" + job_action
-        job_status = STATUS_CREATED if run_async else STATUS_RUNNING
-        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=job_status)
+
+        if run_async:
+            job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=STATUS_CREATED)
+            job.save()
+            return job
+
+        factory.warning("Running jobs synchronously is not recommended", item=job_item, action=job_action)
+        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=STATUS_RUNNING)
         job.save()
-        if not run_async:
-            job.run(request)
+        job.run(request)
         return job
 
     def create_job_response(self, request, job_item, job_action, run_async=False, just_payload=False):
@@ -109,7 +119,10 @@ class JobViewSetMixin:
     @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
     def job_list(self, request, pk) -> Response:
         """ Returns a listing of all jobs associated with this item. """
-        jobs = Job.objects.filter(item_id=pk)
+        # we read the item here instead of just using pk because
+        # we need to make sure the user has access rights to it
+        item = self.get_object()
+        jobs = Job.objects.filter(item_id=item.id)
         jobs_serializer = JobSerializer(jobs, many=True)
         return Response(jobs_serializer.data)
 

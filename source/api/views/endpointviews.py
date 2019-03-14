@@ -44,16 +44,6 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_f
     item_class = api.models.Endpoint
     serializer_class = EndpointSerializer
 
-    # The only action that can be performed on an endpoint is an inference
-    job_actions = (ACTION_PREDICT,)
-
-    # deprecated
-    @action(methods=["post"], detail=True, url_name=ACTION_PREDICT + "OLD", url_path=ACTION_PREDICT + "OLD")
-    def predictOLD(self, request, pk):
-        """ Runs a synchronous prediction on an endpoint """
-        job_item = self.get_object()  # endpoint
-        return self.create_job_response(request, job_item, ACTION_PREDICT, run_async=False, just_payload=True)
-
     @action(methods=["post"], detail=True, url_name="predict", url_path="predict")
     def predict(self, request, pk):
         """ Runs a synchronous prediction on an endpoint """

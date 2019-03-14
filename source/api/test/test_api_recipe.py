@@ -103,7 +103,7 @@ class RecipeTests(APITestCase):
         try:
             # process source dataset
             self.auth_token(self.token1)
-            url = reverse("api:dataset-job-action", args=("ds_housesalesprediction_1", "process"))
+            url = reverse("api:dataset-job-action", args=("ds_housesalesprediction_1", "process")) + "?async=false"
             response = self.client.post(url, format="json")
 
             job = response.data
@@ -118,7 +118,7 @@ class RecipeTests(APITestCase):
             self.assertTrue("dataset" in job["links"])
 
             # train recipe using dataset output
-            url = reverse("api:recipe-job-action", args=("rx_housesalesprediction_1", "train"))
+            url = reverse("api:recipe-job-action", args=("rx_housesalesprediction_1", "train")) + "?async=false"
             response = self.client.post(url, format="json", status_code=status.HTTP_201_CREATED)
 
             # job from recipe train action
@@ -175,13 +175,13 @@ class RecipeTests(APITestCase):
             homes_dict = homes.to_dict(orient="records")
 
             # run predictions one at a time
-            predict_url = reverse("api:endpoint-job-action", args=(endpoint_id, "predict"))
+            predict_url = reverse("api:endpoint-predict", args=(endpoint_id,))
             for home in homes_dict:
                 priceless_home = home.copy()
                 priceless_home.pop("price")
                 predict_response = self.client.post(predict_url, priceless_home, format="json")
                 predict_data = predict_response.data
-                predict_price = predict_data["attributes"]["payload"]["predictions"][0]
+                predict_price = predict_data["predictions"][0]
                 print("House price: " + str(home["price"]) + ", predicted price: " + str(predict_price))
                 self.assertTrue(predict_price > 0)
                 # TODO check job layout
@@ -189,11 +189,6 @@ class RecipeTests(APITestCase):
             # run a bunch of predictions at once
             priceless_homes = homes.drop(["price"], axis=1)
             priceless_dict = priceless_homes.to_dict(orient="records")
-            preds2_response = self.client.post(predict_url, priceless_dict, format="json")
-            preds2_data = preds2_response.data
-            self.assertEqual(len(preds2_data["attributes"]["payload"]["predictions"]), len(priceless_homes))
-
-            # run predictions directly on /predict endpoint which returns simplified results (w/o job information)
             preds3_url = reverse("api:endpoint-predict", args=(endpoint_id,))
             preds3_response = self.client.post(preds3_url, priceless_dict, format="json")
             preds3_data = preds3_response.data

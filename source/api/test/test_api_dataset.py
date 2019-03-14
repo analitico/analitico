@@ -147,7 +147,7 @@ class DatasetTests(APITestCase):
     def test_dataset_job_action_process_completed_url_asset(self):
         """ Test uploading csv then requesting to process it and checking that it completed """
         # request job processing
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_2", ACTION_PROCESS))
+        job_url = reverse("api:dataset-job-action", args=("ds_titanic_2", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertEqual(job_response.status_code, 200)
@@ -191,7 +191,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset1["id"], "titanic_1.csv")
 
         # request job processing
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_3", ACTION_PROCESS))
+        job_url = reverse("api:dataset-job-action", args=("ds_titanic_3", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertEqual(job_response.status_code, 200)
@@ -205,7 +205,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset["id"], "titanic_1.csv")
 
         # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS))
+        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertEqual(job_response.status_code, 200)
@@ -252,7 +252,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset["id"], "titanic_1.csv")
 
         # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",))
+        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertEqual(job_response.status_code, 200)
@@ -266,7 +266,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset["id"], "titanic_1.csv")
 
         # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",))
+        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertEqual(job_response.status_code, 200)
@@ -291,7 +291,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset["id"], "titanic_1.csv")
 
         # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",))
+        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertEqual(job_response.status_code, 200)
