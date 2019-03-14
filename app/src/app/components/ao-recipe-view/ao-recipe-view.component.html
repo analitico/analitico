@@ -208,12 +208,7 @@
 
 
                     <div *ngIf="endpoints && endpoints.length===1">
-
-                        <p class="mat-body">Endpoint url</p>
-                        <p class="mat-body">
-                            <code>{{endpoints[0].links.self + '/predict'}}</code>
-                        </p>
-
+                            <app-ao-endpoint-view [endpoint]="endpoints[0]"></app-ao-endpoint-view>
                     </div>
                 </div>
 
