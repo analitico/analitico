@@ -110,6 +110,8 @@ export class MainNavComponent implements OnInit, OnDestroy {
     changedWorkspace() {
         // set new workspace
         this.setWorkspace(this.selectedWorkspace);
+        // go back to home
+        this.router.navigate(['/'], { queryParams: {} });
     }
 
     setWorkspace(workspace) {
