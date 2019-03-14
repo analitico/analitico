@@ -148,7 +148,7 @@ def log_record_to_log(log_record: logging.LogRecord) -> Log:
                 if item.id:
                     attributes[item_type + "_id"] = item.id
                 if hasattr(item, "workspace") and not log.workspace:
-                    log.workspace = item.workspace
+                    log.workspace = item if isinstance(item, Workspace) else item.workspace
             except Exception:
                 pass
 
