@@ -55,17 +55,22 @@ import { AoItemBaseViewComponent } from './components/ao-item-base-view/ao-item-
 import * as Sentry from '@sentry/browser';
 import { AoS24OrderSortingPredictionViewComponent } from './plugins/ao-s24-order-sorting-prediction-view/ao-s24-order-sorting-prediction-view.component';
 
+import { PlotlyModule } from 'angular-plotly.js';
+import { CommonModule } from '@angular/common';
+import { AoSmartInputBoxComponent } from './components/ao-smart-input-box/ao-smart-input-box.component';
+
+
 Sentry.init({
-  dsn: 'https://46fb6b3fc5a14466a97e612c012bf786@sentry.io/1408107'
+    dsn: 'https://46fb6b3fc5a14466a97e612c012bf786@sentry.io/1408107'
 });
 
 @Injectable()
 export class SentryErrorHandler implements ErrorHandler {
-  constructor() {}
-  handleError(error) {
-    Sentry.captureException(error.originalError || error);
-    throw error;
-  }
+    constructor() { }
+    handleError(error) {
+        Sentry.captureException(error.originalError || error);
+        throw error;
+    }
 }
 
 
@@ -101,7 +106,8 @@ export class SentryErrorHandler implements ErrorHandler {
         AoModelListViewComponent,
         AoDialogComponent,
         AoItemBaseViewComponent,
-        AoS24OrderSortingPredictionViewComponent
+        AoS24OrderSortingPredictionViewComponent,
+        AoSmartInputBoxComponent
     ],
     imports: [
         BrowserModule,
@@ -131,13 +137,15 @@ export class SentryErrorHandler implements ErrorHandler {
         MatDialogModule,
         MatProgressBarModule,
         MatMenuModule,
-        MatTabsModule
+        MatTabsModule,
+        CommonModule,
+        PlotlyModule
     ],
     providers: [{ provide: ErrorHandler, useClass: SentryErrorHandler },
         AoGlobalStateStore, AoApiClientService, AoPluginsService, AoItemService],
     entryComponents: [AoPipelinePluginComponent, AoDataframePipelinePluginComponent,
         AoCsvDataframeSourcePluginComponent, AoRawJsonPluginComponent, AoRecipePipelinePluginComponent,
-        AoEndpointPipelinePluginComponent, AoModelListViewComponent, AoDialogComponent, AoItemBaseViewComponent, 
+        AoEndpointPipelinePluginComponent, AoModelListViewComponent, AoDialogComponent, AoItemBaseViewComponent,
         AoS24OrderSortingPredictionViewComponent],
     bootstrap: [AppComponent]
 })
