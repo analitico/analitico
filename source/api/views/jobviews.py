@@ -38,6 +38,7 @@ from analitico.utilities import logger, get_dict_dot
 from api.models import ItemMixin, Job
 from api.factory import factory
 from .logviews import LogViewSetMixin
+from .itemviewsetmixin import filterset
 
 ##
 ## JobSerializer
@@ -134,6 +135,20 @@ class JobViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.Mod
 
     item_class = api.models.Job
     serializer_class = JobSerializer
+
+    ordering = ("-updated_at",)
+    search_fields = ("id", "title", "description", "attributes", "status", "action", "item_id")
+    filterset_fields = {
+        "id": filterset.ALL,
+        "title": filterset.ALL,
+        "description": filterset.ALL,
+        "created_at": filterset.DATE,
+        "updated_at": filterset.DATE,
+        "attributes": filterset.ATTRIBUTES,
+        "status": filterset.ALL,
+        "action": filterset.ALL,
+        "item_id": filterset.ALL,
+    }
 
     def get_queryset(self):
         """ A user only has access to jobs he or his workspaces owns. """
