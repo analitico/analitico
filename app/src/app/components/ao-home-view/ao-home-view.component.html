@@ -1,10 +1,18 @@
 <div class="ao-home-view">
     <div class="ao-padding">
         <div *ngIf="!query">
-            We show clusters of objects
-            <a mat-raised-button (click)="createNewRecipe()">
-                New recipe
+            <a mat-raised-button (click)="createNewRecipe()" color="primary" style="margin: 0 auto; display: block; width: 200px;">
+                Start new recipe
             </a>
+
+            <div class="ao-margin-top-bottom">
+                <h1 class="mat-h1">Recipes</h1>
+                <app-ao-group-ws-view [url]="'/recipes'"></app-ao-group-ws-view>
+            </div>
+            <div class="ao-margin-top-bottom">
+                <h1 class="mat-h1">Datasets</h1>
+                <app-ao-group-ws-view [url]="'/datasets'"></app-ao-group-ws-view>
+            </div>
         </div>
         <div *ngIf="query">
             <h1 class="mat-h1">Search: {{query}}</h1>
