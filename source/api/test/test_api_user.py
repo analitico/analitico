@@ -26,7 +26,7 @@ class UserTests(APITestCase):
         self.assertTrue("attributes" in user)
         attributes = user["attributes"]
         self.assertTrue("password" not in attributes)
-        self.assertEqual(attributes["is_staff"], False)
+        self.assertEqual(attributes["is_staff"], True)
         self.assertEqual(attributes["is_superuser"], True)
 
     def test_user_get_profile_user2(self):
