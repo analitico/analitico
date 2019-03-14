@@ -1,7 +1,7 @@
 /**
  * Model represents a trained model that can be associated with an endpoint to be consumed
  */
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { AoViewComponent } from 'src/app/components/ao-view/ao-view.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
@@ -11,6 +11,7 @@ import { MatTableDataSource } from '@angular/material';
 
 
 @Component({
+    selector: 'app-ao-model-view',
     templateUrl: './ao-model-view.component.html',
     styleUrls: ['./ao-model-view.component.css']
 })
@@ -18,7 +19,19 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
     recipe: any;
     tableModels: any;
     alternativeModels: any;
+    featureGraph: any;
+    confusionMatrixGraph: any;
+    _model: any;
 
+    get model() {
+        return this._model;
+    }
+    @Input() set model(val: any) {
+        if (val) {
+            this._model = val;
+            this.load();
+        }
+    }
 
     constructor(route: ActivatedRoute, apiClient: AoApiClientService,
         protected snackBar: MatSnackBar,
@@ -31,62 +44,52 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
         super.ngOnInit();
     }
 
-    /**
-     * override method
-     */
-    loadItem() {
-        return this.itemService.getModelById(this.objectId)
-            .then((model: any) => {
-                this.item = model;
-                this.recipe = this.item._aoprivate.recipe;
-                this.title = (this.item.attributes && this.item.attributes.title) || this.item.id;
-                this.description = this.item.description;
-                this.alternativeModels = [];
-                this.onLoad();
-            })
-            .catch((response) => {
-                if (response.status === 404) {
-                    window.location.href = '/app';
+    load() {
+        this.featureGraph = null;
+        if (this.model.attributes.training && this.model.attributes.training.scores
+            && this.model.attributes.training.scores.features_importance) {
+            this.featureGraph = {
+                data: [{ x: [], y: [], type: 'bar', orientation: 'h' }],
+                layout: {
+                    yaxis: {
+                        type: 'category',
+                        automargin: true
+                    },
                 }
+            };
+            for (const feature in this.model.attributes.training.scores.features_importance) {
+                if (this.model.attributes.training.scores.features_importance.hasOwnProperty(feature)) {
+                    this.featureGraph.data[0].y.unshift(feature);
+                    this.featureGraph.data[0].x.unshift(this.model.attributes.training.scores.features_importance[feature]);
+                }
+            }
+        }
+
+        this.confusionMatrixGraph = null;
+        if (this.model.attributes.training && this.model.attributes.training.scores
+            && this.model.attributes.training.scores.confusion_matrix) {
+            const classes = [];
+            this.model.attributes.training.data.classes.forEach(element => {
+                classes.push(element);
             });
-    }
-
-    // find models with the same recipe_id for switching
-    loadAlternativeModels() {
-        this.itemService.getModels()
-            .then((models) => {
-                this.alternativeModels = [];
-                models.forEach(model => {
-                    if (model.attributes.recipe_id === this.item.attributes.recipe_id) {
-
-                        this.alternativeModels.push(model);
-
-                    }
-                });
-
-                // assign data source for the table
-                this.tableModels = new MatTableDataSource(this.alternativeModels);
-
+            const matrix = this.model.attributes.training.scores.confusion_matrix.concat([]);
+            matrix.forEach(element => {
+                element.reverse();
             });
+            this.confusionMatrixGraph = {
+                data: [{
+                    x:  (classes.concat([])).reverse(),
+                    y: classes,
+                    z: matrix,
+                    type: 'heatmap'
+                }], layout: {
+                    yaxis: {
+                        type: 'category',
+                        automargin: true
+                    },
+                }
+            };
+        }
     }
 
-    onLoad() {
-        super.onLoad();
-        this.loadAlternativeModels();
-    }
-
-
-    onSaved() {
-        // show a message
-        this.snackBar.open('Item has been saved', null, { duration: 3000 });
-    }
-
-    createEndpointForModel(model) {
-        this.itemService.createEndpointForModel(model)
-            .then((endpoint) => {
-                // open the endpoint page
-                this.router.navigate(['/endpoints/' + endpoint.id]);
-            });
-
-    }
 }
