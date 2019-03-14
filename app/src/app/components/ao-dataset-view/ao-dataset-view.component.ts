@@ -107,32 +107,4 @@ export class AoDatasetViewComponent extends AoPipelineViewComponent implements O
         });
     }
 
-    // create a recipe using data of this dataset
-    createRecipe() {
-        if (this.item.attributes.data && this.item.attributes.data.length === 1 && this.item.attributes.data[0].schema) {
-            const recipe = {
-                attributes: {
-                    'workspace_id': this.item.attributes.workspace_id,
-                    'plugin': {
-                        'type': 'analitico/plugin',
-                        'name': 'analitico.plugin.RecipePipelinePlugin',
-                        'plugins': [{
-                            'type': 'analitico/plugin',
-                            'name': 'analitico.plugin.DatasetSourcePlugin',
-                            /* 'source': {
-                                'dataset_id': this.item.id,
-                                'schema': this.item.attributes.data[0].schema
-                            } */
-                        }]
-                    }
-                }
-
-            };
-
-            this.apiClient.post('/recipes', recipe)
-                .then((response) => {
-                    this.router.navigate(['/recipes/' + response.data.id]);
-                });
-        }
-    }
 }

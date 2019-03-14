@@ -56,13 +56,6 @@
                     <hr>
                     <h4 class="mat-h4 ao-text-center">Output</h4>
                     <app-ao-table-view [data]="data" *ngIf="data"></app-ao-table-view>
-
-                    <button mat-raised-button (click)="createRecipe()"
-                        *ngIf="item && item.attributes.data && item.attributes.data.length === 1 && item.attributes.data[0].schema"
-                        color="primary" style="display: block; margin: 40px auto;">
-                        Create recipe
-
-                    </button>
                 </div>
             </section>
         </div>
