@@ -1,13 +1,18 @@
 /**
  * Model represents a trained model that can be associated with an endpoint to be consumed
  */
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, ViewContainerRef, ComponentFactoryResolver, AfterViewInit } from '@angular/core';
 import { AoViewComponent } from 'src/app/components/ao-view/ao-view.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 import { MatTableDataSource } from '@angular/material';
+import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
+import { AoS24OrderSortingPredictionViewComponent } from 'src/app/plugins/ao-s24-order-sorting-prediction-view/ao-s24-order-sorting-prediction-view.component';
+import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
+import { JsonEditorComponent, JsonEditorOptions } from 'ang-jsoneditor';
+import { AoMessageBoxService } from 'src/app/services/ao-message-box/ao-message-box';
 
 
 @Component({
@@ -15,13 +20,25 @@ import { MatTableDataSource } from '@angular/material';
     templateUrl: './ao-model-view.component.html',
     styleUrls: ['./ao-model-view.component.css']
 })
-export class AoModelViewComponent extends AoViewComponent implements OnInit {
+export class AoModelViewComponent implements OnInit, AfterViewInit {
     recipe: any;
     tableModels: any;
     alternativeModels: any;
     featureGraph: any;
     confusionMatrixGraph: any;
     _model: any;
+    predictionSamples: any;
+    editorOptions: JsonEditorOptions;
+    predictionCustomViewComponent: any;
+    predictionCustomViewContainerRef: ViewContainerRef;
+    predictionCustomViewInstance: IAoPluginInstance;
+    isProcessing = false;
+    predictionEditorOptions: JsonEditorOptions;
+    inputData: any;
+    predictionData: any;
+
+    @ViewChild('inputEditor') inputEditor: JsonEditorComponent;
+    @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
 
     get model() {
         return this._model;
@@ -33,15 +50,43 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
         }
     }
 
-    constructor(route: ActivatedRoute, apiClient: AoApiClientService,
+    constructor(protected apiClient: AoApiClientService,
         protected snackBar: MatSnackBar,
         protected itemService: AoItemService,
-        protected router: Router) {
-        super(route, apiClient, itemService, snackBar);
+        protected componentFactoryResolver: ComponentFactoryResolver,
+        protected router: Router,
+        protected messageBox: AoMessageBoxService) {
+
+        // initialize JSON editor
+        this.editorOptions = new JsonEditorOptions();
+        this.editorOptions.modes = ['code']; // set all allowed modes
+        this.editorOptions.mode = 'code';
+
+        this.predictionEditorOptions = new JsonEditorOptions();
+        this.predictionEditorOptions.modes = ['view']; // set all allowed modes
+        this.predictionEditorOptions.mode = 'view';
     }
 
     ngOnInit() {
-        super.ngOnInit();
+
+    }
+
+    ngAfterViewInit() {
+        // get the view of the anchor component
+        this.predictionCustomViewContainerRef = this.aoAnchor.viewContainerRef;
+        this.checkIfCustomViewCanBeLoaded();
+    }
+
+
+    checkIfCustomViewCanBeLoaded() {
+        if (this.predictionCustomViewContainerRef && this.predictionCustomViewComponent) {
+            this.predictionCustomViewContainerRef.clear();
+            const componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.predictionCustomViewComponent);
+            // add the component to the anchor view
+            const componentRef = this.predictionCustomViewContainerRef.createComponent(componentFactory);
+            this.predictionCustomViewInstance = (<IAoPluginInstance>componentRef.instance);
+        }
+
     }
 
     load() {
@@ -78,7 +123,7 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
             });
             this.confusionMatrixGraph = {
                 data: [{
-                    x:  (classes.concat([])).reverse(),
+                    x: (classes.concat([])).reverse(),
                     y: classes,
                     z: matrix,
                     type: 'heatmap'
@@ -89,6 +134,79 @@ export class AoModelViewComponent extends AoViewComponent implements OnInit {
                     },
                 }
             };
+        }
+
+        this.loadSamples();
+
+        // check type of alghoritm and load component to view it
+        switch (this.model.attributes.training.algorithm) {
+            case 'ml/regression':
+            case 's24/ordersorting':
+                this.predictionCustomViewComponent = AoS24OrderSortingPredictionViewComponent;
+                break;
+        }
+        // show it
+        this.checkIfCustomViewCanBeLoaded();
+    }
+    // load sample data from trained model associated with this endpoint
+    loadSamples() {
+        if (this.model && this.model.attributes.data) {
+            let predictionSamples;
+            // look for training samples
+            for (let i = 0, l = this.model.attributes.data.length; i < l; i++) {
+                const data = this.model.attributes.data[i];
+                if (data.id === 'prediction-samples.json') {
+                    predictionSamples = data;
+                    break;
+                }
+            }
+
+            if (predictionSamples) {
+                this.apiClient.get(predictionSamples.url)
+                    .then((response) => {
+                        this.predictionSamples = response;
+                    });
+            }
+
+        }
+    }
+
+    // execute the predict command on the endpoint
+    predict() {
+        if (this.isProcessing) {
+            return;
+        }
+
+        let inputData;
+        try {
+            inputData = this.inputEditor.get();
+        } catch (e) {
+            return this.messageBox.show('Please enter valid json', 'Invalid input data');
+        }
+
+        this.isProcessing = true;
+       /* this.apiClient.post('/endpoints/' + this.item.id + '/predict', inputData)
+            .then((response: any) => {
+                this.isProcessing = false;
+                this.gotPrediction(response.data);
+            })
+            .catch(() => {
+                this.isProcessing = false;
+            }); */
+
+    }
+    // set the prediction response and pass to the custom view component
+    gotPrediction(data) {
+        this.predictionData = data;
+        // set data to custom view
+        this.predictionCustomViewInstance.setData(data);
+    }
+
+    // pick a random record among the predictionSamples to be used for prediction
+    selectRandomSample() {
+        if (this.predictionSamples && this.predictionSamples.length > 0) {
+            const random = Math.floor(Math.random() * this.predictionSamples.length);
+            this.inputData = { data: [this.predictionSamples[random]] };
         }
     }
 

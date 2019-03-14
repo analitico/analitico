@@ -505,3 +505,45 @@ json-editor, json-editor > div, .jsoneditor {
 .ao-active-background {
     background-color: rgb(232, 240, 254);
 }
+
+.ao-live-prediction-list-item.ao-is-new-item{
+    -webkit-animation: newItemPopUp 0.5s ease;
+	-moz-animation: newItemPopUp 0.5s ease;
+	animation: newItemPopUp 0.5s ease;
+}
+
+@-webkit-keyframes newItemPopUp {
+	0% {
+        background-color: rgb(188, 229, 248, 0.2);
+	}
+	50% {
+		background-color: rgb(188, 229, 248, 0.6);
+	}
+	100% {
+		background-color: rgb(188, 229, 248, 0.9);
+	}
+}
+
+@-moz-keyframes newItemPopUp {
+	0% {
+        background-color: rgb(188, 229, 248, 0.2);
+	}
+	50% {
+		background-color: rgb(188, 229, 248, 0.6);
+	}
+	100% {
+		background-color: rgb(188, 229, 248, 0.9);
+	}
+}
+
+@keyframes newItemPopUp {
+	0% {
+        background-color: rgb(188, 229, 248, 0.2);
+	}
+	50% {
+		background-color: rgb(188, 229, 248, 0.6);
+	}
+	100% {
+		background-color: rgb(188, 229, 248, 0.9);
+	}
+}

@@ -1,87 +1,108 @@
 <div class="ao-item-view ao-model-view">
-
-    <div class="container" fxLayout="row wrap" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
-        <div *ngIf="featureGraph" fxFlex="0 1 calc(50% - 14px)">
-            <h3 class="mat-h3">Features</h3>
-            <plotly-plot [data]="featureGraph.data" [layout]="featureGraph.layout"></plotly-plot>
-        </div>
-
-        <div *ngIf="confusionMatrixGraph" fxFlex="0 1 calc(50% - 14px)">
-            <h3 class="mat-h3">Confusion matrix</h3>
-            <plotly-plot [data]="confusionMatrixGraph.data" [layout]="confusionMatrixGraph.layout"></plotly-plot>
-        </div>
-    </div>
-
-
-
-    <div *ngIf="model && model.attributes.training.scores.log_loss">
-        <p>Log loss: {{model.attributes.training.scores.log_loss}}</p>
-        <p>Accuracy score: {{model.attributes.training.scores.accuracy_score}}</p>
-        <p>Best iteration: {{model.attributes.training.scores.best_iteration}}</p>
-        <p>Best score: learn: {{model.attributes.training.scores.best_score.learn.Logloss}} / validation:
-            {{model.attributes.training.scores.best_score.validation_0.Logloss}}</p>
-
-    </div>
-
-
-    <div *ngIf="item && item.attributes && item.attributes.training">
-
-        <div>
-            <p class="mat-body">
-                <b>Plugins</b><br>
-                Training: {{item.attributes.training && item.attributes.training.plugins.training}} <br>
-                Prediction: {{item.attributes.training && item.attributes.training.plugins.prediction}}<br>
-            </p>
-            <p class="mat-body">
-                <b>Data</b> <br>
-                Source records: {{item.attributes.training.data.source_records | number}}<br>
-                Training records: {{item.attributes.training.data.training_records | number}}<br>
-                Test records: {{item.attributes.training.data.test_records | number}}<br>
-                Dropped records: {{item.attributes.training.data.dropped_records | number}}<br>
-            </p>
-        </div>
-
-        <div *ngIf="item.attributes.training.scores">
-            <b>Scores</b>
-            <div *ngIf="model.attributes.training.scores.log_loss">
-                <p>Log loss: {{item.attributes.training.scores.log_loss}}</p>
-                <p>Accuracy score: {{item.attributes.training.scores.accuracy_score}}</p>
-                <p>Best iteration: {{item.attributes.training.scores.best_iteration}}</p>
-                <p>Best score: learn: {{item.attributes.training.scores.best_score.learn.Logloss}} / validation:
-                    {{item.attributes.training.scores.best_score.validation_0.Logloss}}</p>
-
+    <section>
+        <div class="container" fxLayout="row wrap" fxLayout.xs="column" fxLayoutGap="14px" fxLayoutAlign="start">
+            <div *ngIf="featureGraph" fxFlex="0 1 calc(50% - 14px)">
+                <h3 class="mat-h3">Features</h3>
+                <plotly-plot [data]="featureGraph.data" [layout]="featureGraph.layout"></plotly-plot>
             </div>
 
+            <div *ngIf="confusionMatrixGraph" fxFlex="0 1 calc(50% - 14px)">
+                <h3 class="mat-h3">Confusion matrix</h3>
+                <plotly-plot [data]="confusionMatrixGraph.data" [layout]="confusionMatrixGraph.layout"></plotly-plot>
+            </div>
+        </div>
+    </section>
 
-            <div>
-                <div>
-                    <b>Classes</b>
-                    <div *ngFor="let class of item.attributes.training.data.classes">
-                        <p><b>{{class}}</b></p>
-                        <div
-                            *ngFor="let prop of item.attributes.training.scores.classification_report[class] | keyvalue">
-                            <p>{{prop.key}}: {{prop.value | json}}</p>
-                        </div>
 
-                    </div>
-                </div>
-                <div style="margin-top: 80px;">
-                    <b>Other Classes</b>
-                    <div *ngFor="let el of item.attributes.training.scores.classification_report | keyvalue">
-                        <div *ngIf="item.attributes.training.data.classes.indexOf(el.key) < 0">
-                            <p>{{el.key}}</p>
-                            <div
-                                *ngFor="let prop of item.attributes.training.scores.classification_report[el.key] | keyvalue">
-                                {{prop.key}}: {{prop.value | json}}
-                            </div>
-                        </div>
-                    </div>
+    <section *ngIf="model">
+        <div *ngIf="model.attributes.training.data" class="ao-margin-top-bottom">
+            <h3 class="mat-h3">Data</h3>
+            <p class="mat-body">Source records: {{model.attributes.training.data.source_records | number}}</p>
+            <p class="mat-body"> Training records: {{model.attributes.training.data.training_records | number}}</p>
+            <p class="mat-body"> Test records: {{model.attributes.training.data.test_records | number}}</p>
+            <p class="mat-body"> Dropped records: {{model.attributes.training.data.dropped_records | number}}
+            </p>
+        </div>
+        <div *ngIf="model && model.attributes.training.scores" class="ao-margin-top-bottom">
+            <h3 class="mat-h3">Scores</h3>
+            <p class="mat-body">Log loss: {{model.attributes.training.scores.log_loss}}</p>
+            <p class="mat-body">Accuracy score: {{model.attributes.training.scores.accuracy_score}}</p>
+            <p class="mat-body">Best iteration: {{model.attributes.training.scores.best_iteration}}</p>
+            <p class="mat-body">Best score: learn: {{model.attributes.training.scores.best_score.learn.Logloss}} /
+                validation:
+                {{model.attributes.training.scores.best_score.validation_0.Logloss}}</p>
+
+        </div>
+        <div *ngIf="model.attributes.training.data.classes" class="ao-margin-top-bottom">
+            <h3 class="mat-h3">Classes</h3>
+            <div *ngFor="let class of model.attributes.training.data.classes">
+                <p class="mat-body"><b>{{class}}</b></p>
+                <div *ngFor="let prop of model.attributes.training.scores.classification_report[class] | keyvalue">
+                    <p class="mat-body">{{prop.key}}: {{prop.value | json}}</p>
                 </div>
             </div>
         </div>
 
+        <div class="ao-margin-top-bottom" *ngIf="model.attributes.training.data.classes">
+            <h3 class="mat-h3">Other Classes</h3>
+            <div *ngFor="let el of model.attributes.training.scores.classification_report | keyvalue">
+                <div *ngIf="model.attributes.training.data.classes.indexOf(el.key) < 0">
+                    <p>{{el.key}}</p>
+                    <div *ngFor="let prop of model.attributes.training.scores.classification_report[el.key] | keyvalue">
+                        {{prop.key}}: {{prop.value | json}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    </div>
+    <section class="ao-d-none">
+        <h2 class="mat-h2">Test predictions</h2>
+        <p class="mat-body">
+            You can test your endpoint with sample data, or you can provide your own.<br>
+            Click the "Pick some data for me!" button or enter your json input data and the click the "Predict" button
+            below.
+        </p>
+        <div class="">
+            <p>
+                Input
+                <button mat-flat-button (click)="selectRandomSample()" style="margin: 10px" color="accent"
+                    *ngIf="predictionSamples && predictionSamples.length">Pick some data for me!</button>
+
+            </p>
+            <div class="ao-json-editor-container">
+                <json-editor [options]="editorOptions" [data]="inputData" #inputEditor></json-editor>
+            </div>
+        </div>
+        <div class="ao-margin-top-bottom ao-text-center">
+            <button mat-raised-button (click)="predict()" style="margin: 10px" color="primary">Predict
+            </button>
+
+        </div>
+        <div class="ao-margin-top-bottom">
+            <p>Predictions
+                <mat-progress-spinner mode="indeterminate" *ngIf="isProcessing" [diameter]="20" style="display: inline-block; margin-left: 10px; margin-top: 4px; position: relative;
+                top: 4px;" [strokeWidth]="4">
+                </mat-progress-spinner>
+            </p>
+
+            <mat-tab-group>
+                <mat-tab label="Table">
+                    <ng-template app-ao-anchor>
+                        Loading...
+                    </ng-template>
+                </mat-tab>
+                <mat-tab label="JSON">
+                    <div class="ao-json-editor-container">
+                        <json-editor [options]="predictionEditorOptions" [data]="predictionData"></json-editor>
+                    </div>
+                </mat-tab>
+
+            </mat-tab-group>
+        </div>
+    </section>
+
+
 
 
 
