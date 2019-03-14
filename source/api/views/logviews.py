@@ -62,7 +62,7 @@ class LogViewSetMixin:
         # the rights to access this item. if he can access the item
         # then he can also access log items attached to that item
         item = self.get_object()
-        logs = Log.objects.filter(item_id=item.id)
+        logs = Log.objects.filter(item_id=item.id).order_by("-created_at")
         logs_serializer = LogSerializer(logs, many=True)
         return Response(logs_serializer.data)
 
