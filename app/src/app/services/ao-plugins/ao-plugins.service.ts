@@ -6,6 +6,7 @@ import { AoCsvDataframeSourcePluginComponent } from 'src/app/plugins/ao-csv-data
 import { AoRawJsonPluginComponent } from 'src/app/plugins/ao-raw-json-plugin/ao-raw-json-plugin.component';
 import { AoRecipePipelinePluginComponent } from 'src/app/plugins/ao-recipe-pipeline-plugin/ao-recipe-pipeline-plugin.component';
 import { AoEndpointPipelinePluginComponent } from 'src/app/plugins/ao-endpoint-pipeline-plugin/ao-endpoint-pipeline-plugin.component';
+import { AoTransformDataframePluginComponent } from 'src/app/plugins/ao-transform-dataframe-plugin/ao-transform-dataframe-plugin.component';
 @Injectable({
     providedIn: 'root'
 })
@@ -25,6 +26,8 @@ export class AoPluginsService {
                 return AoEndpointPipelinePluginComponent;
             case 'CsvDataframeSourcePlugin':
                 return AoCsvDataframeSourcePluginComponent;
+            case 'TransformDataframePlugin':
+                return AoTransformDataframePluginComponent;
             default:
                 // not supported plugin are managed with a raw json editor
                 return AoRawJsonPluginComponent;

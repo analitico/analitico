@@ -5,5 +5,4 @@ export interface IAoPluginInstance {
     getData: any;
     updateData: any;
     onNewDataSubject: Subject<any>;
-    setSourcePluginData: any;
 }

@@ -74,12 +74,12 @@ export class AoPipelinePluginComponent extends AoPluginComponent implements Afte
         this.plugins.forEach((pluginData, index) => {
             const viewContainerRef = views[index].viewContainerRef;
             viewContainerRef.clear();
-            this.loadPlugin(pluginData, viewContainerRef, (index > 0 ? this.plugins[index - 1] : null));
+            this.loadPlugin(pluginData, viewContainerRef);
         });
     }
 
     // load the plugin
-    loadPlugin(pluginData: any, viewContainerRef: ViewContainerRef, sourcePluginData: any): void {
+    loadPlugin(pluginData: any, viewContainerRef: ViewContainerRef): void {
         // find the class name of the plugin
         const pluginName = pluginData.name.split('.')[2];
         // get the plugin component
@@ -93,8 +93,7 @@ export class AoPipelinePluginComponent extends AoPluginComponent implements Afte
             this.pluginInstances.push(instance);
             // set data to the plugin
             instance.setData(pluginData);
-            // pass data of source plugin
-            instance.setSourcePluginData(sourcePluginData);
+
             // subscribe to update
             instance.onNewDataSubject.subscribe(this.onNewDataFromPlugin.bind(this));
         } else {
@@ -127,10 +126,6 @@ export class AoPipelinePluginComponent extends AoPluginComponent implements Afte
     movePlugin(previousIndex, currentIndex) {
         // check if move is ok
         if (this.canPluginBeMoved(previousIndex, currentIndex)) {
-            // set data source of the new position
-            this.plugins[previousIndex].setSourcePluginData(currentIndex > 0 ? this.plugins[currentIndex - 1] : null);
-            // reset data source of other element according to the new position
-            this.plugins[currentIndex].setSourcePluginData(previousIndex > 0 ? this.plugins[previousIndex - 1] : null);
             // move plugin
             moveItemInArray(this.plugins, previousIndex, currentIndex);
             // notify upper levels (i.e. save)

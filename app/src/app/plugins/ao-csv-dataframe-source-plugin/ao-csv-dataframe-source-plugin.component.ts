@@ -6,8 +6,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
-import { query } from '@angular/core/src/render3';
-import { MatTableDataSource } from '@angular/material';
+
 
 @Component({
     selector: 'app-ao-csv-dataframe-source-plugin',
@@ -15,74 +14,10 @@ import { MatTableDataSource } from '@angular/material';
     styleUrls: ['./ao-csv-dataframe-source-plugin.component.css']
 })
 export class AoCsvDataframeSourcePluginComponent extends AoPluginComponent {
-    rows: any;
-    displayedColumns: any;
-    tableDS: any;
+
 
     constructor(protected apiClient: AoApiClientService) {
         super();
     }
-    setData(data: any) {
-        super.setData(data);
-        this.loadSource();
-    }
 
-    loadSource() {
-        // load first 100 rows
-        // TODO find a better way to get the URL
-        const url = this.data.source.url.substring(this.data.source.url.indexOf('/datasets')) + '?format=json&page=0&page_size=100';
-        this.apiClient.get(url)
-            .then((response: any) => {
-                this.rows = response.data;
-                this.buildTable();
-            })
-            .catch((e) => {});
-    }
-
-    buildTable() {
-        // add first column for column names
-        this.displayedColumns = ['Column'];
-        const tableRows = [];
-        // to keep reference of the table rows during loop
-        const tableRowsDic = {};
-
-        if (!this.data.source.schema) {
-            this.data.source.schema = { columns: []};
-            // build from data
-            const firstDataRow = this.rows[0];
-            for (const key in firstDataRow) {
-                if (firstDataRow.hasOwnProperty(key)) {
-                    this.data.source.schema.columns.push({
-                        name: key
-                    });
-                }
-            }
-        }
-        // for each column in the schema -> add rows
-        this.data.source.schema.columns.forEach(col => {
-            const dic = { Column: col.name };
-            tableRows.push(dic);
-            // keep reference
-            tableRowsDic[col.name] = dic;
-        });
-
-        this.rows.forEach((row, index) => {
-            // for each row add a column with the index as the header
-            this.displayedColumns.push('' + index);
-            // for each column of the schema
-            this.data.source.schema.columns.forEach(col => {
-                // get row for this column in the transposed table
-                const rowForColumn = tableRowsDic[col.name];
-                // copy value in row index position
-                rowForColumn[index] = row[col.name];
-            });
-        });
-        // assign data source to table
-        this.tableDS = new MatTableDataSource(tableRows);
-    }
-
-    columnTypeChanged() {
-        // notify change
-        this.notifyChange();
-    }
 }

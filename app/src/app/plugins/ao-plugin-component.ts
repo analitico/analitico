@@ -35,9 +35,5 @@ export class AoPluginComponent {
         // notify data update to subscribers
         this.onNewDataSubject.next();
     }
-
-    setSourcePluginData(data: any) {
-        this.sourcePluginData = data;
-    }
 }
 
