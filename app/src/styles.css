@@ -143,7 +143,7 @@ body {
 }
 
 section{
-    margin-bottom: 90px;
+    margin: 40px 0;
 }
 
 section > .mat-h2{
@@ -250,11 +250,15 @@ section > .mat-h2{
 }
 
 .ao-invisible {
-    opacity: 0;
+    opacity: 0 !important;
 }
 
 .ao-hidden {
-    visibility: hidden;
+    visibility: hidden !important;
+}
+
+.ao-d-none {
+    display: none !important;
 }
 
 .ao-dataset-view-sidenav {
@@ -490,10 +494,14 @@ json-editor, json-editor > div, .jsoneditor {
     text-align: center;
 }
 
-.ao-home-view .material-icons{
+.ao-home-view .ao-upload-drop-zone .material-icons{
     margin: 100px auto 0 auto;
     display: block;
     width: 80px;
     font-size: 80px;
     opacity: 0.2;
+}
+
+.ao-active-background {
+    background-color: rgb(232, 240, 254);
 }
