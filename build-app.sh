@@ -8,4 +8,4 @@ cd /home/www/analitico/app
 npm install
 
 echo "Build Angular app"
-ng build --prod --outputHashing=all
+ng build #--prod --outputHashing=all
