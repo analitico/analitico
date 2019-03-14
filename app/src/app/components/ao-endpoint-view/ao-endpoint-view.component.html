@@ -1,92 +1,34 @@
-<div class="ao-item-view ao-endpoint-view ao-padding">
+<div class="ao-item-view ao-endpoint-view">
+
     <section>
-        <h1 class="mat-h1">
-            <mat-form-field *ngIf="item">
-                <input matInput placeholder="{{item.id}}" [(ngModel)]="item.attributes.title"
-                    (change)="$event.stopPropagation(); $event.preventDefault(); saveItem(); $event.target.blur();">
-            </mat-form-field>
-        </h1>
-        <p *ngIf="description">{{description}}}</p>
-        <mat-form-field *ngIf="item && item.attributes">
-            <mat-label>Description</mat-label>
-            <textarea matInput [(ngModel)]="item.attributes.description" (ngModelChange)="saveItem();"
-                placeholder="Type a description for your endpoint"></textarea>
-        </mat-form-field>
-    </section>
-    <section>
-        <p class="mat-body">Endpoint url</p>
+        <h2 class="mat-h2">Endpoint url</h2>
         <p class="mat-body">
             <code>{{endpointUrl}}</code>
         </p>
-        <p class="mat-body" *ngIf="recipe">This endpoint is using a trained model base on this recipe: <a mat-button
-                routerLink="/recipes/{{recipe.id}}">{{ (recipe.attributes.title || recipe.id)}}</a>
-
-        </p>
-
     </section>
     <section>
-        <h2 class="mat-h2">Available models</h2>
-        <p class="mat-body">This is the list of all the available trained models for this endpoint. <br>
-            The currently deployed model is highlighted in <span class="ao-current-endpoint-model"
-                style="display: inline-block; padding: 4px;">this color</span>.</p>
-        <p class="mat-body">
-            You can deploy another model using the "Deploy" button next
-            to the desired model.
-        </p>
-        <div class="ao-margin-top" style="max-height: 300px; overflow: auto;">
-            <table mat-table [dataSource]="tableModels" class="mat-elevation-z8" style="width: 100%;"
-                *ngIf="tableModels">
+        <h2 class="mat-h2">Performance</h2>
+        <div *ngIf="predictionPerformanceGraph">
+            <h3 class="mat-h3">Response time (ms)</h3>
+            <plotly-plot [data]="predictionPerformanceGraph.data" [layout]="predictionPerformanceGraph.layout">
+            </plotly-plot>
+        </div>
 
-                <ng-container matColumnDef="title">
-                    <th mat-header-cell *matHeaderCellDef> Title </th>
-                    <td mat-cell *matCellDef="let element">
-                        {{element.attributes.title || element.id}}
-                    </td>
-                </ng-container>
+    </section>
 
-                <ng-container matColumnDef="kpi0">
-                    <th mat-header-cell *matHeaderCellDef> KPI </th>
-                    <td mat-cell *matCellDef="let element">
-                        <p *ngFor="let kpi of element._aoprivate.kpi">
-                            {{kpi.name}}: {{kpi.value}}
-                        </p>
+    <section>
+        <h2 class="mat-h2">Live predictions</h2>
+        <div>
+            <mat-list role="list" dense style="max-width: 400px; height: 200px; overflow-y: scroll;">
+                <mat-list-item role="listitem" *ngFor="let prediction of livePredictions"
+                    class="ao-live-prediction-list-item" [class.ao-is-new-item]="prediction.isNew">
+                    {{prediction.attributes.created_at | date:'dd/MM/yyyy HH:mm:ss'}}: &nbsp;
+                    <span
+                        *ngIf="prediction.attributes.prediction && prediction.attributes.prediction.predictions">{{prediction.attributes.prediction.predictions.toString()}}
+                    </span>
+                </mat-list-item>
 
-                    </td>
-                </ng-container>
-
-                <ng-container matColumnDef="updatedAt">
-                    <th mat-header-cell *matHeaderCellDef> Updated At </th>
-                    <td mat-cell *matCellDef="let element">
-                        {{element.attributes.updated_at | date:'dd/MM/yyyy HH:mm:ss'}}
-                    </td>
-                </ng-container>
-
-                <ng-container matColumnDef="endpoint">
-                    <th mat-header-cell *matHeaderCellDef> Endpoint </th>
-                    <td mat-cell *matCellDef="let element">
-                        <a mat-button (click)="$event.preventDefault(); $event.stopPropagation();"
-                            *ngIf="element._aoprivate.endpoints.length > 0"
-                            routerLink="/endpoints/{{element._aoprivate.endpoints[0].id}}">{{element._aoprivate.endpoints[0].attributes.title || element._aoprivate.endpoints[0].id}}</a>
-                    </td>
-                </ng-container>
-
-                <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef> Actions </th>
-                    <td mat-cell *matCellDef="let element">
-                        <button mat-raised-button color="primary"
-                            (click)="$event.stopPropagation(); $event.preventDefault(); requestToSetNewModel(element, $event)"
-                            *ngIf="element.id !== model.id">Deploy</button>
-                    </td>
-                </ng-container>
-
-                <tr mat-header-row
-                    *matHeaderRowDef="['title', 'kpi0', 'updatedAt', 'endpoint', 'actions']; sticky: true">
-                </tr>
-                <tr mat-row *matRowDef="let row; columns: ['title', 'kpi0', 'updatedAt','endpoint', 'actions'];"
-                    routerLink="/models/{{row.id}}" class="ao-clickable"
-                    [class.ao-current-endpoint-model]="row.id === model.id">
-                </tr>
-            </table>
+            </mat-list>
         </div>
     </section>
     <section>

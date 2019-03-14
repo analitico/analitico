@@ -1,29 +1,30 @@
 /**
  * Dataset is used to process data through plugins.
  */
-import { Component, OnInit, OnDestroy, ComponentFactoryResolver, ViewChild, AfterViewInit, ViewContainerRef } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, ComponentFactoryResolver, ViewChild, AfterViewInit, ViewContainerRef, Input, OnDestroy } from '@angular/core';
+import { formatDate } from '@angular/common';
 import { AoApiClientService } from 'src/app/services/ao-api-client/ao-api-client.service';
-import { AoPluginsService } from 'src/app/services/ao-plugins/ao-plugins.service';
+
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AoJobService } from 'src/app/services/ao-job/ao-job.service';
 
-import { AoViewComponent } from '../ao-view/ao-view.component';
+
 import { JsonEditorOptions, JsonEditorComponent } from 'ang-jsoneditor';
 import { AoMessageBoxService } from 'src/app/services/ao-message-box/ao-message-box';
-import { AoRefreshable } from 'src/app/ao-refreshable';
+
 import { AoAnchorDirective } from 'src/app/directives/ao-anchor/ao-anchor.directive';
 import { IAoPluginInstance } from 'src/app/plugins/ao-plugin-instance-interface';
 import { AoS24OrderSortingPredictionViewComponent } from 'src/app/plugins/ao-s24-order-sorting-prediction-view/ao-s24-order-sorting-prediction-view.component';
-import { MatSort, MatTableDataSource } from '@angular/material';
+
 import * as _ from 'lodash';
 import { AoItemService } from 'src/app/services/ao-item/ao-item.service';
 
 @Component({
+    selector: 'app-ao-endpoint-view',
     templateUrl: './ao-endpoint-view.component.html',
     styleUrls: ['./ao-endpoint-view.component.css']
 })
-export class AoEndpointViewComponent extends AoViewComponent implements OnInit, OnDestroy, AoRefreshable, AfterViewInit {
+export class AoEndpointViewComponent implements AfterViewInit, OnDestroy {
 
     @ViewChild('inputEditor') inputEditor: JsonEditorComponent;
     @ViewChild(AoAnchorDirective) aoAnchor: AoAnchorDirective;
@@ -43,14 +44,30 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
     tableModels: any;
     endpointUrl: string;
     recipe: any;
+    _endpoint: any;
+    predictionPollingInterval: any;
+    livePredictions: any;
+    predictionPerformanceGraph: any;
 
-    constructor(route: ActivatedRoute, apiClient: AoApiClientService,
+    PREDICTION_POLL_TIME = 30000;
+
+    get endpoint() {
+        return this._endpoint;
+    }
+    @Input() set endpoint(val: any) {
+        if (val) {
+            this._endpoint = val;
+            this.onLoad();
+        }
+    }
+
+    constructor(protected apiClient: AoApiClientService,
         protected snackBar: MatSnackBar,
         protected jobService: AoJobService,
         protected messageBox: AoMessageBoxService,
         protected componentFactoryResolver: ComponentFactoryResolver,
         protected itemService: AoItemService) {
-        super(route, apiClient, itemService, snackBar);
+
         // initialize JSON editor
         this.editorOptions = new JsonEditorOptions();
         this.editorOptions.modes = ['code']; // set all allowed modes
@@ -61,21 +78,20 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         this.predictionEditorOptions.mode = 'view';
     }
 
-    ngOnInit() {
-        super.ngOnInit();
-
-    }
-
     ngAfterViewInit() {
         // get the view of the anchor component
         this.predictionCustomViewContainerRef = this.aoAnchor.viewContainerRef;
         this.checkIfCustomViewCanBeLoaded();
     }
 
+    ngOnDestroy() {
+        this.stopPollingLivePredictions();
+    }
+
 
     onLoad() {
-        super.onLoad();
-        this.endpointUrl = 'https://' + location.hostname + '/api/endpoints/' + this.item.id + '/predict';
+        this.stopPollingLivePredictions();
+        this.endpointUrl = 'https://' + location.hostname + '/api/endpoints/' + this.endpoint.id + '/predict';
         this.predictionSamples = null;
         this.inputData = null;
         this.predictionData = null;
@@ -84,8 +100,93 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         this.tableModels = null;
         this.alternativeModels = null;
         this.recipe = null;
+        this.livePredictions = null;
         // load model
         this.loadModel();
+        this.pollLivePredictions();
+    }
+
+    // stop polling the log
+    stopPollingLivePredictions() {
+        if (this.predictionPollingInterval) {
+            clearTimeout(this.predictionPollingInterval);
+            this.predictionPollingInterval = null;
+        }
+    }
+    // schedule a log poll
+    schedulePollLivePredictions() {
+        this.stopPollingLivePredictions();
+        this.predictionPollingInterval = setTimeout(this.pollLivePredictions.bind(this), this.PREDICTION_POLL_TIME);
+    }
+    // polls the endpoint logs to find predictions.
+    pollLivePredictions() {
+        this.stopPollingLivePredictions();
+        this.apiClient.get(this.endpoint.links.self + '/logs?sort=-created_at')
+            .then((response) => {
+                if (response.data && response.data.length > 0) {
+                    // filter only predictions
+                    let newPredictions = this.itemService.getItemsByAttribute(response.data, 'attributes.title', 'endpoint/predict');
+                    if (this.livePredictions) {
+                        // compare and check which is new in order to show "ticker" animation
+                        /*newPredictions.unshift({
+                            "type": "analitico/log",
+                            "id": "lg_" + (new Date()).getTime(),
+                            "attributes": {
+                                "item_id": "ep_s24_outofstock",
+                                "level": 20,
+                                "title": "endpoint/predict",
+                                "created_at": (new Date()).toISOString()
+                            }
+                        }); */
+                    }
+                    const predictionTimes = [];
+                    const predictionPerformanceTime = [];
+                    let i = 0;
+                    newPredictions = newPredictions.sort(function (a, b) {
+                        return a.attributes.created_at > b.attributes.created_at ? -1 : 1;
+                    });
+                    newPredictions.forEach((prediction, index) => {
+                        if (this.livePredictions) {
+                            if (!this.itemService.getItemById(this.livePredictions, prediction.id)) {
+                                prediction.isNew = true;
+                            }
+                        }
+                        if (prediction.attributes.prediction && prediction.attributes.prediction.performance.total_ms) {
+                            predictionTimes.unshift(formatDate(prediction.attributes.created_at, 'yyyy-MM-dd HH:mm:ss', 'en'));
+                            predictionPerformanceTime.unshift(prediction.attributes.prediction.performance.total_ms);
+                            i++;
+                        }
+
+                    });
+                    this.livePredictions = newPredictions;
+
+
+
+                    this.predictionPerformanceGraph = {
+                        data: [{
+                            x: predictionTimes, y: predictionPerformanceTime, type: 'scatter', mode: 'markers',
+                            marker: {
+                                size: 12
+                            },
+                        }],
+                        layout: {
+                            xaxis: {
+                                showgrid: false,
+                                zeroline: false
+                            },
+                            yaxis: {
+                                automargin: true
+                            },
+                        }
+                    };
+                } else {
+                    this.livePredictions = null;
+                }
+                this.schedulePollLivePredictions();
+            })
+            .catch((e) => {
+                this.schedulePollLivePredictions();
+            });
     }
 
     checkIfCustomViewCanBeLoaded() {
@@ -102,13 +203,10 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
 
     // loads the model associated with the endpoint
     loadModel() {
-        if (this.item.attributes.model_id) {
-            this.itemService.loadItem(null, '/models/' + this.item.attributes.model_id)
+        if (this.endpoint.attributes.model_id) {
+            this.itemService.loadItem(null, '/models/' + this.endpoint.attributes.model_id)
                 .then((model) => {
                     this.model = model;
-                    this.loadRecipe();
-                    // load other models of same recipe
-                    this.loadAlternativeModels();
                     this.loadSamples();
                     // check type of alghoritm and load component to view it
                     switch (this.model.attributes.training.algorithm) {
@@ -120,38 +218,6 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
                     this.checkIfCustomViewCanBeLoaded();
                 });
         }
-    }
-
-    loadRecipe() {
-        this.recipe = null;
-        if (this.model.attributes && this.model.attributes.recipe_id) {
-            this.itemService.loadItem(null, '/recipes/' + this.model.attributes.recipe_id)
-                .then((recipe) => {
-                    this.recipe = recipe;
-                });
-        }
-    }
-
-    // find models with the same recipe_id for switching
-    loadAlternativeModels() {
-        this.itemService.getModels()
-            .then((models) => {
-                this.alternativeModels = [];
-                models.forEach(model => {
-                    if (model.attributes.recipe_id === this.model.attributes.recipe_id) {
-                        if (model.id === this.model.id) {
-                            // push current deployed model to the top of the list
-                            this.alternativeModels.unshift(model);
-                        } else {
-                            this.alternativeModels.push(model);
-                        }
-                    }
-                });
-
-                // assign data source for the table
-                this.tableModels = new MatTableDataSource(this.alternativeModels);
-
-            });
     }
 
     // load sample data from trained model associated with this endpoint
@@ -196,7 +262,7 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
         }
 
         this.isProcessing = true;
-        this.apiClient.post('/endpoints/' + this.item.id + '/predict', inputData)
+        this.apiClient.post('/endpoints/' + this.endpoint.id + '/predict', inputData)
             .then((response: any) => {
                 this.isProcessing = false;
                 this.gotPrediction(response.data);
@@ -219,28 +285,5 @@ export class AoEndpointViewComponent extends AoViewComponent implements OnInit, 
             const random = Math.floor(Math.random() * this.predictionSamples.length);
             this.inputData = { data: [this.predictionSamples[random]] };
         }
-    }
-
-    // ask to change the model associated with this endpoint
-    requestToSetNewModel(model, $event) {
-        $event.stopPropagation();
-        $event.preventDefault();
-        const subscription =
-            this.messageBox.show('Do you want to change the model associated with this endpoint?',
-                'Changing endpoint model', 'WARNING: this could affect your production data', 2)
-                .subscribe((response) => {
-                    subscription.unsubscribe();
-                    if (response.result === 'yes') {
-                        this.setModel(model);
-                    }
-                });
-    }
-
-    // sets the model_id of the endpoint and reloads item
-    setModel(model) {
-        return this.itemService.changeEndpointModel(this.item, model.id)
-            .then(() => {
-                this.loadItem();
-            });
     }
 }
