@@ -149,10 +149,17 @@ class LogTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
 
+        self.auth_token()  # anon CANNOT read any logs
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.reason_phrase, "Unauthorized")
+        self.assertEqual(response.data["error"]["code"], "not_authenticated")
+        # NOTE: UNAUTHORIZED calls generate a django warning so now there are 4 logs!!
+
         self.auth_token(self.token4)  # staff user reads all 3 logs
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
         self.auth_token(self.token2)  # regular user reads only item assigned to his workspace
         response = self.client.get(url, format="json")
@@ -166,6 +173,16 @@ class LogTests(APITestCase):
         self.assertEqual(len(response.data), 0)
 
         # /api/workspaces/ws_xxx/logs
+
+        self.auth_token()  # anon CANNOT read any logs
+        url = reverse("api:workspace-log-list", args=(ws1.id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["error"]["code"], "not_found")
+        url = reverse("api:workspace-log-list", args=(ws2.id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["error"]["code"], "not_found")
 
         self.auth_token(self.token1)  # admin reads single log attached to his workspace
         url = reverse("api:workspace-log-list", args=(ws1.id,))
