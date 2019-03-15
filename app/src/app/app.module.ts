@@ -55,7 +55,7 @@ import { AoItemBaseViewComponent } from './components/ao-item-base-view/ao-item-
 import * as Sentry from '@sentry/browser';
 import { AoS24OrderSortingPredictionViewComponent } from './plugins/ao-s24-order-sorting-prediction-view/ao-s24-order-sorting-prediction-view.component';
 
-import { PlotlyModule } from 'angular-plotly.js';
+import { PlotlyViaWindowModule } from './plotly/plotly-via-window/plotly-via-window.module';
 import { CommonModule } from '@angular/common';
 import { AoSmartInputBoxComponent } from './components/ao-smart-input-box/ao-smart-input-box.component';
 import { AoTransformDataframePluginComponent } from './plugins/ao-transform-dataframe-plugin/ao-transform-dataframe-plugin.component';
@@ -141,7 +141,7 @@ export class SentryErrorHandler implements ErrorHandler {
         MatMenuModule,
         MatTabsModule,
         CommonModule,
-        PlotlyModule
+        PlotlyViaWindowModule.forRoot()
     ],
     providers: [{ provide: ErrorHandler, useClass: SentryErrorHandler },
         AoGlobalStateStore, AoApiClientService, AoPluginsService, AoItemService],
