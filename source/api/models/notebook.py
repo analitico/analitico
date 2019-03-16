@@ -1,22 +1,25 @@
 import collections
 import jsonfield
+import os
+import os.path
+import papermill
 
 from django.db import models
 from django.utils.crypto import get_random_string
-from django.db import transaction
 
 import analitico
 import analitico.plugin
 import analitico.utilities
 
 from analitico import IFactory
-from analitico.schema import generate_schema
+from analitico.utilities import save_json, read_json
 
+from .job import Job
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 
 ##
-## Dataset
+## Notebook
 ##
 
 
@@ -57,51 +60,46 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
     ##
 
     def run(self, job, factory: IFactory, **kwargs):
-        """ Run job actions on the dataset """
-        try:
-            # process action runs plugin to generate and save data.csv and its schema
-            if job.action == "dataset/process":
-                plugin_settings = self.get_attribute("plugin")
-                new_plugin = False
+        """ Run notebook, update it, upload artifacts """
+        nb_run(job, factory, self, self)
 
-                # if the dataset doesn't have a plugin we can initialize it with a dataset pipeline
-                # which initially will contain a single plugin to read the source data from csv
-                # and may later on be extended to do other data transformations tasks
-                if not plugin_settings and self.assets:
-                    for asset in self.assets:
-                        if asset.get("content_type") == "text/csv" or asset["path"].endswith(".csv"):
-                            plugin_settings = {
-                                "type": analitico.plugin.PLUGIN_TYPE,
-                                "name": analitico.plugin.DATAFRAME_PIPELINE_PLUGIN,
-                                "plugins": [
-                                    {
-                                        "type": analitico.plugin.PLUGIN_TYPE,
-                                        "name": analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN,
-                                        "source": {"content_type": "text/csv", "url": asset["path"]},
-                                    }
-                                ],
-                            }
-                            new_plugin = True
-                            self.set_attribute("plugin", plugin_settings)
-                            self.save()
-                            break
+##
+## Utilities
+##
 
-                if plugin_settings:
-                    plugin = factory.get_plugin(**plugin_settings)
-                    # plugin will produce pandas dataframe and create data.csv, data.csv.info
-                    df = plugin.run()
-                    if new_plugin:
-                        # apply derived schema as a starting schema which
-                        # users will then customize and change, etc.
-                        schema = generate_schema(df)
-                        with transaction.atomic():
-                            self.refresh_from_db()
-                            plugin_settings = self.get_attribute("plugin")
-                            plugin_settings["plugins"][0]["source"]["schema"] = schema
-                            self.set_attribute("plugin", plugin_settings)
-                            self.save()
-                    # upload processing artifacts to /data
-                    factory.upload_artifacts(self)
-            self.save()
-        except Exception as exc:
-            raise exc
+
+def nb_run(job: Job, factory: IFactory, notebook: Notebook, upload_to=None, **kwargs):
+    """ Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to """
+    try:
+        if not notebook.notebook:
+            factory.warning("Running an empty notebook %s", notebook.id)
+            return
+
+        # save notebook to file
+        artifacts_path = factory.get_artifacts_directory()
+        notebook_path = os.path.join(artifacts_path, "notebook.ipynb")
+        notebook_out_path = os.path.join(artifacts_path, "notebook-output.ipynb")
+        save_json(notebook.notebook, notebook_path)
+
+        # run notebook and save output to separate file
+        action = job.action if job else None
+        papermill.execute_notebook(
+            notebook_path,
+            notebook_out_path,
+            parameters=dict(action=action, name="gionata"),
+            cwd=artifacts_path,  # any artifacts will be created in cwd
+        )
+
+        # save executed notebook
+        notebook.notebook = read_json(notebook_out_path)
+        notebook.save()
+
+        # upload processed artifacts to /data
+        if upload_to:
+            os.remove(notebook_path)
+            os.remove(notebook_out_path)
+            factory.upload_artifacts(upload_to)
+        notebook.save()
+
+    except Exception as exc:
+        factory.exception("Exception while running notebook %s", notebook.id, item=upload_to, notebook=notebook, job=job)

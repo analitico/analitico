@@ -28,7 +28,7 @@ from .logviews import LogViewSetMixin
 
 
 class NotebookSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
-    """ Serializer for Dataset model """
+    """ Serializer for notebook model """
 
     class Meta:
         model = Notebook

@@ -162,6 +162,8 @@ class ServerFactory(analitico.factory.Factory):
                 return api.models.Job.objects.get(pk=item_id)
             if item_id.startswith(analitico.MODEL_PREFIX):
                 return api.models.Model.objects.get(pk=item_id)
+            if item_id.startswith(analitico.NOTEBOOK_PREFIX):
+                return api.models.Notebook.objects.get(pk=item_id)
             if item_id.startswith(analitico.RECIPE_PREFIX):
                 return api.models.Recipe.objects.get(pk=item_id)
             if item_id.startswith(analitico.WORKSPACE_PREFIX):

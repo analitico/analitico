@@ -55,7 +55,7 @@ class DatasetAdmin(admin.ModelAdmin):
 class NotebookAdmin(admin.ModelAdmin):
     fields = ("id", "workspace", "title", "description", "attributes", "notebook")
     list_display = ("id", "workspace", "title", "description", "created_at", "updated_at")
-    search_fields = ("id", "title", "description", "attributes", "notebook")
+    search_fields = ("id", "title", "description", "attributes")
     ordering = ("-updated_at",)
 
 
