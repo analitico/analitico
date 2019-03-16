@@ -11,3 +11,4 @@ from .model import Model  # NOQA
 from .job import Job  # NOQA
 from .endpoint import Endpoint  # NOQA
 from .log import Log  # NOQA
+from .notebook import Notebook  # NOQA

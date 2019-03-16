@@ -10,3 +10,4 @@ from .endpointviews import EndpointViewSet
 from .userviews import UserViewSet
 from .pluginviews import PluginViewSet
 from .logviews import LogViewSet
+from .notebookviews import NotebookViewSet
