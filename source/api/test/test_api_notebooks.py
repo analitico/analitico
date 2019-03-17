@@ -166,3 +166,15 @@ class NotebooksTests(APITestCase):
         # cells[56] has an html chart
         self.assertEqual(len(cells[56]["outputs"][0]["data"]), 1)
         self.assertIn("text/html", cells[56]["outputs"][0]["data"])
+
+    def test_notebook_output_dataframe(self):
+        """ Test a notebook that outputs a pandas dataframe as html table """
+        self.post_notebook("notebook04.ipynb", "nb_04")
+        response, notebook = self.process_notebook("nb_04")
+        cells = notebook["cells"]
+
+        # cells[4] has a table derived from a pandas dataframe
+        self.assertEqual(len(cells[4]["outputs"][0]["data"]), 2)
+        self.assertIn("text/html", cells[4]["outputs"][0]["data"])
+        self.assertIn("text/plain", cells[4]["outputs"][0]["data"])
+        self.assertEqual(cells[4]["outputs"][0]["data"]["text/plain"][0], "    A   B   C   D   E   F   G   H   I   J\n")

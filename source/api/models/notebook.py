@@ -21,7 +21,8 @@ from .workspace import Workspace
 NOTEBOOK_MIME_TYPE = "application/x-ipynb+json"
 
 ##
-## Notebook
+## Notebook - django model used to represents Jupyter notebooks in analitico
+## https://nbformat.readthedocs.io/en/latest/format_description.html#
 ##
 
 
