@@ -14,7 +14,7 @@ import api.models
 import api.utilities
 
 from analitico import ACTION_PROCESS
-from api.models import Dataset, Job, ASSETS_CLASS_DATA, Notebook
+from api.models import Dataset, Job, ASSETS_CLASS_DATA, Notebook, NOTEBOOK_MIME_TYPE
 
 from .itemviewsetmixin import ItemViewSetMixin
 from .attributeserializermixin import AttributeSerializerMixin
@@ -57,7 +57,7 @@ class NotebookViewSet(
         """ Returns the notebook content """
         item = self.get_object()
         content = json.dumps(item.notebook, indent=4) if item.notebook else ""
-        response = HttpResponse(content=content, content_type="application/json")
+        response = HttpResponse(content=content, content_type=NOTEBOOK_MIME_TYPE)
         return response
 
     @permission_classes((IsAuthenticated,))

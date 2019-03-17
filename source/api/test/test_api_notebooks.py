@@ -9,8 +9,9 @@ from rest_framework.test import APITestCase
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
-import api.models.log
+from analitico.constants import ACTION_PROCESS
 from analitico.utilities import read_json
+
 from api.models import *
 from api.factory import factory
 from api.models.log import *
@@ -70,21 +71,37 @@ class NotebooksTests(APITestCase):
         url = reverse("api:notebook-detail", args=("nb_01",))
         self.auth_token(self.token2)
         response = self.client.get(url, format="json")
-        
+
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def OFFtest_notebook_get_notebook(self):
+    def test_notebook_get_notebook(self):
         """ Gets the jupyter notebook itself rather than the analitico model """
         self.post_notebook("notebook01.ipynb", "nb_01")
         url = reverse("api:notebook-detail-notebook", args=("nb_01",))
         response = self.client.get(url, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response["Content-Type"], "application/json")
-
-
-
-        notebook = response.data
+        self.assertEqual(response["Content-Type"], NOTEBOOK_MIME_TYPE)
+        notebook = json.loads(response.content)
 
         self.assertEqual(notebook["cells"][0]["cell_type"], "code")
         self.assertIsNone(notebook["cells"][0]["execution_count"])
+
+    def test_notebook_process(self):
+        self.post_notebook("notebook01.ipynb", "nb_01")
+
+        # process notebook synchronously
+        url = reverse("api:notebook-job-action", args=("nb_01", ACTION_PROCESS)) + "?async=false"
+        response = self.client.post(url, format="json")
+        data = response.data
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["attributes"]["status"], "completed")
+
+        # notebook was executed and produced "hello world\n" as output which was saved in outputs
+        notebook_url = reverse("api:notebook-detail", args=("nb_01",))
+        response = self.client.get(notebook_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        notebook = response.data["attributes"]["notebook"]
+        self.assertEqual(notebook["cells"][0]["cell_type"], "code")
+        self.assertEqual(notebook["cells"][0]["execution_count"], 1)
+        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")

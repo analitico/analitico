@@ -18,6 +18,8 @@ from .job import Job
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 
+NOTEBOOK_MIME_TYPE = "application/x-ipynb+json"
+
 ##
 ## Notebook
 ##
