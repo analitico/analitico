@@ -11,3 +11,4 @@ from .test_api_user import UserTests
 from .test_api_plugin import PluginTests
 from .test_api_log import LogTests
 from .test_api_filters import FiltersTests
+from .test_api_notebooks import NotebooksTests

@@ -63,6 +63,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
         """ Run notebook, update it, upload artifacts """
         nb_run(job, factory, self, self)
 
+
 ##
 ## Utilities
 ##
@@ -102,4 +103,6 @@ def nb_run(job: Job, factory: IFactory, notebook: Notebook, upload_to=None, **kw
         notebook.save()
 
     except Exception as exc:
-        factory.exception("Exception while running notebook %s", notebook.id, item=upload_to, notebook=notebook, job=job)
+        factory.exception(
+            "Exception while running notebook %s", notebook.id, item=upload_to, notebook=notebook, job=job
+        )
