@@ -43,6 +43,19 @@ class NotebooksTests(APITestCase):
         self.assertEqual(data["id"], notebook_id)
         return response
 
+    def process_notebook(self, notebook_id="nb_01"):
+        # process notebook synchronously, return response and updated notebook
+        url = reverse("api:notebook-job-action", args=(notebook_id, ACTION_PROCESS)) + "?async=false"
+        response = self.client.post(url, format="json")
+        data = response.data
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["attributes"]["status"], "completed")
+        # retrieve notebook updated with outputs
+        url = reverse("api:notebook-detail", args=(notebook_id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response, response.data["attributes"]["notebook"]
+
     def setUp(self):
         self.setup_basics()
         ws_01 = Workspace(id="ws_1", user=self.user1)
@@ -105,3 +118,33 @@ class NotebooksTests(APITestCase):
         self.assertEqual(notebook["cells"][0]["cell_type"], "code")
         self.assertEqual(notebook["cells"][0]["execution_count"], 1)
         self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")
+
+        self.assertEqual(notebook["metadata"]["kernelspec"]["display_name"], "Python 3")
+        self.assertEqual(notebook["metadata"]["kernelspec"]["name"], "python3")
+        self.assertEqual(notebook["metadata"]["kernelspec"]["language"], "python")
+
+    def test_notebook_process_twice(self):
+        self.post_notebook("notebook01.ipynb", "nb_01")
+
+        _, notebook = self.process_notebook("nb_01")
+        self.assertEqual(notebook["cells"][0]["execution_count"], 1)
+        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")
+        endtime1 = notebook["metadata"]["papermill"]["end_time"]
+
+        _, notebook = self.process_notebook("nb_01")
+        self.assertEqual(notebook["cells"][0]["execution_count"], 1)
+        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")
+        endtime2 = notebook["metadata"]["papermill"]["end_time"]
+        self.assertGreater(endtime2, endtime1)
+
+    
+    def test_notebook_save_artifacts(self):
+        """ Test a notebook that saves a file which is uploaded as an artifact """
+        self.post_notebook("notebook02.ipynb", "nb_02")
+        response, notebook = self.process_notebook("nb_02")
+
+        asset = response.data["attributes"]["data"][0]
+        self.assertEqual(asset["content_type"], "text/plain")
+        self.assertEqual(asset["filename"], "file.txt")
+        self.assertEqual(asset["size"], 19)
+
