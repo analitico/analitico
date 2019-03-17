@@ -137,7 +137,6 @@ class NotebooksTests(APITestCase):
         endtime2 = notebook["metadata"]["papermill"]["end_time"]
         self.assertGreater(endtime2, endtime1)
 
-    
     def test_notebook_save_artifacts(self):
         """ Test a notebook that saves a file which is uploaded as an artifact """
         self.post_notebook("notebook02.ipynb", "nb_02")
@@ -148,3 +147,22 @@ class NotebooksTests(APITestCase):
         self.assertEqual(asset["filename"], "file.txt")
         self.assertEqual(asset["size"], 19)
 
+    def test_notebook_output_formulas_and_graph(self):
+        """ Test a notebook that outputs math formulas and plots in various formats """
+        self.post_notebook("notebook03.ipynb", "nb_03")
+        response, notebook = self.process_notebook("nb_03")
+        cells = notebook["cells"]
+
+        # cells[13] has an image of a math formula in various formats
+        self.assertEqual(len(cells[13]["outputs"][0]["data"]), 3)
+        self.assertIn("image/png", cells[13]["outputs"][0]["data"])
+        self.assertIn("text/latex", cells[13]["outputs"][0]["data"])
+        self.assertIn("text/plain", cells[13]["outputs"][0]["data"])
+
+        # cells[17] has a chart
+        self.assertEqual(len(cells[17]["outputs"][0]["data"]), 1)
+        self.assertIn("image/png", cells[13]["outputs"][0]["data"])
+
+        # cells[56] has an html chart
+        self.assertEqual(len(cells[56]["outputs"][0]["data"]), 1)
+        self.assertIn("text/html", cells[56]["outputs"][0]["data"])
