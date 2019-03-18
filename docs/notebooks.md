@@ -1,7 +1,9 @@
 
 main change:
 - notebooks contain plugins instead of plugins containing notebooks...
-- 
+
+Charts with notebooks:  
+https://plot.ly/python/
 
 notebooks:
 - first class citizen in the system like dataset, recipe, model

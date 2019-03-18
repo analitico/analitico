@@ -3,6 +3,10 @@ import jsonfield
 import os
 import os.path
 import papermill
+import json
+
+import nbformat
+from nbconvert import HTMLExporter
 
 from django.db import models
 from django.utils.crypto import get_random_string
@@ -109,3 +113,18 @@ def nb_run(job: Job, factory: IFactory, notebook: Notebook, upload_to=None, **kw
         factory.exception(
             "Exception while running notebook %s", notebook.id, item=upload_to, notebook=notebook, job=job
         )
+
+
+def nb_convert_to_html(notebook: dict, template="full"):
+    """ Convert a Jupyter notebook to HTML and return as string """
+    # uses jupyter nbconvert as a library
+    # https://nbconvert.readthedocs.io/en/5.x/nbconvert_library.html
+
+    # kind of a long trip, we serialize again because nbconvert takes a string...
+    notebook_json = json.dumps(notebook)
+    notebook_obj = nbformat.reads(notebook_json, as_version=4)
+
+    html_exporter = HTMLExporter()
+    html_exporter.template_file = template  # eg: basic, full, etc...
+    (body, resources) = html_exporter.from_notebook_node(notebook_obj)
+    return body, resources
