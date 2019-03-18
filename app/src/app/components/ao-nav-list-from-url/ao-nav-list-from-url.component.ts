@@ -16,7 +16,7 @@ export class AoNavListFromUrlComponent extends AoNavListComponent implements OnI
 
     constructor(protected apiClient: AoApiClientService, private router: Router, protected itemService: AoItemService) {
         super(itemService);
-        this.isCollapsed = true;
+        this.isCollapsed = false;
     }
 
     private _url: any;

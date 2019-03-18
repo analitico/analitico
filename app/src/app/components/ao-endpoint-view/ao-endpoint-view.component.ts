@@ -72,10 +72,12 @@ export class AoEndpointViewComponent implements AfterViewInit, OnDestroy {
         this.editorOptions = new JsonEditorOptions();
         this.editorOptions.modes = ['code']; // set all allowed modes
         this.editorOptions.mode = 'code';
+        this.editorOptions.mainMenuBar = false;
 
         this.predictionEditorOptions = new JsonEditorOptions();
         this.predictionEditorOptions.modes = ['view']; // set all allowed modes
         this.predictionEditorOptions.mode = 'view';
+        this.predictionEditorOptions.mainMenuBar = false;
     }
 
     ngAfterViewInit() {
