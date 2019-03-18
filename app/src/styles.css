@@ -442,14 +442,18 @@ app-ao-nav-list-from-url mat-icon {
 }
 
 .ao-json-editor-container{
-    min-height: 200px;
     overflow: auto;
     resize: vertical;
     padding: 8px;
 }
+json-editor{
+    display: block;
+}
+
 json-editor, json-editor > div, .jsoneditor {
    height: 100%;
 }
+
 
 .ao-s4-order-sorting-prediction-view .mat-list-item-content {
     padding: 0 !important;

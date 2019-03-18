@@ -306,4 +306,13 @@ export class AoRecipeViewComponent extends AoPipelineViewComponent implements On
         }
     }
 
+    deleteModel(model) {
+        this.itemService.deleteItem(model)
+            .then((result) => {
+                if (result) {
+                    this.loadItem();
+                }
+            });
+    }
+
 }

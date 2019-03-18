@@ -5,13 +5,15 @@ import { Injectable } from '@angular/core';
 import { AoApiClientService } from '../ao-api-client/ao-api-client.service';
 import * as _ from 'lodash';
 import { AoJobService } from '../ao-job/ao-job.service';
+import { AoMessageBoxService } from '../ao-message-box/ao-message-box';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AoItemService {
 
-    constructor(protected apiClient: AoApiClientService, protected jobService: AoJobService) { }
+    constructor(protected apiClient: AoApiClientService, protected jobService: AoJobService,
+        protected messageBox: AoMessageBoxService) { }
 
     // loads the json object
     loadItem(item, url?) {
@@ -34,6 +36,25 @@ export class AoItemService {
             .then((response: any) => {
                 return response.data;
             });
+    }
+
+
+    deleteItem(item) {
+        const that = this;
+        return new Promise(function (resolve, reject) {
+            const subscription =
+                that.messageBox.show('Do you really want to delete item with id ' + item.id + '?', 'Delete confirmation', null, 2)
+                    .subscribe((response) => {
+                        subscription.unsubscribe();
+                        if (response.result === 'yes') {
+                            that.apiClient.delete(item.links.self)
+                                .then((response: any) => {
+                                    return resolve(true);
+                                });
+                        }
+                    });
+        });
+
     }
 
     /**

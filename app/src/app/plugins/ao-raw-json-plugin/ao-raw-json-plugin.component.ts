@@ -9,16 +9,21 @@ import { AoPluginComponent } from 'src/app/plugins/ao-plugin-component';
 export class AoRawJsonPluginComponent extends AoPluginComponent implements OnInit {
     @ViewChild(JsonEditorComponent) editor: JsonEditorComponent;
     editorOptions: JsonEditorOptions;
+    editorInterval: any;
+
     constructor() {
         super();
         // initialize JSON editor
         this.editorOptions = new JsonEditorOptions();
         this.editorOptions.modes = ['code']; // set all allowed modes
         this.editorOptions.mode = 'code';
+        this.editorOptions.mainMenuBar = false;
     }
 
     ngOnInit() {
+       // this.editorInterval = setInterval(this.resizeEditor.bind(this), 2000);
     }
+
 
     // called when, after a change, a valid JSON is present in the editor
     // if the JSON is not valid this is not called
@@ -37,5 +42,6 @@ export class AoRawJsonPluginComponent extends AoPluginComponent implements OnIni
         // notify change
         this.notifyChange();
     }
+
 
 }
