@@ -37,11 +37,33 @@ class NotebooksTests(APITestCase):
 
         url = reverse("api:notebook-list")
         self.auth_token(token=self.token1)
-        response = self.client.post(url, dict(id=notebook_id, workspace_id="ws_1", notebook=notebook), format="json")
+        response = self.client.post(
+            url,
+            dict(
+                id=notebook_id,
+                workspace_id="ws_1",
+                title="title: " + notebook_id,
+                description="description: " + notebook_id,
+                notebook=notebook,
+                extra="extra: " + notebook_id,
+            ),
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.data
         self.assertEqual(data["id"], notebook_id)
         return response
+
+    def update_notebook(self, notebook_id="nb_01", notebook=None, notebook_name=None):
+        url = reverse("api:notebook-detail-notebook", args=(notebook_id,))
+        if notebook_name:
+            url = url + "?name=" + notebook_name
+        response = self.client.put(url, data=notebook, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response.data
 
     def process_notebook(self, notebook_id="nb_01"):
         # process notebook synchronously, return response and updated notebook
@@ -95,7 +117,7 @@ class NotebooksTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response["Content-Type"], NOTEBOOK_MIME_TYPE)
-        notebook = json.loads(response.content)
+        notebook = response.data
 
         self.assertEqual(notebook["cells"][0]["cell_type"], "code")
         self.assertIsNone(notebook["cells"][0]["execution_count"])
@@ -182,7 +204,7 @@ class NotebooksTests(APITestCase):
     def test_notebook_convert_html(self):
         """ Convert notebook to html, defaults to full template """
         self.post_notebook("notebook05-rendered.ipynb", "nb_05")
-        url = reverse("api:notebook-detail-html", args=("nb_05",))
+        url = reverse("api:notebook-detail-notebook", args=("nb_05",)) + "?format=html"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -200,7 +222,7 @@ class NotebooksTests(APITestCase):
     def test_notebook_convert_html_full_template(self):
         """ Convert notebook to html requesting specifically the 'full' template """
         self.post_notebook("notebook05-rendered.ipynb", "nb_05")
-        url = reverse("api:notebook-detail-html", args=("nb_05",)) + "?template=full"
+        url = reverse("api:notebook-detail-notebook", args=("nb_05",)) + "?format=html&template=full"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -218,7 +240,7 @@ class NotebooksTests(APITestCase):
     def test_notebook_convert_html_basic_template(self):
         """ Convert notebook to html requesting specifically the 'basic' template """
         self.post_notebook("notebook05-rendered.ipynb", "nb_05")
-        url = reverse("api:notebook-detail-html", args=("nb_05",)) + "?template=basic"
+        url = reverse("api:notebook-detail-notebook", args=("nb_05",)) + "?format=html&template=basic"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -238,12 +260,114 @@ class NotebooksTests(APITestCase):
     def test_notebook_convert_html_bogus_template(self):
         """ Convert notebook to html requesting specifically the 'bogus' template which does not exist """
         self.post_notebook("notebook05-rendered.ipynb", "nb_05")
-        url = reverse("api:notebook-detail-html", args=("nb_05",)) + "?template=bogus1"
+        url = reverse("api:notebook-detail-notebook", args=("nb_05",)) + "?format=html&template=bogus1"
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)  # should be BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)  # TODO should be BAD_REQUEST
         self.assertIn("application/json", response["Content-Type"])
 
         data = response.data
         self.assertEqual(data["error"]["code"], "templatenotfound")
         self.assertEqual(data["error"]["title"], "bogus1")
+
+    def test_notebook_update_patch(self):
+        """ Test updating the notebook model, title, description and Jupyter json using PATCH calls """
+        response = self.post_notebook("notebook01.ipynb", "nb_01")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        notebook = data["attributes"]["notebook"]
+
+        # update with PATCH on /api/notebooks/id
+        notebook1 = notebook
+        notebook1["cells"][0]["source"][0] = 'print("hello goofy")'
+        data1 = {
+            "data": {
+                "id": data["id"],
+                "attributes": {"title": "title1", "description": "description1", "notebook": notebook1},
+            }
+        }
+        url1 = reverse("api:notebook-detail", args=("nb_01",))
+        response1 = self.client.patch(url1, data=data1, format="json")
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response1.data["attributes"]["notebook"]["cells"][0]["source"][0], 'print("hello goofy")')
+        self.assertEqual(response1.data["attributes"]["title"], "title1")
+        self.assertEqual(response1.data["attributes"]["description"], "description1")
+
+        # update, again, with PATCH on /api/notebooks/id
+        notebook2 = notebook
+        notebook2["cells"][0]["source"][0] = 'print("hello mickey")'
+        data2 = {"data": {"id": data["id"], "attributes": {"description": "description2", "notebook": notebook1}}}
+        response2 = self.client.patch(url1, data=data2, format="json")
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        self.assertEqual(response2.data["attributes"]["notebook"]["cells"][0]["source"][0], 'print("hello mickey")')
+        self.assertEqual(response2.data["attributes"]["title"], "title1")  # unchanged
+        self.assertEqual(response2.data["attributes"]["description"], "description2")
+
+    def test_notebook_update_put(self):
+        """ Test updating the notebook model, title, description and Jupyter json using PUT calls """
+        response = self.post_notebook("notebook01.ipynb", "nb_01")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        notebook = data["attributes"]["notebook"]
+
+        # update with PUT on /api/notebooks/id
+        notebook1 = notebook
+        notebook1["cells"][0]["source"][0] = 'print("hello goofy")'
+        data1 = {
+            "data": {
+                "id": data["id"],
+                "attributes": {
+                    "workspace_id": "ws_1",  # TODO required here but not in PATCH, why?
+                    "title": "title1",
+                    "description": "description1",
+                    "notebook": notebook1,
+                },
+            }
+        }
+        url1 = reverse("api:notebook-detail", args=("nb_01",))
+        response1 = self.client.put(url1, data=data1, format="json")
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response1.data["attributes"]["notebook"]["cells"][0]["source"][0], 'print("hello goofy")')
+        self.assertEqual(response1.data["attributes"]["title"], "title1")
+        self.assertEqual(response1.data["attributes"]["description"], "description1")
+
+        # update, again, with PUT on /api/notebooks/id
+        notebook2 = notebook
+        notebook2["cells"][0]["source"][0] = 'print("hello mickey")'
+        data2 = {
+            "data": {
+                "id": data["id"],
+                "attributes": {
+                    "workspace_id": "ws_1",  # TODO required here but not in PATCH, why?
+                    "description": "description2",
+                    "notebook": notebook1,
+                },
+            }
+        }
+        response2 = self.client.put(url1, data=data2, format="json")
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        self.assertEqual(response2.data["attributes"]["notebook"]["cells"][0]["source"][0], 'print("hello mickey")')
+        self.assertEqual(response2.data["attributes"]["title"], "title1")  # unchanged
+        self.assertEqual(response2.data["attributes"]["description"], "description2")
+
+    def test_notebook_update_notebook(self):
+        """ Test updating just the Jupyter json in the notebook model with /api/notebooks/id/notebook endpoint """
+        response = self.post_notebook("notebook01.ipynb", "nb_01")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        notebook = data["attributes"]["notebook"]
+
+        # update with PUT on /api/notebooks/id/notebook
+        notebook["cells"][0]["source"][0] = 'print("hello goofy")'
+        notebook = self.update_notebook("nb_01", notebook)
+        self.assertEqual(notebook["cells"][0]["source"][0], 'print("hello goofy")')
+
+        # update, again, with PUT on /api/notebooks/id/notebook
+        notebook["cells"][0]["source"][0] = 'print("hello mickey")'
+        notebook = self.update_notebook("nb_01", notebook)
+        self.assertEqual(notebook["cells"][0]["source"][0], 'print("hello mickey")')
+
+        # update, again, with PUT on /api/notebooks/id/notebook and { "data": xxx } wrapping a la json:api
+        notebook["cells"][0]["source"][0] = 'print("hello donald")'
+        notebook = self.update_notebook("nb_01", {"data": notebook})
+        self.assertEqual(notebook["cells"][0]["source"][0], 'print("hello donald")')
