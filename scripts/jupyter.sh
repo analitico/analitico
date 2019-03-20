@@ -3,7 +3,7 @@
 # echo a virtual env setup you should run ./jupyter-setup.sh first
 
 echo "Checking virtual environment..."
-cd ~/github/analitico/
+cd ~/analitico/
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
