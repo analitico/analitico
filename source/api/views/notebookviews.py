@@ -67,7 +67,7 @@ class NotebookViewSet(
         item = self.get_object()
         if not item.notebook:
             raise NotFound("Notebook model " + self.id + " does not contain an actual Jupyter notebook yet.")
-        template = api.utilities.get_query_parameter(request, "template")
+        template = api.utilities.get_query_parameter(request, "template", "full")
         content, _ = nb_convert_to_html(item.notebook, template)
         return HttpResponse(content=content, content_type="text/html")
 

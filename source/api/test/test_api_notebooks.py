@@ -178,3 +178,72 @@ class NotebooksTests(APITestCase):
         self.assertIn("text/html", cells[4]["outputs"][0]["data"])
         self.assertIn("text/plain", cells[4]["outputs"][0]["data"])
         self.assertEqual(cells[4]["outputs"][0]["data"]["text/plain"][0], "    A   B   C   D   E   F   G   H   I   J\n")
+
+    def test_notebook_convert_html(self):
+        """ Convert notebook to html, defaults to full template """
+        self.post_notebook("notebook05-rendered.ipynb", "nb_05")
+        url = reverse("api:notebook-detail-html", args=("nb_05",))
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("text/html", response["Content-Type"])
+        html = response.content.decode()
+        self.assertIn("<!DOCTYPE html>", html)
+        self.assertIn("<head>", html)
+        self.assertIn("Twitter Bootstrap", html)
+        self.assertIn("<title>Notebook</title>", html)
+        self.assertIn("<body>", html)
+        self.assertIn("This Notebook shows how you can add custom display logic", html)
+        self.assertIn("image/png", html)
+        self.assertIn("</body>", html)
+
+    def test_notebook_convert_html_full_template(self):
+        """ Convert notebook to html requesting specifically the 'full' template """
+        self.post_notebook("notebook05-rendered.ipynb", "nb_05")
+        url = reverse("api:notebook-detail-html", args=("nb_05",)) + "?template=full"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("text/html", response["Content-Type"])
+        html = response.content.decode()
+        self.assertIn("<!DOCTYPE html>", html)
+        self.assertIn("<head>", html)
+        self.assertIn("Twitter Bootstrap", html)
+        self.assertIn("<title>Notebook</title>", html)
+        self.assertIn("<body>", html)
+        self.assertIn("This Notebook shows how you can add custom display logic", html)
+        self.assertIn("image/png", html)
+        self.assertIn("</body>", html)
+
+    def test_notebook_convert_html_basic_template(self):
+        """ Convert notebook to html requesting specifically the 'basic' template """
+        self.post_notebook("notebook05-rendered.ipynb", "nb_05")
+        url = reverse("api:notebook-detail-html", args=("nb_05",)) + "?template=basic"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("text/html", response["Content-Type"])
+        html = response.content.decode()
+
+        # no frills template has no head, just body
+        self.assertNotIn("<!DOCTYPE html>", html)
+        self.assertNotIn("<head>", html)
+        self.assertNotIn("Twitter Bootstrap", html)
+        self.assertNotIn("<title>Notebook</title>", html)
+        self.assertNotIn("<body>", html)
+        self.assertIn("This Notebook shows how you can add custom display logic", html)
+        self.assertIn("image/png", html)
+        self.assertNotIn("</body>", html)
+
+    def test_notebook_convert_html_bogus_template(self):
+        """ Convert notebook to html requesting specifically the 'bogus' template which does not exist """
+        self.post_notebook("notebook05-rendered.ipynb", "nb_05")
+        url = reverse("api:notebook-detail-html", args=("nb_05",)) + "?template=bogus1"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)  # should be BAD_REQUEST
+        self.assertIn("application/json", response["Content-Type"])
+
+        data = response.data
+        self.assertEqual(data["error"]["code"], "templatenotfound")
+        self.assertEqual(data["error"]["title"], "bogus1")
