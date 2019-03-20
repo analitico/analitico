@@ -67,7 +67,36 @@ class ItemMixin:
     def notes(self, notes):
         self.set_attribute("notes", notes)
 
+    ##
+    ## Notebooks
+    ##
+
+    def get_notebook(self, name=None):
+        """
+        Retrieve a Jupyter notebook from the model by name. If the name is None, then
+        the default notebook will be retrieved either from a field named "notebook" or
+        if the field is not available from the "notebook" key of the model's attributes.
+        Same for notebooks with other names.
+        """
+        name = name if name else "notebook"
+        if hasattr(self, name):
+            return getattr(self, name, None)
+        return self.get_attribute(name, None)
+
+    def set_notebook(self, name, notebook: dict):
+        if notebook:
+            if "nbformat" not in notebook or "nbformat_minor" not in notebook:
+                raise Exception(
+                    "A notebook should contain 'nbformat' and 'nbformat_minor' specifying version information."
+                )
+        name = name if name else "notebook"
+        if hasattr(self, name):
+            setattr(self, name, notebook)
+        self.set_attribute(name, notebook)
+
+    ##
     ## Assets
+    ##
 
     @property
     def storage(self) -> api.storage.Storage:
