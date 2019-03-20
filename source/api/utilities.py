@@ -117,7 +117,7 @@ def exception_to_response(exc: Exception, context) -> Response:
         traceback.print_tb(exc_traceback)
         traceback.print_exc()
     dict = exception_to_dict(exc)
-    return Response({"error": dict}, dict.get("status", "500"))
+    return Response({"error": dict}, dict.get("status", "500"), content_type="application/json")
 
 
 ##
