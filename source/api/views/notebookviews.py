@@ -73,7 +73,7 @@ class NotebookViewSetMixin:
             old_notebook = item.get_notebook(name)
             notebook = request.data["data"]
             assert "data" in request.data  # serializer adds json:api style "data": xxx
-            item.set_notebook(name, notebook)
+            item.set_notebook(notebook, name)
             item.save()
             # https://restfulapi.net/http-methods/
             return Response(status=status.HTTP_200_OK if old_notebook else status.HTTP_201_CREATED)

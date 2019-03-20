@@ -14,6 +14,7 @@ from analitico.schema import generate_schema
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
+from .notebook import nb_run
 
 ##
 ## Dataset
@@ -48,6 +49,9 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
     # Additional attributes are stored as json (used by AttributeMixin)
     attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
 
+    # A Jupyter notebook https://nbformat.readthedocs.io/en/latest/
+    notebook = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
+
     ##
     ## Jobs
     ##
@@ -57,6 +61,14 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
         try:
             # process action runs plugin to generate and save data.csv and its schema
             if job.action == "dataset/process":
+
+                # if dataset has a notebook it will be used to process
+                notebook = self.get_notebook()
+                if notebook:
+                    nb_run(job, factory, notebook_item=self, notebook_name=None, upload_to=self)
+                    return
+
+                # if there isn't a notebook we process via plugins
                 plugin_settings = self.get_attribute("plugin")
                 new_plugin = False
 
@@ -96,6 +108,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                             plugin_settings["plugins"][0]["source"]["schema"] = schema
                             self.set_attribute("plugin", plugin_settings)
                             self.save()
+
                     # upload processing artifacts to /data
                     factory.upload_artifacts(self)
             self.save()

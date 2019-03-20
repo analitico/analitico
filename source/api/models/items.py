@@ -83,16 +83,16 @@ class ItemMixin:
             return getattr(self, name, None)
         return self.get_attribute(name, None)
 
-    def set_notebook(self, name, notebook: dict):
+    def set_notebook(self, notebook: dict, notebook_name=None):
         if notebook:
             if "nbformat" not in notebook or "nbformat_minor" not in notebook:
                 raise Exception(
                     "A notebook should contain 'nbformat' and 'nbformat_minor' specifying version information."
                 )
-        name = name if name else "notebook"
-        if hasattr(self, name):
-            setattr(self, name, notebook)
-        self.set_attribute(name, notebook)
+        notebook_name = notebook_name if notebook_name else "notebook"
+        if hasattr(self, notebook_name):
+            setattr(self, notebook_name, notebook)
+        self.set_attribute(notebook_name, notebook)
 
     ##
     ## Assets

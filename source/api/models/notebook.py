@@ -68,7 +68,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 
     def run(self, job, factory: IFactory, **kwargs):
         """ Run notebook, update it, upload artifacts """
-        nb_run(job, factory, self, self)
+        nb_run(job, factory, self)
 
 
 ##
@@ -76,21 +76,26 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 ##
 
 
-def nb_run(job: Job, factory: IFactory, notebook: Notebook, upload_to=None, **kwargs):
+def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload=True, **kwargs):
     """ Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to """
     try:
-        if not notebook.notebook:
-            factory.warning("Running an empty notebook %s", notebook.id)
+        notebook = notebook_item.get_notebook(notebook_name)
+        if not notebook:
+            factory.warning("Running an empty notebook %s", notebook_item.id)
             return
 
         # save notebook to file
         artifacts_path = factory.get_artifacts_directory()
         notebook_path = os.path.join(artifacts_path, "notebook.ipynb")
-        notebook_out_path = os.path.join(artifacts_path, "notebook-output.ipynb")
-        save_json(notebook.notebook, notebook_path)
+        notebook_out_path = os.path.join(artifacts_path, "notebook.output.ipynb")
+        save_json(notebook, notebook_path)
 
         # run notebook and save output to separate file
         action = job.action if job else None
+
+        # TODO figure out datasetsource and why not processing if dataset/process
+        action = "train"
+
         papermill.execute_notebook(
             notebook_path,
             notebook_out_path,
@@ -99,20 +104,19 @@ def nb_run(job: Job, factory: IFactory, notebook: Notebook, upload_to=None, **kw
         )
 
         # save executed notebook
-        notebook.notebook = read_json(notebook_out_path)
-        notebook.save()
+        notebook = read_json(notebook_out_path)
+        notebook_item.set_notebook(notebook, notebook_name)
+        notebook_item.save()
 
         # upload processed artifacts to /data
-        if upload_to:
+        if upload:
             os.remove(notebook_path)
             os.remove(notebook_out_path)
-            factory.upload_artifacts(upload_to)
-        notebook.save()
+            factory.upload_artifacts(notebook_item)
+        notebook_item.save()
 
     except Exception as exc:
-        factory.exception(
-            "Exception while running notebook %s", notebook.id, item=upload_to, notebook=notebook, job=job
-        )
+        factory.exception("Exception while running notebook %s", notebook_item.id, item=notebook_item, job=job)
 
 
 def nb_convert_to_html(notebook: dict, template="full"):

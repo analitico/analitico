@@ -45,9 +45,9 @@ class WorkspaceAdmin(admin.ModelAdmin):
 
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
-    fields = ("id", "workspace", "title", "description", "attributes")
+    fields = ("id", "workspace", "title", "description", "attributes", "notebook")
     list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at")
-    search_fields = ("id", "title", "description", "attributes")
+    search_fields = ("id", "title", "description", "attributes", "notebook")
     ordering = ("-updated_at",)
 
 
@@ -61,9 +61,9 @@ class NotebookAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    fields = ("id", "workspace", "title", "description", "attributes")
+    fields = ("id", "workspace", "title", "description", "attributes", "notebook")
     list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at")
-    search_fields = ("id", "title", "description", "attributes")
+    search_fields = ("id", "title", "description", "attributes", "notebook")
     ordering = ("-updated_at",)
 
 

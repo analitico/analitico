@@ -49,6 +49,9 @@ class Recipe(ItemMixin, models.Model):
     # Additional attributes are stored as json (used by AttributeMixin)
     attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
 
+    # A Jupyter notebook https://nbformat.readthedocs.io/en/latest/
+    notebook = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
+
     ##
     ## Jobs
     ##
