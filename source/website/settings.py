@@ -371,9 +371,8 @@ try:
             "rest_framework.parsers.MultiPartParser",
         ),
         "DEFAULT_RENDERER_CLASSES": (
-            #       'rest_framework_json_api.renderers.JSONRenderer',
-            #       'rest_framework.renderers.JSONRenderer',
             "api.renderers.JSONRenderer",  # jsonapi but simplified
+            "rest_framework.renderers.StaticHTMLRenderer",  # some API return static HTML
             "rest_framework.renderers.BrowsableAPIRenderer",
         ),
         "DEFAULT_METADATA_CLASS": "rest_framework_json_api.metadata.JSONAPIMetadata",
