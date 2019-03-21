@@ -1,13 +1,31 @@
-from rest_framework import pagination
-from rest_framework.response import Response
 from collections import OrderedDict, namedtuple
 
-import rest_framework.renderers
-import rest_framework_json_api.renderers
+from rest_framework import pagination
+from rest_framework import renderers
+from rest_framework.response import Response
+
 from analitico.utilities import get_dict_dot
 
+# You should apply these renderers ONLY to the APIs that need them.
+# In particulare you should NOT apply the HTML renderer system wide
+# otherwise most calls from browsers will be rendered as html instead
+# of json which is very annoying and impractical.
 
-class JSONRenderer(rest_framework.renderers.JSONRenderer):
+
+class NotebookRenderer(renderers.JSONRenderer):
+    """ Renders Jupyter notebooks """
+
+    media_type = "application/x-ipynb+json"
+    format = "ipynb"
+
+
+class HTMLRenderer(renderers.StaticHTMLRenderer):
+    """ Renders HTML as is """
+
+    pass
+
+
+class JSONRenderer(renderers.JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         # change results to { 'data': results } to be more json:api-ish
 
