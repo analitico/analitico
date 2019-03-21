@@ -6,15 +6,16 @@ from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action, permission_classes, renderer_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.renderers import JSONRenderer, StaticHTMLRenderer
+from rest_framework.renderers import JSONRenderer, StaticHTMLRenderer, BrowsableAPIRenderer
 
 import api.models
 import api.utilities
 
 from analitico import ACTION_PROCESS
 from api.models import Notebook, NOTEBOOK_MIME_TYPE
+from api.renderers import NotebookRenderer
 
 from api.models.notebook import nb_convert_to_html
 
@@ -47,25 +48,29 @@ class NotebookSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 class NotebookViewSetMixin:
     """ Provides APIs to operate on Jupyter notebooks contained in the model. """
 
-    renderers = (JSONRenderer, StaticHTMLRenderer)
-
     def get_notebook_response(self, name, format, template):
         item = self.get_object()
         notebook = item.get_notebook(name)
-        if format == "html":
+        if format == "text/html":
             if not notebook:
                 raise NotFound("Notebook model " + item.id + " does not contain the requested Jupyter notebook yet.")
             content, _ = nb_convert_to_html(notebook, template)
             return Response(content, content_type="text/html")
-        return Response(notebook, content_type=NOTEBOOK_MIME_TYPE)
+        return Response(notebook)
 
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["get", "put", "post", "patch"], detail=True, url_name="detail-notebook", url_path="notebook")
+    @action(
+        methods=["get", "put", "post", "patch"],
+        detail=True,
+        url_name="detail-notebook",
+        url_path="notebook",
+        renderer_classes=(JSONRenderer, NotebookRenderer, BrowsableAPIRenderer, StaticHTMLRenderer),
+        permission_classes=(IsAuthenticated,),
+    )
     def notebook(self, request, pk):
         """ Returns the notebook content as is or converted to html with given template """
         name = api.utilities.get_query_parameter(request, "name", "notebook")
-        format = api.utilities.get_query_parameter(request, "format", "json")
         template = api.utilities.get_query_parameter(request, "template", "full")
+        format = request.accepted_renderer.media_type
 
         if request.method in ("POST", "PUT", "PATCH"):
             # replace existing notebook with given notebook

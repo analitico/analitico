@@ -109,16 +109,42 @@ class NotebooksTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_notebook_get_notebook(self):
+    def test_notebook_get_notebook_as_json(self):
         """ Gets the jupyter notebook itself rather than the analitico model """
         self.post_notebook("notebook01.ipynb", "nb_01")
         url = reverse("api:notebook-detail-notebook", args=("nb_01",))
+
+        # request as json
         response = self.client.get(url, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response["Content-Type"], NOTEBOOK_MIME_TYPE)
+        self.assertEqual(response["Content-Type"], "application/json")
         notebook = response.data
+        self.assertEqual(notebook["cells"][0]["cell_type"], "code")
+        self.assertIsNone(notebook["cells"][0]["execution_count"])
 
+    def test_notebook_get_notebook_as_ipynb(self):
+        """ Gets the jupyter notebook itself rather than the analitico model """
+        self.post_notebook("notebook01.ipynb", "nb_01")
+        url = reverse("api:notebook-detail-notebook", args=("nb_01",))
+
+        # request with correct accept for jupyter mime type
+        response = self.client.get(url, HTTP_ACCEPT="application/x-ipynb+json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/x-ipynb+json")
+        notebook = response.data
+        self.assertEqual(notebook["cells"][0]["cell_type"], "code")
+        self.assertIsNone(notebook["cells"][0]["execution_count"])
+
+    def test_notebook_get_notebook_as_ipynb_format(self):
+        """ Gets the jupyter notebook itself rather than the analitico model """
+        self.post_notebook("notebook01.ipynb", "nb_01")
+        url = reverse("api:notebook-detail-notebook", args=("nb_01",)) + "?format=ipynb"
+
+        # request with correct accept for jupyter mime type
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/x-ipynb+json")
+        notebook = response.data
         self.assertEqual(notebook["cells"][0]["cell_type"], "code")
         self.assertIsNone(notebook["cells"][0]["execution_count"])
 
