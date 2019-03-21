@@ -63,7 +63,7 @@ class NotebookViewSetMixin:
         detail=True,
         url_name="detail-notebook",
         url_path="notebook",
-        renderer_classes=(JSONRenderer, NotebookRenderer, BrowsableAPIRenderer, StaticHTMLRenderer),
+        renderer_classes=(JSONRenderer, NotebookRenderer, StaticHTMLRenderer, BrowsableAPIRenderer),
         permission_classes=(IsAuthenticated,),
     )
     def notebook(self, request, pk):
