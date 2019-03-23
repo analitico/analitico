@@ -16,7 +16,7 @@ import analitico.plugin
 import analitico.utilities
 
 from analitico import IFactory
-from analitico.utilities import save_json, read_json
+from analitico.utilities import save_json, read_json, get_dict_dot
 
 from .job import Job
 from .items import ItemMixin, ItemAssetsMixin
@@ -76,7 +76,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 ##
 
 
-def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload=True, **kwargs):
+def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload=True, tags=None, **kwargs):
     """ Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to """
     try:
         notebook = notebook_item.get_notebook(notebook_name)
@@ -117,6 +117,22 @@ def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, uploa
 
     except Exception as exc:
         factory.exception("Exception while running notebook %s", notebook_item.id, item=notebook_item, job=job)
+
+
+def nb_filter_tags(notebook: dict, tags=None):
+    """ Returns a notebook that has only those cells marked with the given tags """
+    if isinstance(tags, str):
+        tags = tags.split(",")
+    if not isinstance(tags, list) or len(tags) < 1:
+        return notebook
+
+    copy = notebook.copy()
+    copy["cells"] = []
+    for cell in notebook["cells"]:
+        cell_tags = get_dict_dot(cell, "metadata.tags", None)
+        if cell_tags and any(tag in cell_tags for tag in tags):
+            copy["cells"].append(cell)
+    return copy
 
 
 def nb_convert_to_html(notebook: dict, template="full"):
