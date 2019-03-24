@@ -67,44 +67,45 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
 
     def run(self, job: Job, factory: analitico.IFactory, **kwargs):
         """ Run job actions on the recipe """
+
+        if ACTION_TRAIN not in job.action:
+            factory.exception("Model: does not know action: %s", job.action, item=self, exception=e)
+
         try:
             # process action runs recipe and creates a trained model
-            if ACTION_TRAIN in job.action:
-                factory.status(self, STATUS_RUNNING)
+            factory.status(self, STATUS_RUNNING)
 
-                notebook = self.get_notebook()
-                if notebook:
-                    # if dataset has a notebook it will be used to process
-                    nb_run(job, factory, notebook_item=self, notebook_name=None, upload_to=self)
+            notebook = self.get_notebook()
+            if notebook:
+                # if dataset has a notebook it will be used to process
+                nb_run(job, factory, notebook_item=self, notebook_name=None, upload_to=self)
 
-                    # TODO training.json
-                    training = {}
-                else:
-                    # if dataset does not have a notebook we will run its plugins
-                    plugin_settings = self.get_attribute("plugin")
-                    if not plugin_settings:
-                        raise AnaliticoException("Recipe: no notebook or plugins to train with", recipe=self)
+                # TODO training.json
+                training = {}
+            else:
+                # if dataset does not have a notebook we will run its plugins
+                plugin_settings = self.get_attribute("plugin")
+                if not plugin_settings:
+                    raise AnaliticoException("Recipe: no notebook or plugins to train with", recipe=self)
 
-                    plugin = factory.get_plugin(**plugin_settings)
-                    training = plugin.run(action=job.action)
+                plugin = factory.get_plugin(**plugin_settings)
+                training = plugin.run(action=job.action)
 
-                    # upload artifacts to model (not to the recipe!)
-                    # a recipe has a one to many relation with trained models
-                    factory.upload_artifacts(self)
+                # upload artifacts to model (not to the recipe!)
+                # a recipe has a one to many relation with trained models
+                factory.upload_artifacts(self)
 
-                artifacts = factory.get_artifacts_directory()
-                shutil.rmtree(artifacts, ignore_errors=True)
-
-                # store training results, link model to recipe and job
-                self.set_attribute("training", training)
-                self.save()
-
-                # job will return information linking to the trained model
-                job.set_attribute("recipe_id", self.id)
-                job.set_attribute("model_id", self.id)
-                job.save()
-
+            self.set_attribute("training", training)
             self.save()
+
+            artifacts = factory.get_artifacts_directory()
+            shutil.rmtree(artifacts, ignore_errors=True)
+
+            # job will return information linking to the trained model
+            job.set_attribute("recipe_id", self.id)
+            job.set_attribute("model_id", self.id)
+            job.save()
+
             factory.status(self, STATUS_COMPLETED)
 
         except AnaliticoException as e:
@@ -114,4 +115,4 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
 
         except Exception as e:
             factory.status(self, STATUS_FAILED)
-            factory.exception("Recipe: an error occoured while training '%s'", self.id, item=self, exception=e)
+            factory.exception("Model: an error occoured while training '%s'", self.id, item=self, exception=e)

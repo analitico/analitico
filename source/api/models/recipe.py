@@ -16,7 +16,6 @@ from .items import ItemMixin
 from .workspace import Workspace
 from .job import Job
 from .model import Model
-from .notebook import nb_run
 
 
 def generate_recipe_id():

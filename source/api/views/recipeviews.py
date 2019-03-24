@@ -29,7 +29,7 @@ class RecipeSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
         model = Recipe
         exclude = ("attributes",)
 
-    notebook = serializers.JSONField()
+    notebook = serializers.JSONField(required=False, allow_null=True)
 
 
 ##
@@ -66,6 +66,15 @@ class RecipeViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_fra
         # create and return job that will train the model
         job = self.create_job(request, model, ACTION_TRAIN)
         job.set_attribute("recipe_id", recipe.id)
+        job.set_attribute("model_id", model.id)
         job.save()
+
+        # a job is executed asynchronously, potentially on another server
+        # and may update the model in the database while we keep holding 
+        # a reference to a stale and out of date object, so refresh first
+        model = Model.objects.get(pk=model.id)
+        model.set_attribute("job_id", job.id)
+        model.save()
+
         jobs_serializer = JobSerializer(job)
         return Response(jobs_serializer.data)

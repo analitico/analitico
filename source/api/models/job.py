@@ -103,15 +103,16 @@ class Job(ItemMixin, models.Model):
 
                 # item runs the job
                 item = factory.get_item(self.item_id)
-
+                item.set_attribute("job_id", self.id)
+ 
                 # apply an id to any plugin that may be missing one
                 # and save the recipe with the new plugin ids so that
                 # the job can track logged actions by each plugin
                 plugin = item.get_attribute("plugin")
                 if analitico.plugin.apply_plugin_id(plugin):
                     item.set_attribute("plugin", plugin)
-                    item.save()
 
+                item.save()
                 item.run(job=self, factory=factory)
                 item.save()
 

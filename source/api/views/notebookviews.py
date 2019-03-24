@@ -38,7 +38,7 @@ class NotebookSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
         model = Notebook
         exclude = ("attributes",)
 
-    notebook = serializers.JSONField()
+    notebook = serializers.JSONField(required=False, allow_null=True)
 
 
 ##

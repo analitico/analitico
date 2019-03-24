@@ -113,12 +113,12 @@ class RecipeTests(APITestCase):
             self.assertEqual(job["attributes"]["status"], "completed")
             self.assertEqual(job["attributes"]["workspace_id"], "ws_samples")
             self.assertEqual(job["attributes"]["item_id"], "ds_housesalesprediction_1")
-            self.assertEqual(len(job["links"]), 2)  # self, related
+            self.assertEqual(len(job["links"]), 3)  # self, dataset
             self.assertTrue("self" in job["links"])
             self.assertTrue("dataset" in job["links"])
 
             # train recipe using dataset output
-            url = reverse("api:recipe-job-action", args=("rx_housesalesprediction_1", "train")) + "?async=false"
+            url = reverse("api:recipe-detail-train", args=("rx_housesalesprediction_1",)) + "?async=false"
             response = self.client.post(url, format="json", status_code=status.HTTP_201_CREATED)
 
             # job from recipe train action

@@ -65,9 +65,9 @@ class NotebooksTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         return response.data
 
-    def process_notebook(self, notebook_id="nb_01"):
+    def process_notebook(self, notebook_id="nb_01", query="?async=false"):
         # process notebook synchronously, return response and updated notebook
-        url = reverse("api:notebook-job-action", args=(notebook_id, ACTION_PROCESS)) + "?async=false"
+        url = reverse("api:notebook-job-action", args=(notebook_id, ACTION_PROCESS)) + query
         response = self.client.post(url, format="json")
         data = response.data
         self.assertEqual(response.status_code, 200)
@@ -184,6 +184,19 @@ class NotebooksTests(APITestCase):
         self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")
         endtime2 = notebook["metadata"]["papermill"]["end_time"]
         self.assertGreater(endtime2, endtime1)
+
+    def test_notebook_process_tags_all(self):
+        self.post_notebook("notebook06-tags.ipynb", "nb_06")
+        # process entire notebook, no parameters
+        response, notebook = self.process_notebook("nb_06", query="?async=False")
+        self.assertEqual(notebook["cells"][7]["outputs"][0]["text"][0], "Mr. Jack Jr.\n")
+
+    def test_notebook_process_tags_selected(self):
+        self.post_notebook("notebook06-tags.ipynb", "nb_06")
+        # process only setup and predict cells, no parameters
+        response, notebook = self.process_notebook("nb_06", query="?async=False&tags=setup,predict")
+        # TODO selective runs
+        self.assertEqual(notebook["cells"][7]["outputs"][0]["text"][0], "Mr. Jack Jr.\n")
 
     def test_notebook_save_artifacts(self):
         """ Test a notebook that saves a file which is uploaded as an artifact """

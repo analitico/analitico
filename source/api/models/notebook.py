@@ -68,7 +68,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 
     def run(self, job, factory: IFactory, **kwargs):
         """ Run notebook, update it, upload artifacts """
-        nb_run(job, factory, self)
+        nb_run(job, factory, notebook_item=self, upload=True)
 
 
 ##
@@ -76,7 +76,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 ##
 
 
-def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload_to=None, tags=None, **kwargs):
+def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload=False, tags=None, **kwargs):
     """ 
     Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to 
     
@@ -85,7 +85,7 @@ def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, uploa
     factory (IFactory): Factory to be using for resources, loggins, disk, etc.
     notebook_item: Server model from which the notebook is retrieved
     notebook_name: Name of notebook to be used (None for default notebook)
-    upload_to: Item where executed notebook and artifacts should be loaded to (optional)
+    upload: True if artifacts produced while processing the notebook should be updated to the notebook_item (optional)
     tags: A comma separated list of tags used to filter notebook, see: nb_filter_tags (optional)
     
     Returns:
@@ -116,15 +116,15 @@ def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, uploa
 
         notebook = read_json(notebook_out_path)
 
-        if upload_to:
+        if upload:
             # upload processed artifacts to /data
             os.remove(notebook_path)
             os.remove(notebook_out_path)
-            factory.upload_artifacts(upload_to)
+            factory.upload_artifacts(notebook_item)
 
-            # save executed notebook
-            upload_to.set_notebook(notebook, notebook_name)
-            upload_to.save()
+        # save executed notebook
+        notebook_item.set_notebook(notebook, notebook_name)
+        notebook_item.save()
 
         return notebook
 

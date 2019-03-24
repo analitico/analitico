@@ -65,7 +65,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                 # if dataset has a notebook it will be used to process
                 notebook = self.get_notebook()
                 if notebook:
-                    nb_run(job, factory, notebook_item=self, notebook_name=None, upload_to=self)
+                    nb_run(job, factory, notebook_item=self, notebook_name=None, upload=True)
                     return
 
                 # if there isn't a notebook we process via plugins
