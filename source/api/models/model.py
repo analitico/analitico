@@ -1,12 +1,20 @@
 import collections
 import jsonfield
+import shutil
 
 from django.db import models
 from django.utils.crypto import get_random_string
 
 import analitico
+
+from analitico.constants import ACTION_TRAIN
+from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
+from analitico.exceptions import AnaliticoException
+
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
+from .job import Job
+from .notebook import nb_run
 
 ##
 ## Model - a trained machine learning model (not model in the sense of Django db model)
@@ -52,3 +60,58 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
 
     # A model's notebook describes the recipe used for training and predictions
     notebook = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
+
+    ##
+    ## Jobs
+    ##
+
+    def run(self, job: Job, factory: analitico.IFactory, **kwargs):
+        """ Run job actions on the recipe """
+        try:
+            # process action runs recipe and creates a trained model
+            if ACTION_TRAIN in job.action:
+                factory.status(self, STATUS_RUNNING)
+
+                notebook = self.get_notebook()
+                if notebook:
+                    # if dataset has a notebook it will be used to process
+                    nb_run(job, factory, notebook_item=self, notebook_name=None, upload_to=self)
+
+                    # TODO training.json
+                    training = {}
+                else:
+                    # if dataset does not have a notebook we will run its plugins
+                    plugin_settings = self.get_attribute("plugin")
+                    if not plugin_settings:
+                        raise AnaliticoException("Recipe: no notebook or plugins to train with", recipe=self)
+
+                    plugin = factory.get_plugin(**plugin_settings)
+                    training = plugin.run(action=job.action)
+
+                    # upload artifacts to model (not to the recipe!)
+                    # a recipe has a one to many relation with trained models
+                    factory.upload_artifacts(self)
+
+                artifacts = factory.get_artifacts_directory()
+                shutil.rmtree(artifacts, ignore_errors=True)
+
+                # store training results, link model to recipe and job
+                self.set_attribute("training", training)
+                self.save()
+
+                # job will return information linking to the trained model
+                job.set_attribute("recipe_id", self.id)
+                job.set_attribute("model_id", self.id)
+                job.save()
+
+            self.save()
+            factory.status(self, STATUS_COMPLETED)
+
+        except AnaliticoException as e:
+            factory.status(self, STATUS_FAILED)
+            e.extra["recipe"] = self
+            raise e
+
+        except Exception as e:
+            factory.status(self, STATUS_FAILED)
+            factory.exception("Recipe: an error occoured while training '%s'", self.id, item=self, exception=e)

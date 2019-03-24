@@ -27,6 +27,8 @@ class ModelSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
         model = Model
         exclude = ("attributes",)
 
+    notebook = serializers.JSONField()
+
 
 ##
 ## ModelViewSet - an immutable object describing a trained recipe, ready for inference

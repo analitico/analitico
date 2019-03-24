@@ -32,6 +32,8 @@ class DatasetSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
         model = Dataset
         exclude = ("attributes",)
 
+    notebook = serializers.JSONField()
+
 
 ##
 ## DatasetViewSet - list, detail, post and update datasets

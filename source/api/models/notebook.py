@@ -106,7 +106,7 @@ def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, uploa
         # run notebook and save output to separate file
         action = job.action if job else None
         action = "train"
-        
+
         papermill.execute_notebook(
             notebook_path,
             notebook_out_path,

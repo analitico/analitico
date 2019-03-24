@@ -3,16 +3,19 @@ import rest_framework
 from rest_framework import serializers
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 import api.models
 import api.utilities
 
-from api.models import Recipe, Job
+from analitico import ACTION_TRAIN
+from api.models import Recipe, Job, Model
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
 from .itemviewsetmixin import ItemViewSetMixin
-from .jobviews import JobViewSetMixin
+from .jobviews import JobViewSetMixin, JobSerializer
 from .logviews import LogViewSetMixin
+
 
 ##
 ## RecipeSerializer
@@ -25,6 +28,8 @@ class RecipeSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = Recipe
         exclude = ("attributes",)
+
+    notebook = serializers.JSONField()
 
 
 ##
@@ -42,5 +47,25 @@ class RecipeViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_fra
     item_class = api.models.Recipe
     serializer_class = RecipeSerializer
 
-    # The only action that can be performed on a recipe is to train it
-    job_actions = ("train",)
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["post"], detail=True, url_name="detail-train", url_path="train")
+    def train(self, request, pk) -> Response:
+        """ Create a model from recipe and the job that will train it """
+
+        # verify credentials on recipe
+        recipe = self.get_object()
+
+        # create a model which will host the recipe pipeline,
+        # training results and training artifacts as assets
+        model = Model(workspace=recipe.workspace)
+        model.set_attribute("recipe_id", recipe.id)
+        model.set_attribute("plugin", recipe.get_attribute("plugin"))
+        model.set_notebook(recipe.get_notebook())
+        model.save()
+
+        # create and return job that will train the model
+        job = self.create_job(request, model, ACTION_TRAIN)
+        job.set_attribute("recipe_id", recipe.id)
+        job.save()
+        jobs_serializer = JobSerializer(job)
+        return Response(jobs_serializer.data)
