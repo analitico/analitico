@@ -49,3 +49,6 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
 
     # Additional attributes are stored as json (used by ItemMixin)
     attributes = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
+
+    # A model's notebook describes the recipe used for training and predictions
+    notebook = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)

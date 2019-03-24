@@ -76,8 +76,21 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 ##
 
 
-def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload=True, tags=None, **kwargs):
-    """ Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to """
+def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload_to=None, tags=None, **kwargs):
+    """ 
+    Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to 
+    
+    Parameters:
+    job (Job): The job context that the notebook should be processed in
+    factory (IFactory): Factory to be using for resources, loggins, disk, etc.
+    notebook_item: Server model from which the notebook is retrieved
+    notebook_name: Name of notebook to be used (None for default notebook)
+    upload_to: Item where executed notebook and artifacts should be loaded to (optional)
+    tags: A comma separated list of tags used to filter notebook, see: nb_filter_tags (optional)
+    
+    Returns:
+    The processed notebook
+    """
     try:
         notebook = notebook_item.get_notebook(notebook_name)
         if not notebook:
@@ -92,10 +105,8 @@ def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, uploa
 
         # run notebook and save output to separate file
         action = job.action if job else None
-
-        # TODO figure out datasetsource and why not processing if dataset/process
         action = "train"
-
+        
         papermill.execute_notebook(
             notebook_path,
             notebook_out_path,
@@ -103,17 +114,19 @@ def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, uploa
             cwd=artifacts_path,  # any artifacts will be created in cwd
         )
 
-        # save executed notebook
         notebook = read_json(notebook_out_path)
-        notebook_item.set_notebook(notebook, notebook_name)
-        notebook_item.save()
 
-        # upload processed artifacts to /data
-        if upload:
+        if upload_to:
+            # upload processed artifacts to /data
             os.remove(notebook_path)
             os.remove(notebook_out_path)
-            factory.upload_artifacts(notebook_item)
-        notebook_item.save()
+            factory.upload_artifacts(upload_to)
+
+            # save executed notebook
+            upload_to.set_notebook(notebook, notebook_name)
+            upload_to.save()
+
+        return notebook
 
     except Exception as exc:
         factory.exception("Exception while running notebook %s", notebook_item.id, item=notebook_item, job=job)

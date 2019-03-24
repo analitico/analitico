@@ -13,6 +13,7 @@ from .assetviewsetmixin import AssetViewSetMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .jobviews import JobViewSetMixin
 from .logviews import LogViewSetMixin
+from .notebookviews import NotebookViewSetMixin
 
 ##
 ## ModelSerializer
@@ -28,14 +29,19 @@ class ModelSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 ##
-## ModelViewSet - list, detail, post, update and run training jobs on datasets
+## ModelViewSet - an immutable object describing a trained recipe, ready for inference
 ##
 
 
 class ModelViewSet(
-    ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet
+    ItemViewSetMixin,
+    AssetViewSetMixin,
+    JobViewSetMixin,
+    LogViewSetMixin,
+    NotebookViewSetMixin,
+    rest_framework.viewsets.ModelViewSet,
 ):
-    """ A trained machine learning model with its training information and file assets """
+    """ A trained machine learning model with its training information, recipe and file assets """
 
     item_class = api.models.Model
     serializer_class = ModelSerializer

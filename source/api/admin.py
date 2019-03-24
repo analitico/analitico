@@ -69,9 +69,9 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(Model)
 class ModelAdmin(admin.ModelAdmin):
-    fields = ("id", "workspace", "title", "description", "attributes")
+    fields = ("id", "workspace", "title", "description", "attributes", "notebook")
     list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at")
-    search_fields = ("id", "title", "description", "attributes")
+    search_fields = ("id", "title", "description", "attributes", "notebook")
     ordering = ("-updated_at",)
 
 
