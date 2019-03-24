@@ -113,7 +113,7 @@ class RecipeTests(APITestCase):
             self.assertEqual(job["attributes"]["status"], "completed")
             self.assertEqual(job["attributes"]["workspace_id"], "ws_samples")
             self.assertEqual(job["attributes"]["item_id"], "ds_housesalesprediction_1")
-            self.assertEqual(len(job["links"]), 3)  # self, dataset
+            self.assertEqual(len(job["links"]), 2)  # self, dataset
             self.assertTrue("self" in job["links"])
             self.assertTrue("dataset" in job["links"])
 
