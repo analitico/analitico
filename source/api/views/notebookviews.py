@@ -113,5 +113,4 @@ class NotebookViewSet(
     @permission_classes((IsAuthenticated,))
     @action(methods=["post"], detail=True, url_name="process", url_path="process")
     def data_process(self, request, pk):
-        tags
         return self.job_create(request, pk, ACTION_PROCESS)
