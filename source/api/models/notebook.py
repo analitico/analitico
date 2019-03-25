@@ -15,7 +15,7 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 
-from analitico import IFactory
+from analitico.factory import Factory
 from analitico.utilities import save_json, read_json, get_dict_dot
 
 from .job import Job
@@ -66,7 +66,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job, factory: IFactory, **kwargs):
+    def run(self, job, factory: Factory, **kwargs):
         """ Run notebook, update it, upload artifacts """
         nb_run(job, factory, notebook_item=self, upload=True)
 
@@ -76,13 +76,13 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 ##
 
 
-def nb_run(job: Job, factory: IFactory, notebook_item, notebook_name=None, upload=False, tags=None, **kwargs):
+def nb_run(job: Job, factory: Factory, notebook_item, notebook_name=None, upload=False, tags=None, **kwargs):
     """ 
     Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to 
     
     Parameters:
     job (Job): The job context that the notebook should be processed in
-    factory (IFactory): Factory to be using for resources, loggins, disk, etc.
+    factory (Factory): Factory to be using for resources, loggins, disk, etc.
     notebook_item: Server model from which the notebook is retrieved
     notebook_name: Name of notebook to be used (None for default notebook)
     upload: True if artifacts produced while processing the notebook should be updated to the notebook_item (optional)

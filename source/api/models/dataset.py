@@ -9,7 +9,7 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 
-from analitico import IFactory
+from analitico.factory import Factory
 from analitico.schema import generate_schema
 
 from .items import ItemMixin, ItemAssetsMixin
@@ -56,7 +56,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job, factory: IFactory, **kwargs):
+    def run(self, job, factory: Factory, **kwargs):
         """ Run job actions on the dataset """
         try:
             # process action runs plugin to generate and save data.csv and its schema

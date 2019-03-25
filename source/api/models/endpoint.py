@@ -10,7 +10,7 @@ from django.utils.crypto import get_random_string
 import analitico
 import analitico.plugin
 
-from analitico import IFactory
+from analitico.factory import Factory
 from analitico.constants import ACTION_PREDICT
 from analitico.plugin import PluginError
 from analitico.utilities import time_ms
@@ -56,7 +56,7 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job: Job, factory: IFactory, **kwargs):
+    def run(self, job: Job, factory: Factory, **kwargs):
         """ Run predictions on the endpoint (with or without a Job) """
         try:
             # bare bones logging to avoid slowing down predictions

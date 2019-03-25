@@ -7,6 +7,7 @@ from django.utils.crypto import get_random_string
 
 import analitico
 
+from analitico.factory import Factory
 from analitico.constants import ACTION_TRAIN
 from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
 from analitico.exceptions import AnaliticoException
@@ -65,7 +66,7 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
     ## Jobs
     ##
 
-    def run(self, job: Job, factory: analitico.IFactory, **kwargs):
+    def run(self, job: Job, factory: Factory, **kwargs):
         """ Run job actions on the recipe """
 
         if ACTION_TRAIN not in job.action:

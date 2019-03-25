@@ -45,7 +45,7 @@ ANALITICO_ASSET_RE = (
 
 
 class ServerFactory(analitico.factory.Factory):
-    """ An IFactory used to run plugins in the context of a server with direct access to items via SQL """
+    """ A factory used to run notebooks and plugins in the context of a server with direct access to items via SQL """
 
     def __init__(self, job=None, **kwargs):
         super().__init__(**kwargs)
