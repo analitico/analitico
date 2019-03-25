@@ -1,10 +1,6 @@
-from rest_framework import pagination
 from rest_framework.response import Response
-from collections import OrderedDict, namedtuple
-
+from collections import OrderedDict
 import rest_framework_json_api.pagination
-import rest_framework.renderers
-import rest_framework_json_api.renderers
 
 MIN_PAGE_SIZE = 1
 MAX_PAGE_SIZE = 100
@@ -30,13 +26,13 @@ class AnaliticoPageNumberPagination(rest_framework_json_api.pagination.JsonApiPa
         return super().paginate_queryset(queryset, request, view)
 
     def get_paginated_response(self, data):
-        next = None
-        previous = None
+        next1 = None
+        previous1 = None
 
         if self.page.has_next():
-            next = self.page.next_page_number()
+            next1 = self.page.next_page_number()
         if self.page.has_previous():
-            previous = self.page.previous_page_number()
+            previous1 = self.page.previous_page_number()
 
         return Response(
             {
@@ -54,8 +50,8 @@ class AnaliticoPageNumberPagination(rest_framework_json_api.pagination.JsonApiPa
                     [
                         ("first", self.build_link(1)),
                         ("last", self.build_link(self.page.paginator.num_pages)),
-                        ("next", self.build_link(next)),
-                        ("prev", self.build_link(previous)),
+                        ("next", self.build_link(next1)),
+                        ("prev", self.build_link(previous1)),
                     ]
                 ),
             }

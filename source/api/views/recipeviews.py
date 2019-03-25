@@ -70,7 +70,7 @@ class RecipeViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_fra
         job.save()
 
         # a job is executed asynchronously, potentially on another server
-        # and may update the model in the database while we keep holding 
+        # and may update the model in the database while we keep holding
         # a reference to a stale and out of date object, so refresh first
         model = Model.objects.get(pk=model.id)
         model.set_attribute("job_id", job.id)

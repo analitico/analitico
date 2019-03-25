@@ -1,6 +1,7 @@
 import collections
 import jsonfield
 import shutil
+import os.path
 
 from django.db import models
 from django.utils.crypto import get_random_string
@@ -11,6 +12,7 @@ from analitico.factory import Factory
 from analitico.constants import ACTION_TRAIN
 from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
 from analitico.exceptions import AnaliticoException
+from analitico.utilities import read_json
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
@@ -79,10 +81,14 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
             notebook = self.get_notebook()
             if notebook:
                 # if dataset has a notebook it will be used to process
-                nb_run(job, factory, notebook_item=self, notebook_name=None, upload_to=self)
+                nb_run(job, factory, notebook_item=self, notebook_name=None, upload=True)
 
-                # TODO training.json
-                training = {}
+                try:
+                    training_path = os.path.join(factory.get_artifacts_directory(), "training.json")
+                    training = read_json(training_path)
+                except:
+                    factory.warning("Model: could not read training.json")
+                    training = {}
             else:
                 # if dataset does not have a notebook we will run its plugins
                 plugin_settings = self.get_attribute("plugin")

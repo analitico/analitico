@@ -1,6 +1,3 @@
-import datetime
-import random
-import string
 import sys
 import traceback
 
@@ -11,13 +8,9 @@ from collections import OrderedDict
 from django.conf import settings
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import exception_handler
-from rest_framework.exceptions import APIException, ParseError
 
 import analitico.utilities
 from analitico.exceptions import AnaliticoException
-from analitico.utilities import time_ms, logger
-from api.models import Token
 
 # RESTful API Design Tips from Experience
 # https://medium.com/studioarmix/learn-restful-api-design-ideals-c5ec915a430f
@@ -38,7 +31,7 @@ def first_or_list(items):
     try:
         if items and len(items) == 1:
             return items[0]
-    except:
+    except Exception:
         pass  # validation errors pass a dictionary so we just pass it through
     return items
 
@@ -52,7 +45,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
         {
             "status": None,  # want this to go first
             "code": type(exception).__name__.lower(),
-            "title": str(exception.args[0]) if len(exception.args) > 0 else str(exception),
+            "title": str(exception.args[0]) if exception.args else str(exception),
             "meta": {},
         }
     )
@@ -61,7 +54,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
         d["status"] = str(exception.status_code)
         d["code"] = exception.code
         d["title"] = exception.message
-        if exception.extra and len(exception.extra) > 0:
+        if exception.extra:
             d["meta"]["extra"] = analitico.utilities.json_sanitize_dict(exception.extra)
 
     if isinstance(exception, rest_framework.exceptions.APIException):
@@ -80,7 +73,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
         )
 
     # information on exception currently being handled
-    exc_type, exc_value, exc_traceback = sys.exc_info()
+    _, _, exc_traceback = sys.exc_info()
 
     if add_formatted:
         # printout of error condition
@@ -105,7 +98,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
 
     if d["status"] is None:
         d.pop("status")
-    if len(d["meta"]) < 1:
+    if d["meta"]:
         d.pop("meta")
     return d
 
@@ -113,11 +106,11 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
 def exception_to_response(exc: Exception, context) -> Response:
     """ Converts an exception into a json response that looks somewhat like json:api with extra debug information """
     if settings.DEBUG:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
+        _, _, exc_traceback = sys.exc_info()
         traceback.print_tb(exc_traceback)
         traceback.print_exc()
-    dict = exception_to_dict(exc)
-    return Response({"error": dict}, dict.get("status", "500"), content_type="application/json")
+    edict = exception_to_dict(exc)
+    return Response({"error": edict}, edict.get("status", "500"), content_type="application/json")
 
 
 ##

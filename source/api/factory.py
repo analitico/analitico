@@ -1,35 +1,24 @@
-from rest_framework.exceptions import NotFound
-from django.core.validators import validate_email
-import api.models
-
-import analitico
-from analitico.utilities import logger
-
-
-import collections
-import jsonfield
-import django.utils.crypto
-import tempfile
-import os.path
 import io
 import re
 import json
-import io
+import shutil
+import tempfile
+import os.path
 
-from django.db import models
-from django.db import transaction
+from django.core.validators import validate_email
+from rest_framework.exceptions import NotFound
 
 import analitico
-import analitico.factory
 import analitico.plugin
 import analitico.utilities
 
-import api.models
+from analitico.factory import Factory
 
+import api.models
 import api.plugin
 
 # import plugins for Supermercato24 (if available)
-import s24.plugin
+import s24.plugin  # NOQA
 
 # pylint: disable=no-member
 
@@ -44,21 +33,38 @@ ANALITICO_ASSET_RE = (
 )
 
 
-class ServerFactory(analitico.factory.Factory):
+class ServerFactory(Factory):
     """ A factory used to run notebooks and plugins in the context of a server with direct access to items via SQL """
 
-    def __init__(self, job=None, **kwargs):
+    def __init__(self, job=None, mkdtemp=True, **kwargs):
         super().__init__(**kwargs)
         if job:
             self.set_attribute("job", job)
+        # special temp directory which is deleted automatically?
+        if mkdtemp:
+            self._temp_directory = tempfile.mkdtemp(prefix="analitico_temp_")
 
     ##
     ## Temp and cache directories
     ##
 
-    def get_temporary_directory(self, prefix=None):
-        """ If running a job, name temp dir after the job itself """
-        return super().get_temporary_directory(self.job.id + "_" if self.job else None)
+    # Temporary directory which is deleted when factory is disposed
+    _temp_directory = None
+
+    def get_temporary_directory(self):
+        """ Temporary directory is deleted when ServerFactory is disposed """
+        return self._temp_directory if self._temp_directory else super().get_temporary_directory()
+
+    def get_artifacts_directory(self):
+        """ Artifacts directory is a subdirectory of temporary and is deleted automatically """
+        artifacts_dir = os.path.join(self.get_temporary_directory(), "artifacts")
+        if not os.path.isdir(artifacts_dir):
+            os.mkdir(artifacts_dir)
+        return artifacts_dir
+
+    ##
+    ## URL retrieval, authorization and caching
+    ##
 
     def get_cache_asset(self, item, asset_class, asset_id):
         """ 
@@ -178,6 +184,15 @@ class ServerFactory(analitico.factory.Factory):
             pass
         self.warning("get_item: could not find item type for %s", item_id)
         raise NotFound("ServerFactory.get_item - could not find given item type " + item_id)
+
+    ##
+    ## with Factory as: lifecycle methods
+    ##
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        """ Delete any temporary files upon exiting """
+        if self._temp_directory:
+            shutil.rmtree(self._temp_directory, ignore_errors=True)
 
 
 # shared instance of server side factory

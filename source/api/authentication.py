@@ -1,14 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
-
-from django.db import models
-from django.contrib.auth import authenticate, get_user_model
-from django.middleware.csrf import CsrfViewMiddleware
-from django.utils.six import text_type
-from django.utils.translation import ugettext_lazy as _
-from django.db import models
-
 from rest_framework.authentication import BaseAuthentication, get_authorization_header, exceptions
-
 from api.models.token import Token
 
 
@@ -26,8 +17,6 @@ class BearerAuthentication(BaseAuthentication):
     def get_model(self):
         if self.model is not None:
             return self.model
-        from api.models import Token
-
         return Token
 
     def authenticate(self, request):

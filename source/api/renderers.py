@@ -1,10 +1,5 @@
-from collections import OrderedDict, namedtuple
-
-from rest_framework import pagination
+from collections import OrderedDict
 from rest_framework import renderers
-from rest_framework.response import Response
-
-from analitico.utilities import get_dict_dot
 
 # You should apply these renderers ONLY to the APIs that need them.
 # In particulare you should NOT apply the HTML renderer system wide

@@ -1,7 +1,6 @@
 import django.conf
 
 from rest_framework.exceptions import NotFound
-from pprint import pprint
 
 import libcloud
 import libcloud.storage.base
@@ -78,7 +77,8 @@ class Storage:
                     return Storage(settings, driver)
                 except ValueError as exc:
                     raise Exception(
-                        "Storage.factory - could not login to Google Cloud Storage, please check environment variables ANALITICO_GCS_KEY and ANALITICO_GCS_SECRET to make sure they are valid",
+                        "Storage.factory - could not login to Google Cloud Storage, please check environment variables "
+                        + "ANALITICO_GCS_KEY and ANALITICO_GCS_SECRET to make sure they are valid",
                         exc,
                     )
 
