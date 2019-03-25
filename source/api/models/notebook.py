@@ -68,7 +68,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 
     def run(self, job, factory: Factory, **kwargs):
         """ Run notebook, update it, upload artifacts """
-        nb_run(job, factory, notebook_item=self, upload=True)
+        nb_run(notebook_item=self, factory=factory, upload=True, save=True, tags=None)
 
 
 ##
@@ -76,60 +76,68 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 ##
 
 
-def nb_run(job: Job, factory: Factory, notebook_item, notebook_name=None, upload=False, tags=None, **kwargs):
+def nb_run(notebook_item, notebook_name=None, parameters=None, tags=None, factory=None, upload=False, save=True):
     """ 
-    Runs a Jupyter notebook with given job, factory, notebook and optional item to upload assets to 
+    Runs a Jupyter notebook with given parameters, factory, notebook and optional item to upload assets to 
     
     Parameters:
-    job (Job): The job context that the notebook should be processed in
-    factory (Factory): Factory to be using for resources, loggins, disk, etc.
     notebook_item: Server model from which the notebook is retrieved
     notebook_name: Name of notebook to be used (None for default notebook)
-    upload: True if artifacts produced while processing the notebook should be updated to the notebook_item (optional)
     tags: A comma separated list of tags used to filter notebook, see: nb_filter_tags (optional)
-    
+    factory (Factory): Factory to be using for resources, loggins, disk, etc.
+    upload: True if artifacts produced while processing the notebook should be updated to the notebook_item (optional)
+    save: True if the executed notebook should be saved back into the model (default: false)
+
     Returns:
     The processed notebook
     """
+    assert factory
+    notebook = notebook_item.get_notebook(notebook_name)
+    if not notebook:
+        factory.warning("Running an empty notebook %s", notebook_item.id)
+        return
+
+    if tags:
+        notebook = nb_filter_tags(notebook, tags)
+
+    # save notebook to file
+    artifacts_path = factory.get_artifacts_directory()
+    notebook_path = os.path.join(artifacts_path, "notebook.ipynb")
+    notebook_out_path = os.path.join(artifacts_path, "notebook.output.ipynb")
+    save_json(notebook, notebook_path)
+    assert os.path.isfile(notebook_path)
+
+    parameters = parameters if parameters else {}
+    parameters["action"] = factory.job.action if factory.job else "process"
+
     try:
-        notebook = notebook_item.get_notebook(notebook_name)
-        if not notebook:
-            factory.warning("Running an empty notebook %s", notebook_item.id)
-            return
-
-        # save notebook to file
-        artifacts_path = factory.get_artifacts_directory()
-        notebook_path = os.path.join(artifacts_path, "notebook.ipynb")
-        notebook_out_path = os.path.join(artifacts_path, "notebook.output.ipynb")
-        save_json(notebook, notebook_path)
-
-        # run notebook and save output to separate file
-        action = job.action if job else None
-        action = "train"
-
-        papermill.execute_notebook(
+        notebook = papermill.execute_notebook(
             notebook_path,
             notebook_out_path,
-            parameters=dict(action=action, name="gionata"),
+            parameters=parameters,
             cwd=artifacts_path,  # any artifacts will be created in cwd
         )
+    except Exception as exc:
+        if save:
+            try:
+                notebook = read_json(notebook_out_path)
+                notebook_item.set_notebook(notebook, notebook_name)
+                notebook_item.save()
+            except:
+                pass
+        factory.exception("An error occoured while running the notebook in %s", notebook_item.id, item=notebook_item)
 
-        notebook = read_json(notebook_out_path)
+    if upload:
+        # upload processed artifacts to /data
+        os.remove(notebook_path)
+        os.remove(notebook_out_path)
+        factory.upload_artifacts(notebook_item)
 
-        if upload:
-            # upload processed artifacts to /data
-            os.remove(notebook_path)
-            os.remove(notebook_out_path)
-            factory.upload_artifacts(notebook_item)
-
+    if save:
         # save executed notebook
         notebook_item.set_notebook(notebook, notebook_name)
         notebook_item.save()
-
-        return notebook
-
-    except Exception as exc:
-        factory.exception("Exception while running notebook %s", notebook_item.id, item=notebook_item, job=job)
+    return notebook
 
 
 def nb_filter_tags(notebook: dict, tags=None):

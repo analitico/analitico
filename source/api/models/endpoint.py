@@ -13,11 +13,12 @@ import analitico.plugin
 from analitico.factory import Factory
 from analitico.constants import ACTION_PREDICT
 from analitico.plugin import PluginError
-from analitico.utilities import time_ms
+from analitico.utilities import time_ms, read_json
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 from .job import Job
+from .notebook import Notebook, nb_run
 
 ##
 ## Endpoint
@@ -62,6 +63,8 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
             # bare bones logging to avoid slowing down predictions
             factory.set_logger_level(logging.WARNING)
 
+            request = factory.request
+
             # predict action creates a prediction from a trained model
             action = job.action if job else "{}/{}".format(self.type, ACTION_PREDICT)
 
@@ -69,61 +72,87 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
             if not model_id:
                 raise PluginError("Endpoint.run - model_id to be used for prediction is not configured")
             model = factory.get_item(model_id)  # TODO pass request to check auth
-            assert model
+            if not model:
+                factory.exception("Endpoint: model_id is not configured", item=self)
 
-            # an endpoint tipically will not have its own plugin chain.
-            # it will instead use the recipe plugin that were persisted in the
-            # model when the recipe was trained. these will tipically include
-            # a main RecipePipelinePlugin wrapping a pipeline of data transformation
-            # plugins feeding their data into an algorithm which can be trained and
-            # later on can generate predictions using its persisted artifacts (the model)
-
-            # in some special cases where the endpoint needs to perform particular tasks
-            # that differ from those of the training stage, the endpoint will have its own
-            # plugins configured and will run those
-
-            # if the endpoint has its own plugins run them
-            plugin_settings = self.get_attribute("plugin")
-            if not plugin_settings:
-                # if the model has the plugins from the persisted pipeline run those
-                plugin_settings = model.get_attribute("plugin")
-                if not plugin_settings:
-                    # if no persisted pipeline start with basic endpoint pipeline of nothing configured yet
-                    plugin_settings = {
-                        "type": analitico.plugin.PLUGIN_TYPE,
-                        "name": analitico.plugin.ENDPOINT_PIPELINE_PLUGIN,
-                    }
-
-            # restore /data artifacts used by plugin to run prediction
+            # restore /data artifacts stored by model to run prediction
             loading_ms = time_ms()
-            artifacts_path = factory.get_artifacts_directory()
-            for asset in model.get_attribute("data"):
-                cache_path = factory.get_cache_asset(model, "data", asset["id"])
-                artifact_path = os.path.join(artifacts_path, asset["id"])
-                os.symlink(cache_path, artifact_path)
+            factory.restore_artifacts(model)
             loading_ms = time_ms(loading_ms)
 
-            # plugin run prediction pipeline and returns predictions as dataframe
-            plugin = factory.get_plugin(**plugin_settings)
+            results_path = os.path.join(factory.get_artifacts_directory(), "results.json")
+            if os.path.isfile(results_path):
+                os.remove(results_path)
 
-            # create dataframe from request data
-            request = factory.request
-            assert request and request.data and request.data["data"]
-            data = request.data["data"]
-            if isinstance(data, dict):
-                data = [data]
-            try:
-                if self.get_attribute("input", None) == "custom":
-                    # pass json input to plugin as is
+            notebook = model.get_notebook()
+            if notebook:
+                # retrieve notebook that was used
+
+                # retrieve data from request
+                # TODO could be a file upload like an image, etc
+                assert request and request.data
+                parameters = request.data
+
+                nb_run(
+                    notebook_item=model,
+                    parameters=parameters,
+                    tags="setup,parameters,prediction",  # run only prediction workflow
+                    factory=factory,
+                    upload=False,  # do not upload artifacts
+                    save=True,  # do not save executed notebook
+                )
+
+                if not os.path.isfile(results_path):
+                    factory.exception(
+                        "Endpoint.predict - model ran but didn't save 'results.json' file with predictions"
+                    )
+                results = read_json(results_path)
+
+            else:
+                # an endpoint tipically will not have its own plugin chain.
+                # it will instead use the recipe plugin that were persisted in the
+                # model when the recipe was trained. these will tipically include
+                # a main RecipePipelinePlugin wrapping a pipeline of data transformation
+                # plugins feeding their data into an algorithm which can be trained and
+                # later on can generate predictions using its persisted artifacts (the model)
+
+                # in some special cases where the endpoint needs to perform particular tasks
+                # that differ from those of the training stage, the endpoint will have its own
+                # plugins configured and will run those
+
+                # if the endpoint has its own plugins run them
+                plugin_settings = self.get_attribute("plugin")
+                if not plugin_settings:
+                    # if the model has the plugins from the persisted pipeline run those
+                    plugin_settings = model.get_attribute("plugin")
+                    if not plugin_settings:
+                        # if no persisted pipeline start with basic endpoint pipeline of nothing configured yet
+                        plugin_settings = {
+                            "type": analitico.plugin.PLUGIN_TYPE,
+                            "name": analitico.plugin.ENDPOINT_PIPELINE_PLUGIN,
+                        }
+
+                # plugin run prediction pipeline and returns predictions as dataframe
+                plugin = factory.get_plugin(**plugin_settings)
+
+                # create dataframe from request data
+                request = factory.request
+                assert request and request.data and request.data["data"]
+                data = request.data["data"]
+                if isinstance(data, dict):
+                    data = [data]
+                try:
+                    if self.get_attribute("input", None) == "custom":
+                        # pass json input to plugin as is
+                        results = plugin.run(data, action=action)
+                    else:
+                        # try converting data into a pandas dataframe
+                        df = pd.DataFrame.from_records(data)
+                        results = plugin.run(df, action=action)
+                except Exception:
+                    # TODO log warning or have special marker for endpoints that take data in unusual non tabular formats
                     results = plugin.run(data, action=action)
-                else:
-                    # try converting data into a pandas dataframe
-                    df = pd.DataFrame.from_records(data)
-                    results = plugin.run(df, action=action)
-            except Exception:
-                # TODO log warning or have special marker for endpoints that take data in unusual non tabular formats
-                results = plugin.run(data, action=action)
-                results["records"] = data
+                    results["records"] = data
 
             # additional information
             results["model_id"] = model_id
@@ -142,7 +171,8 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
 
         except Exception:
             factory.exception(
-                "An error occoured while running predictions on %s/%s",
+                "An error occoured while running predictions on %s",
+                self.id,
                 code="prediction_error",
                 item=self,
                 endpoint_id=self.id,

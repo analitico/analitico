@@ -14,6 +14,7 @@ from analitico import ACTION_PREDICT
 
 from api.models import Endpoint, Job
 from api.factory import ServerFactory
+
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .assetviewsetmixin import AssetViewSetMixin

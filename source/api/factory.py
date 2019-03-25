@@ -138,6 +138,18 @@ class ServerFactory(Factory):
                     # upload asset and extras, item will take care of saving to database
                     item.upload_asset_stream(f, "data", path, path_size, None, path, extras)
 
+    def restore_artifacts(self, item):
+        """ Restores artifacts stored by item to the artifacts directory """
+        assets = item.get_attribute("data")
+        if not assets:
+            self.warning("ServerFactory.restore_artifacts - item '%s' has not artifacts", item.id, item=item)
+            return
+        artifacts_path = self.get_artifacts_directory()
+        for asset in assets:
+            cache_path = self.get_cache_asset(item, "data", asset["id"])
+            artifact_path = os.path.join(artifacts_path, asset["id"])
+            os.symlink(cache_path, artifact_path)
+
     ##
     ## Log methods
     ##

@@ -165,7 +165,7 @@ class NotebooksTests(APITestCase):
         notebook = response.data["attributes"]["notebook"]
         self.assertEqual(notebook["cells"][0]["cell_type"], "code")
         self.assertEqual(notebook["cells"][0]["execution_count"], 1)
-        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")
+        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"], "hello world\n")
 
         self.assertEqual(notebook["metadata"]["kernelspec"]["display_name"], "Python 3")
         self.assertEqual(notebook["metadata"]["kernelspec"]["name"], "python3")
@@ -176,12 +176,12 @@ class NotebooksTests(APITestCase):
 
         _, notebook = self.process_notebook("nb_01")
         self.assertEqual(notebook["cells"][0]["execution_count"], 1)
-        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")
+        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"], "hello world\n")
         endtime1 = notebook["metadata"]["papermill"]["end_time"]
 
         _, notebook = self.process_notebook("nb_01")
         self.assertEqual(notebook["cells"][0]["execution_count"], 1)
-        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"][0], "hello world\n")
+        self.assertEqual(notebook["cells"][1]["outputs"][0]["text"], "hello world\n")
         endtime2 = notebook["metadata"]["papermill"]["end_time"]
         self.assertGreater(endtime2, endtime1)
 
@@ -189,14 +189,14 @@ class NotebooksTests(APITestCase):
         self.post_notebook("notebook06-tags.ipynb", "nb_06")
         # process entire notebook, no parameters
         response, notebook = self.process_notebook("nb_06", query="?async=False")
-        self.assertEqual(notebook["cells"][7]["outputs"][0]["text"][0], "Mr. Jack Jr.\n")
+        self.assertEqual(notebook["cells"][7]["outputs"][0]["text"], "Mr. Jack Jr.\n")
 
     def test_notebook_process_tags_selected(self):
         self.post_notebook("notebook06-tags.ipynb", "nb_06")
         # process only setup and predict cells, no parameters
         response, notebook = self.process_notebook("nb_06", query="?async=False&tags=setup,predict")
         # TODO selective runs
-        self.assertEqual(notebook["cells"][7]["outputs"][0]["text"][0], "Mr. Jack Jr.\n")
+        self.assertEqual(notebook["cells"][7]["outputs"][0]["text"], "Mr. Jack Jr.\n")
 
     def test_notebook_save_artifacts(self):
         """ Test a notebook that saves a file which is uploaded as an artifact """
@@ -238,7 +238,7 @@ class NotebooksTests(APITestCase):
         self.assertEqual(len(cells[4]["outputs"][0]["data"]), 2)
         self.assertIn("text/html", cells[4]["outputs"][0]["data"])
         self.assertIn("text/plain", cells[4]["outputs"][0]["data"])
-        self.assertEqual(cells[4]["outputs"][0]["data"]["text/plain"][0], "    A   B   C   D   E   F   G   H   I   J\n")
+        self.assertIn("    A   B   C   D   E   F   G   H   I   J\n", cells[4]["outputs"][0]["data"]["text/plain"])
 
     def test_notebook_convert_html(self):
         """ Convert notebook to html, defaults to full template """
