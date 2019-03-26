@@ -43,6 +43,9 @@ build_dev:
     # clone secrets
     - git clone https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-ci.git 
     # we have /builds/analitico/analitico-ci
+    # clone app
+    - git clone https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-app.git 
+    # we have /builds/analitico/analitico-app
     # remove credentials
     - rm /.git-credentials
     # add commit sha to the env script

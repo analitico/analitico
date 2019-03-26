@@ -5,6 +5,9 @@ set -e
 cd /home/www/analitico/
 # move analitico-ci out of analitico
 mv -f analitico-ci /home/www/
+# move analitico-app out of analitico
+mv -f analitico-app /home/www/
+
 echo "Injecting env"
 source /home/www/analitico-ci/analitico-env.sh
 export LANG=C.UTF-8
@@ -17,9 +20,5 @@ sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
 ./build-python.sh
 # build documentation
 ./build-docs.sh
-# test angular app
-./test-app.sh
-# build angular app for production
-./build-app.sh
 
 echo "Done"
