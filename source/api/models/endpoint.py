@@ -99,7 +99,8 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                     tags="setup,parameters,prediction",  # run only prediction workflow
                     factory=factory,
                     upload=False,  # do not upload artifacts
-                    save=True,  # do not save executed notebook
+                    save=False,  # do not save executed notebook
+                    quick=True,  # quicker without outputs
                 )
 
                 if not os.path.isfile(results_path):

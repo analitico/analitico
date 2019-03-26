@@ -198,7 +198,6 @@ class RecipeTests(APITestCase):
         except Exception as exc:
             raise exc
 
-
     def test_recipe_train_predict_with_fake_notebook(self):
         """ Minimal test of fake notebook based recipe in Jupyter trained and used for predictions """
         try:
@@ -235,11 +234,7 @@ class RecipeTests(APITestCase):
             # create an endpoint that can serve inferences based on trained model
             url = reverse("api:endpoint-list")
             response = self.client.post(
-                url,
-                data={
-                    "workspace_id": model["attributes"]["workspace_id"],
-                    "model_id": model_id
-                },
+                url, data={"workspace_id": model["attributes"]["workspace_id"], "model_id": model_id}
             )
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             endpoint = response.data
@@ -250,13 +245,13 @@ class RecipeTests(APITestCase):
             # run predictions one by one
             predict_url = reverse("api:endpoint-predict", args=(endpoint_id,))
             for i in range(100, 150, 10):
-                response = self.client.post(predict_url, [{ "value": i }], format="json")
+                response = self.client.post(predict_url, [{"value": i}], format="json")
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
                 # prediction is the "value" we sent plus 2
                 self.assertEqual(response.data["predictions"][0], i + 2)
 
             # run predictions in a batch
-            data = [{ "value": 100 + i } for i in range(20)]
+            data = [{"value": 100 + i} for i in range(20)]
             response = self.client.post(predict_url, data, format="json")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             for i in range(20):

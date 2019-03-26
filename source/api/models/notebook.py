@@ -4,21 +4,26 @@ import os
 import os.path
 import papermill
 import json
-
+import datetime
 import nbformat
+
 from nbconvert import HTMLExporter
 
 from django.db import models
 from django.utils.crypto import get_random_string
+
+from papermill.iorw import load_notebook_node, write_ipynb, local_file_io_cwd
+from papermill.utils import chdir
+from papermill.execute import prepare_notebook_metadata, parameterize_notebook
 
 import analitico
 import analitico.plugin
 import analitico.utilities
 
 from analitico.factory import Factory
-from analitico.utilities import save_json, read_json, get_dict_dot
+from analitico.utilities import save_json, read_json, get_dict_dot, time_ms
+from analitico.exceptions import AnaliticoException
 
-from .job import Job
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 
@@ -76,7 +81,9 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 ##
 
 
-def nb_run(notebook_item, notebook_name=None, parameters=None, tags=None, factory=None, upload=False, save=True):
+def nb_run(
+    notebook_item, notebook_name=None, parameters=None, tags=None, factory=None, upload=False, save=True, quick=False
+):
     """ 
     Runs a Jupyter notebook with given parameters, factory, notebook and optional item to upload assets to 
     
@@ -87,6 +94,7 @@ def nb_run(notebook_item, notebook_name=None, parameters=None, tags=None, factor
     factory (Factory): Factory to be using for resources, loggins, disk, etc.
     upload: True if artifacts produced while processing the notebook should be updated to the notebook_item (optional)
     save: True if the executed notebook should be saved back into the model (default: false)
+    quick: True if we should run the code inline which is faster but generates no outputs (default: false)
 
     Returns:
     The processed notebook
@@ -95,7 +103,7 @@ def nb_run(notebook_item, notebook_name=None, parameters=None, tags=None, factor
     notebook = notebook_item.get_notebook(notebook_name)
     if not notebook:
         factory.warning("Running an empty notebook %s", notebook_item.id)
-        return
+        return notebook
 
     if tags:
         notebook = nb_filter_tags(notebook, tags)
@@ -111,19 +119,27 @@ def nb_run(notebook_item, notebook_name=None, parameters=None, tags=None, factor
     parameters["action"] = factory.job.action if factory.job else "process"
 
     try:
-        notebook = papermill.execute_notebook(
-            notebook_path,
-            notebook_out_path,
-            parameters=parameters,
-            cwd=artifacts_path,  # any artifacts will be created in cwd
-        )
+        if quick:
+            notebook = nb_execute_inline(
+                notebook_path,
+                notebook_out_path,
+                parameters=parameters,
+                cwd=artifacts_path,  # any artifacts will be created in cwd
+            )
+        else:
+            notebook = papermill.execute_notebook(
+                notebook_path,
+                notebook_out_path,
+                parameters=parameters,
+                cwd=artifacts_path,  # any artifacts will be created in cwd
+            )
     except Exception as exc:
         if save:
             try:
                 notebook = read_json(notebook_out_path)
                 notebook_item.set_notebook(notebook, notebook_name)
                 notebook_item.save()
-            except:
+            except Exception:
                 pass
         factory.exception("An error occoured while running the notebook in %s", notebook_item.id, item=notebook_item)
 
@@ -169,3 +185,65 @@ def nb_convert_to_html(notebook: dict, template="full"):
     html_exporter.template_file = template  # eg: basic, full, etc...
     (body, resources) = html_exporter.from_notebook_node(notebook_obj)
     return body, resources
+
+
+def nb_execute_inline(input_path, output_path, parameters=None, cwd=None):
+    """
+    Executes a single notebook locally. This method is similar to papermill.execute_notebook
+    with the main difference that code is run inline, not via a separate execution engine.
+    This makes the code quite a bit faster making this mechanism good for time sensitive
+    inferences. This method DOES NOT save cells output.
+
+    Parameters
+    input_path : str
+        Path to input notebook
+    output_path : str
+        Path to save executed notebook
+    parameters : dict, optional
+        Arbitrary keyword arguments to pass to the notebook parameters
+    cwd : str, optional
+        Working directory to use when executing the notebook
+
+    Returns
+    nb : Executed notebook object
+    """
+    started_on = time_ms()
+    with local_file_io_cwd():
+        # parameterize the Notebook
+        nb = load_notebook_node(input_path)
+        if parameters:
+            nb = parameterize_notebook(nb, parameters)
+
+        nb = prepare_notebook_metadata(nb, input_path, output_path)
+
+        # check the kernel name, we only run python
+        language = nb.metadata.kernelspec.language
+        if language != "python":
+            raise Exception("nb_execute_inline: " + language + " is not supported")
+
+        # extract souurce code from cells
+        source = ""
+        for i, cell in enumerate(nb["cells"]):
+            if cell["cell_type"] == "code":
+                # comment with cell number makes it a bit easier in case of exceptions
+                source += "# Cell {}\n{}\n\n".format(i, cell["source"])
+
+        # execute t in `cwd` if it is set
+        with chdir(cwd):
+            try:
+                exec(source)
+            except Exception as exc:
+                raise AnaliticoException(
+                    "nb_execute_inline: an error occoured while executing notebook",
+                    code="notebook_execute_error",
+                    source=source,
+                ) from exc
+
+        metadata = nb["metadata"]["papermill"]
+        metadata["duration"] = time_ms(started_on) / 1000.0
+        metadata["end_time"] = str(datetime.datetime.utcnow().isoformat())
+
+        if output_path:
+            write_ipynb(nb, output_path)
+
+        return nb
