@@ -21,4 +21,6 @@ sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
 # build documentation
 ./build-docs.sh
 
+/home/www/analitico-app/build-app.sh
+
 echo "Done"
