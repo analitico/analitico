@@ -8,12 +8,13 @@ from rest_framework import status
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from api.models import Token, User
+from api.models import Token, User, Workspace
 from analitico.utilities import read_json, get_dict_dot
 
 # pylint: disable=no-member
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
+NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 
 
 class APITestCase(APITestCase):
@@ -21,6 +22,10 @@ class APITestCase(APITestCase):
 
     def read_json_asset(self, path):
         abs_path = os.path.join(ASSETS_PATH, path)
+        return read_json(abs_path)
+
+    def read_notebook_asset(self, path):
+        abs_path = os.path.join(NOTEBOOKS_PATH, path)
         return read_json(abs_path)
 
     def get_asset_path(self, asset_name):
@@ -128,6 +133,11 @@ class APITestCase(APITestCase):
         self.token2 = Token.objects.create(pk="tok_user2", user=self.user2)
         self.token3 = Token.objects.create(pk="tok_user3", user=self.user3)
         self.token4 = Token.objects.create(pk="tok_user4", user=self.user4)
+
+        self.ws1 = Workspace.objects.create(pk="ws_user1", user=self.user1)
+        self.ws2 = Workspace.objects.create(pk="ws_user2", user=self.user2)
+        self.ws3 = Workspace.objects.create(pk="ws_user3", user=self.user3)
+        self.ws4 = Workspace.objects.create(pk="ws_user4", user=self.user4)
 
     def setUp(self):
         """ Prepare test users with test auth tokens """

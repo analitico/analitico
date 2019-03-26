@@ -20,7 +20,8 @@ from analitico.utilities import read_json, get_dict_dot
 import analitico.plugin
 import api.models
 import api.plugin
-from api.models import Job, Endpoint
+
+from api.models import Job, Endpoint, Recipe, Model, Endpoint
 from .utils import APITestCase
 
 
@@ -193,6 +194,74 @@ class RecipeTests(APITestCase):
             preds3_response = self.client.post(preds3_url, priceless_dict, format="json")
             preds3_data = preds3_response.data
             self.assertEqual(len(preds3_data["predictions"]), len(priceless_homes))
+
+        except Exception as exc:
+            raise exc
+
+
+    def test_recipe_train_predict_with_fake_notebook(self):
+        """ Minimal test of fake notebook based recipe in Jupyter trained and used for predictions """
+        try:
+            notebook = self.read_notebook_asset("notebook08-predict-fake.ipynb")
+
+            recipe = Recipe.objects.create(pk="rx_1", workspace=self.ws1)
+            recipe.notebook = notebook
+            recipe.save()
+
+            # train recipe
+            url = reverse("api:recipe-detail-train", args=("rx_1",)) + "?async=false"
+            response = self.client.post(url, format="json", status_code=status.HTTP_201_CREATED)
+
+            # job from recipe train action
+            job = response.data
+            self.assertIsInstance(job, dict)
+            self.assertEqual(job["type"], "analitico/job")
+            self.assertTrue(job["id"].startswith(analitico.JOB_PREFIX))
+            self.assertEqual(job["attributes"]["status"], "completed")
+
+            # trained model from job
+            model_id = job["attributes"]["model_id"]
+            url = reverse("api:model-detail", args=(model_id,))
+            response = self.client.get(url, format="json")
+            model = response.data
+            self.assertEqual(model["type"], "analitico/model")
+            self.assertEqual(model["id"], model_id)
+
+            # check that model has related links
+            self.assertTrue(analitico.MODEL_PREFIX in model["links"]["self"])
+            self.assertTrue(analitico.RECIPE_PREFIX in model["links"]["recipe"])
+            self.assertTrue(analitico.JOB_PREFIX in model["links"]["job"])
+
+            # create an endpoint that can serve inferences based on trained model
+            url = reverse("api:endpoint-list")
+            response = self.client.post(
+                url,
+                data={
+                    "workspace_id": model["attributes"]["workspace_id"],
+                    "model_id": model_id
+                },
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            endpoint = response.data
+            endpoint_id = endpoint["id"]
+            self.assertTrue(endpoint["id"].startswith(analitico.ENDPOINT_PREFIX))
+            self.assertEqual(endpoint["attributes"]["model_id"], model_id)
+
+            # run predictions one by one
+            predict_url = reverse("api:endpoint-predict", args=(endpoint_id,))
+            for i in range(100, 150, 10):
+                response = self.client.post(predict_url, [{ "value": i }], format="json")
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                # prediction is the "value" we sent plus 2
+                self.assertEqual(response.data["predictions"][0], i + 2)
+
+            # run predictions in a batch
+            data = [{ "value": 100 + i } for i in range(20)]
+            response = self.client.post(predict_url, data, format="json")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            for i in range(20):
+                # prediction is the "value" we sent plus 2
+                self.assertEqual(response.data["predictions"][i], 100 + i + 2)
 
         except Exception as exc:
             raise exc

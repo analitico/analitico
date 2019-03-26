@@ -13,7 +13,7 @@ import analitico.plugin
 from analitico.factory import Factory
 from analitico.constants import ACTION_PREDICT
 from analitico.plugin import PluginError
-from analitico.utilities import time_ms, read_json
+from analitico.utilities import time_ms, read_json, set_dict_dot
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
@@ -157,7 +157,7 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
             # additional information
             results["model_id"] = model_id
             results["endpoint_id"] = self.id
-            results["performance"]["loading_ms"] = loading_ms
+            set_dict_dot("performance.loading_ms", loading_ms)
 
             # track results with async log handler
             factory.set_logger_level(logging.INFO)
