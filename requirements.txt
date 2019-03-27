@@ -49,6 +49,7 @@ inflection==0.3.1
 ipykernel==5.1.0
 ipython==7.2.0
 ipython-genutils==0.2.0
+ipywidgets==7.4.2
 isort==4.3.4
 itypes==1.1.0
 jedi==0.13.1
@@ -69,6 +70,7 @@ Markdown==3.0.1
 MarkupSafe==1.1.0
 matplotlib==3.0.3
 mccabe==0.6.1
+missingno==0.4.1
 mistune==0.8.4
 mkdocs==1.0.4
 mkdocs-material==4.0.1
@@ -77,6 +79,7 @@ mysql-connector-python==8.0.13
 nbconvert==5.4.0
 nbformat==4.4.0
 notebook==5.7.2
+nteract-on-jupyter==2.0.7
 numpy==1.15.4
 oauthlib==3.0.0
 ortools==6.9.5824
@@ -131,6 +134,7 @@ rsa==4.0
 ruamel.yaml==0.15.81
 scikit-learn==0.20.0
 scipy==1.1.0
+seaborn==0.9.0
 Send2Trash==1.5.0
 sentry-sdk==0.6.0
 setoptconf==0.2.0
@@ -152,4 +156,5 @@ urllib3==1.24.1
 validate-email==1.3
 wcwidth==0.1.7
 webencodings==0.5.1
+widgetsnbextension==3.4.2
 wrapt==1.10.11
