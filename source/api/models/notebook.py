@@ -187,6 +187,26 @@ def nb_convert_to_html(notebook: dict, template="full"):
     return body, resources
 
 
+def nb_extract_source(nb, disable_scripts=True):
+    """ Extract source code from notebook, optionally disabling lines starting with ! and % that run scripts and special modes """
+    source = ""
+    for i, cell in enumerate(nb["cells"]):
+        if cell["cell_type"] == "code":
+            if disable_scripts:
+                # TODO could write exception blocks cell by cell and use them to improve error messaging
+
+                source += "# Cell {}\n".format(i)
+                for line in iter(cell["source"].splitlines()):
+                    # lines starting with ! and % are special scripts and are removed
+                    if len(line) > 0 and line[0] in ("!", "%"):
+                        source += "# COMMENTED OUT: "
+                    source += line + "\n"
+            else:
+                # comment with cell number makes it a bit easier in case of exceptions
+                source += "# Cell {}\n{}\n\n".format(i, cell["source"])
+    return source
+
+
 def nb_execute_inline(input_path, output_path, parameters=None, cwd=None):
     """
     Executes a single notebook locally. This method is similar to papermill.execute_notebook
@@ -222,11 +242,7 @@ def nb_execute_inline(input_path, output_path, parameters=None, cwd=None):
             raise Exception("nb_execute_inline: " + language + " is not supported")
 
         # extract souurce code from cells
-        source = ""
-        for i, cell in enumerate(nb["cells"]):
-            if cell["cell_type"] == "code":
-                # comment with cell number makes it a bit easier in case of exceptions
-                source += "# Cell {}\n{}\n\n".format(i, cell["source"])
+        source = nb_extract_source(nb, disable_scripts=True)
 
         # execute t in `cwd` if it is set
         with chdir(cwd):
