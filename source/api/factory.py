@@ -114,7 +114,8 @@ class ServerFactory(Factory):
 
             asset = item._get_asset_from_id(asset_class, asset_id, raise404=True)
             if wants_json:
-                asset_json = json.dumps(asset)
+                # format the same way as if it was returned by the server
+                asset_json = json.dumps({"data": asset})
                 return io.StringIO(asset_json)
             cache_filename = self.get_cache_asset(item, asset_class, asset_id)
             return open(cache_filename, "rb")
