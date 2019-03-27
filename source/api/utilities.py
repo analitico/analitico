@@ -45,7 +45,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
         {
             "status": None,  # want this to go first
             "code": type(exception).__name__.lower(),
-            "title": str(exception.args[0]) if exception.args else str(exception),
+            "title": str(exception.args[0]) if len(exception.args) > 0 else str(exception),
             "meta": {},
         }
     )
@@ -54,7 +54,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
         d["status"] = str(exception.status_code)
         d["code"] = exception.code
         d["title"] = exception.message
-        if exception.extra:
+        if exception.extra and len(exception.extra) > 0:
             d["meta"]["extra"] = analitico.utilities.json_sanitize_dict(exception.extra)
 
     if isinstance(exception, rest_framework.exceptions.APIException):
@@ -98,7 +98,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
 
     if d["status"] is None:
         d.pop("status")
-    if d["meta"]:
+    if len(d["meta"]) < 1:
         d.pop("meta")
     return d
 
