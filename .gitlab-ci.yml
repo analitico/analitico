@@ -32,7 +32,6 @@ build_dev:
     - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
     - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-sdk.git" >> /.git-credentials
     - echo "https://giovannizorzato:$PULL_TOKEN@github.com/Supermercato24/analitico-s24.git" >> /.git-credentials
-    - echo "https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-app.git" >> /.git-credentials
     # save credentials to bypass login when fetching submodules
     - git config --global credential.helper 'store --file=/.git-credentials'
     # clone the repo
@@ -44,6 +43,9 @@ build_dev:
     # clone secrets
     - git clone https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-ci.git 
     # we have /builds/analitico/analitico-ci
+    # clone app
+    - git clone https://giovannizorzato:$PULL_TOKEN@github.com/analitico/analitico-app.git 
+    # we have /builds/analitico/analitico-app
     # remove credentials
     - rm /.git-credentials
     # add commit sha to the env script

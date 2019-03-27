@@ -5,6 +5,3 @@
 	path = integrations/s24
 	url = https://github.com/Supermercato24/analitico-s24.git
 
-[submodule "app"]
-	path = app
-	url = https://github.com/analitico/analitico-app

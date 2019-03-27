@@ -5,6 +5,8 @@ set -e
 cd /home/www/analitico/
 # move analitico-ci out of analitico
 mv -f analitico-ci /home/www/
+# move analitico-app out of analitico
+mv -f analitico-app /home/www/
 
 echo "Injecting env"
 source /home/www/analitico-ci/analitico-env.sh
