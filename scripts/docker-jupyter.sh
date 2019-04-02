@@ -11,7 +11,7 @@ jupyter notebook --port=$1 --ip=0.0.0.0 --no-browser \
 --certfile='/home/www/analitico-ci/ssl/analitico.ai.crt' \
 --notebook-dir='/home/www/notebooks'  \
 --NotebookApp.allow_origin='*' \
---NotebookApp.token='$2'
+--NotebookApp.token="$2"
 --NotebookApp.disable_check_xsrf=True &
 
 wait
