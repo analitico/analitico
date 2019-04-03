@@ -1,18 +1,18 @@
 FROM registry.gitlab.com/analitico/analitico:base
 # we want to copy only requirements and ssl certificates
 # execute everything as a new users with restricted access
-RUN /bin/bash -c 'adduser --disabled-password --gecos "" analiticoj'
-WORKDIR /home/analiticoj
+RUN /bin/bash -c 'adduser --disabled-password --gecos "" analiticoj; chown -R analiticoj:analiticoj /home/www'
+WORKDIR /home/www/analitico
 # copy requirements
-COPY ./requirements.txt /home/analiticoj
+COPY ./requirements.txt /home/www/analitico
 # copy script to launch jupyter
-COPY ./scripts/docker-jupyter.sh /home/analiticoj
+COPY ./scripts/docker-jupyter.sh /home/www/analitico
 # copy ssl certificates
-COPY ./analitico-ci/ssl/analitico.ai.crt /home/analiticoj
-COPY ./analitico-ci/ssl/analitico.ai.key /home/analiticoj
+COPY ./analitico-ci/ssl/analitico.ai.crt /home/www/analitico
+COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico
 # install new requirements, if any
-RUN /bin/bash -c 'mv /home/www/analitico/venv /home/analiticoj/; source venv/bin/activate;  pip3 install -r requirements.txt'
+RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt'
 # switch user
 USER analiticoj
 # create notebook folder
-RUN /bin/bash -c 'mkdir -p ~/notebooks'
+RUN /bin/bash -c 'mkdir -p /home/www/analitico/notebooks'
