@@ -1,7 +1,7 @@
 FROM registry.gitlab.com/analitico/analitico:base
 # we want to copy only requirements and ssl certificates
 # execute everything as a new users with restricted access
-RUN /bin/bash -c 'useradd --disabled-password --gecos "" analiticoj'
+RUN /bin/bash -c 'adduser --disabled-password --gecos "" analiticoj'
 WORKDIR /home/analiticoj
 # copy requirements
 COPY ./requirements.txt /home/analiticoj
