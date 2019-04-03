@@ -8,6 +8,7 @@ variables:
   GCP_PROJECT_ID: analitico-api
   GCP_ZONE: europe-west1
   BUILD_IMAGE_URL: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA
+  BUILD_JUPYTER_IMAGE_URL: registry.gitlab.com/analitico/analitico-jupyter:$CI_COMMIT_SHA
 
 services:
 - docker:dind
@@ -51,9 +52,14 @@ build_dev:
     # login to registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     # build docker image
-    - docker build --pull -t $BUILD_IMAGE_URL .
+    #- docker build --pull -t $BUILD_IMAGE_URL .
     # push the image to gitlab registry
-    - docker push $BUILD_IMAGE_URL
+    #- docker push $BUILD_IMAGE_URL
+    # build docker jupyter image with same venv
+    - docker build --pull -t $BUILD_JUPYTER_IMAGE_URL -f DockerfileJupyter .
+    # push docker jupyter
+    - docker push $BUILD_JUPYTER_IMAGE_URL
+    # remove secrets
     - rm -R -f analitico-ci
   only:
     - master
