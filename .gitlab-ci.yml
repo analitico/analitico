@@ -8,7 +8,7 @@ variables:
   GCP_PROJECT_ID: analitico-api
   GCP_ZONE: europe-west1
   BUILD_IMAGE_URL: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA
-  BUILD_JUPYTER_IMAGE_URL: registry.gitlab.com/analitico/analitico-jupyter:$CI_COMMIT_SHA
+  BUILD_JUPYTER_IMAGE_URL: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter
 
 services:
 - docker:dind
