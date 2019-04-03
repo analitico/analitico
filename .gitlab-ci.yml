@@ -158,6 +158,7 @@ deploy-gpu:
   - ssh-add ~/.ssh/id_rsa
   script:
     # pull new docker image and run
+    # start 2 dockers for jupyter notebook
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$GPU_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
       docker stop analitico; 
@@ -167,7 +168,6 @@ deploy-gpu:
       docker rm aj-s24; 
       docker stop aj-generic; 
       docker rm aj-generic; 
-      # start 2 dockers for jupyter notebook
       docker run --name=aj-s24 --runtime=nvidia --restart always -d -p 8810:8810 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh 8810 c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
       docker run --name=aj-generic --runtime=nvidia --restart always -d -p 8811:8811 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh 8811 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
       docker image prune -f -a;" 
