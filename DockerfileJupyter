@@ -12,7 +12,7 @@ COPY ./analitico-ci/analitico.ai.crt /home/analiticoj
 COPY ./analitico-ci/analitico.ai.key /home/analiticoj
 # install new requirements, if any
 RUN source venv/bin/activate && /
-    pip3 install -r requirements.txt && /
+    pip3 install -r requirements.txt
 # switch user
 USER analiticoj
 # create notebook folder
