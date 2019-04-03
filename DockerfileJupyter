@@ -8,8 +8,8 @@ COPY ./requirements.txt /home/analiticoj
 # copy script to launch jupyter
 COPY ./scripts/docker-jupyter.sh /home/analiticoj
 # copy ssl certificates
-COPY ./analitico-ci/analitico.ai.crt /home/analiticoj
-COPY ./analitico-ci/analitico.ai.key /home/analiticoj
+COPY ./analitico-ci/ssl/analitico.ai.crt /home/analiticoj
+COPY ./analitico-ci/ssl/analitico.ai.key /home/analiticoj
 # install new requirements, if any
 RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt'
 # switch user
