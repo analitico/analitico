@@ -94,7 +94,12 @@ deploy-staging:
     - ssh-add ~/.ssh/id_rsa
   script:
     # pull new docker image and run
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; docker stop analitico; docker rm analitico; docker run --name=analitico --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; docker image prune -f -a"
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
+      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+      docker stop analitico; 
+      docker rm analitico; 
+      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; 
+      docker image prune -f -a"
 
 deploy-production:
   stage: deploy
@@ -126,7 +131,11 @@ deploy-production:
   - ssh-add ~/.ssh/id_rsa
   script:
     # pull new docker image and run
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$PRODUCTION_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; docker stop analitico; docker rm analitico; docker run --name=analitico --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; docker image prune -f -a"
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$PRODUCTION_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
+    docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+    docker stop analitico; docker rm analitico; 
+    docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; 
+    docker image prune -f -a"
 
 
 deploy-gpu:
@@ -161,13 +170,14 @@ deploy-gpu:
     # start 2 dockers for jupyter notebook
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$GPU_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter; 
       docker stop analitico; 
       docker rm analitico; 
-      docker run --name=analitico --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; 
+      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./run.sh; 
       docker stop aj-s24; 
       docker rm aj-s24; 
       docker stop aj-generic; 
       docker rm aj-generic; 
-      docker run --name=aj-s24 --runtime=nvidia --restart always -d -p 8810:8810 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh 8810 c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
-      docker run --name=aj-generic --runtime=nvidia --restart always -d -p 8811:8811 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh 8811 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
+      docker run --name=aj-s24 --init --runtime=nvidia --restart always -d -p 8810:8810 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh 8810 c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
+      docker run --name=aj-generic --init --runtime=nvidia --restart always -d -p 8811:8811 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh 8811 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
       docker image prune -f -a;" 
