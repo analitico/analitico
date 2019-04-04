@@ -5,14 +5,14 @@ cd /home/www/analitico/
 source venv/bin/activate
 
 # start jupyter notebook
-echo "Start jupyter notebook"
-jupyter notebook --port=8888 --no-browser \
+echo "Start jupyter notebook" 
+jupyter notebook --port=8888 --ip=0.0.0.0 --no-browser \
+--keyfile='/home/www/analitico/analitico.ai.key' \
+--certfile='/home/www/analitico/analitico.ai.crt' \
 --notebook-dir='/home/www/analitico/notebooks'  \
 --NotebookApp.allow_origin='*' \
 --NotebookApp.token="$1"
 --NotebookApp.disable_check_xsrf=True &
 
-echo "Start nginx"
-nginx
 # wait for temination
 wait
