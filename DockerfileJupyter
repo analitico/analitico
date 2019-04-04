@@ -8,9 +8,9 @@ WORKDIR /home/www/analitico
 COPY ./requirements.txt /home/www/analitico
 # copy script to launch jupyter
 COPY ./scripts/docker-jupyter.sh /home/www/analitico
-# copy ssl certificates
-COPY ./analitico-ci/ssl/analitico.ai.crt /home/www/analitico
-COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico
+# use self signed certificates
+# COPY ./analitico-ci/ssl/analitico.ai.crt /home/www/analitico
+# COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico
 # install new requirements, if any
 RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt'
 # switch user
