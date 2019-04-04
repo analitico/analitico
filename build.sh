@@ -12,7 +12,7 @@ export LANG=C.UTF-8
 export LC_CTYPE=C.UTF-8
 
 echo "Link nginx conf"
-sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
+ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
 
 echo "$(date +'%T'): Build static python and test"
 
