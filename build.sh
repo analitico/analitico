@@ -14,11 +14,14 @@ export LC_CTYPE=C.UTF-8
 echo "Link nginx conf"
 sudo ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
 
-# build static python and test
+echo "$(date +'%T'): Build static python and test"
+
 ./build-python.sh
+
+echo "$(date +'%T'): Build docs"
 # build documentation
 ./build-docs.sh
-
+echo "$(date +'%T'): Build app"
 /home/www/analitico/app/build-app.sh
 
 echo "Done"
