@@ -6,13 +6,15 @@ RUN /bin/bash -c 'adduser --disabled-password --gecos "" analiticoj; chown -R an
 WORKDIR /home/www/analitico
 # copy requirements
 COPY ./requirements.txt /home/www/analitico
+# copy nginx configuration as reverse proxy for jupyter host
+COPY ./conf/nginx-jupyter.conf /etc/nginx/nginx.conf
 # copy script to launch jupyter
 COPY ./scripts/docker-jupyter.sh /home/www/analitico
 # use self signed certificates
-# COPY ./analitico-ci/ssl/analitico.ai.crt /home/www/analitico
-# COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico
+COPY ./analitico-ci/ssl/analitico.ai.crt /etc/nginx/analitico.ai.crt
+COPY ./analitico-ci/ssl/analitico.ai.key /etc/nginx/analitico.ai.key
 # install new requirements, if any
-RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt'
+RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt;'
 # switch user
 USER analiticoj
 # create notebook folder
