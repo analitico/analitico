@@ -3,10 +3,10 @@
 export LC_CTYPE=C.UTF-8
 cd /home/www/analitico/
 source venv/bin/activate
-export JUPYTER_PATH=/home/www/analitico/libs/:$JUPYTER_PATH
+export PATH=$PATH:/home/www/analitico/libs/
 # start jupyter notebook
 echo "Start jupyter notebook" 
-jupyter notebook --port=8888 --ip=0.0.0.0 --no-browser \
+exec jupyter notebook --port=8888 --ip=0.0.0.0 --no-browser \
 --keyfile='/home/www/analitico/analitico.ai.key' \
 --certfile='/home/www/analitico/analitico.ai.crt' \
 --notebook-dir='/home/www/analitico/notebooks'  \
