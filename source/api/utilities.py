@@ -1,9 +1,11 @@
 import sys
 import traceback
-
+import ssl
+import urllib.request
 import django.http
 import rest_framework.exceptions
 
+from PIL import Image
 from collections import OrderedDict
 from django.conf import settings
 from rest_framework.request import Request
@@ -135,3 +137,56 @@ def get_query_parameter_as_bool(request: Request, parameter: str, default=False)
 def get_query_parameter_as_int(request: Request, parameter: str, default=0):
     value = get_query_parameter(request, parameter)
     return int(value) if value else default
+
+
+##
+## Images
+##
+
+
+def image_open(url):
+    """ Returns image from given url """
+
+    # import requests
+    # response = requests.get(url, verify=False, stream=True)
+    # image = Image.open(response)
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return Image.open(urllib.request.urlopen(url, context=ctx))
+
+
+def image_resize(image, square=None, width=None, height=None):
+    """ 
+    Will resize the image to a square thumbnail, or to the given width, or height, 
+    or forcing both width and height. In any case if the source image does not have
+    the requested aspect ratio, the image will be resized and then cropped/centered.
+    """
+    if width and height:
+        scale = max(width / float(image.width), height / float(image.height))
+        resized = (int(image.width * scale), int(image.height * scale))
+    elif width:
+        scale = width / float(image.width)
+        height = int(image.height * scale)
+        resized = (width, height)
+    elif height:
+        scale = height / float(image.height)
+        width = int(image.width * scale)
+        resized = (width, height)
+    elif square:
+        scale = max(square / float(image.width), square / float(image.height))
+        resized = (int(image.width * scale), int(image.height * scale))
+        width = height = square
+
+    # resize only if image really is of a different size
+    if image.size != resized:
+        image = image.resize(resized, Image.BICUBIC)
+
+    # now crop any extra size while leaving image centered
+    extra_w = (image.width - width) / 2
+    extra_h = (image.height - height) / 2
+    box = (extra_w, extra_h, image.width - extra_w, image.height - extra_h)
+    image = image.crop(box)
+
+    return image
