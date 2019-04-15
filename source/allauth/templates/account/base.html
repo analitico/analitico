@@ -1,0 +1,40 @@
+{% load static %}
+<html>
+
+<head>
+    <title>analitico</title>
+
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <style>
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%;
+        }
+    </style>
+
+    <!-- material design lite components -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+        integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <div class="mdl-grid mdl-grid--no-spacing" style="height: 100%">
+        <div class="mdl-cell mdl-cell--6-col" style="background-color: burlywood">
+            {% block content %}
+            {% endblock %}
+        </div>
+        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch" style="background-color: beige; background-image: url(http://app.analitico.ai/avatars/fedex-truck.jpg)">
+            <div style="text-align: center">large<br>visual<br>goes<br>here</div>
+        </div>
+    </div>
+</body>
+
+</html>
