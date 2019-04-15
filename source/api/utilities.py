@@ -178,6 +178,9 @@ def image_resize(image, square=None, width=None, height=None):
         scale = max(square / float(image.width), square / float(image.height))
         resized = (int(image.width * scale), int(image.height * scale))
         width = height = square
+    else:
+        # no size specified, keep original
+        width, height = resized = image.size
 
     # resize only if image really is of a different size
     if image.size != resized:

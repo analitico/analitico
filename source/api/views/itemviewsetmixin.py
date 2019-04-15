@@ -72,10 +72,12 @@ class ItemViewSetMixin:
         square = get_query_parameter_as_int(request, "square", default=None)
         width = get_query_parameter_as_int(request, "width", default=None)
         height = get_query_parameter_as_int(request, "height", default=None)
-        avatar = item.get_attribute("default", None)  # default used if avatar is not found
 
+        # first check if item has its own avatar
+        avatar = item.get_attribute("avatar", None)  
         if not avatar:
-            avatar = get_query_parameter(request, "avatar", default=None)
+            # default avatar is used if item has none
+            avatar = get_query_parameter(request, "default", default=None)
             if not avatar:
                 raise NotFound("Item " + item.id + " does not have an avatar", code="no_avatar")
 
