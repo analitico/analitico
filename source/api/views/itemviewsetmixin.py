@@ -74,7 +74,7 @@ class ItemViewSetMixin:
         height = get_query_parameter_as_int(request, "height", default=None)
 
         # first check if item has its own avatar
-        avatar = item.get_attribute("avatar", None)  
+        avatar = item.get_attribute("avatar", None)
         if not avatar:
             # default avatar is used if item has none
             avatar = get_query_parameter(request, "default", default=None)

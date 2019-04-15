@@ -63,6 +63,16 @@ class FiltersTests(APITestCase):
 
     def setUp(self):
         self.setup_basics()
+        try:
+            url = reverse("api:workspace-list")
+            self.upload_items(url, analitico.WORKSPACE_PREFIX)
+
+            url = reverse("api:dataset-list")
+            self.upload_items(url, analitico.DATASET_PREFIX)
+
+        except Exception as exc:
+            print(exc)
+            raise exc
 
     def test_filters_paging_auto_off(self):
         """ Small sets are not paged by default """
@@ -287,3 +297,42 @@ class FiltersTests(APITestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["attributes"]["title"], log.title)
+
+    ##
+    ## Filters
+    ##
+
+    def test_filters_fields(self):
+        """ Test ?field= to select only certain fields in the response """
+        item = self.get_item(analitico.DATASET_TYPE, "ds_titanic_3", self.token1)
+        self.assertEqual(item["id"], "ds_titanic_3")
+        self.assertEqual(len(item["attributes"]), 8)
+
+        fields = ("title", "description", "workspace_id")
+        item = self.get_item(analitico.DATASET_TYPE, "ds_titanic_3", self.token1, query="?fields=" + ",".join(fields))
+        self.assertEqual(len(item["attributes"]), 3)
+
+        # all requested fields have been returned?
+        for field in fields:
+            self.assertIn(field, item["attributes"])
+
+        # all returned fields have been requested?
+        for attribute in item["attributes"]:
+            self.assertIn(attribute, fields)
+
+        self.assertEqual(item["attributes"]["title"], "Kaggle - Titanic training dataset (train.csv)")
+        self.assertEqual(item["attributes"]["description"], "https://www.kaggle.com/c/titanic")
+        self.assertEqual(item["attributes"]["workspace_id"], "ws_samples")
+
+    def test_filters_fields_missing_field(self):
+        """ Test ?field= to select fields which do not exist (should be ignored) """
+        fields = ("title", "description", "workspace_id", "FAKEFIELD")
+        item = self.get_item(analitico.DATASET_TYPE, "ds_titanic_3", self.token1, query="?fields=" + ",".join(fields))
+        self.assertEqual(len(item["attributes"]), 3)
+
+        # all returned fields have been requested?
+        for attribute in item["attributes"]:
+            self.assertIn(attribute, fields)
+
+        # no FAKEFIELD
+        self.assertNotIn("FAKEFIELD", item["attributes"])

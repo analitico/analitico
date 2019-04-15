@@ -40,8 +40,10 @@ class APITestCase(APITestCase):
             self.assertIsNotNone(response.data)
         return response.data
 
-    def get_item(self, item_type, item_id, token=None, status_code=status.HTTP_200_OK):
+    def get_item(self, item_type, item_id, token=None, status_code=status.HTTP_200_OK, query=None):
         url = reverse("api:" + item_type + "-detail", args=(item_id,))
+        if query:
+            url += query
         self.auth_token(token)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status_code)

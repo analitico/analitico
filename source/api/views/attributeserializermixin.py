@@ -113,7 +113,7 @@ class AttributeSerializerMixin:
         # using query parameter ?fields=field1,field2,etc
         request = self.context.get("request")
         if request:
-            fields = get_query_parameter(request, "fields", None) # comma separated list of fields
+            fields = get_query_parameter(request, "fields", None)  # comma separated list of fields
             if fields:
                 fields = fields.split(",")
                 for attribute in list(reformatted["attributes"].keys()):
