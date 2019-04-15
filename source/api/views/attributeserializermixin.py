@@ -23,6 +23,7 @@ import analitico
 from analitico import TYPE_PREFIX
 from api.factory import factory
 from api.models import ItemMixin, Job, User
+from api.utilities import get_query_parameter
 from analitico.utilities import logger
 
 # Django Serializers
@@ -107,6 +108,18 @@ class AttributeSerializerMixin:
             if asset_class in data:
                 for asset in data[asset_class]:
                     asset["url"] = self.get_item_asset_url(item, asset_class, asset["id"])
+
+        # check if caller specified which specific fields it wants
+        # using query parameter ?fields=field1,field2,etc
+        request = self.context.get("request")
+        if request:
+            fields = get_query_parameter(request, "fields", None) # comma separated list of fields
+            if fields:
+                fields = fields.split(",")
+                for attribute in list(reformatted["attributes"].keys()):
+                    if attribute not in fields:
+                        reformatted["attributes"].pop(attribute)
+
         return reformatted
 
     def to_internal_value(self, data):

@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.test_api_log.LogTests",
+                "analitico.test.test_dataset.DatasetTests.test_dataset_csv4_applyschema_index_rename",
                 "-v",
                 "2"
             ],
