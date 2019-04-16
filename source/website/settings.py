@@ -225,7 +225,7 @@ try:
     TEMPLATES = [
         {
             "BACKEND": "django.template.backends.django.DjangoTemplates",
-            "DIRS": [],
+            "DIRS": [os.path.join(BASE_DIR, "templates")],
             "APP_DIRS": True,
             "OPTIONS": {
                 "context_processors": [
@@ -341,7 +341,7 @@ try:
 
     STATICFILES_DIRS = [
         # will also include static files generated for angular frontend app?
-        # os.path.join(BASE_DIR, "../app/dist/")
+        # os.path.join(BASE_DIR, "static")
     ]
 
     ###

@@ -195,3 +195,21 @@ class ItemsTests(APITestCase):
             analitico.WORKSPACE_TYPE, "ws_002", token=self.token1, status_code=status.HTTP_204_NO_CONTENT
         )
         self.assertIsNone(item)
+
+    ##
+    ## Avatar
+    ##
+
+    # test avatar square
+
+    # test avatar width
+
+    # test avatar height
+
+    # test avatar width and height
+
+    # test avatar nothing specified
+
+    # test avatar with default
+
+    # test avatar with wrong or non available image
