@@ -12,11 +12,10 @@
         }
 
         .secondary-account-panel {
-            background-image: url({% static 'account/background-1.jpg' %});
+            background-image: url({% static 'images/background-2.jpg' %});
             background-size: cover;
         }
     </style>
-
 
     <!-- material design lite components -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
@@ -26,14 +25,53 @@
         integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 
     
-    <link rel="stylesheet" href="{% static 'my_app/example.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     
+    <style>
+        .gray {
+            color: gray;
+        }
 
+        .account-title {
+            margin-top: 48px;
+            margin-bottom: 0px;
+        }
+
+        .account-subtitle {
+            color: gray;
+            margin-bottom: 24px;
+        }
+
+        .account-form button {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+
+        .account-form .mdl-textfield {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .account-gray-link {
+            color: gray;
+            text-decoration: none;
+        }
+
+        .account-item {
+            margin-bottom: 8px;
+            display: block;
+        }
+        .account-social-button {
+            text-align: left;
+        }
+
+    </style>
 </head>
 
 <body>
-    <div class="mdl-grid mdl-grid--no-spacing" style="height: 100%">
-        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch mdl-cell--hide-phone secondary-account-panel">
+    <div class="mdl-grid mdl-grid--no-spacing" style="height: 100%;">
+        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch mdl-cell--hide-phone  secondary-account-panel">
             <div style="width: 250px">
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 1600 1200"
@@ -76,9 +114,6 @@
         </div>
 
         <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch">
-
-            <img src="{% static 'website/the-new-project.jpg' %}" class="center" alt="analitico lab">
-
             {% block content %}
             {% endblock %}
         </div>

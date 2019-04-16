@@ -5,78 +5,61 @@
 
 {% block content %}
 
-<div class="mdl-grid">
+<form class="login account-form" method="POST" action="{% url 'account_login' %}">
+  {% csrf_token %}
 
-  <div class="mdl-cell mdl-cell--12-col" style="padding-left: 24px;">
+  <div class="mdl-grid" style="max-width: 380px;">
+    <div class="mdl-cell mdl-cell--12-col">
 
-    <!-- Sign in panel -->
-    <h3>{% trans "Sign In" %}</h3>
-
-    <form class="login" method="POST" action="{% url 'account_login' %}">
-      {% csrf_token %}
-      <!-- {{ form.as_p }} -->
+      <h4 class="account-title">Welcome back</h4>
+      <div class="subtitle1 account-subtitle">Sign in using your email</div>
 
       <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
         <input class="mdl-textfield__input" type="email" name="login" autofocus="autofocus" required id="id_login">
         <label class="mdl-textfield__label" for="id_login">Email</label>
       </div>
-      <p></p>
 
       <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
         <input class="mdl-textfield__input" type="password" name="password" placeholder="Password" required
           id="id_password">
         <label class="mdl-textfield__label" for="id_login">Password</label>
+        <div style="text-align: right;"><a class="account-gray-link"
+            href="{% url 'account_reset_password' %}">{% trans "Did you forget your password?" %}</a></div>
       </div>
-      <div><a href="{% url 'account_reset_password' %}">{% trans "Did you forget your password?" %}</a></div>
-      <p></p>
-
-      <!--
-    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="id_remember">
-      <input type="checkbox" name="remember" id="id_remember" class="mdl-checkbox__input">
-      <span class="mdl-checkbox__label">Remember me</span>
-    </label>
-    <p></p>
-  -->
 
       {% if redirect_field_value %}
       <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
       {% endif %}
+    </div>
 
+    <div class="mdl-cell mdl-cell--6-col">
+      <a class="mdl-button mdl-js-button mdl-js-ripple-effect account-item" href="{{ signup_url }}">Create Account</a>
+    </div>
+    <div class="mdl-cell mdl-cell--6-col">
       <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored"
-        type="submit">
-        {% trans "Sign In" %}
-      </button>
+        type="submit">Sign In</button>
+    </div>
 
-    </form>
+    <div class="mdl-cell mdl-cell--12-col">
+      <h4 class="account-title">Social sign in</h4>
+      <div class="subtitle1 account-subtitle">Quickly log in with your social network</div>
+    </div>
 
-    <div><a href="{{ signup_url }}">Need an account?</a></div>
+    <div class="mdl-cell mdl-cell--6-col">
+      <a class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised mdl-button--colored account-item account-social-button"
+        style="background-color: #4285F4" href="/accounts/google/login/?process=login">
+        <i class="fab fa-google" style="padding-right: 16px"></i>Google
+      </a>
+    </div>
 
-
-    <h4>Social sign in</h4>
-    <h6>Quickly log in with your social network</h6>
-
-    <p>
-      <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised mdl-button--colored"
-        style="background-color: #4285F4" onclick="window.location.href='/accounts/google/login/?process=login'">
-        <i class="fab fa-google" style="padding-right: 16px"></i>Sign in with Google
-      </button>
-    </p>
-    <p>
-      <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised mdl-button--colored"
-        style="background-color: rgb(51, 51, 51)"
-        onclick="window.location.href='/accounts/github/login/?process=login'">
-        <i class="fab fa-github" style="padding-right: 16px"></i>Sign in with GitHub
-      </button>
-    </p>
-    <p>
-      <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised mdl-button--colored"
-        style="background-color: rgb(0, 103, 184)"
-        onclick="window.location.href='/accounts/windowslive/login/?process=login'">
-        <i class="fab fa-windows" style="padding-right: 16px"></i>Sign in with Microsoft
-      </button>
-    </p>
+    <div class="mdl-cell mdl-cell--6-col">
+      <a class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised mdl-button--colored account-item account-social-button"
+        style="background-color: rgb(51, 51, 51);" href="/accounts/github/login/?process=login">
+        <i class="fab fa-github" style="padding-right: 16px"></i>GitHub
+      </a>
+    </div>
 
   </div>
-</div>
+</form>
 
 {% endblock %}

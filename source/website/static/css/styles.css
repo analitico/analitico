@@ -1,0 +1,54 @@
+@font-face {
+    font-family: "analitico";
+    src: url("../fonts/Calibre-Regular.latin.woff2");
+}
+
+@font-face {
+    font-family: "analitico";
+    src: url("../fonts/assets/fonts/Calibre-Medium.latin.woff2");
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: "analitico";
+    src: url("../fonts/Calibre-Semibold.latin.woff2");
+    font-weight: 700;
+}
+
+/** Palette **/
+:root {
+    --text-color: rgb(27, 27, 27);
+    --primary-color: #ea5e3d;
+    --light-grey: rgb(116, 116, 116);
+}
+
+.light-grey-color {
+    color: var(--light-grey);
+}
+
+body {
+    font-family: "analitico", sans-serif;
+    font-size: 18px;
+}
+
+h4 {
+    font-weight: 600;
+    font-size: "170%";
+    font-weight: 600;
+    line-height: 1.17;
+    color: var(--text-color);
+}
+
+h6 {
+    font-size: "110%";
+    font-weight: 300;
+    line-height: 1.28;
+    color: var(--text-color);
+}
+
+.subtitle1 {
+    font-size: "100%";
+    font-weight: 400;
+    line-height: 1.75;
+    color: var(--text-color);
+}
