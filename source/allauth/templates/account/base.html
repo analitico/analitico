@@ -14,6 +14,11 @@
             margin-right: auto;
             width: 50%;
         }
+
+        .secondary-account-panel {
+            background-image: url(http://app.analitico.ai/images/login/luca-bravo-198061-unsplash.jpg);
+            background-size: cover;
+        }
     </style>
 
     <!-- material design lite components -->
@@ -27,12 +32,11 @@
 
 <body>
     <div class="mdl-grid mdl-grid--no-spacing" style="height: 100%">
-        <div class="mdl-cell mdl-cell--6-col" style="background-color: burlywood">
-            {% block content %}
-            {% endblock %}
-        </div>
-        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch" style="background-color: beige; background-image: url(http://app.analitico.ai/avatars/fedex-truck.jpg)">
-            <div style="text-align: center">large<br>visual<br>goes<br>here</div>
+        {% block content %}
+        {% endblock %}
+
+        <div class="mdl-cell mdl-cell--6-col mdl-cell--hide-phone mdl-cell--stretch secondary-account-panel">
+            &nbsp;
         </div>
     </div>
 </body>
