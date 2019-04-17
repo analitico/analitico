@@ -5,17 +5,51 @@
 {% block head_title %}{% trans "Signup" %}{% endblock %}
 
 {% block content %}
-<h1>{% trans "Sign Up" %}</h1>
-
-<p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
 
 <form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
+
+  <h1 class="title">{% trans "Create Account" %}</h1>
+  <p class="subtitle">
+    {% blocktrans %}Already have an account? <a href="{{ login_url }}">Sign in</a>{% endblocktrans %}
+  </p>
+
+  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+    <input class="mdl-textfield__input" type="email" name="login" autofocus="autofocus" required id="id_login">
+    <label class="mdl-textfield__label" for="id_login">Email</label>
+  </div>
+  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+    <input class="mdl-textfield__input" type="password" name="password1" required
+      id="id_password1">
+    <label class="mdl-textfield__label" for="id_password1">Password</label>
+  </div>
+  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label large-margin-bottom">
+    <input class="mdl-textfield__input" type="password" name="password2" required
+      id="id_password2">
+    <label class="mdl-textfield__label" for="id_password2">Repeat Password</label>
+  </div>
+
   {% csrf_token %}
-  {{ form.as_p }}
+  <!-- {{ form.as_p }} -->
   {% if redirect_field_value %}
   <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
   {% endif %}
-  <button type="submit">{% trans "Sign Up" %} &raquo;</button>
+
+  {% if form.errors %}
+  <!-- Error messaging -->
+  <div id="errors">
+    <p>There were some errors in the information you entered. Please correct the following:</p>
+    {{ form.non_field_errors }}
+    <ul>
+      {% for field in form %}
+      {% if field.errors %}<li>{{ field.label }}: {{ field.errors|striptags }}</li>{% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  <!-- /Error messaging -->
+  {% endif %}
+
+  <button type="submit"
+    class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored">{% trans "Sign Up" %}</button>
 </form>
 
 {% endblock %}

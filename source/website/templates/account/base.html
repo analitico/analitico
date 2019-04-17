@@ -1,7 +1,17 @@
 {% load static %}
 <html>
+
 <head>
-    <title>analitico</title>
+    <title>{% block head_title %}{% endblock %}</title>
+
+    <!-- material design lite components -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+        integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 
     <style>
         .center {
@@ -11,33 +21,23 @@
             width: 50%;
         }
 
+        h1 {
+        }
+
         .secondary-account-panel {
             background-image: url({% static 'images/background-2.jpg' %});
             background-size: cover;
         }
-    </style>
 
-    <!-- material design lite components -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
-    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
-        integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
-
-    
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    
-    <style>
         .gray {
             color: gray;
         }
 
-        .account-title {
-            margin-top: 48px;
-            margin-bottom: 0px;
+        .account-panel .title {
+            margin-bottom: 16px;
         }
 
-        .account-subtitle {
+        .account-panel .subtitle {
             color: gray;
             margin-bottom: 24px;
         }
@@ -46,7 +46,6 @@
             width: 100%;
             margin-bottom: 8px;
         }
-
 
         .account-form .mdl-textfield {
             width: 100%;
@@ -62,16 +61,21 @@
             margin-bottom: 8px;
             display: block;
         }
+
         .account-social-button {
             text-align: left;
+        }
+
+        .large-margin-bottom {
+            margin-bottom: 48px;
         }
 
     </style>
 </head>
 
-<body>
+<body class="secondary-account-panel">
     <div class="mdl-grid mdl-grid--no-spacing" style="height: 100%;">
-        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch mdl-cell--hide-phone  secondary-account-panel">
+        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch mdl-cell--hide-tablet mdl-cell--hide-phone">
             <div style="width: 250px">
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 1600 1200"
@@ -113,10 +117,13 @@
             </div>
         </div>
 
-        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch">
-            {% block content %}
-            {% endblock %}
+        <div class="mdl-cell mdl-cell--6-col mdl-cell--stretch" style="background-color: rgb(251,251,251)">
+            <div class="mdl-grid mdl-grid--no-spacing account-panel" style="max-width: 360px; padding-top: 48px;">
+                {% block content %}
+                {% endblock %}
+            </div>
         </div>
     </div>
 </body>
+
 </html>
