@@ -1,0 +1,21 @@
+{
+    "id": "ds_3_cast_float",
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_3.csv",
+            
+            "schema": {
+                "name": "A test schema forcing the first column to float",
+                "columns": [
+                    { "name": "First", "type": "float" },
+                    { "name": "Second", "type": "string" },
+                    { "name": "Third", "type": "float" }
+                ]
+            }
+        }
+    }
+}

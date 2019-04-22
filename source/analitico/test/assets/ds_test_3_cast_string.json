@@ -1,0 +1,22 @@
+{
+    "id": "ds_3_cast_string",
+    
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_3.csv",
+
+            "schema": {
+                "name": "A test schema forcing the third column to string instead of float",
+                "columns": [
+                    { "name": "First", "type": "integer" },
+                    { "name": "Second", "type": "string" },
+                    { "name": "Third", "type": "string" }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "id": "ds_7",
+
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_7.csv",
+
+            "schema": {
+                "name": "A table with a schema",
+                "columns": [
+                    { "name": "name", "type": "string" },
+                    { "name": "slug", "type": "category" },
+                    { "name": "parent_id", "type": "float" },
+                    { "name": "depth", "type": "integer" },
+                    { "name": "priority", "type": "integer" },
+                    { "name": "max_weight", "type": "integer" },
+                    { "name": "frozen", "type": "boolean" },
+                    { "name": "rate", "type": "float" },
+                    { "name": "has_ingredients_book", "type": "boolean" },
+                    { "name": "indice", "type": "integer", "index": true },
+                    { "name": "updated_at", "type": "datetime" },
+                    { "name": "elapsed", "type": "timespan" }
+                ]
+            }
+        }
+    }
+}

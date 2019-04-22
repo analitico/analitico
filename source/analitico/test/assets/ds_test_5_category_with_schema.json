@@ -1,0 +1,29 @@
+{
+    "id": "ds_5",
+
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_5_category.csv",
+
+            "schema": {
+                "name": "A table of grocery categories",
+                "columns": [
+                    { "name": "id", "type": "integer" },
+                    { "name": "name", "type": "category" },
+                    { "name": "slug", "type": "category" },
+                    { "name": "parent_id", "type": "float" },
+                    { "name": "depth", "type": "integer" },
+                    { "name": "priority", "type": "integer" },
+                    { "name": "max_weight", "type": "integer" },
+                    { "name": "frozen", "type": "boolean" },
+                    { "name": "rate", "type": "float" },
+                    { "name": "has_ingredients_book", "type": "boolean" }
+                ]
+            }
+        }
+    }
+}

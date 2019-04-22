@@ -1,0 +1,13 @@
+{
+    "id": "ds_1",
+
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+    
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_1.csv"
+        }
+    }
+}
