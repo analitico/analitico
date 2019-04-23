@@ -3,7 +3,7 @@ from django.test import TestCase
 from s24.categories import s24_get_category, s24_get_category_id, s24_get_category_slug
 
 
-class TestSupermercatoCategories(TestCase):
+class SupermercatoCategoriesTest(TestCase):
     def test_get_category(self):
         # Pelati e Passate
         id, name, slug = s24_get_category(100160)

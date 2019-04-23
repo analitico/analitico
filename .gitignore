@@ -8,7 +8,6 @@ _*.pyx
 *.cbm
 .ipynb_checkpoints
 venv
-*.csv
 **/.ropeproject
 
 /source/venv
