@@ -5,11 +5,9 @@ import unittest
 import pandas as pd
 import os
 
+from analitico import AnaliticoException
 from analitico.pandas import pd_read_csv
 from analitico.utilities import save_json, time_ms, logger
-
-# csv file with category table from s24 database
-CATEGORY_CSV_URL = "analitico://workspaces/s24/datasets/ds_s24_category/data/csv"
 
 ##
 ## PRIVATE METHODS
@@ -35,14 +33,11 @@ def _prepare():
         # load categories table and keep cached will read
         # categories.csv from local file system or google cloud storage
         try:
-            from api.factory import factory
-
             filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "category.csv")
             df = pd_read_csv(filename)
             df.set_index("id")
-
         except Exception as exc:
-            raise Exception("s24.categories._prepare - could not load: " + CATEGORY_CSV_URL)
+            raise AnaliticoException("s24.categories._prepare - could not load " + filename) from exc
 
         _categories = {}
 
