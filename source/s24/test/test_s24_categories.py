@@ -1,3 +1,4 @@
+
 from django.test import TestCase
 
 from s24.categories import s24_get_category, s24_get_category_id, s24_get_category_slug
@@ -69,8 +70,8 @@ class SupermercatoCategoriesTest(TestCase):
 
     def test_get_category_missing_depth(self):
         category_id = s24_get_category_id(20, 1)  # 20 is itself a main category
-        self.assertIsNone(category_id)
+        self.assertEqual(category_id, 0)
 
     def test_get_category_missing_id(self):
         category_id = s24_get_category_id(-20)  # -20 is not a valid id
-        self.assertIsNone(category_id)
+        self.assertEqual(category_id, 0)

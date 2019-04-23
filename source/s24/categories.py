@@ -3,7 +3,9 @@
 
 import unittest
 import pandas as pd
+import os
 
+from analitico.pandas import pd_read_csv
 from analitico.utilities import save_json, time_ms, logger
 
 # csv file with category table from s24 database
@@ -35,9 +37,10 @@ def _prepare():
         try:
             from api.factory import factory
 
-            categories_stream = factory.get_url_stream(CATEGORY_CSV_URL)
-            df = pd.read_csv(categories_stream)
+            filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "category.csv")
+            df = pd_read_csv(filename)
             df.set_index("id")
+
         except Exception as exc:
             raise Exception("s24.categories._prepare - could not load: " + CATEGORY_CSV_URL)
 
