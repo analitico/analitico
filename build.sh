@@ -18,9 +18,9 @@ echo "$(date +'%T'): Build static python and test"
 
 ./build-python.sh
 
-echo "$(date +'%T'): Build docs"
+# echo "$(date +'%T'): Build docs"
 # build documentation
-./build-docs.sh
+#./build-docs.sh
 echo "$(date +'%T'): Build app"
 /home/www/analitico/app/build-app.sh
 
