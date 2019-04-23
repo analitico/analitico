@@ -3,7 +3,7 @@
 export LC_CTYPE=C.UTF-8
 cd /home/www/analitico/
 source venv/bin/activate
-export PYTHONPATH=/home/www/analitico/libs/
+export PYTHONPATH=/home/www/analitico/source/
 # start jupyter notebook
 echo "Start jupyter notebook" 
 exec jupyter notebook --port=8888 --ip=0.0.0.0 --no-browser \
