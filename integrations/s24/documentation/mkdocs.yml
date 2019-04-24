@@ -1,0 +1,104 @@
+
+# Copyright (c) 2019 Analitico Labs Inc. <info@analitico.ai>
+# Based on MkDocs Material by Martin Donath, thanks Martin!
+# Copyright (c) 2016-2019 Martin Donath <martin.donath@squidfunk.com>
+
+# Project information
+site_name: Analitico for S24
+site_description: A documentation site for Analitico/S24 APIs
+site_author: Analitico Labs Inc.
+site_url: https://analitico.ai/docs/s24/
+
+# Repository
+repo_name: Supermercato24/analitico-s24
+repo_url: https://github.com/Supermercato24/analitico-s24
+edit_uri: ""
+
+# Copyright
+copyright: 'Copyright &copy; 2019 Analitico Labs Inc.'
+
+# Configuration
+theme:
+  name: 'material'
+  custom_dir: 'theme'
+
+  # 404 page
+  static_templates:
+    - 404.html
+
+  # Don't include MkDocs' JavaScript
+  include_search_page: false
+  search_index_only: true
+
+  # Default values, taken from mkdocs_theme.yml
+  language: en
+  feature:
+    tabs: true
+  palette:
+    primary: indigo
+    accent: indigo
+  font:
+    text: Roboto
+    code: Roboto Mono
+  favicon: assets/images/favicon.png
+  logo:
+    icon: "\uE80C"
+
+# Customization
+extra:
+  social:
+    #- type: globe
+    #  link: http://struct.cc
+    - type: github-alt
+      link: https://github.com/analitico
+    - type: twitter
+      link: https://twitter.com/analiticolabs
+    - type: linkedin
+      link: https://www.linkedin.com/in/gionata/
+    - type: facebook
+      link: https://www.facebook.com/analiticoai
+
+# Extensions
+markdown_extensions:
+  - markdown.extensions.admonition
+  - markdown.extensions.codehilite:
+      guess_lang: false
+  - markdown.extensions.def_list
+  - markdown.extensions.footnotes
+  - markdown.extensions.meta
+  - markdown.extensions.toc:
+      permalink: true
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Page tree
+nav:
+  - Introduction: index.md
+  - Predictions:
+    - Order Time: ordertime.md
+    - Order Sorting: ordersorting.md
+    - Ouf Of Stock: outofstock.md
+  - Release notes: release-notes.md
+
+# Google Analytics
+google_analytics:
+  - !!python/object/apply:os.getenv ["GOOGLE_ANALYTICS_KEY"]
+  - auto
