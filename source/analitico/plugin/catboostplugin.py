@@ -67,12 +67,9 @@ class CatBoostPlugin(IAlgorithmPlugin):
         if algo == ALGORITHM_TYPE_REGRESSION:
             return CatBoostRegressor(iterations=iterations, learning_rate=learning_rate, depth=depth)
         elif algo == ALGORITHM_TYPE_BINARY_CLASSICATION:
+            # task_type="GPU", # runtime will pick up the GPU even if we don't specify it here
             return CatBoostClassifier(
-                iterations=iterations,
-                learning_rate=learning_rate,
-                depth=depth,
-                loss_function="Logloss",
-                task_type="GPU",
+                iterations=iterations, learning_rate=learning_rate, depth=depth, loss_function="Logloss"
             )
         elif algo == ALGORITHM_TYPE_MULTICLASS_CLASSIFICATION:
             return CatBoostClassifier(
@@ -367,7 +364,7 @@ class CatBoostPlugin(IAlgorithmPlugin):
             data = pd.DataFrame.from_dict(data, orient="columns")
 
         # record that we're predicting on after augmentation is added
-        # to the results. if the endpoint or the jupyter notebook in 
+        # to the results. if the endpoint or the jupyter notebook in
         # charge of communicating with the caller does not want to send
         # this information back, it can always take it out. in the future
         # we may want to optimized here and add this optionally instead.
