@@ -74,6 +74,21 @@ class AugmentCategoriesPlugin(IDataframePlugin):
             df_level1 = df[category_id_col]
             df[category_id_col] = self.as_category(df[category_id_col])
 
+            # check if all columns are there already, for example in prediction requests
+            # where caller provides this information to skip this expensive augmentation
+            columns = (
+                category_id_col + ".level2",
+                category_id_col + ".level3"
+            )
+            if all(column in df.columns for column in columns):
+                self.factory.warning("AugmentCategoriesPlugin: data is already augmented", plugin=self)
+                return df
+
+            # remove any columns that may be there
+            for column in columns:
+                if column in df.columns:
+                    df.drop(column, axis=1, inplace=True)
+
             # expand product categories to 3 levels: main, sub and category
             started_on = time_ms()
             df_level2 = self.as_category(df_level1.map(s24.categories.s24_get_category_id_level2))
