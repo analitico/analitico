@@ -1,0 +1,122 @@
+{
+    "data": {
+        "store_ref_id": "5053",
+        "store_name": "eurospin",
+        "store_area": "RM12",
+        "store_province": "RM",
+        "details": [
+            {
+                "detail_id": "21168460",
+                "item_ean": "",
+                "item_ref_id": "M4e1e36e6fe1375ffae211ec47d320cea",
+                "item_name": "MANUALE Pascoli italiano grana padano grattugiato",
+                "item_category_id": ""
+            },
+            {
+                "detail_id": "21168458",
+                "item_ean": "2100104000000",
+                "item_ref_id": "66711724",
+                "item_name": "Filettini di Pollo",
+                "item_category_id": "206"
+            },
+            {
+                "detail_id": "21168452",
+                "item_ean": "2070249000000",
+                "item_ref_id": "66551610",
+                "item_name": "Limoni",
+                "item_category_id": "251"
+            },
+            {
+                "detail_id": "21168456",
+                "item_ean": "2070160000000",
+                "item_ref_id": "70810387",
+                "item_name": "Melanzane Lunghe",
+                "item_category_id": "261"
+            },
+            {
+                "detail_id": "21168432",
+                "item_ean": "8017596003782",
+                "item_ref_id": "66548036",
+                "item_name": "Land Mozzarella",
+                "item_category_id": "295"
+            },
+            {
+                "detail_id": "21168450",
+                "item_ean": "8017596076533",
+                "item_ref_id": "66629298",
+                "item_name": "Delizie dal Sole Uova Grandissime Allevate a Terra",
+                "item_category_id": "329"
+            },
+            {
+                "detail_id": "21168440",
+                "item_ean": "8017596017192",
+                "item_ref_id": "66549784",
+                "item_name": "Dolciando Frollini Riso Latte ",
+                "item_category_id": "406"
+            },
+            {
+                "detail_id": "21168430",
+                "item_ean": "8003012011035",
+                "item_ref_id": "66549094",
+                "item_name": "Espresso Italia Caffe' Macinato Gusto Classico",
+                "item_category_id": "413"
+            },
+            {
+                "detail_id": "21168446",
+                "item_ean": "8017596071866",
+                "item_ref_id": "66551386",
+                "item_name": "Amo Essere senza Glutine - Tre Mulini Penne Rigate Mais e Riso senza Glutine",
+                "item_category_id": "460"
+            },
+            {
+                "detail_id": "21168442",
+                "item_ean": "8017596052599",
+                "item_ref_id": "66549076",
+                "item_name": "Delizie dal Sole Riso Carnaroli",
+                "item_category_id": "463"
+            },
+            {
+                "detail_id": "21168436",
+                "item_ean": "8017596005250",
+                "item_ref_id": "66547638",
+                "item_name": "Bottega del Gusto Maionese",
+                "item_category_id": "513"
+            },
+            {
+                "detail_id": "21168444",
+                "item_ean": "8017596057631",
+                "item_ref_id": "66550018",
+                "item_name": "Blues Acqua Effervescente Naturale",
+                "item_category_id": "690"
+            },
+            {
+                "detail_id": "21168454",
+                "item_ean": "8017596015228",
+                "item_ref_id": "66547278",
+                "item_name": "Radames Bocconi per Cani Pollo Tacchino",
+                "item_category_id": "841"
+            },
+            {
+                "detail_id": "21168434",
+                "item_ean": "8017596004406",
+                "item_ref_id": "66547292",
+                "item_name": "Radames Bocconcini per Gatto con Pesce",
+                "item_category_id": "851"
+            },
+            {
+                "detail_id": "21168438",
+                "item_ean": "8017596011671",
+                "item_ref_id": "66549424",
+                "item_name": "Soft Dream Asciugatutto 3 Veli",
+                "item_category_id": "3101"
+            },
+            {
+                "detail_id": "21168448",
+                "item_ean": "8017596073938",
+                "item_ref_id": "66548478",
+                "item_name": "Amo Essere senza Lattosio - Pascoli Italiani Latte Alta Digeribilita'",
+                "item_category_id": "6226"
+            }
+        ]
+    }
+}

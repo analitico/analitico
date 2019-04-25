@@ -1,0 +1,132 @@
+{
+  "avatar": "supermarket-backer-1.jpg",
+  "plugin": {
+    "type": "analitico/plugin",
+    "name": "analitico.plugin.RecipePipelinePlugin",
+    "plugins": [
+      {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.DatasetSourcePlugin",
+        "source": {
+          "dataset_id": "ds_s24_outofstock",
+          "schema": {
+            "columns": [
+              {
+                "name": "odt_id",
+                "type": "integer"
+              },
+              {
+                "name": "odt_ean",
+                "type": "float"
+              },
+              {
+                "name": "odt_name",
+                "type": "string"
+              },
+              {
+                "name": "odt_category_id",
+                "type": "float"
+              },
+              {
+                "name": "odt_replaceable",
+                "type": "integer"
+              },
+              {
+                "name": "odt_variable_weight",
+                "type": "integer"
+              },
+              {
+                "name": "odt_price",
+                "type": "float"
+              },
+              {
+                "name": "odt_price_per_type",
+                "type": "float"
+              },
+              {
+                "name": "odt_surcharge_fixed",
+                "type": "float"
+              },
+              {
+                "name": "odt_touched_at",
+                "type": "string"
+              },
+              {
+                "name": "odt_status",
+                "type": "string"
+              },
+              {
+                "name": "ord_id",
+                "type": "integer"
+              },
+              {
+                "name": "sto_id",
+                "type": "integer"
+              },
+              {
+                "name": "sto_name",
+                "type": "string"
+              },
+              {
+                "name": "sto_area",
+                "type": "category"
+              },
+              {
+                "name": "sto_province",
+                "type": "category"
+              },
+              {
+                "name": "sto_ref_id",
+                "type": "category"
+              }
+            ]
+          }
+        },
+        "id": "pl_abFb2c36"
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.AugmentDatesPlugin",
+        "schema": {
+          "columns": [
+            {
+              "name": "odt_touched_at"
+            }
+          ]
+        },
+        "id": "pl_2FE21EE1"
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "s24.plugin.AugmentCategoriesPlugin",
+        "schema": {
+          "columns": [
+            {
+              "name": "odt_category_id"
+            }
+          ]
+        },
+        "id": "pl_1CfABA5a"
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "s24.plugin.OutOfStockPreprocessPlugin",
+        "id": "pl_b3B601d8"
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CatBoostClassifierPlugin",
+        "parameters": {
+          "iterations": 50,
+          "learning_rate": 1
+        },
+        "data": {
+          "chronological": true,
+          "label": "dyn_purchased"
+        },
+        "id": "pl_ebDb55a1"
+      }
+    ],
+    "id": "pl_DDE5830D"
+  }
+}

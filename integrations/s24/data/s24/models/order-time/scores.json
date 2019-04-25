@@ -1,0 +1,59 @@
+{
+    "data": {
+        "project_id": "s24-order-time",
+        "records": {
+            "source": 337561,
+            "filtered": 150190,
+            "training": 150190,
+            "test": 15019
+        },
+        "scores": {
+            "median_abs_error": 12.3438,
+            "mean_abs_error": 14.67858,
+            "sqrt_mean_squared_error": 18.65324
+        },
+        "features_importance": {
+            "items_total": 18.18326,
+            "order_fulfillment_type": 17.33741,
+            "store_name": 11.68512,
+            "store_customer_duration": 10.41639,
+            "order_amount": 7.33628,
+            "customer_area": 7.17037,
+            "order_deliver_at_start_hour": 3.64591,
+            "order_deliver_at_start_year": 2.57284,
+            "order_volume": 2.50771,
+            "store_lat": 2.48063,
+            "store_area": 2.44474,
+            "customer_id": 2.33205,
+            "order_deliver_at_start_yearday": 1.89738,
+            "items_with_variable_weight": 1.87268,
+            "order_deliver_at_start_month": 1.46429,
+            "store_lng": 1.35485,
+            "order_deliver_at_start_day": 0.89559,
+            "customer_province": 0.88176,
+            "store_customer_distance": 0.82745,
+            "customer_lng": 0.77679,
+            "customer_lat": 0.76121,
+            "order_deliver_at_start_weekday": 0.62997,
+            "store_province": 0.32216,
+            "customer_ztl": 0.17535,
+            "order_deliver_at_start_min": 0.02784,
+            "store_id": 0.0,
+            "order_deliver_at_start_holyday": 0.0
+        },
+        "assets": {
+            "model_path": "data/s24/models/order-time/model.cbm",
+            "test_path": "data/s24/models/order-time/test.csv",
+            "scores_path": "data/s24/models/order-time/scores.json"
+        }
+    },
+    "meta": {
+        "loading_ms": 2204,
+        "processing_ms": 15001,
+        "total_iterations": 50,
+        "best_iteration": 49,
+        "learning_rate": 1,
+        "training_ms": 8607,
+        "total_ms": 26328
+    }
+}

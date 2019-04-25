@@ -1,0 +1,273 @@
+{
+    "type": "analitico/training",
+    "plugins": {
+        "training": "analitico.plugin.CatBoostClassifierPlugin",
+        "prediction": "analitico.plugin.CatBoostClassifierPlugin"
+    },
+    "data": {
+        "label": "dyn_purchased",
+        "chronological": true,
+        "schema": {
+            "columns": [
+                {
+                    "name": "odt_id",
+                    "type": "integer"
+                },
+                {
+                    "name": "odt_ean",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_category_id",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_category_id.level2",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_category_id.level3",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_replaceable",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_variable_weight",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_price",
+                    "type": "float"
+                },
+                {
+                    "name": "odt_price_per_type",
+                    "type": "float"
+                },
+                {
+                    "name": "odt_surcharge_fixed",
+                    "type": "float"
+                },
+                {
+                    "name": "sto_name",
+                    "type": "category"
+                },
+                {
+                    "name": "sto_area",
+                    "type": "category"
+                },
+                {
+                    "name": "sto_province",
+                    "type": "category"
+                },
+                {
+                    "name": "sto_ref_id",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_touched_at.year",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_touched_at.month",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_touched_at.day",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_touched_at.hour",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_touched_at.minute",
+                    "type": "category"
+                },
+                {
+                    "name": "odt_touched_at.dayofweek",
+                    "type": "category"
+                },
+                {
+                    "name": "dyn_price",
+                    "type": "float"
+                },
+                {
+                    "name": "dyn_price_promo",
+                    "type": "float"
+                },
+                {
+                    "name": "dyn_purchased",
+                    "type": "integer"
+                }
+            ]
+        },
+        "source_records": 4670564,
+        "training_records": 3736452,
+        "test_records": 934112,
+        "dropped_records": 0
+    },
+    "parameters": {
+        "test_size": 0.2,
+        "iterations": 50,
+        "learning_rate": 0.75,
+        "depth": 8,
+        "loss_function": "RMSE"
+    },
+    "scores": {
+        "best_iteration": 7,
+        "best_score": {
+            "training": {
+                "RMSE": 0.2695294145743726
+            },
+            "validation": {
+                "RMSE": 0.2675631951212182
+            }
+        },
+        "iterations": {
+            "training": {
+                "RMSE": [
+                    0.3757399274732617,
+                    0.29252176567254384,
+                    0.2826288757978329,
+                    0.2790920885172632,
+                    0.2781789254812265,
+                    0.2768997446321319,
+                    0.27566687344890084,
+                    0.2752667001387137,
+                    0.2738568878018711,
+                    0.2734866076359192,
+                    0.27325615367975176,
+                    0.2729677610042022,
+                    0.27266430376509704,
+                    0.27237117855419535,
+                    0.2722006597026885,
+                    0.2720341521897123,
+                    0.2718373172504731,
+                    0.27171050280364517,
+                    0.2716121797675063,
+                    0.27148362822008343,
+                    0.2714029910370483,
+                    0.27132652740320784,
+                    0.271242675102319,
+                    0.2711415033587647,
+                    0.27108713460114436,
+                    0.2710270892890201,
+                    0.2709376232130169,
+                    0.27085688207541897,
+                    0.2707825441685981,
+                    0.27074346480849004,
+                    0.27056711151305984,
+                    0.2705120327378214,
+                    0.2704253557508613,
+                    0.27036975955439335,
+                    0.2702804693028343,
+                    0.2702335579493423,
+                    0.27016274755325415,
+                    0.27010751818670115,
+                    0.2700587078144559,
+                    0.269997920697311,
+                    0.2699468861832203,
+                    0.2699106248801113,
+                    0.2698539053910219,
+                    0.2698050166285995,
+                    0.26974617093798015,
+                    0.26969824097864986,
+                    0.2696336732324535,
+                    0.2696001375647666,
+                    0.269553768196601,
+                    0.2695294145743726
+                ]
+            },
+            "validation": {
+                "RMSE": [
+                    0.3694784411568901,
+                    0.28052436099906297,
+                    0.2707758414617266,
+                    0.2689548630876188,
+                    0.268281644410856,
+                    0.26783259185805397,
+                    0.2676069624554054,
+                    0.2675631951212182,
+                    0.26795346129904046,
+                    0.26771684793001577,
+                    0.26793505218929053,
+                    0.26761761693265085,
+                    0.27006390637735517,
+                    0.27010518111444926,
+                    0.27006202912705213,
+                    0.2700162237896454,
+                    0.2700889174808391,
+                    0.27006897972288224,
+                    0.2699495661694647,
+                    0.26978549099455734,
+                    0.26975590232241076,
+                    0.2696886920917082,
+                    0.27042702595300194,
+                    0.27046688632830285,
+                    0.2704292367142599,
+                    0.27037473219746916,
+                    0.2703951577532954,
+                    0.2703403138111594,
+                    0.2702759650875652,
+                    0.2702272833252258,
+                    0.2706958427615893,
+                    0.27065568010978996,
+                    0.2706780645097389,
+                    0.2706490853481226,
+                    0.27069842189185245,
+                    0.27066902339618015,
+                    0.2706352413047768,
+                    0.270645222722241,
+                    0.27065775599842645,
+                    0.2706511544275775,
+                    0.2708477889640834,
+                    0.2708106808251498,
+                    0.2710456450535602,
+                    0.27106520571963005,
+                    0.27108938913000113,
+                    0.2710407201549812,
+                    0.27105053378195126,
+                    0.27100523371144697,
+                    0.2710138374629089,
+                    0.27100333558585243
+                ]
+            }
+        },
+        "features_importance": {
+            "odt_ean": 43.5656,
+            "sto_name": 18.0048,
+            "sto_ref_id": 11.64494,
+            "sto_province": 5.9857,
+            "dyn_price": 5.0866,
+            "odt_touched_at.month": 4.32183,
+            "odt_variable_weight": 3.20636,
+            "odt_touched_at.hour": 2.5763,
+            "odt_category_id": 2.34219,
+            "odt_touched_at.day": 2.0218,
+            "odt_touched_at.dayofweek": 0.64081,
+            "dyn_price_promo": 0.30171,
+            "odt_replaceable": 0.30136,
+            "odt_id": 0.0,
+            "odt_category_id.level2": 0.0,
+            "odt_category_id.level3": 0.0,
+            "odt_price": 0.0,
+            "odt_price_per_type": 0.0,
+            "odt_surcharge_fixed": 0.0,
+            "sto_area": 0.0,
+            "odt_touched_at.year": 0.0,
+            "odt_touched_at.minute": 0.0
+        },
+        "median_abs_error": 0.05103,
+        "mean_abs_error": 0.13609,
+        "sqrt_mean_squared_error": 0.26756,
+        "model_size": 276001652
+    },
+    "performance": {
+        "cpu_count": 12,
+        "training_ms": 372105,
+        "total_ms": 424528
+    },
+    "algorithm": "ml/regression"
+}

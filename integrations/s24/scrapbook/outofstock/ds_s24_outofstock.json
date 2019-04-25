@@ -1,0 +1,149 @@
+{
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.DataframePipelinePlugin",
+        "plugins": [
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                "source": {
+                    "content_type": "text/csv",
+                    "url": "analitico://workspaces/ws_s24/datasets/ds_s24_order_detail/data/csv"
+                }
+            },
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.TransformDataframePlugin",
+                "schema": {
+                    "columns": [
+                        {
+                            "name": "id",
+                            "rename": "odt_id"
+                        },
+                        {
+                            "name": "ean",
+                            "rename": "odt_ean"
+                        },
+                        {
+                            "name": "name",
+                            "rename": "odt_name"
+                        },
+                        {
+                            "name": "category_id",
+                            "rename": "odt_category_id"
+                        },
+                        {
+                            "name": "replaceable",
+                            "rename": "odt_replaceable"
+                        },
+                        {
+                            "name": "variable_weight",
+                            "rename": "odt_variable_weight"
+                        },
+                        {
+                            "name": "price",
+                            "rename": "odt_price"
+                        },
+                        {
+                            "name": "price_per_type",
+                            "rename": "odt_price_per_type"
+                        },
+                        {
+                            "name": "surcharge_fixed",
+                            "rename": "odt_surcharge_fixed"
+                        },
+                        {
+                            "name": "touched_at",
+                            "rename": "odt_touched_at"
+                        },
+                        {
+                            "name": "status",
+                            "rename": "odt_status"
+                        },
+                        {
+                            "name": "order_id",
+                            "rename": "ord_id"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.FusionDataframePlugin",
+                "notes": "Merge 'order_detail' (left) with 'order' (right) to retrieve 'order.store_id'",
+                "merge": {
+                    "on": "ord_id",
+                    "how": "left"
+                },
+                "plugins": [
+                    {
+                        "type": "analitico/plugin",
+                        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                        "source": {
+                            "content_type": "text/csv",
+                            "url": "analitico://workspaces/ws_s24/datasets/ds_s24_order/data/csv",
+                            "schema": {
+                                "columns": [
+                                    {
+                                        "name": "id",
+                                        "rename": "ord_id"
+                                    },
+                                    {
+                                        "name": "store_id",
+                                        "rename": "sto_id"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.FusionDataframePlugin",
+                "notes": "Merge 'order_detail+order' (left) with 'store' (right) to retrieve store details",
+                "merge": {
+                    "on": "sto_id",
+                    "how": "left"
+                },
+                "plugins": [
+                    {
+                        "type": "analitico/plugin",
+                        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                        "source": {
+                            "content_type": "text/csv",
+                            "url": "analitico://workspaces/ws_s24/datasets/ds_s24_store/data/csv",
+                            "schema": {
+                                "columns": [
+                                    {
+                                        "name": "id",
+                                        "rename": "sto_id"
+                                    },
+                                    {
+                                        "name": "name",
+                                        "rename": "sto_name"
+                                    },
+                                    {
+                                        "name": "area",
+                                        "rename": "sto_area",
+                                        "type": "category"
+                                    },
+                                    {
+                                        "name": "province",
+                                        "rename": "sto_province",
+                                        "type": "category"
+                                    },
+                                    {
+                                        "name": "ref_id",
+                                        "rename": "sto_ref_id",
+                                        "type": "category"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

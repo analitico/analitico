@@ -1,0 +1,53 @@
+{
+  "plugin": {
+    "type": "analitico/plugin",
+    "name": "analitico.plugin.RecipePipelinePlugin",
+    "plugins": [
+      {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.DatasetSourcePlugin",
+        "source": {
+          "dataset_id": "ds_s24_outofstock"
+        }
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.AugmentDatesPlugin",
+        "schema": {
+          "columns": [
+            {
+              "name": "odt_touched_at"
+            }
+          ]
+        }
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "s24.plugin.AugmentCategoriesPlugin",
+        "schema": {
+          "columns": [
+            {
+              "name": "odt_category_id"
+            }
+          ]
+        }
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "s24.plugin.OutOfStockPreprocessPlugin"
+      },
+      {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CatBoostClassifierPlugin",
+        "parameters": {
+          "iterations": 50,
+          "learning_rate": 1
+        },
+        "data": {
+          "chronological": true,
+          "label": "dyn_purchased"
+        }
+      }
+    ]
+  }
+}

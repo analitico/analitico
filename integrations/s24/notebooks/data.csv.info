@@ -1,0 +1,74 @@
+{
+    "schema": {
+        "columns": [
+            {
+                "name": "odt_id",
+                "type": "integer"
+            },
+            {
+                "name": "odt_ean",
+                "type": "string"
+            },
+            {
+                "name": "odt_name",
+                "type": "string"
+            },
+            {
+                "name": "odt_category_id",
+                "type": "string"
+            },
+            {
+                "name": "odt_replaceable",
+                "type": "category"
+            },
+            {
+                "name": "odt_variable_weight",
+                "type": "integer"
+            },
+            {
+                "name": "odt_price",
+                "type": "float"
+            },
+            {
+                "name": "odt_price_per_type",
+                "type": "float"
+            },
+            {
+                "name": "odt_surcharge_fixed",
+                "type": "float"
+            },
+            {
+                "name": "odt_touched_at",
+                "type": "datetime"
+            },
+            {
+                "name": "odt_status",
+                "type": "category"
+            },
+            {
+                "name": "ord_id",
+                "type": "integer"
+            },
+            {
+                "name": "sto_id",
+                "type": "integer"
+            },
+            {
+                "name": "sto_name",
+                "type": "category"
+            },
+            {
+                "name": "sto_area",
+                "type": "category"
+            },
+            {
+                "name": "sto_province",
+                "type": "category"
+            },
+            {
+                "name": "sto_ref_id",
+                "type": "category"
+            }
+        ]
+    }
+}

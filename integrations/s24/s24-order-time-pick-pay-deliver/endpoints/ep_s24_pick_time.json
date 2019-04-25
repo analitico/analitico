@@ -1,0 +1,24 @@
+{
+    "model_id": "ml_Sf8n6qx6iUbE",
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.EndpointPipelinePlugin",
+        "plugins": [
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.AugmentDatesDataframePlugin",
+                "schema": {
+                    "columns": [
+                        {
+                            "name": "order_deliver_at_start"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.CatBoostRegressorPlugin"
+            }
+        ]
+    }
+}

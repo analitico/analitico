@@ -1,0 +1,23 @@
+{
+    "data": {
+      "type": "job",
+      "id": "jb_SNfbO5IdmVpY",
+      "attributes": {
+        "title": "",
+        "description": "",
+        "created_at": "2019-02-12T09:02:12.421277+01:00",
+        "updated_at": "2019-02-12T09:02:46.294181+01:00",
+        "status": "completed",
+        "action": "recipe/train",
+        "item_id": "rx_s24_pick_time",
+        "workspace": "ws_s24",
+        "recipe_id": "rx_s24_pick_time",
+        "model_id": "ml_Sf8n6qx6iUbE"
+      },
+      "links": {
+        "self": "/api/jobs/jb_SNfbO5IdmVpY",
+        "related": "/api/recipes/rx_s24_pick_time",
+        "model": "/api/recipes/rx_s24_pick_time"
+      }
+    }
+  }

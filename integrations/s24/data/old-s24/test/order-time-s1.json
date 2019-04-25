@@ -1,0 +1,27 @@
+{
+    "data": [
+        {
+            "order_amount": 17.37,
+            "order_volume": 29.49,
+            "order_deliver_at_start": "2018-10-24 21:00:00",
+            "order_deliver_at_end": "2018-10-24 22:00:00",
+            "order_fulfillment_type": 1,
+            "items_total": 6,
+            "items_with_variable_weight": 0,
+            "customer_id": 786313,
+            "customer_province": "MI",
+            "customer_area": "MI4",
+            "customer_ztl": 0,
+            "customer_lat": 45.4367141,
+            "customer_lng": 9.2003588,
+            "store_id": 786277,
+            "store_name": "pam",
+            "store_province": "MI",
+            "store_area": "MI4",
+            "store_lat": 45.450774,
+            "store_lng": 9.197971,
+            "store_customer_distance": 1710,
+            "store_customer_duration": 409
+        }
+    ]
+}

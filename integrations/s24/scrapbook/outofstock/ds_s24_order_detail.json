@@ -1,0 +1,329 @@
+{
+    "assets": [
+        {
+            "id": "order_detail.csv",
+            "created_at": "2019-02-27T13:38:01.995917+00:00",
+            "filename": "order_detail.csv",
+            "path": "workspaces/ws_s24/datasets/ds_s24_order_detail/assets/order_detail.csv",
+            "hash": "35c369ad7f29e749c73b51ebb10d81f7",
+            "content_type": "txt/csv",
+            "size": 2904422193,
+            "url": "analitico://datasets/ds_s24_order_detail/assets/order_detail.csv"
+        }
+    ],
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.DataframePipelinePlugin",
+        "plugins": [
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                "source": {
+                    "content_type": "text/csv",
+                    "url": "workspaces/ws_s24/datasets/ds_s24_order_detail/assets/order_detail.csv",
+                    "schema": {
+                        "columns": [
+                            {
+                                "name": "id",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_id",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "replaceable",
+                                "type": "category"
+                            },
+                            {
+                                "name": "status",
+                                "type": "category"
+                            },
+                            {
+                                "name": "quantity",
+                                "type": "float"
+                            },
+                            {
+                                "name": "quantity_found",
+                                "type": "float"
+                            },
+                            {
+                                "name": "name",
+                                "type": "string"
+                            },
+                            {
+                                "name": "type",
+                                "type": "category"
+                            },
+                            {
+                                "name": "selling_type",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "description",
+                                "type": "string"
+                            },
+                            {
+                                "name": "long_description",
+                                "type": "string"
+                            },
+                            {
+                                "name": "variable_weight",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "price",
+                                "type": "float"
+                            },
+                            {
+                                "name": "price_real",
+                                "type": "float"
+                            },
+                            {
+                                "name": "price_per_type",
+                                "type": "string"
+                            },
+                            {
+                                "name": "price_per_type_real",
+                                "type": "float"
+                            },
+                            {
+                                "name": "price_overcharge",
+                                "type": "float"
+                            },
+                            {
+                                "name": "price_original",
+                                "type": "float"
+                            },
+                            {
+                                "name": "surcharge_fixed",
+                                "type": "float"
+                            },
+                            {
+                                "name": "surcharge_fixed_in_store",
+                                "type": "float"
+                            },
+                            {
+                                "name": "value_original",
+                                "type": "float"
+                            },
+                            {
+                                "name": "volume",
+                                "type": "float"
+                            },
+                            {
+                                "name": "delta",
+                                "type": "string"
+                            },
+                            {
+                                "name": "sel_option",
+                                "type": "string"
+                            },
+                            {
+                                "name": "sel_option_type",
+                                "type": "string"
+                            },
+                            {
+                                "name": "sel_thickness",
+                                "type": "string"
+                            },
+                            {
+                                "name": "ean",
+                                "type": "category"
+                            },
+                            {
+                                "name": "ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "gdo_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "category_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "category_name",
+                                "type": "category"
+                            },
+                            {
+                                "name": "amount",
+                                "type": "float"
+                            },
+                            {
+                                "name": "touched_at",
+                                "type": "datetime"
+                            },
+                            {
+                                "name": "created_at",
+                                "type": "datetime"
+                            },
+                            {
+                                "name": "updated_at",
+                                "type": "datetime"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "data": [
+        {
+            "id": "data.csv",
+            "created_at": "2019-02-27T16:07:17.937543+00:00",
+            "filename": "data.csv",
+            "path": "workspaces/ws_s24/datasets/ds_s24_order_detail/data/data.csv",
+            "hash": "29b90d72b6d18c4a9ea66342e662cbc8",
+            "content_type": "text/csv",
+            "size": 2758311047,
+            "url": "analitico://datasets/ds_s24_order_detail/data/data.csv",
+            "schema": {
+                "columns": [
+                    {
+                        "name": "id",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "order_id",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "replaceable",
+                        "type": "category"
+                    },
+                    {
+                        "name": "status",
+                        "type": "category"
+                    },
+                    {
+                        "name": "quantity",
+                        "type": "float"
+                    },
+                    {
+                        "name": "quantity_found",
+                        "type": "float"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "name": "type",
+                        "type": "category"
+                    },
+                    {
+                        "name": "selling_type",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "description",
+                        "type": "string"
+                    },
+                    {
+                        "name": "long_description",
+                        "type": "string"
+                    },
+                    {
+                        "name": "variable_weight",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "price",
+                        "type": "float"
+                    },
+                    {
+                        "name": "price_real",
+                        "type": "float"
+                    },
+                    {
+                        "name": "price_per_type",
+                        "type": "string"
+                    },
+                    {
+                        "name": "price_per_type_real",
+                        "type": "float"
+                    },
+                    {
+                        "name": "price_overcharge",
+                        "type": "float"
+                    },
+                    {
+                        "name": "price_original",
+                        "type": "float"
+                    },
+                    {
+                        "name": "surcharge_fixed",
+                        "type": "float"
+                    },
+                    {
+                        "name": "surcharge_fixed_in_store",
+                        "type": "float"
+                    },
+                    {
+                        "name": "value_original",
+                        "type": "float"
+                    },
+                    {
+                        "name": "volume",
+                        "type": "float"
+                    },
+                    {
+                        "name": "delta",
+                        "type": "string"
+                    },
+                    {
+                        "name": "sel_option",
+                        "type": "string"
+                    },
+                    {
+                        "name": "sel_option_type",
+                        "type": "string"
+                    },
+                    {
+                        "name": "sel_thickness",
+                        "type": "string"
+                    },
+                    {
+                        "name": "ean",
+                        "type": "category"
+                    },
+                    {
+                        "name": "ref_id",
+                        "type": "category"
+                    },
+                    {
+                        "name": "gdo_id",
+                        "type": "category"
+                    },
+                    {
+                        "name": "category_id",
+                        "type": "category"
+                    },
+                    {
+                        "name": "category_name",
+                        "type": "category"
+                    },
+                    {
+                        "name": "amount",
+                        "type": "float"
+                    },
+                    {
+                        "name": "touched_at",
+                        "type": "datetime"
+                    },
+                    {
+                        "name": "created_at",
+                        "type": "datetime"
+                    },
+                    {
+                        "name": "updated_at",
+                        "type": "datetime"
+                    }
+                ]
+            },
+            "rows": 200000
+        }
+    ]
+}

@@ -1,0 +1,469 @@
+{
+	"_type": "export",
+	"__export_format": 3,
+	"__export_date": "2019-02-12T08:47:06.403Z",
+	"__export_source": "insomnia.desktop.app:v6.3.2",
+	"resources": [
+		{
+			"_id": "wrk_7618921d56a9457b8cc9811535d8cdc9",
+			"created": 1549957055895,
+			"description": "",
+			"modified": 1549957272425,
+			"name": "analitico-s24",
+			"parentId": null,
+			"_type": "workspace"
+		},
+		{
+			"_id": "env_3b35afdf667b4c358becd8a941925c67",
+			"color": null,
+			"created": 1549957055976,
+			"data": {
+				"endpoint": "https://staging.analitico.ai/api/",
+				"token": "tok_s24_579E5hOWw7k8"
+			},
+			"isPrivate": false,
+			"metaSortKey": 1549957055976,
+			"modified": 1549957155091,
+			"name": "New Environment",
+			"parentId": "wrk_7618921d56a9457b8cc9811535d8cdc9",
+			"_type": "environment"
+		},
+		{
+			"_id": "jar_19a6a258723641ff83b4577730443c81",
+			"cookies": [],
+			"created": 1549957055979,
+			"modified": 1549957055979,
+			"name": "Default Jar",
+			"parentId": "wrk_7618921d56a9457b8cc9811535d8cdc9",
+			"_type": "cookie_jar"
+		},
+		{
+			"_id": "fld_3c21c3e996b445d991ab8ea20b3812fd",
+			"created": 1549957100754,
+			"description": "",
+			"environment": {
+				"token": "tok_s24_tok_s24_579E5hOWw7k8"
+			},
+			"metaSortKey": -1549618935448.75,
+			"modified": 1549961172677,
+			"name": "Upload",
+			"parentId": "wrk_7618921d56a9457b8cc9811535d8cdc9",
+			"_type": "request_group"
+		},
+		{
+			"_id": "fld_0d96803fb8ff47c3904e06564d98d0e7",
+			"created": 1549957342781,
+			"description": "",
+			"environment": {},
+			"metaSortKey": -1549957342781,
+			"modified": 1549957342781,
+			"name": "Predict",
+			"parentId": "wrk_7618921d56a9457b8cc9811535d8cdc9",
+			"_type": "request_group"
+		},
+		{
+			"_id": "fld_d19b0afc4f6a49cdb8d98b6e8b827839",
+			"created": 1549957474280,
+			"description": "",
+			"environment": {},
+			"metaSortKey": -1549872740947.9375,
+			"modified": 1549958224491,
+			"name": "Models",
+			"parentId": "wrk_7618921d56a9457b8cc9811535d8cdc9",
+			"_type": "request_group"
+		},
+		{
+			"_id": "fld_5b5fb35413c4411180a81c60c205eda6",
+			"created": 1549957568816,
+			"description": "",
+			"environment": {},
+			"metaSortKey": -1549915041864.4688,
+			"modified": 1549958227342,
+			"name": "Train",
+			"parentId": "wrk_7618921d56a9457b8cc9811535d8cdc9",
+			"_type": "request_group"
+		},
+		{
+			"_id": "env_ba07d4dfdb5d4284be2933c1f1e695a7",
+			"color": null,
+			"created": 1549957176850,
+			"data": {
+				"endpoint": "http://analitico.test:8000/api/"
+			},
+			"isPrivate": false,
+			"metaSortKey": 1549957176850,
+			"modified": 1549957211945,
+			"name": "analitico.test",
+			"parentId": "env_3b35afdf667b4c358becd8a941925c67",
+			"_type": "environment"
+		},
+		{
+			"_id": "env_aaa2923382694b0eb666b2061daf8096",
+			"color": null,
+			"created": 1549957219028,
+			"data": {},
+			"isPrivate": false,
+			"metaSortKey": 1549957219028,
+			"modified": 1549957225617,
+			"name": "staging.analitico.ai",
+			"parentId": "env_3b35afdf667b4c358becd8a941925c67",
+			"_type": "environment"
+		},
+		{
+			"_id": "req_5664860803184c4f917a962f1245f2f5",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {
+				"mimeType": "multipart/form-data",
+				"params": [
+					{
+						"fileName": "/home/gionata/github/analitico-s24/notebooks/100-order-time-pick-pay-deliver.csv",
+						"id": "pair_795ca20646a84c5dada2f65e8a404c0f",
+						"name": "data.csv",
+						"type": "file",
+						"value": ""
+					}
+				]
+			},
+			"created": 1549957100756,
+			"description": "",
+			"headers": [
+				{
+					"id": "pair_6ba9d9888d9c48f9a75289c8f68166ab",
+					"name": "Content-Type",
+					"value": "multipart/form-data"
+				}
+			],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.9688,
+			"method": "POST",
+			"modified": 1549957100756,
+			"name": "datasets/ds_s24_order_time_pick_pay_deliver/assets/data.csv (upload)",
+			"parameters": [],
+			"parentId": "fld_3c21c3e996b445d991ab8ea20b3812fd",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}datasets/ds_s24_order_time_pick_pay_deliver/assets/data.csv",
+			"_type": "request"
+		},
+		{
+			"_id": "req_a237e3f431614bc1915bef40d1370102",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549957100758,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.5781,
+			"method": "POST",
+			"modified": 1549957100758,
+			"name": "/datasets/ds_s24_order_time_pick_pay_deliver/data/process (process data)",
+			"parameters": [],
+			"parentId": "fld_3c21c3e996b445d991ab8ea20b3812fd",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}datasets/ds_s24_order_time_pick_pay_deliver/data/process",
+			"_type": "request"
+		},
+		{
+			"_id": "req_8dde1ab0fe8b4faa9f7a6ae0c925c4ed",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549957100764,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.4805,
+			"method": "GET",
+			"modified": 1549957100764,
+			"name": "/datasets/ds_s24_order_time_pick_pay_deliver (see dataset schema)",
+			"parameters": [],
+			"parentId": "fld_3c21c3e996b445d991ab8ea20b3812fd",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}datasets/ds_s24_order_time_pick_pay_deliver",
+			"_type": "request"
+		},
+		{
+			"_id": "req_618bc5b7c2a4489c9475b2764a1b39ef",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n    \"data\": [\n        {\n            \"order_amount\": 26.13,\n            \"order_volume\": 77.32,\n            \"order_deliver_at_start\": \"2018-09-11 13:00:00\",\n            \"order_fulfillment_type\": \"1\",\n            \"items_total\": 9,\n            \"items_with_variable_weight\": 0,\n            \"store_name\": \"coop\",\n            \"store_province\": \"MI\",\n            \"store_lat\": 45.470281,\n            \"store_lng\": 9.109733,\n            \"store_area\": \"MI5\",\n            \"store_ref_id\": \"5169\",\n            \"customer_province\": \"MI\",\n            \"customer_lat\": 45.4511124,\n            \"customer_lng\": 9.1558412,\n            \"customer_area\": \"MI5\",\n            \"customer_ztl\": \"0\",\n            \"customer_ref_id\": \"0000954909\",\n            \"customer_has_subscription\": \"0\"\n        },\n        {\n            \"order_amount\": 27.05,\n            \"order_volume\": 84.06,\n            \"order_deliver_at_start\": \"2018-09-04 09:00:00\",\n            \"order_fulfillment_type\": \"1\",\n            \"items_total\": 8,\n            \"items_with_variable_weight\": 4,\n            \"store_name\": \"coop\",\n            \"store_province\": \"RM\",\n            \"store_lat\": 41.850817,\n            \"store_lng\": 12.494866,\n            \"store_area\": \"RM5\",\n            \"store_ref_id\": \"387\",\n            \"customer_province\": \"RM\",\n            \"customer_lat\": 41.852604,\n            \"customer_lng\": 12.4808448,\n            \"customer_area\": \"RM5\",\n            \"customer_ztl\": \"0\",\n            \"customer_ref_id\": \"0000686053\",\n            \"customer_has_subscription\": \"0\"\n        }\n    ]\n}"
+			},
+			"created": 1549957100761,
+			"description": "",
+			"headers": [
+				{
+					"id": "pair_11a8459756984d55b011ce86e4539c54",
+					"name": "Content-Type",
+					"value": "application/json"
+				}
+			],
+			"isPrivate": false,
+			"metaSortKey": -1548860509514.212,
+			"method": "POST",
+			"modified": 1549959827351,
+			"name": "/recipes/ep_s24_pick_time/predict",
+			"parameters": [],
+			"parentId": "fld_0d96803fb8ff47c3904e06564d98d0e7",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}endpoints/ep_s24_pick_time/predict",
+			"_type": "request"
+		},
+		{
+			"_id": "req_198e9df9d143453bac499001a2f8f996",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n    \"data\": [\n        {\n            \"order_amount\": 26.13,\n            \"order_volume\": 77.32,\n            \"order_deliver_at_start\": \"2018-09-11 13:00:00\",\n            \"order_fulfillment_type\": \"1\",\n            \"items_total\": 9,\n            \"items_with_variable_weight\": 0,\n            \"store_name\": \"coop\",\n            \"store_province\": \"MI\",\n            \"store_lat\": 45.470281,\n            \"store_lng\": 9.109733,\n            \"store_area\": \"MI5\",\n            \"store_ref_id\": \"5169\",\n            \"customer_province\": \"MI\",\n            \"customer_lat\": 45.4511124,\n            \"customer_lng\": 9.1558412,\n            \"customer_area\": \"MI5\",\n            \"customer_ztl\": \"0\",\n            \"customer_ref_id\": \"0000954909\",\n            \"customer_has_subscription\": \"0\"\n        },\n        {\n            \"order_amount\": 27.05,\n            \"order_volume\": 84.06,\n            \"order_deliver_at_start\": \"2018-09-04 09:00:00\",\n            \"order_fulfillment_type\": \"1\",\n            \"items_total\": 8,\n            \"items_with_variable_weight\": 4,\n            \"store_name\": \"coop\",\n            \"store_province\": \"RM\",\n            \"store_lat\": 41.850817,\n            \"store_lng\": 12.494866,\n            \"store_area\": \"RM5\",\n            \"store_ref_id\": \"387\",\n            \"customer_province\": \"RM\",\n            \"customer_lat\": 41.852604,\n            \"customer_lng\": 12.4808448,\n            \"customer_area\": \"RM5\",\n            \"customer_ztl\": \"0\",\n            \"customer_ref_id\": \"0000686053\",\n            \"customer_has_subscription\": \"0\"\n        }\n    ]\n}"
+			},
+			"created": 1549957100768,
+			"description": "",
+			"headers": [
+				{
+					"id": "pair_11a8459756984d55b011ce86e4539c54",
+					"name": "Content-Type",
+					"value": "application/json"
+				}
+			],
+			"isPrivate": false,
+			"metaSortKey": -1548860509489.212,
+			"method": "POST",
+			"modified": 1549959838500,
+			"name": "/recipes/ep_s24_pay_time/predict",
+			"parameters": [],
+			"parentId": "fld_0d96803fb8ff47c3904e06564d98d0e7",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}endpoints/ep_s24_pay_time/predict",
+			"_type": "request"
+		},
+		{
+			"_id": "req_d5c4849ce6b04bc594037dc6f50eb2a9",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n    \"data\": [\n        {\n            \"order_amount\": 26.13,\n            \"order_volume\": 77.32,\n            \"order_deliver_at_start\": \"2018-09-11 13:00:00\",\n            \"order_fulfillment_type\": \"1\",\n            \"items_total\": 9,\n            \"items_with_variable_weight\": 0,\n            \"store_name\": \"coop\",\n            \"store_province\": \"MI\",\n            \"store_lat\": 45.470281,\n            \"store_lng\": 9.109733,\n            \"store_area\": \"MI5\",\n            \"store_ref_id\": \"5169\",\n            \"customer_province\": \"MI\",\n            \"customer_lat\": 45.4511124,\n            \"customer_lng\": 9.1558412,\n            \"customer_area\": \"MI5\",\n            \"customer_ztl\": \"0\",\n            \"customer_ref_id\": \"0000954909\",\n            \"customer_has_subscription\": \"0\"\n        },\n        {\n            \"order_amount\": 27.05,\n            \"order_volume\": 84.06,\n            \"order_deliver_at_start\": \"2018-09-04 09:00:00\",\n            \"order_fulfillment_type\": \"1\",\n            \"items_total\": 8,\n            \"items_with_variable_weight\": 4,\n            \"store_name\": \"coop\",\n            \"store_province\": \"RM\",\n            \"store_lat\": 41.850817,\n            \"store_lng\": 12.494866,\n            \"store_area\": \"RM5\",\n            \"store_ref_id\": \"387\",\n            \"customer_province\": \"RM\",\n            \"customer_lat\": 41.852604,\n            \"customer_lng\": 12.4808448,\n            \"customer_area\": \"RM5\",\n            \"customer_ztl\": \"0\",\n            \"customer_ref_id\": \"0000686053\",\n            \"customer_has_subscription\": \"0\"\n        }\n    ]\n}"
+			},
+			"created": 1549959852820,
+			"description": "",
+			"headers": [
+				{
+					"id": "pair_11a8459756984d55b011ce86e4539c54",
+					"name": "Content-Type",
+					"value": "application/json"
+				}
+			],
+			"isPrivate": false,
+			"metaSortKey": -1548860509488.8152,
+			"method": "POST",
+			"modified": 1549959870970,
+			"name": "/recipes/ep_s24_deliver_time/predict",
+			"parameters": [],
+			"parentId": "fld_0d96803fb8ff47c3904e06564d98d0e7",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}endpoints/ep_s24_deliver_time/predict",
+			"_type": "request"
+		},
+		{
+			"_id": "req_ca36d241cc3c472a97bc56658f2fadba",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549957100766,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.2607,
+			"method": "GET",
+			"modified": 1549958645837,
+			"name": "/models/ml_Sf8n6qx6iUbE (pick_time)",
+			"parameters": [],
+			"parentId": "fld_d19b0afc4f6a49cdb8d98b6e8b827839",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}models/ml_Sf8n6qx6iUbE",
+			"_type": "request"
+		},
+		{
+			"_id": "req_29324c19bcdc46ff8b500338fac678e0",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549957524919,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.2546,
+			"method": "GET",
+			"modified": 1549959474806,
+			"name": "/models/ml_Six56CXnaies (pay_time)",
+			"parameters": [],
+			"parentId": "fld_d19b0afc4f6a49cdb8d98b6e8b827839",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}models/ml_asYljMURTFPP",
+			"_type": "request"
+		},
+		{
+			"_id": "req_49061006d21c47e08e22403c8040d775",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549957527682,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.2515,
+			"method": "GET",
+			"modified": 1549960375396,
+			"name": "/models/ml_Six56CXnaies (deliver_time)",
+			"parameters": [],
+			"parentId": "fld_d19b0afc4f6a49cdb8d98b6e8b827839",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}models/ml_brW4J1eMftJ6",
+			"_type": "request"
+		},
+		{
+			"_id": "req_b1383040bfe44d35bb36ee113c8e0335",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549957100760,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.2852,
+			"method": "POST",
+			"modified": 1549958185729,
+			"name": "/recipes/rx_s24_pick_time/jobs/train",
+			"parameters": [],
+			"parentId": "fld_5b5fb35413c4411180a81c60c205eda6",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}recipes/rx_s24_pick_time/jobs/train",
+			"_type": "request"
+		},
+		{
+			"_id": "req_0bfb4cff58da4d1ea78a321dbb5e7703",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549957744895,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.273,
+			"method": "POST",
+			"modified": 1549957760326,
+			"name": "/recipes/rx_s24_pay_time/jobs/train",
+			"parameters": [],
+			"parentId": "fld_5b5fb35413c4411180a81c60c205eda6",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}recipes/rx_s24_pay_time/jobs/train",
+			"_type": "request"
+		},
+		{
+			"_id": "req_1bd6314104ae44c9b0b5a2c5273d5f95",
+			"authentication": {
+				"token": "tok_tester1_A7HMc7FA",
+				"type": "bearer"
+			},
+			"body": {},
+			"created": 1549959882507,
+			"description": "",
+			"headers": [],
+			"isPrivate": false,
+			"metaSortKey": -1548860509539.2668,
+			"method": "POST",
+			"modified": 1549959899281,
+			"name": "/recipes/rx_s24_deliver_time/jobs/train",
+			"parameters": [],
+			"parentId": "fld_5b5fb35413c4411180a81c60c205eda6",
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingMaxTimelineDataSize": 1000,
+			"settingRebuildPath": true,
+			"settingSendCookies": true,
+			"settingStoreCookies": true,
+			"url": "{{ endpoint  }}recipes/rx_s24_deliver_time/jobs/train",
+			"_type": "request"
+		}
+	]
+}

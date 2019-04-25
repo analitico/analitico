@@ -1,0 +1,272 @@
+{
+    "assets": [
+        {
+            "id": "data.csv",
+            "created_at": "2019-02-12T06:49:35.772892+00:00",
+            "filename": "100-order-time-pick-pay-deliver.csv",
+            "path": "workspaces/ws_s24/datasets/ds_s24_order_time_pick_pay_deliver/assets/data.csv",
+            "hash": "ac8cc768543401b48b5eea592c240635",
+            "content_type": "text/csv",
+            "size": 119645217,
+            "url": "analitico://datasets/ds_s24_order_time_pick_pay_deliver/assets/data.csv"
+        }
+    ],
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.DataframePipelinePlugin",
+        "plugins": [
+            {
+                "type": "analitico/plugin",
+                "name": "analitico.plugin.CsvDataframeSourcePlugin",
+                "source": {
+                    "content_type": "text/csv",
+                    "url": "workspaces/ws_s24/datasets/ds_s24_order_time_pick_pay_deliver/assets/data.csv",
+                    "schema": {
+                        "columns": [
+                            {
+                                "name": "order_amount",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_volume",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_deliver_at_start.dayofweek",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.year",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.month",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.day",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.hour",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.minute",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_end",
+                                "type": "string"
+                            },
+                            {
+                                "name": "order_fulfillment_type",
+                                "type": "category"
+                            },
+                            {
+                                "name": "items_total",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "items_with_variable_weight",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "store_name",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ztl",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_has_subscription",
+                                "type": "category"
+                            },
+                            {
+                                "name": "pick_time.min",
+                                "type": "float"
+                            },
+                            {
+                                "name": "pay_time.min",
+                                "type": "float"
+                            },
+                            {
+                                "name": "deliver_time.min",
+                                "type": "float"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "data": [
+        {
+            "id": "data.csv",
+            "created_at": "2019-02-12T07:05:48.127092+00:00",
+            "filename": "data.csv",
+            "path": "workspaces/ws_s24/datasets/ds_s24_order_time_pick_pay_deliver/data/data.csv",
+            "hash": "4f784b36fe67da7ae9efd7e558f228f6",
+            "content_type": "text/csv",
+            "size": 51287723,
+            "url": "analitico://datasets/ds_s24_order_time_pick_pay_deliver/data/data.csv",
+            "schema": {
+                "columns": [
+                    {
+                        "name": "order_amount",
+                        "type": "float"
+                    },
+                    {
+                        "name": "order_volume",
+                        "type": "float"
+                    },
+                    {
+                        "name": "order_deliver_at_start.dayofweek",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "order_deliver_at_start.year",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "order_deliver_at_start.month",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "order_deliver_at_start.day",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "order_deliver_at_start.hour",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "order_deliver_at_start.minute",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "order_deliver_at_end",
+                        "type": "string"
+                    },
+                    {
+                        "name": "order_fulfillment_type",
+                        "type": "category"
+                    },
+                    {
+                        "name": "items_total",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "items_with_variable_weight",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "store_name",
+                        "type": "category"
+                    },
+                    {
+                        "name": "store_province",
+                        "type": "category"
+                    },
+                    {
+                        "name": "store_lat",
+                        "type": "float"
+                    },
+                    {
+                        "name": "store_lng",
+                        "type": "float"
+                    },
+                    {
+                        "name": "store_area",
+                        "type": "category"
+                    },
+                    {
+                        "name": "store_ref_id",
+                        "type": "category"
+                    },
+                    {
+                        "name": "customer_province",
+                        "type": "category"
+                    },
+                    {
+                        "name": "customer_lat",
+                        "type": "float"
+                    },
+                    {
+                        "name": "customer_lng",
+                        "type": "float"
+                    },
+                    {
+                        "name": "customer_area",
+                        "type": "category"
+                    },
+                    {
+                        "name": "customer_ztl",
+                        "type": "category"
+                    },
+                    {
+                        "name": "customer_ref_id",
+                        "type": "category"
+                    },
+                    {
+                        "name": "customer_has_subscription",
+                        "type": "category"
+                    },
+                    {
+                        "name": "pick_time.min",
+                        "type": "float"
+                    },
+                    {
+                        "name": "pay_time.min",
+                        "type": "float"
+                    },
+                    {
+                        "name": "deliver_time.min",
+                        "type": "float"
+                    }
+                ]
+            }
+        }
+    ]
+}

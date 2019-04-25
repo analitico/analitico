@@ -1,0 +1,62 @@
+{
+    "data": {
+        "type": "analitico/prediction",
+        "records": [
+            {
+                "order_amount": 26.13,
+                "order_volume": 77.32,
+                "order_deliver_at_start": "2018-09-11 13:00:00",
+                "order_fulfillment_type": "1",
+                "items_total": 9,
+                "items_with_variable_weight": 0,
+                "store_name": "coop",
+                "store_province": "MI",
+                "store_lat": 45.470281,
+                "store_lng": 9.109733,
+                "store_area": "MI5",
+                "store_ref_id": "5169",
+                "customer_province": "MI",
+                "customer_lat": 45.4511124,
+                "customer_lng": 9.1558412,
+                "customer_area": "MI5",
+                "customer_ztl": "0",
+                "customer_ref_id": "0000954909",
+                "customer_has_subscription": "0"
+            },
+            {
+                "order_amount": 27.05,
+                "order_volume": 84.06,
+                "order_deliver_at_start": "2018-09-04 09:00:00",
+                "order_fulfillment_type": "1",
+                "items_total": 8,
+                "items_with_variable_weight": 4,
+                "store_name": "coop",
+                "store_province": "RM",
+                "store_lat": 41.850817,
+                "store_lng": 12.494866,
+                "store_area": "RM5",
+                "store_ref_id": "387",
+                "customer_province": "RM",
+                "customer_lat": 41.852604,
+                "customer_lng": 12.4808448,
+                "customer_area": "RM5",
+                "customer_ztl": "0",
+                "customer_ref_id": "0000686053",
+                "customer_has_subscription": "0"
+            }
+        ],
+        "predictions": [
+            12.289,
+            14.834
+        ],
+        "performance": {
+            "cpu_count": 12,
+            "loading_ms": 1,
+            "total_ms": 67,
+            "assets_ms": 0
+        },
+        "model_id": "ml_Sf8n6qx6iUbE",
+        "endpoint_id": "ep_s24_pick_time",
+        "job_id": "jb_74y15q3STj7g"
+    }
+}

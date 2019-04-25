@@ -1,0 +1,222 @@
+{
+    "data": {
+        "type": "model",
+        "id": "ml_Sf8n6qx6iUbE",
+        "attributes": {
+            "title": "",
+            "description": "",
+            "created_at": "2019-02-12T09:02:44.341988+01:00",
+            "updated_at": "2019-02-12T09:02:45.613926+01:00",
+            "workspace": "ws_s24",
+            "data": [
+                {
+                    "id": "training.json",
+                    "created_at": "2019-02-12T08:02:44.712574+00:00",
+                    "filename": "training.json",
+                    "path": "workspaces/ws_s24/models/ml_Sf8n6qx6iUbE/data/training.json",
+                    "hash": "4dc7cf78b3d6a4655eb07d2c70949c97",
+                    "content_type": "application/json",
+                    "size": 5275,
+                    "url": "https://analitico.test:8000/api/models/ml_Sf8n6qx6iUbE/data/training.json"
+                },
+                {
+                    "id": "model.cbm",
+                    "created_at": "2019-02-12T08:02:45.098250+00:00",
+                    "filename": "model.cbm",
+                    "path": "workspaces/ws_s24/models/ml_Sf8n6qx6iUbE/data/model.cbm",
+                    "hash": "3f594095ac278fb27572a41567243eaa",
+                    "content_type": null,
+                    "size": 430180,
+                    "url": "https://analitico.test:8000/api/models/ml_Sf8n6qx6iUbE/data/model.cbm"
+                },
+                {
+                    "id": "test.csv",
+                    "created_at": "2019-02-12T08:02:45.383383+00:00",
+                    "filename": "test.csv",
+                    "path": "workspaces/ws_s24/models/ml_Sf8n6qx6iUbE/data/test.csv",
+                    "hash": "9821d91a774d40938e29458a7e5b6e29",
+                    "content_type": "text/csv",
+                    "size": 17394,
+                    "url": "https://analitico.test:8000/api/models/ml_Sf8n6qx6iUbE/data/test.csv"
+                }
+            ],
+            "recipe_id": "rx_s24_pick_time",
+            "job_id": "jb_SNfbO5IdmVpY",
+            "training": {
+                "type": "analitico/training",
+                "plugins": {
+                    "training": "analitico.plugin.CatBoostRegressorPlugin",
+                    "prediction": "analitico.plugin.CatBoostRegressorPlugin"
+                },
+                "data": {
+                    "label": "pick_time.min",
+                    "chronological": false,
+                    "schema": {
+                        "columns": [
+                            {
+                                "name": "order_amount",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_volume",
+                                "type": "float"
+                            },
+                            {
+                                "name": "order_deliver_at_start.dayofweek",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.year",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.month",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.day",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.hour",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_deliver_at_start.minute",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "order_fulfillment_type",
+                                "type": "category"
+                            },
+                            {
+                                "name": "items_total",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "items_with_variable_weight",
+                                "type": "integer"
+                            },
+                            {
+                                "name": "store_name",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "store_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "store_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_province",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_lat",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_lng",
+                                "type": "float"
+                            },
+                            {
+                                "name": "customer_area",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ztl",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_ref_id",
+                                "type": "category"
+                            },
+                            {
+                                "name": "customer_has_subscription",
+                                "type": "category"
+                            },
+                            {
+                                "name": "pick_time.min",
+                                "type": "float"
+                            }
+                        ]
+                    },
+                    "source_records": 280025,
+                    "training_records": 224020,
+                    "test_records": 56005,
+                    "dropped_records": 0
+                },
+                "parameters": {
+                    "test_size": 0.2,
+                    "iterations": 50,
+                    "learning_rate": 1,
+                    "depth": 8,
+                    "loss_function": "RMSE"
+                },
+                "scores": {
+                    "median_abs_error": 6.92721,
+                    "mean_abs_error": 10.60576,
+                    "sqrt_mean_squared_error": 25.67197,
+                    "best_iteration": 5,
+                    "best_score": {
+                        "learn": {
+                            "RMSE": 25.962906934823888
+                        },
+                        "validation_0": {
+                            "RMSE": 25.671973225430502
+                        }
+                    },
+                    "features_importance": {
+                        "items_total": 46.48396,
+                        "order_fulfillment_type": 15.03431,
+                        "store_name": 12.0,
+                        "store_lat": 8.72746,
+                        "order_deliver_at_start.year": 5.21494,
+                        "order_deliver_at_start.month": 4.45151,
+                        "order_deliver_at_start.hour": 3.04211,
+                        "items_with_variable_weight": 1.91202,
+                        "store_ref_id": 0.85255,
+                        "order_amount": 0.70092,
+                        "store_province": 0.50216,
+                        "order_deliver_at_start.minute": 0.37369,
+                        "store_area": 0.36703,
+                        "order_deliver_at_start.day": 0.33733,
+                        "order_volume": 0.0,
+                        "order_deliver_at_start.dayofweek": 0.0,
+                        "store_lng": 0.0,
+                        "customer_province": 0.0,
+                        "customer_lat": 0.0,
+                        "customer_lng": 0.0,
+                        "customer_area": 0.0,
+                        "customer_ztl": 0.0,
+                        "customer_ref_id": 0.0,
+                        "customer_has_subscription": 0.0
+                    },
+                    "model_size": 430180
+                },
+                "performance": {
+                    "cpu_count": 12,
+                    "training_ms": 20899,
+                    "total_ms": 28447
+                }
+            }
+        },
+        "links": {
+            "self": "https://analitico.test:8000/api/models/ml_Sf8n6qx6iUbE"
+        }
+    }
+}

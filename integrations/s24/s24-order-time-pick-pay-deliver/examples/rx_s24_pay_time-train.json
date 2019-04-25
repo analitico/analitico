@@ -1,0 +1,23 @@
+{
+    "data": {
+        "type": "job",
+        "id": "jb_t7et6y8MQelo",
+        "attributes": {
+            "title": "",
+            "description": "",
+            "created_at": "2019-02-12T09:16:08.154189+01:00",
+            "updated_at": "2019-02-12T09:16:42.298978+01:00",
+            "status": "completed",
+            "action": "recipe/train",
+            "item_id": "rx_s24_pay_time",
+            "workspace": "ws_s24",
+            "recipe_id": "rx_s24_pay_time",
+            "model_id": "ml_asYljMURTFPP"
+        },
+        "links": {
+            "self": "/api/jobs/jb_t7et6y8MQelo",
+            "related": "/api/recipes/rx_s24_pay_time",
+            "model": "/api/recipes/rx_s24_pay_time"
+        }
+    }
+}

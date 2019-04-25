@@ -1,0 +1,6 @@
+**/__pycache__
+**/*.csv
+venv
+.ipynb_checkpoints
+notebooks/catboost_info/**
+.DS_Store
