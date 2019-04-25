@@ -7,8 +7,8 @@ WORKDIR /home/www/analitico
 # copy requirements
 COPY ./requirements.txt /home/www/analitico
 # copy libraries
-COPY ./sdk/analitico /home/www/analitico/libs/analitico
-COPY ./integrations/s24/source/s24 /home/www/analitico/libs/s24
+COPY ./source/analitico /home/www/analitico/libs/analitico
+COPY ./source/s24 /home/www/analitico/libs/s24
 # copy nginx configuration as reverse proxy for jupyter host
 # COPY ./conf/nginx-jupyter.conf /etc/nginx/nginx.conf
 # copy script to launch jupyter

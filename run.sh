@@ -6,6 +6,8 @@ echo "Injecting env"
 source /home/www/analitico-ci/analitico-env.sh
 export LANG=C.UTF-8
 export LC_CTYPE=C.UTF-8
+export HOME="/home/www"
+
 cd /home/www/analitico
 
 echo "Start gunicorn"
