@@ -19,7 +19,7 @@ from analitico.dataset import Dataset
 from analitico.utilities import id_generator
 
 # read http streams in chunks
-HTTP_BUFFER_SIZE = 32 * 1024 * 1024 # 32 MiBs
+HTTP_BUFFER_SIZE = 32 * 1024 * 1024  # 32 MiBs
 
 
 class Factory(AttributeMixin):
@@ -36,7 +36,7 @@ class Factory(AttributeMixin):
 
         # use current working directory at the time when the factory
         # is created so that the caller can setup a temp directory we
-        # should work in 
+        # should work in
         self._artifacts_directory = os.getcwd()
 
     ##

@@ -1,5 +1,7 @@
 import collections
 import jsonfield
+import os
+import json
 
 from django.db import models
 from django.utils.crypto import get_random_string
@@ -9,12 +11,15 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 
+from analitico import AnaliticoException
 from analitico.factory import Factory
 from analitico.schema import generate_schema
+from analitico.utilities import read_json, read_text
+from analitico.pandas import pd_read_csv
 
-from .items import ItemMixin, ItemAssetsMixin
+from .items import ItemMixin, ItemAssetsMixin, ASSETS_CLASS_DATA
 from .workspace import Workspace
-from .notebook import nb_run
+from .notebook import nb_run, nb_replace, nb_find_cells
 
 ##
 ## Dataset
@@ -62,55 +67,64 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
             # process action runs plugin to generate and save data.csv and its schema
             if job.action == "dataset/process":
 
+                # TODO remove this line after June 2019
+                # pluging are no longer used in datasets and can be removed
+                # this code can be removed once all datasets have been cleared
+                self.set_attribute("plugin", None)
+
                 # if dataset has a notebook it will be used to process
                 notebook = self.get_notebook()
+
                 if notebook:
                     nb_run(notebook_item=self, notebook_name=None, factory=factory, upload=True, save=True)
                     return
 
-                # if there isn't a notebook we process via plugins
-                plugin_settings = self.get_attribute("plugin")
-                new_plugin = False
-
-                # if the dataset doesn't have a plugin we can initialize it with a dataset pipeline
-                # which initially will contain a single plugin to read the source data from csv
+                # if the dataset doesn't have a notebook we can initialize it with a template
+                # which initially will contain a plugin to read the source data from csv and apply a schema
                 # and may later on be extended to do other data transformations tasks
-                if not plugin_settings and self.assets:
+
+                # look for .csv assets
+                asset_url = None
+                if self.assets:
                     for asset in self.assets:
                         if asset.get("content_type") == "text/csv" or asset["path"].endswith(".csv"):
-                            plugin_settings = {
-                                "type": analitico.plugin.PLUGIN_TYPE,
-                                "name": analitico.plugin.DATAFRAME_PIPELINE_PLUGIN,
-                                "plugins": [
-                                    {
-                                        "type": analitico.plugin.PLUGIN_TYPE,
-                                        "name": analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN,
-                                        "source": {"content_type": "text/csv", "url": asset["path"]},
-                                    }
-                                ],
-                            }
-                            new_plugin = True
-                            self.set_attribute("plugin", plugin_settings)
-                            self.save()
-                            break
+                            asset_url = asset["url"]
 
-                if plugin_settings:
-                    plugin = factory.get_plugin(**plugin_settings)
-                    # plugin will produce pandas dataframe and create data.csv, data.csv.info
-                    df = plugin.run()
-                    if new_plugin:
-                        # apply derived schema as a starting schema which
-                        # users will then customize and change, etc.
-                        schema = generate_schema(df)
-                        with transaction.atomic():
-                            self.refresh_from_db()
-                            plugin_settings = self.get_attribute("plugin")
-                            plugin_settings["plugins"][0]["source"]["schema"] = schema
-                            self.set_attribute("plugin", plugin_settings)
-                            self.save()
+                if not asset_url:
+                    raise AnaliticoException(
+                        "You should upload a .csv file to " + self.id + " before processing it.", item=self
+                    )
 
-                    # upload processing artifacts to /data
-                    factory.upload_artifacts(self)
+                # retrieve initial schema for file asset
+                asset_stream = factory.get_url_stream(asset_url, binary=False)
+                asset_df = pd_read_csv(asset_stream)  # TODO read a maximum of X rows to infer schema
+                asset_schema = generate_schema(asset_df)
+                asset_schema = json.dumps(asset_schema)  # pretty? indent=4
+
+                # read notebook template
+                notebook_filename = os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)), "assets/dataset-csv-template.ipynb"
+                )
+                notebook = read_json(notebook_filename)
+
+                # TODO generic url for csv file instead of specific filename
+                # inject url of source in template
+                url_cells = nb_find_cells(notebook, tags="dataset_url")
+                for url_cell in url_cells:
+                    url_cell["source"] = ['dataset_url = "{}"'.format(asset_url)]
+
+                # inject schema of source in template
+                schema_cells = nb_find_cells(notebook, tags="dataset_schema")
+                for schema_cell in schema_cells:
+                    schema_cell["source"] = ["dataset_schema = " + asset_schema]
+
+                self.notebook = notebook
+                self.save()
+
+                # TODO pass token as a parameter, create token if needed
+                # run notebook and save it in item with updated info
+                nb_run(notebook_item=self, notebook_name=None, factory=factory, upload=True, save=True)
+
             self.save()
         except Exception as exc:
             raise exc
