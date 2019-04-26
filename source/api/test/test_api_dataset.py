@@ -35,6 +35,8 @@ from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
+import logging
+logger = logging.getLogger("analitico")
 
 class DatasetTests(APITestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
@@ -194,6 +196,8 @@ class DatasetTests(APITestCase):
         job_url = reverse("api:dataset-job-action", args=("ds_titanic_3", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
+        if job_response.status_code != 200:
+            logger.error("Job response is {}, {}".format(job_response.status_code, job_response))
         self.assertEqual(job_response.status_code, 200)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
