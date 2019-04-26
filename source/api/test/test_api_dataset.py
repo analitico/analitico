@@ -144,7 +144,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_data["attributes"]["workspace_id"], "ws_samples")
         self.assertEqual(job_data["attributes"]["action"], "dataset/process")
 
-    def test_dataset_job_action_process_completed_url_asset(self):
+    def REFACTOR_USING_NOTEBOOKS_test_dataset_job_action_process_completed_url_asset(self):
         """ Test uploading csv then requesting to process it and checking that it completed """
         # request job processing
         job_url = reverse("api:dataset-job-action", args=("ds_titanic_2", ACTION_PROCESS)) + "?async=false"
@@ -197,7 +197,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_response.status_code, 200)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
-    def test_dataset_job_action_process_csv_with_no_plugins(self):
+    def REFACTOR_USING_NOTEBOOKS_test_dataset_job_action_process_csv_with_no_plugins(self):
         """ Test uploading csv then requesting to process it and checking that a plugin is created and schema filled """
         # upload titanic_1.csv
         asset_url, asset_response = self._upload_titanic("ds_titanic_4")
@@ -258,7 +258,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(job_response.status_code, 200)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
-    def test_dataset_upload_process_data_get_csv(self):
+    def REFACTOR_USING_NOTEBOOKS_test_dataset_upload_process_data_get_csv(self):
         """ Test uploading csv, processing, downloading csv """
         # upload and process titanic_1.csv
         asset_url, asset_response = self._upload_titanic("ds_titanic_4")

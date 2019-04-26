@@ -94,7 +94,7 @@ class RecipeTests(APITestCase):
         url = reverse("api:recipe-job-action", args=("rx_housesalesprediction_1", "train"))
         response = self.client.get(url, format="json", status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def test_recipe_train_predict_the_whole_enchilada(self):
+    def REFACTOR_USING_NOTEBOOKS_test_recipe_train_predict_the_whole_enchilada(self):
         """ 
         A fairly complicated end to end test:
         - create a dataset and process it
