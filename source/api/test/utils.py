@@ -13,9 +13,11 @@ from analitico.utilities import read_json, get_dict_dot
 
 # pylint: disable=no-member
 
+import logging
+logger = logging.getLogger("analitico")
+
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
-
 
 class APITestCase(APITestCase):
     """ Base class for testing analitico APIs """
@@ -140,6 +142,11 @@ class APITestCase(APITestCase):
         self.ws2 = Workspace.objects.create(pk="ws_user2", user=self.user2)
         self.ws3 = Workspace.objects.create(pk="ws_user3", user=self.user3)
         self.ws4 = Workspace.objects.create(pk="ws_user4", user=self.user4)
+
+    def assertStatusCode(self, response, status_code=status.HTTP_200_OK):
+        if response.status_code != status_code:
+            logger.error("Response status_code should be {} but instead it is {}\nResponse is: {}".format(status_code, response.status_code, response.content))
+        self.assertEqual(response.status_code, status_code)
 
     def setUp(self):
         """ Prepare test users with test auth tokens """

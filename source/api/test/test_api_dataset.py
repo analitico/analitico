@@ -152,7 +152,7 @@ class DatasetTests(APITestCase):
         job_url = reverse("api:dataset-job-action", args=("ds_titanic_2", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
-        self.assertEqual(job_response.status_code, 200)
+        self.assertStatusCode(job_response.status_code)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
         # check dataset again, this time should have data asset
@@ -196,9 +196,7 @@ class DatasetTests(APITestCase):
         job_url = reverse("api:dataset-job-action", args=("ds_titanic_3", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
-        if job_response.status_code != 200:
-            logger.error("Job response is {}, {}".format(job_response.status_code, job_response.content))
-        self.assertEqual(job_response.status_code, 200)
+        self.assertStatusCode(job_response)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
     def REFACTOR_USING_NOTEBOOKS_test_dataset_job_action_process_csv_with_no_plugins(self):
@@ -212,7 +210,7 @@ class DatasetTests(APITestCase):
         job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
-        self.assertEqual(job_response.status_code, 200)
+        self.assertStatusCode(job_response)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
         # check dataset, now it should have an automatically created dataset pipeline plugin + schema
@@ -259,7 +257,7 @@ class DatasetTests(APITestCase):
         job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
-        self.assertEqual(job_response.status_code, 200)
+        self.assertStatusCode(job_response)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
     def REFACTOR_USING_NOTEBOOKS_test_dataset_upload_process_data_get_csv(self):
@@ -273,13 +271,13 @@ class DatasetTests(APITestCase):
         job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
-        self.assertEqual(job_response.status_code, 200)
+        self.assertStatusCode(job_response)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
         # request data download, check that it is streaming
         csv_url = reverse("api:dataset-detail-data-csv", args=("ds_titanic_4",))
         csv_response = self.client.get(csv_url)
-        self.assertEqual(csv_response.status_code, 200)
+        self.assertStatusCode(csv_response)
         self.assertTrue(csv_response.streaming)
         csv = csv_response.streaming_content
         csv_data = csv_response.getvalue().decode("utf-8")
@@ -298,13 +296,13 @@ class DatasetTests(APITestCase):
         job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
-        self.assertEqual(job_response.status_code, 200)
+        self.assertStatusCode(job_response)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
         # request information on data, check schema is present
         info_url = reverse("api:dataset-detail-data-info", args=("ds_titanic_4",))
         info_response = self.client.get(info_url)
-        self.assertEqual(info_response.status_code, 200)
+        self.assertStatusCode(info_response)
         self.assertFalse(info_response.streaming)
         info_data = info_response.data
         self.assertEqual(len(info_data["schema"]["columns"]), 12)
@@ -320,7 +318,7 @@ class DatasetTests(APITestCase):
         # do not indicate ?meta, defaults to false
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), 25)
         self.assertEqual(records[0]["Number"], 0)
@@ -347,7 +345,7 @@ class DatasetTests(APITestCase):
         self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-asset-detail", args=("ds_titanic_4", ASSETS_CLASS_DATA, "data.csv")) + "?format=json"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), 25)
         self.assertEqual(records[0]["Number"], 0)
@@ -373,7 +371,7 @@ class DatasetTests(APITestCase):
         self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=yes"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
         self.assertEqual(records[0]["Number"], 0)
@@ -391,7 +389,7 @@ class DatasetTests(APITestCase):
         self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=1"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
         self.assertEqual(records[0]["Number"], 0)
@@ -407,7 +405,7 @@ class DatasetTests(APITestCase):
         self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=2"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
         self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 2)
@@ -418,7 +416,7 @@ class DatasetTests(APITestCase):
         self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=19&meta=True"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), N % DEFAULT_PAGE_SIZE)
         self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 19)
@@ -435,7 +433,7 @@ class DatasetTests(APITestCase):
         self.upload_large_random_data_csv("ds_titanic_4", N)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=20"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), 0)
         meta = response.data["meta"]
@@ -447,7 +445,7 @@ class DatasetTests(APITestCase):
         # beyond last
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=310"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), 0)
         meta = response.data["meta"]
@@ -464,7 +462,7 @@ class DatasetTests(APITestCase):
         # first page loading time may be higher because cache is cold
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
 
@@ -477,7 +475,7 @@ class DatasetTests(APITestCase):
             url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
             url = url + "?page=" + str(page_number) + "&meta=false"  # NO META ROWS COUNT
             response = self.client.get(url)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertStatusCode(response)
             records = response.data["data"]
             self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
             self.assertEqual(records[0]["Number"], page_number * DEFAULT_PAGE_SIZE)
@@ -493,7 +491,7 @@ class DatasetTests(APITestCase):
         self.upload_large_random_data_csv("ds_titanic_4", 1000)
         url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=10&page_size=50&meta=tRUe"
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertStatusCode(response)
         records = response.data["data"]
         self.assertEqual(len(records), 50)
         self.assertEqual(records[0]["Number"], 500)
