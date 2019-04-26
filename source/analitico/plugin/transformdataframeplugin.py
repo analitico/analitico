@@ -40,12 +40,12 @@ class TransformDataframePlugin(IDataframePlugin):
             self.warning("TransformDataframePlugin - requires a single pd.DataFrame as input, none was found")
             return args
 
-        schema = self.get_attribute("schema")
+        schema = self.get_attribute("schema", None)
         if not schema:
             self.warning(
                 "TransformDataframePlugin - should have a 'schema' attribute with the schema that you want to apply to the input dataframe"
             )
-            return args
+            return df
 
         df = apply_schema(df, schema)
         self.info("TransformDataframePlugin - schema applied to dataframe")
