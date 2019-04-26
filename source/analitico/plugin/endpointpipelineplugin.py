@@ -49,7 +49,7 @@ class EndpointPipelinePlugin(PipelinePlugin):
             # the predictor has most likely added a "records" field with the processed
             # records which we may choose to avoid echoing back to the caller. if we want
             # we can remove the records here before returning
-            
+
             return predictions
 
         except Exception as exc:

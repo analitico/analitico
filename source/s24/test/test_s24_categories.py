@@ -1,4 +1,3 @@
-
 from django.test import TestCase
 
 from s24.categories import s24_get_category, s24_get_category_id, s24_get_category_slug

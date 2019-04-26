@@ -95,7 +95,7 @@ def get_column_type(df, column):
 def generate_schema(df: pd.DataFrame) -> dict:
     """ Generates an analitico schema from a pandas dataframe """
     columns = []
-    
+
     columns_names = df.columns.tolist()
     for name in columns_names:
         ctype = pandas_to_analitico_type(df[name].dtype)
@@ -157,7 +157,7 @@ def apply_column(df: pd.DataFrame, column):
             ) from exc
 
     if "rename" in column:
-        df.rename(index=str, columns={ column_name: column["rename"]}, inplace=True)
+        df.rename(index=str, columns={column_name: column["rename"]}, inplace=True)
         column_name = column["rename"]
 
     # make requested column index
@@ -169,6 +169,7 @@ def apply_column(df: pd.DataFrame, column):
 
     assert column_name in df.columns
     return df[column_name]
+
 
 def apply_schema(df: pd.DataFrame, schema):
     """ 

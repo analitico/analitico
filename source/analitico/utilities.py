@@ -43,11 +43,11 @@ def id_generator(size=9, chars=string.ascii_letters + string.digits):
 
 MB = 1024 * 1024
 
+
 def get_runtime_brief():
     """ A digest version of get_runtime to be used more frequently """
-    return {
-        "cpu_count": multiprocessing.cpu_count()
-        }
+    return {"cpu_count": multiprocessing.cpu_count()}
+
 
 def get_gpu_runtime():
     """ Returns array of GPU specs (if discoverable) """
@@ -188,6 +188,17 @@ def read_json(filename, encoding="utf-8"):
             return json.load(f)
     except Exception as exc:
         detail = "analitico.utilities.read_json: error while reading {}, exception: {}".format(filename, exc)
+        logger.error(detail)
+        raise Exception(detail, exc)
+
+
+def read_text(filename, encoding="utf-8"):
+    """ Reads a text file """
+    try:
+        with open(filename, encoding=encoding) as f:
+            return f.read()
+    except Exception as exc:
+        detail = "analitico.utilities.read_text: error while reading {}, exception: {}".format(filename, exc)
         logger.error(detail)
         raise Exception(detail, exc)
 

@@ -76,10 +76,7 @@ class AugmentCategoriesPlugin(IDataframePlugin):
 
             # check if all columns are there already, for example in prediction requests
             # where caller provides this information to skip this expensive augmentation
-            columns = (
-                category_id_col + ".level2",
-                category_id_col + ".level3"
-            )
+            columns = (category_id_col + ".level2", category_id_col + ".level3")
             if all(column in df.columns for column in columns):
                 self.factory.warning("AugmentCategoriesPlugin: data is already augmented", plugin=self)
                 return df

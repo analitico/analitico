@@ -77,7 +77,7 @@ class DatasetTests(unittest.TestCase, TestMixin):
             columns = schema["columns"]
             self.assertEqual(len(columns), 3)
             self.assertEqual(df.columns[1], "Second")
-            
+
             schema["columns"][1]["rename"] = "Secondo"
             df = apply_schema(df, schema)
 
@@ -95,7 +95,7 @@ class DatasetTests(unittest.TestCase, TestMixin):
             columns = schema["columns"]
             self.assertEqual(len(columns), 3)
             self.assertEqual(df.index.name, None)
-            
+
             schema["columns"][0]["index"] = True
             df = apply_schema(df, schema)
 
@@ -113,7 +113,7 @@ class DatasetTests(unittest.TestCase, TestMixin):
             columns = schema["columns"]
             self.assertEqual(len(columns), 3)
             self.assertEqual(df.index.name, None)
-            
+
             schema["columns"][0]["index"] = True
             schema["columns"][0]["rename"] = "Primo"
             df = apply_schema(df, schema)
