@@ -151,9 +151,25 @@ def nb_run(
 
     if save:
         # save executed notebook
+        # TODO maybe we need to reload item model in case notebook itself altered it?
         notebook_item.set_notebook(notebook, notebook_name)
         notebook_item.save()
     return notebook
+
+
+def nb_find_cells(notebook: dict, tags: str) -> list:
+    """ Returns a list of cells containing all the requested tags (passed as list or comma separated) """
+    if isinstance(tags, str):
+        tags = tags.split(",")
+    if not isinstance(tags, list) or len(tags) < 1:
+        return list()
+
+    cells = []
+    for cell in notebook["cells"]:
+        cell_tags = get_dict_dot(cell, "metadata.tags", None)
+        if cell_tags and all(tag in cell_tags for tag in tags):
+            cells.append(cell)
+    return cells
 
 
 def nb_filter_tags(notebook: dict, tags=None):
@@ -263,3 +279,18 @@ def nb_execute_inline(input_path, output_path, parameters=None, cwd=None):
             write_ipynb(nb, output_path)
 
         return nb
+
+
+def nb_replace(notebook: dict, find: str, replace: str, source=True) -> dict:
+    """ Replace given strings in notebook's source code """
+
+    # replace values in source code
+    if source:
+        if "cells" in notebook:
+            for cell in notebook["cells"]:
+                if "source" in cell:
+                    cell["source"] = [line.replace(find, replace) for line in cell["source"]]
+
+    # TODO replace in metadata, etc
+
+    return notebook
