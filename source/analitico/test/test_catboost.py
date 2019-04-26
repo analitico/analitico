@@ -114,7 +114,7 @@ class CatBoostTests(unittest.TestCase, TestMixin):
 
         except Exception as exc:
             factory.error("test_catboost_multiclass_classifier_prediction - " + str(exc))
-            pass
+            raise exc
 
     def test_catboost_binary_classifier_prediction_with_labels(self):
         """ Test predictions with catboost as a binary classifier (using labels instead of int) """
