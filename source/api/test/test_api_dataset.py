@@ -197,7 +197,7 @@ class DatasetTests(APITestCase):
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         if job_response.status_code != 200:
-            logger.error("Job response is {}, {}".format(job_response.status_code, job_response))
+            logger.error("Job response is {}, {}".format(job_response.status_code, job_response.content))
         self.assertEqual(job_response.status_code, 200)
         self.assertEqual(job_data["attributes"]["status"], "completed")
 
