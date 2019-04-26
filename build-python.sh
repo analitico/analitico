@@ -8,6 +8,7 @@ echo "Injecting env"
 source /home/www/analitico-ci/analitico-env.sh
 export LANG=C.UTF-8
 export LC_CTYPE=C.UTF-8
+export HOME="/home/www"
 
 echo "Installing requirements"
 source venv/bin/activate
@@ -17,6 +18,9 @@ cd source
 
 echo "Build Static"
 ./manage.py collectstatic --noinput
+
+# make tmp and subfolders public
+chmod -R 777 /tmp
 
 echo "Running python tests"
 ./manage.py test
