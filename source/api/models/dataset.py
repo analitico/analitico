@@ -19,7 +19,8 @@ from analitico.pandas import pd_read_csv
 
 from .items import ItemMixin, ItemAssetsMixin, ASSETS_CLASS_DATA
 from .workspace import Workspace
-from .notebook import nb_run, nb_replace, nb_find_cells
+from .notebook import nb_run, nb_replace, nb_find_cells, nb_replace_source
+from .token import get_workspace_token
 
 ##
 ## Dataset
@@ -108,15 +109,12 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                 notebook = read_json(notebook_filename)
 
                 # TODO generic url for csv file instead of specific filename
-                # inject url of source in template
-                url_cells = nb_find_cells(notebook, tags="dataset_url")
-                for url_cell in url_cells:
-                    url_cell["source"] = ['dataset_url = "{}"'.format(asset_url)]
 
-                # inject schema of source in template
-                schema_cells = nb_find_cells(notebook, tags="dataset_schema")
-                for schema_cell in schema_cells:
-                    schema_cell["source"] = ["dataset_schema = " + asset_schema]
+                # inject token, source and schema in template cells
+                token = get_workspace_token(self.workspace)
+                nb_replace_source(notebook, tags="token", source='token = "{}"'.format(token))
+                nb_replace_source(notebook, tags="dataset_url", source='dataset_url = "{}"'.format(asset_url))
+                nb_replace_source(notebook, tags="dataset_schema", source="dataset_schema = " + asset_schema)
 
                 self.notebook = notebook
                 self.save()
