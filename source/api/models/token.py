@@ -26,7 +26,7 @@ class Token(models.Model):
     # a single user can have zero, one or more tokens
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
 
-    # token name can be used to distinguish tokens, eg: mobile, web, server
+    # token name can be used to distinguish tokens, eg: mobile, web, server, api
     name = models.SlugField(blank=True)
 
     # Time when created
@@ -59,6 +59,9 @@ def get_workspace_token(workspace, create_if_needed=True):
     user = workspace.user
     token = Token.objects.filter(user=user).first()
     if token is None:
-        # TODO create a new token
-        raise analitico.AnaliticoException("Cannot find a token for workspace " + workspace.id)
+        if not create_if_needed:
+            raise analitico.AnaliticoException("Workspace " + workspace.id + " does not have an API token, please create one.")
+        # create a default token
+        token = Token(user=user, id=generate_token_id(), name="api")
+        token.save()
     return token.id
