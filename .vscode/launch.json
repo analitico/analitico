@@ -30,7 +30,7 @@
                 "--noreload"
             ],
             "django": true,
-            "debugStdLib": true,
+            "justMyCode": false,
             "logToFile": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/source"
@@ -49,7 +49,7 @@
                 "2"
             ],
             "django": true,
-            "debugStdLib": true,
+            "justMyCode": false,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/source"
             }
@@ -63,12 +63,12 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "analitico.test.test_dataset.DatasetTests.test_dataset_csv4_applyschema_index_rename",
+                "api.test.test_api_dataset.DatasetTests.test_dataset_job_action_process_csv_from_analitico_asset",
                 "-v",
                 "2"
             ],
             "django": true,
-            "debugStdLib": true,
+            "justMyCode": false,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/source"
             }
