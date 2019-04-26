@@ -294,3 +294,13 @@ def nb_replace(notebook: dict, find: str, replace: str, source=True) -> dict:
     # TODO replace in metadata, etc
 
     return notebook
+
+
+def nb_replace_source(notebook: dict, tags, source):
+    """ Find cells with given tags and replace source with given source code lines """
+    if source is str:
+        source = [source]
+    tagged_cells = nb_find_cells(notebook, tags=tags)
+    for tagged_cell in tagged_cells:
+        tagged_cell["source"] = source
+    return notebook
