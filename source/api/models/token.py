@@ -52,3 +52,13 @@ class Token(models.Model):
 
     def __str__(self):
         return self.id
+
+
+def get_workspace_token(workspace, create_if_needed=True):
+    """ Returns the default authorization token for a specific workspace """
+    user = workspace.user
+    token = Token.objects.filter(user=user).first()
+    if token is None:
+        # TODO create a new token
+        raise analitico.AnaliticoException("Cannot find a token for workspace " + workspace.id)
+    return token.id
