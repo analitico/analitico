@@ -3,6 +3,7 @@
 export LC_CTYPE=C.UTF-8
 cd /home/www/analitico/
 source venv/bin/activate
+# Python libraries are in /libs
 export PYTHONPATH=/home/www/analitico/libs/
 # start jupyter notebook
 echo "Start jupyter notebook" 
