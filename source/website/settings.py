@@ -372,7 +372,11 @@ try:
         ),
         "DEFAULT_RENDERER_CLASSES": (
             "api.renderers.JSONRenderer",  # jsonapi but simplified
-            "rest_framework.renderers.BrowsableAPIRenderer",
+            # browsable API is somewhat useful as it makes it easy to post or update
+            # from the browser. however it always take precedence over json unless
+            # accept headers are forced and makes it harder to see what the API really returns
+            # so for now let's disable it
+            # "rest_framework.renderers.BrowsableAPIRenderer",
         ),
         "DEFAULT_METADATA_CLASS": "rest_framework_json_api.metadata.JSONAPIMetadata",
         "DEFAULT_FILTER_BACKENDS": (
