@@ -4,10 +4,16 @@
 
 # exit if error
 set -e
+BASEDIR=$(dirname "$0")
 
-exec /home/www/analitico/scripts/import-env.sh
+source $BASEDIR/import-env.sh
 
-cd /home/www/analitico/source
+cd $BASEDIR/../source
 
 echo "Starting worker..."
-./manage.py worker
+while true
+do
+    ./manage.py worker
+    wait
+    sleep 2
+done

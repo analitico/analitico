@@ -1,12 +1,14 @@
 #!/bin/bash
 set -e
 echo "Injecting env"
-source /home/www/analitico-ci/analitico-env.sh
+BASEDIR=$(dirname "$0")
+source $BASEDIR/../../analitico-ci/analitico-env.sh
 
 export LANG=C.UTF-8
 export LC_CTYPE=C.UTF-8
 export HOME="/home/www"
-export PYTHONPATH=/home/www/analitico/source
+export PYTHONPATH=$BASEDIR/../source
 
 echo "Activate virtual env"
-source /home/www/analitico/venv/bin/activate
+
+source $BASEDIR/../venv/bin/activate

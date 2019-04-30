@@ -2,7 +2,7 @@
 # exit if error
 set -e
 # import env
-exec /home/www/analitico/scripts/import-env.sh
+source /home/www/analitico/scripts/import-env.sh
 
 cd /home/www/analitico
 
