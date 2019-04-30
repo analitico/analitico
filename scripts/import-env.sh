@@ -6,7 +6,15 @@ source $BASEDIR/../../analitico-ci/analitico-env.sh
 
 export LANG=C.UTF-8
 export LC_CTYPE=C.UTF-8
-export HOME="/home/www"
+
+MYHOME="/home/www"
+# if home does not exists use user home folder
+if [ ! -d "/home/www" ] 
+then
+    MYHOME=~
+fi
+echo $MYHOME
+export HOME=$MYHOME
 export PYTHONPATH=$BASEDIR/../source
 
 echo "Activate virtual env"
