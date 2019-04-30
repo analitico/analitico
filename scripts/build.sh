@@ -1,6 +1,7 @@
 #!/bin/bash
 # exit if error
 set -e
+BASEDIR=$(dirname "$0")
 # Build and test execution
 cd /home/www/analitico/
 # move analitico-ci out of analitico
@@ -16,11 +17,11 @@ ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
 
 echo "$(date +'%T'): Build static python and test"
 
-./build-python.sh
+$BASEDIR/build-python.sh
 
 echo "$(date +'%T'): Build docs"
 # build documentation
-./build-docs.sh
+$BASEDIR/build-docs.sh
 echo "$(date +'%T'): Build app"
 /home/www/analitico/app/build-app.sh
 
