@@ -68,7 +68,7 @@ build_dev:
   only:
     - master
 
-deploy-production:
+s24-production:
   stage: deploy
   when: manual
   image: ubuntu:18.04
@@ -105,7 +105,80 @@ deploy-production:
       docker image prune -f -a"
 
 
-deploy-staging:
+p1-production:
+  stage: deploy
+  when: manual
+  image: ubuntu:18.04
+  only:
+    - master
+  before_script:
+  ##
+  ## Install ssh-agent if not already installed, it is required by Docker.
+  ## (change apt-get to yum if you use an RPM-based image)
+  ##
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+  ##
+  ## Run ssh-agent (inside the build environment)
+  ##
+  - eval $(ssh-agent -s)
+
+  ##
+  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+  ## We're using tr to fix line endings which makes ed25519 keys work
+  ## without extra base64 encoding.
+  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+  ##
+  - mkdir -p ~/.ssh
+  - echo "$PRODUCTION_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-add ~/.ssh/id_rsa
+  script:
+    # pull new docker image and run
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@94.130.33.123 "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
+      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+      docker stop analitico; docker rm analitico; 
+      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/website-start.sh; 
+      docker image prune -f -a"
+
+p2-production:
+  stage: deploy
+  when: manual
+  image: ubuntu:18.04
+  only:
+    - master
+  before_script:
+  ##
+  ## Install ssh-agent if not already installed, it is required by Docker.
+  ## (change apt-get to yum if you use an RPM-based image)
+  ##
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+  ##
+  ## Run ssh-agent (inside the build environment)
+  ##
+  - eval $(ssh-agent -s)
+
+  ##
+  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+  ## We're using tr to fix line endings which makes ed25519 keys work
+  ## without extra base64 encoding.
+  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+  ##
+  - mkdir -p ~/.ssh
+  - echo "$PRODUCTION_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-add ~/.ssh/id_rsa
+  script:
+    # pull new docker image and run
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@195.201.163.22 "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
+      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+      docker stop analitico; docker rm analitico; 
+      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/website-start.sh; 
+      docker image prune -f -a"
+
+
+staging:
   stage: deploy
   image: ubuntu:18.04
   only:
@@ -150,7 +223,7 @@ deploy-staging:
       docker image prune -f -a;" 
 
 
-deploy-worker-production:
+worker-production:
   stage: deploy
   when: manual
   image: ubuntu:18.04
