@@ -1,4 +1,6 @@
 import os
+import numpy as np
+import math
 
 from django.conf import settings
 from django.test import TestCase
@@ -9,6 +11,8 @@ from analitico.utilities import read_json, get_dict_dot
 
 import analitico
 import api.models
+
+from api.models import Workspace
 from .utils import APITestCase
 
 # conflicts with django's dynamically generated model.objects
@@ -195,6 +199,20 @@ class ItemsTests(APITestCase):
             analitico.WORKSPACE_TYPE, "ws_002", token=self.token1, status_code=status.HTTP_204_NO_CONTENT
         )
         self.assertIsNone(item)
+
+    ##
+    ## NaN and sanitization of attributes
+    ##
+
+    def test_workspace_apply_nan_attribute(self):
+        """ Add np.NaN to an attribute and make sure the item can be serialized and deserialized """
+        ws = Workspace.objects.get(pk="ws_001")
+        ws.set_attribute("mickey", np.NaN)
+        ws.save()
+
+        # retrieve item containing NaN
+        item = self.get_item(analitico.WORKSPACE_TYPE, "ws_001", self.token1)
+        self.assertTrue(math.isnan(item["attributes"]["mickey"]))  # regular python nan, not a numpy nan
 
     ##
     ## Avatar

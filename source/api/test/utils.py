@@ -14,10 +14,12 @@ from analitico.utilities import read_json, get_dict_dot
 # pylint: disable=no-member
 
 import logging
+
 logger = logging.getLogger("analitico")
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
+
 
 class APITestCase(APITestCase):
     """ Base class for testing analitico APIs """
@@ -145,7 +147,11 @@ class APITestCase(APITestCase):
 
     def assertStatusCode(self, response, status_code=status.HTTP_200_OK):
         if response.status_code != status_code:
-            logger.error("Response status_code should be {} but instead it is {}\nResponse is: {}".format(status_code, response.status_code, response.content))
+            logger.error(
+                "Response status_code should be {} but instead it is {}\nResponse is: {}".format(
+                    status_code, response.status_code, response.content
+                )
+            )
         self.assertEqual(response.status_code, status_code)
 
     def setUp(self):

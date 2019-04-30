@@ -21,6 +21,13 @@ class HTMLRenderer(renderers.StaticHTMLRenderer):
 
 
 class JSONRenderer(renderers.JSONRenderer):
+
+    # if we don't turn off strict mode in the default json renderer used by
+    # the rest framework we will be able to store NaN values in item's attributes
+    # but then we will not be able to render those items as NaN is not part of the
+    # strict json specs. so override rest framework and allow NaNs
+    strict = False
+
     def render(self, data, accepted_media_type=None, renderer_context=None):
         # change results to { 'data': results } to be more json:api-ish
 

@@ -60,7 +60,9 @@ def get_workspace_token(workspace, create_if_needed=True):
     token = Token.objects.filter(user=user).first()
     if token is None:
         if not create_if_needed:
-            raise analitico.AnaliticoException("Workspace " + workspace.id + " does not have an API token, please create one.")
+            raise analitico.AnaliticoException(
+                "Workspace " + workspace.id + " does not have an API token, please create one."
+            )
         # create a default token
         token = Token(user=user, id=generate_token_id(), name="api")
         token.save()
