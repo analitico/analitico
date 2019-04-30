@@ -13,7 +13,7 @@ cd $BASEDIR/../source
 echo "Starting worker..."
 while true
 do
-    ./manage.py worker
+    ./manage.py worker --max-secs 600
     wait
     sleep 2
 done
