@@ -15,7 +15,7 @@ then
 fi
 echo $MYHOME
 export HOME=$MYHOME
-export PYTHONPATH=$BASEDIR/../source
+export PYTHONPATH=$MYHOME/analitico/source/
 
 echo "Activate virtual env"
 
