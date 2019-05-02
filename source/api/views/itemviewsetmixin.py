@@ -53,6 +53,9 @@ class ItemViewSetMixin:
     # All methods require prior authentication, no token, no access
     permission_classes = (IsAuthenticated,)
 
+    # Default format for requests is json
+    format_kwarg = "json"
+
     def get_queryset(self):
         """ A user MUST be authenticated and only has access to objects he or his workspaces own. """
         assert not self.request.user.is_anonymous
