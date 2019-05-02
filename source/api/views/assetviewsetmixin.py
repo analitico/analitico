@@ -20,8 +20,9 @@ from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
+from analitico import ACTION_PROCESS
 from analitico.utilities import logger, get_csv_row_count
-from api.models import ItemMixin, Job, ASSETS_CLASS_DATA
+from api.models import ItemMixin, Job, ASSETS_CLASS_DATA, Dataset
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.factory import ServerFactory
@@ -85,6 +86,16 @@ class AssetViewSetMixin:
             )
             assets.append(asset_obj)
         item.save()
+
+        # when an asset is uploaded to a Dataset we will start a job to process the dataset (async). 
+        # if this job is not requested, the caller can add ?process=false and the job will not be started
+        if isinstance(item, Dataset):
+            process = get_query_parameter_as_bool(self.request, "process", True)
+            if process:
+                # job_id is added automatically to the dataset and reported in
+                # the response as a "related" item with a link to the job itself
+                self.create_job(self.request, item, ACTION_PROCESS)
+
         return Response(assets, status=rest_framework.status.HTTP_201_CREATED)
 
     def asset_download(self, request, pk, asset_class, asset_id) -> Response:
