@@ -254,7 +254,13 @@ worker-production:
   script:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$GPU_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
-      docker stop analitico-worker; 
-      docker rm analitico-worker; 
-      docker run --name=analitico-worker --init --runtime=nvidia --restart always -d ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
+      docker stop analitico-worker1; 
+      docker rm analitico-worker1; 
+      docker stop analitico-worker2; 
+      docker rm analitico-worker2; 
+      docker stop analitico-worker3; 
+      docker rm analitico-worker3; 
+      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
       docker image prune -f -a;" 
