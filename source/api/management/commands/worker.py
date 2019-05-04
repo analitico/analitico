@@ -68,7 +68,10 @@ class Command(BaseCommand):
         # TODO use tags to further filter jobs
         # TODO order by time posted desc
         with transaction.atomic():
-            jobs = Job.objects.filter(status=STATUS_CREATED)
+            # use select for update so that rows with selected jobs are 
+            # locked while we pick our job and change its status. this will
+            # prevent other workers from taking this same job at the same time
+            jobs = Job.objects.select_for_update().filter(status=STATUS_CREATED).order_by("created_at")
             if len(jobs) > 0:
                 job = jobs[0]
                 job.status = STATUS_RUNNING
