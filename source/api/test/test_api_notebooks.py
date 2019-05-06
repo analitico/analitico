@@ -438,3 +438,4 @@ class NotebooksTests(APITestCase):
         self.assertEqual(notebook["cells"][2]["execution_count"], 2)
         self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["exception"], True)
         self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["status"], "failed")
+
