@@ -65,13 +65,15 @@ class NotebooksTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         return response.data
 
-    def process_notebook(self, notebook_id="nb_01", query="?async=false"):
+    def process_notebook(self, notebook_id="nb_01", query="?async=false", status_code=status.HTTP_200_OK):
         # process notebook synchronously, return response and updated notebook
         url = reverse("api:notebook-job-action", args=(notebook_id, ACTION_PROCESS)) + query
         response = self.client.post(url, format="json")
         data = response.data
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(data["attributes"]["status"], "completed")
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(data["attributes"]["status"], "completed")
+
         # retrieve notebook updated with outputs
         url = reverse("api:notebook-detail", args=(notebook_id,))
         response = self.client.get(url, format="json")
@@ -410,3 +412,29 @@ class NotebooksTests(APITestCase):
         notebook["cells"][0]["source"][0] = 'print("hello donald")'
         notebook = self.update_notebook("nb_01", {"data": notebook})
         self.assertEqual(notebook["cells"][0]["source"][0], 'print("hello donald")')
+
+    def test_notebook_raise_exception(self):
+        # Run a notebook containing a single cell that raises an Exception
+        self.post_notebook("notebook09.ipynb", "nb_09")
+        _, notebook = self.process_notebook("nb_09", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # notebook was NOT executed correctly, it raised an exception!
+        self.assertEqual(notebook["metadata"]["papermill"]["exception"], True)
+
+        # first cell was created by papermill because the notebook raised an exception
+        self.assertEqual(notebook["cells"][0]["cell_type"], "code")
+        self.assertEqual(notebook["cells"][0]["execution_count"], None)
+        self.assertEqual(notebook["cells"][0]["metadata"]["hide_input"], True)
+        self.assertEqual(notebook["cells"][0]["metadata"]["inputHidden"], True)
+        cell_html = "".join(notebook["cells"][0]["outputs"][0]["data"]["text/html"])
+        self.assertTrue("An Exception was encountered" in cell_html)
+
+        # second cell contains parameters inserted by papermill
+        self.assertEqual(notebook["cells"][1]["cell_type"], "code")
+        self.assertEqual(notebook["cells"][1]["execution_count"], 1)
+
+        # third cell is the only one we wrote that contained the code raising the exception
+        self.assertEqual(notebook["cells"][2]["cell_type"], "code")
+        self.assertEqual(notebook["cells"][2]["execution_count"], 2)
+        self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["exception"], True)
+        self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["status"], "failed")
