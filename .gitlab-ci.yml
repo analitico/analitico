@@ -260,7 +260,7 @@ worker-production:
       docker rm analitico-worker2; 
       docker stop analitico-worker3; 
       docker rm analitico-worker3; 
-      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
       docker image prune -f -a;" 
