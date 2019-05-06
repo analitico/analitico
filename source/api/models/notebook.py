@@ -106,6 +106,9 @@ def nb_run(
         factory.warning("Running an empty notebook %s", notebook_item.id)
         return notebook
 
+    # remove cells with error warnings from previous runs
+    notebook = nb_clear_error_cells(notebook)
+
     if tags:
         notebook = nb_filter_tags(notebook, tags)
 
@@ -331,4 +334,28 @@ def nb_replace_source(notebook: dict, tags, source):
     tagged_cells = nb_find_cells(notebook, tags=tags)
     for tagged_cell in tagged_cells:
         tagged_cell["source"] = source
+    return notebook
+
+
+def nb_clear_error_cells(notebook: dict) -> dict:
+    """ Removes any cells that were created by previous papermill runs showing notebook execution errors """
+    try:
+        while len(notebook["cells"]) > 1:
+            # error cells created by papermill are not marked explicitely as such, so we just check
+            # the first cells to see if they have the characteristics of papermill error cells and in
+            # that case we remove them from the notebook...
+            cell = notebook["cells"][0]
+            if (
+                cell["cell_type"] == "code"
+                and cell["execution_count"] == None
+                and cell["metadata"]["hide_input"]
+                and cell["metadata"]["inputHidden"]
+                and "An Exception was encountered at" in "".join(cell["outputs"][0]["data"]["text/html"])
+            ):
+                notebook["cells"].remove(cell)
+            else:
+                return notebook
+    except KeyError:
+        # cells or keys we looked for are missing, ignore and proceed
+        pass
     return notebook
