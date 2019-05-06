@@ -144,15 +144,15 @@ def nb_run(
                     papermill_args.append(key)
                     papermill_args.append(value)
 
-                response = subprocess.run(papermill_args)
-                if response.returncode != 0:
-                    raise Exception("Papermill could not run notebook, return code: " + response.returncode)
+                # TODO could capture stdout and stderr below and add them to the job or to the exception if there is one
+                response = subprocess.run(papermill_args, cwd=artifacts_path, encoding="utf-8")  # capture_output=True
                 notebook = read_json(notebook_out_path)
+                response.check_returncode()
 
             else:
                 # SECURITY WARNING: if we run papermill here via its direct api it will run in our
                 # same environment. this means that the code in our notebooks can have access to environment
-                # variables potentially containing sensitive keys, etc. if the notebooks are not trusted, 
+                # variables potentially containing sensitive keys, etc. if the notebooks are not trusted,
                 # papermill should run inside a docker which will provide insulation
                 notebook = papermill.execute_notebook(
                     notebook_path,
