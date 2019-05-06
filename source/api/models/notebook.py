@@ -6,6 +6,7 @@ import papermill
 import json
 import datetime
 import nbformat
+import subprocess
 
 from nbconvert import HTMLExporter
 
@@ -127,12 +128,39 @@ def nb_run(
                 cwd=artifacts_path,  # any artifacts will be created in cwd
             )
         else:
-            notebook = papermill.execute_notebook(
-                notebook_path,
-                notebook_out_path,
-                parameters=parameters,
-                cwd=artifacts_path,  # any artifacts will be created in cwd
-            )
+            if True:
+                # run papermill via command line. this allows us to run a script which will create
+                # a docker where we can run the notebook via papermill with untrusted content without
+                # having the security issues we would otherwise have in our main environment (eg. env variables, etc)
+                papermill_args = [
+                    "papermill",  # we can change here to "papermill" for regular tool, or docker script
+                    notebook_path,
+                    notebook_out_path,
+                    "--cwd",
+                    artifacts_path,
+                ]
+                for key, value in parameters.items():
+                    papermill_args.append("-p")
+                    papermill_args.append(key)
+                    papermill_args.append(value)
+
+                response = subprocess.run(papermill_args)
+                if response.returncode != 0:
+                    raise Exception("Papermill could not run notebook, return code: " + response.returncode)
+                notebook = read_json(notebook_out_path)
+
+            else:
+                # SECURITY WARNING: if we run papermill here via its direct api it will run in our
+                # same environment. this means that the code in our notebooks can have access to environment
+                # variables potentially containing sensitive keys, etc. if the notebooks are not trusted, 
+                # papermill should run inside a docker which will provide insulation
+                notebook = papermill.execute_notebook(
+                    notebook_path,
+                    notebook_out_path,
+                    parameters=parameters,
+                    cwd=artifacts_path,  # any artifacts will be created in cwd
+                )
+
     except Exception as exc:
         if save:
             try:
