@@ -3,6 +3,8 @@ import os.path
 import pandas as pd
 import random
 import string
+import io
+import json
 
 from analitico.factory import Factory
 from analitico.schema import generate_schema
@@ -56,3 +58,11 @@ class FactoryTests(unittest.TestCase, TestMixin):
         self.assertEqual(len(df), 891)
         self.assertEqual(df.columns[1], "Survived")
         self.assertEqual(df.loc[0, "Name"], "Braund, Mr. Owen òèéàù Harris")
+
+    def test_factory_get_gzip_url_stream_(self):
+        # Server sends API responses as gzip streams
+        stream = self.factory.get_url_stream("https://analitico.ai/api/runtime")
+        data = json.load(stream)["data"]
+        self.assertTrue("hardware" in data)
+        self.assertTrue("platform" in data)
+        self.assertTrue("python" in data)

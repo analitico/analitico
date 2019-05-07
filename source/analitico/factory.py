@@ -9,6 +9,7 @@ import logging
 import hashlib
 import inspect
 import urllib.parse
+import io
 
 from .mixin import AttributeMixin
 from .exceptions import AnaliticoException
@@ -107,7 +108,8 @@ class Factory(AttributeMixin):
 
     def get_cache_filename(self, unique_id):
         """ Returns the fullpath in cache for an item with the given unique_id (eg: a unique url, an md5 or etag, etc) """
-        return os.path.join(self.get_cache_directory(), "cache_" + hashlib.sha256(unique_id.encode()).hexdigest())
+        # Tip: if cache contents need to be invalidated for whatever reason, you can change the prefix below...
+        return os.path.join(self.get_cache_directory(), "cache_v2_" + hashlib.sha256(unique_id.encode()).hexdigest())
 
     ##
     ## URL retrieval, authorization and caching
@@ -115,6 +117,9 @@ class Factory(AttributeMixin):
 
     # regular expression used to detect assets using analitico:// scheme
     ANALITICO_ASSET_RE = r"(analitico://workspaces/(?P<workspace_id>[-\w.]{4,256})/)"
+
+    # TODO could check if it would be possible to switch to an external caching library, eg:
+    # https://github.com/ionrock/cachecontrol
 
     def get_cached_stream(self, stream, unique_id):
         """ Will cache a stream on disk based on a unique_id (like md5 or etag) and return file stream and filename """
@@ -166,13 +171,18 @@ class Factory(AttributeMixin):
             if url_parse.hostname and url_parse.hostname.endswith("analitico.ai") and self.token:
                 # if url is connecting to analitico.ai add token
                 headers = {"Authorization": "Bearer " + self.token}
+
+            # we should not take the raw response stream here as it could be gzipped or encoded.
+            # we take the decoded content as a text string and turn it into a stream or we take the
+            # decompressed binary content and also turn it into a stream.            
             response = requests.get(url, stream=True, headers=headers)
+            response_stream = io.BytesIO(response.content) # always treat content as binary, utf-8 encoding is done by readers
 
             if "etag" in response.headers:
                 etag = response.headers["etag"]
                 if etag:
-                    return self.get_cached_stream(response.raw, url + etag)[0]
-            return response.raw
+                    return self.get_cached_stream(response_stream, url + etag)[0]
+            return response_stream
         return open(url, "rb")
 
     def get_url_json(self, url):
