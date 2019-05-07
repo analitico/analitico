@@ -21,6 +21,9 @@ cd source
 echo "Build Static"
 ./manage.py collectstatic --noinput
 
+# do not use docker for papermill unit tests (it is not supported on Gitlab CI)
+unset ANALITICO_PAPERMILL_DOCKER_SCRIPT
+
 echo "Running python tests"
 ./manage.py test
 
