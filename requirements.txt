@@ -139,6 +139,7 @@ seaborn==0.9.0
 Send2Trash==1.5.0
 sentry-sdk==0.6.0
 setoptconf==0.2.0
+simplejson==3.16.0
 six==1.12.0
 snowballstemmer==1.2.1
 strict-rfc3339==0.7
