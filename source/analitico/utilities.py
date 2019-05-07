@@ -1,7 +1,6 @@
 import os
 import time
 import pandas as pd
-import json
 import logging
 import socket
 import platform
@@ -13,6 +12,12 @@ import sys
 import random
 import string
 import dateutil
+
+# use simplejson instead of standard built in library
+# mostly because it has a parameter which supports replacing nan with nulls
+# thus producing json which is ecma compliant and won't have issues being read
+# https://simplejson.readthedocs.io/en/latest/
+import simplejson as json
 
 from datetime import datetime
 
@@ -175,10 +180,10 @@ def json_sanitize_dict(dict):
     return sanitized
 
 
-def save_json(data, filename, indent=4, encoding="utf8"):
-    """ Saves given data in a json file (we love pretty, so prettified by default) """
+def save_json(data, filename, indent=None, encoding="utf8", ignore_nan=True):
+    """ Saves given data in a json file, encodes as utf-8, replace np.NaN with nulls """
     with open(filename, "w", encoding=encoding) as f:
-        json.dump(data, f, indent=indent)
+        json.dump(data, f, indent=indent, ignore_nan=ignore_nan)
 
 
 def read_json(filename, encoding="utf-8"):
