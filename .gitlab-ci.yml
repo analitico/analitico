@@ -215,16 +215,24 @@ worker-production:
   - echo "$S6_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
   - ssh-add ~/.ssh/id_rsa
+
+  # it creates a useless container "analitico-worker-keep-jupyter-image"
+  # to keep the image "-jupyter" that is used for the papermill dockers
+  # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
+
   script:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$GPU_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter; 
       docker stop analitico-worker1; 
       docker rm analitico-worker1; 
       docker stop analitico-worker2; 
       docker rm analitico-worker2; 
       docker stop analitico-worker3; 
       docker rm analitico-worker3; 
+      docker rm analitico-worker-keep-jupyter-image; 
       docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
       docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
       docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
+      docker create --name=analitico-worker-keep-jupyter-image registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter;
       docker image prune -f -a;" 
