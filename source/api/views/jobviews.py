@@ -26,7 +26,7 @@ import rest_framework
 import rest_framework.viewsets
 
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action, permission_classes
 from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
@@ -38,6 +38,7 @@ from analitico.utilities import logger, get_dict_dot
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.models import ItemMixin, Job
 from api.factory import factory
+from api.cron import schedule_jobs
 
 from .logviews import LogViewSetMixin
 from .itemviewsetmixin import filterset
@@ -170,3 +171,11 @@ class JobViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.Mod
         if self.request.user.is_superuser:
             return Job.objects.all()
         return Job.objects.filter(workspace__user=self.request.user)
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get"], detail=False, url_name="schedule", url_path="schedule")
+    def schedule(self, request):
+        """ Returns profile of logged in user """
+        jobs = schedule_jobs()
+        jobs_serializer = JobSerializer(jobs, many=True)
+        return Response(jobs_serializer.data)

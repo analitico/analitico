@@ -2,13 +2,14 @@ import os
 
 from django.urls import path
 from rest_framework import routers
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 import analitico.utilities
 import api.views
-
+import api.cron
 
 app_name = "api"
 
