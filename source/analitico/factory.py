@@ -142,7 +142,7 @@ class Factory(AttributeMixin):
         # return stream from cached file
         return open(cache_file, "rb"), cache_file
 
-    def get_url_stream(self, url, binary=False):
+    def get_url_stream(self, url, binary=False, cache=True):
         """
         Returns a stream to the given url. This works for regular http:// or https://
         and also works for analitico:// assets which are converted to calls to the given
@@ -174,11 +174,13 @@ class Factory(AttributeMixin):
 
             # we should not take the raw response stream here as it could be gzipped or encoded.
             # we take the decoded content as a text string and turn it into a stream or we take the
-            # decompressed binary content and also turn it into a stream.            
+            # decompressed binary content and also turn it into a stream.
             response = requests.get(url, stream=True, headers=headers)
-            response_stream = io.BytesIO(response.content) # always treat content as binary, utf-8 encoding is done by readers
 
-            if "etag" in response.headers:
+            # always treat content as binary, utf-8 encoding is done by readers
+            response_stream = io.BytesIO(response.content)
+
+            if cache and "etag" in response.headers:
                 etag = response.headers["etag"]
                 if etag:
                     return self.get_cached_stream(response_stream, url + etag)[0]
@@ -274,8 +276,8 @@ class Factory(AttributeMixin):
 
     def get_item(self, item_id):
         """ Retrieves item from the server by item_id """
-        assert item_id and isinstance(item_id, str)
-        url = "{}/{}s/{}".format(self.endpoint, self.get_item_type(item_id), item_id)
+        assert item_id and isinstance(item_id, str) and self.endpoint.endswith("/")
+        url = "{}{}s/{}".format(self.endpoint, self.get_item_type(item_id), item_id)
         return self.get_url_json(url)
 
     def get_dataset(self, dataset_id):
