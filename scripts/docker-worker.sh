@@ -15,26 +15,33 @@ parameters=""
 for (( i=4;i<$ELEMENTS;i++)); do 
     parameters="${parameters} ${args[${i}]}"
 done
-echo $1
-echo $2
-echo $4
-echo $parameters
+#echo $1
+#echo $2
+#echo $4
+#echo $parameters
 
-# create docker name
+# create container name
 DOCKERNAME='analitico-worker-'$(date +"%s")'-'$((1 + RANDOM % 1000000))
 DOCKERIMAGENAME='image-'$DOCKERNAME
+# use the jupyter image which is a safe env for untrusted code
+# it is the same image that is used for "interactive mode" using Jupyter hosts
+# it uses the same version (COMMIT_SHA) of the worker
 docker run --name=$DOCKERNAME -d --init --runtime=nvidia registry.gitlab.com/analitico/analitico:$ANALITICO_COMMIT_SHA-jupyter 
-# copy notebook
+# copy working dir
 docker cp $4/. $DOCKERNAME:/home/www/analitico/notebooks/
-# copy script
+# copy script to execute notebook using papermill
 docker cp $BASEDIR/docker-worker-notebook.sh $DOCKERNAME:/home/www/analitico/docker-worker-notebook.sh
-# commit status
+# commit changes to the container as a image
 docker commit $DOCKERNAME $DOCKERIMAGENAME
-# remove current
+# remove current container
 docker rm $DOCKERNAME
-# run notebook
+# run notebook in a new container using the prepared image
 docker run --name=$DOCKERNAME -d --init --runtime=nvidia $DOCKERIMAGENAME /home/www/analitico/docker-worker-notebook.sh /home/www/analitico/notebooks/notebook.ipynb /home/www/analitico/notebooks/notebook.output.ipynb --cwd /home/www/analitico/notebooks/ $parameters
+# wait papermill execution
 docker wait $DOCKERNAME
+# copy working dir out of container
 docker cp $DOCKERNAME:/home/www/analitico/notebooks/. $4
+# remove container
 docker rm $DOCKERNAME
+# remove container image
 docker image rm $DOCKERIMAGENAME
