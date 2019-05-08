@@ -1,46 +1,59 @@
+
 from croniter import croniter
 from datetime import datetime
 from django.utils import timezone
 
-from analitico import ACTION_PROCESS, ACTION_TRAIN
-from analitico.utilities import get_dict_dot, set_dict_dot
+from analitico import AnaliticoException, ACTION_PROCESS, ACTION_TRAIN
 from analitico.status import STATUS_CREATED
 from api.models import Dataset, Recipe, Notebook, Job
 
+# Some notebooks, datasets and recipes are set up with a "schedule"
+# attribute which is used to specify when the item should be processed
+# automatically with a syntax like that of cron. The server does not
+# run cron jobs, rather it offers an endpoint on /api/jobs/schedule which
+# is called to check if any item needs scheduling and create the job
+# which is then processed asynchronously by the workers. This API is called
+# every minute by our external monitoring platform hence making this automatic.
 
-# This library could be used to schedule jobs automatically:
+# This library could also be used to schedule jobs using cron on the server,
+# the issue would then become that we have multiple servers and we would need to
+# pick one of the servers to run this, etc...
 # https://gitlab.com/doctormo/python-crontab/
 
 
 def schedule_items(items, action):
-    """ Takes a list of datasets, recipes or notebooks and creates jobs for any scheduled updates """
+    """ Takes a list of datasets, recipes or notebooks and creates jobs for any scheduled updates """    
     jobs = []
     for item in items:
         schedule = item.get_attribute("schedule")
         if schedule and "cron" in schedule:
-            # what is the cron configuration string used to schedule this item?
-            # https://en.wikipedia.org/wiki/Cron
-            cron = schedule.get("cron", None)
+            try:
+                # what is the cron configuration string used to schedule this item?
+                # https://en.wikipedia.org/wiki/Cron
+                cron = schedule.get("cron")
 
-            # when was this item last scheduled?
-            scheduled_at = schedule.get("scheduled_at", None)
-            scheduled_at = item.updated_at
+                # when was this item last scheduled?
+                scheduled_at = schedule.get("scheduled_at", None)
+                scheduled_at = item.updated_at
 
-            schedule_next = croniter(cron, scheduled_at).get_next(datetime)
-            now = timezone.now()
-            if schedule_next < now:
-                # create the job that will process the item
-                job = Job(item_id=item.id, action=action, workspace_id=item.workspace_id, status=STATUS_CREATED)
-                job.set_attribute("schedule", schedule)
-                job.save()
+                # when is this item next due according to its cron settings and the last time it was scheduled?
+                schedule_next = croniter(cron, scheduled_at).get_next(datetime)
+                now = timezone.now()
+                if schedule_next < now:
+                    # create the job that will process the item
+                    job = Job(item_id=item.id, action=action, workspace_id=item.workspace_id, status=STATUS_CREATED)
+                    job.set_attribute("schedule", schedule)
+                    job.save()
+                    jobs.append(job)
 
-                # update the schedule and keep track of job that last ran this item
-                schedule["scheduled_at"] = now.isoformat()
-                schedule["scheduled_job"] = job.id
-                item.set_attribute("schedule", schedule)
-                item.save()
+                    # update the schedule and keep track of job that last ran this item
+                    schedule["scheduled_at"] = now.isoformat()
+                    schedule["scheduled_job"] = job.id
+                    item.set_attribute("schedule", schedule)
+                    item.save()
 
-                jobs.append(job)
+            except Exception as exc:
+                raise AnaliticoException(f"schedule_items: an error occoured while trying to schedule '{item.id}' using cron '{cron}'") from exc
     return jobs
 
 
@@ -48,9 +61,19 @@ def schedule_jobs():
     """ 
     Checks to see if any datasets, recipes or notebooks need to run 
     on a schedule and generates the necessary jobs. Returns an array
-    of jobs (or None if no job was generated).
+    of jobs that were scheduled (or None if no job was generated).
     """
-    nb_jobs = schedule_items(Notebook.objects.all(), ACTION_PROCESS)
-    ds_jobs = schedule_items(Dataset.objects.all(), ACTION_PROCESS)
-    rx_jobs = schedule_items(Recipe.objects.all(), ACTION_TRAIN)
+    # filter only items that contain "schedule" in their attributes
+    # and may possibly be configured for automatic cron scheduling
+    # pylint: disable=no-member
+
+    ds = Dataset.objects.filter(attributes__icontains='"schedule"')
+    ds_jobs = schedule_items(ds, ACTION_PROCESS)
+
+    rx = Recipe.objects.filter(attributes__icontains='"schedule"')
+    rx_jobs = schedule_items(rx, ACTION_TRAIN)
+
+    nb = Notebook.objects.filter(attributes__icontains='"schedule"')
+    nb_jobs = schedule_items(nb, ACTION_PROCESS)
+
     return nb_jobs + ds_jobs + rx_jobs
