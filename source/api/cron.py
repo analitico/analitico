@@ -52,5 +52,5 @@ def schedule_jobs():
     """
     nb_jobs = schedule_items(Notebook.objects.all(), ACTION_PROCESS)
     ds_jobs = schedule_items(Dataset.objects.all(), ACTION_PROCESS)
-    rx_jobs = schedule_items(Recipe.objects.all(), ACTION_PROCESS)
+    rx_jobs = schedule_items(Recipe.objects.all(), ACTION_TRAIN)
     return nb_jobs + ds_jobs + rx_jobs
