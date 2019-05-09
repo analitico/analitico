@@ -81,7 +81,7 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
             notebook = self.get_notebook()
             if notebook:
                 # if dataset has a notebook it will be used to process
-                nb_run(notebook_item=self, notebook_name=None, factory=factory, upload=True)
+                nb_run(notebook_item=self, notebook_name=None, factory=factory, upload=True, job=job)
                 try:
                     training_path = os.path.join(factory.get_artifacts_directory(), "training.json")
                     training = read_json(training_path)

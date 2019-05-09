@@ -62,7 +62,6 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
         try:
             # bare bones logging to avoid slowing down predictions
             factory.set_logger_level(logging.WARNING)
-
             request = factory.request
 
             # predict action creates a prediction from a trained model

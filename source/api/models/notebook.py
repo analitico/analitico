@@ -79,7 +79,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
     def run(self, job, factory: Factory, **kwargs):
         """ Run notebook, update it, upload artifacts """
         # TODO should we really upload artifacts or not?
-        nb_run(notebook_item=self, factory=factory, upload=True, save=True, tags=None)
+        nb_run(notebook_item=self, factory=factory, upload=True, save=True, tags=None, job=job)
 
 
 ##
@@ -88,7 +88,15 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 
 
 def nb_run(
-    notebook_item, notebook_name=None, parameters=None, tags=None, factory=None, upload=False, save=True, quick=False
+    notebook_item,
+    notebook_name=None,
+    parameters=None,
+    tags=None,
+    factory=None,
+    upload=False,
+    save=True,
+    quick=False,
+    job=None,
 ):
     """ 
     Runs a Jupyter notebook with given parameters, factory, notebook and optional item to upload assets to 
@@ -101,6 +109,7 @@ def nb_run(
     upload: True if artifacts produced while processing the notebook should be updated to the notebook_item (optional)
     save: True if the executed notebook should be saved back into the model (default: false)
     quick: True if we should run the code inline which is faster but generates no outputs (default: false)
+    job: If a Job is passed than the output will be captured and added to the job itself. 
 
     Returns:
     The processed notebook
@@ -150,15 +159,29 @@ def nb_run(
                 # run papermill via command line. this allows us to run a script which will create
                 # a docker where we can run the notebook via papermill with untrusted content without
                 # having the security issues we would otherwise have in our main environment (eg. env variables, etc)
-                papermill_args = [papermill_cmd, notebook_path, notebook_out_path, "--cwd", artifacts_path]
+                papermill_args = [
+                    papermill_cmd,
+                    notebook_path,
+                    notebook_out_path,
+                    "--cwd",
+                    artifacts_path,
+                    "--log-output",
+                ]
                 for key, value in parameters.items():
                     papermill_args.append("-p")
                     papermill_args.append(key)
                     papermill_args.append(value)
 
-                # TODO could capture stdout and stderr below and add them to the job or to the exception if there is one
-                response = subprocess.run(papermill_args, cwd=artifacts_path, encoding="utf-8")  # capture_output=True
+                # capture stderr and add them to the job or to the exception if there is one
+                response = subprocess.run(
+                    papermill_args, cwd=artifacts_path, encoding="utf-8", capture_output=job is not None
+                )  # capture_output=True
                 notebook = read_json(notebook_out_path)
+
+                if job:
+                    job.set_attribute("logs", response.stderr)
+                    job.save()
+
                 response.check_returncode()
 
             else:

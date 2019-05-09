@@ -77,7 +77,7 @@ class Dataset(ItemMixin, ItemAssetsMixin, models.Model):
                 notebook = self.get_notebook()
 
                 if notebook:
-                    nb_run(notebook_item=self, notebook_name=None, factory=factory, upload=True, save=True)
+                    nb_run(notebook_item=self, notebook_name=None, factory=factory, upload=True, save=True, job=job)
                     return
 
                 # if the dataset doesn't have a notebook we can initialize it with a template

@@ -73,7 +73,9 @@ class Job(ItemMixin, models.Model):
     # The item that is the target of this job (eg. model that is trained, dataset that is processed, etc)
     item_id = models.SlugField(blank=True)
 
+    ##
     ## Properties
+    ##
 
     @property
     def payload(self):

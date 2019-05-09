@@ -36,6 +36,7 @@ from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
 # pylint: disable=no-member
 # pylint: disable=unused-variable
 
+
 class DatasetTests(APITestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
 

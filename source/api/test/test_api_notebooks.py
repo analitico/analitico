@@ -467,3 +467,20 @@ class NotebooksTests(APITestCase):
         self.assertEqual(notebook["cells"][2]["execution_count"], 2)
         self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["exception"], True)
         self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["status"], "failed")
+
+    def test_notebook_process_with_logs(self):
+        """ Process a notebook and capture its logs """
+        self.post_notebook("notebook10.ipynb", "nb_01")
+
+        # process notebook synchronously
+        url = reverse("api:notebook-job-action", args=("nb_01", ACTION_PROCESS)) + "?async=false"
+        response = self.client.post(url, format="json")
+        data = response.data
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["attributes"]["status"], "completed")
+
+        # job contains logs from execution of notebook inside papermill
+        logs = data["attributes"]["logs"]
+        self.assertIn("Executing Cell 1-------", logs)
+        self.assertIn("Hello papermill\n", logs)
+        self.assertIn("Executing Cell 2-------", logs)

@@ -115,7 +115,9 @@ class JobViewSetMixin:
         if not run_async:
             job.status = STATUS_RUNNING
             job.save()
-            analitico.logger.warning("Running jobs synchronously is not recommended, item: {job_item.id}, action: {job.action}")
+            analitico.logger.warning(
+                f"Running jobs synchronously is not recommended, item: {job_item.id}, action: {job.action}"
+            )
             job.run(request)
 
         serializer = JobSerializer(job)
