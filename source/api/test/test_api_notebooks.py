@@ -443,7 +443,7 @@ class NotebooksTests(APITestCase):
         self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["exception"], True)
         self.assertEqual(notebook["cells"][2]["metadata"]["papermill"]["status"], "failed")
 
-    def OFFtest_notebook_raise_exception_run_repeatedly(self):
+    def test_notebook_raise_exception_run_repeatedly(self):
         # Run a notebook containing a single cell a few times, check that it doesn't create extra error cells
         self.post_notebook("notebook09.ipynb", "nb_09")
 
@@ -484,3 +484,12 @@ class NotebooksTests(APITestCase):
         self.assertIn("Executing Cell 1-------", logs)
         self.assertIn("Hello papermill\n", logs)
         self.assertIn("Executing Cell 2-------", logs)
+
+    def test_notebook_raise_exception_with_logs(self):
+        # Run a notebook containing a cell that raises an exception, check if excption listed in the job
+        self.post_notebook("notebook09.ipynb", "nb_09")
+
+        # notebook was NOT executed correctly, it raised an exception!
+        _, notebook = self.process_notebook("nb_09", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(notebook["metadata"]["papermill"]["exception"], True)
+        self.assertEqual(len(notebook["cells"]), 3)
