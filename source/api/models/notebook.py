@@ -7,6 +7,7 @@ import json
 import datetime
 import nbformat
 import subprocess
+from subprocess import PIPE
 
 from nbconvert import HTMLExporter
 
@@ -149,36 +150,28 @@ def nb_run(
             use_papermill_docker = True
 
             if use_papermill_docker:
-                papermill_cmd = os.environ.get("ANALITICO_PAPERMILL_DOCKER_SCRIPT", None)
-                if not papermill_cmd:
-                    logger.warning(
-                        "ANALITICO_PAPERMILL_DOCKER_SCRIPT is not configured; using 'papermill' directly which is a SECURITY RISK!!!"
-                    )
-                    papermill_cmd = "papermill"
+                cmd = os.environ.get("ANALITICO_PAPERMILL_DOCKER_SCRIPT", None)
+                if not cmd:
+                    logger.warning("ANALITICO_PAPERMILL_DOCKER_SCRIPT is not configured is a SECURITY RISK!!!")
+                    cmd = "papermill"
 
                 # run papermill via command line. this allows us to run a script which will create
                 # a docker where we can run the notebook via papermill with untrusted content without
                 # having the security issues we would otherwise have in our main environment (eg. env variables, etc)
-                papermill_args = [
-                    papermill_cmd,
-                    notebook_path,
-                    notebook_out_path,
-                    "--cwd",
-                    artifacts_path,
-                    "--log-output",
-                ]
+                args = [cmd, notebook_path, notebook_out_path, "--cwd", artifacts_path, "--log-output"]
                 for key, value in parameters.items():
-                    papermill_args.append("-p")
-                    papermill_args.append(key)
-                    papermill_args.append(value)
+                    args.append("-p")
+                    args.append(key)
+                    args.append(value)
 
                 # capture stderr and add them to the job or to the exception if there is one
-                response = subprocess.run(
-                    papermill_args, cwd=artifacts_path, encoding="utf-8", capture_output=job is not None
-                )  # capture_output=True
+                # subprocess.run(args, cwd=artifacts_path, encoding="utf-8", capture_output=capture)
+                # capture_output was introduced in python 3.7 and does not work on the server
+                capture: bool = job is not None
+                response = subprocess.run(args, cwd=artifacts_path, encoding="utf-8", stdout=PIPE, stderr=PIPE)
                 notebook = read_json(notebook_out_path)
 
-                if job:
+                if capture:
                     job.set_attribute("logs", response.stderr)
                     job.save()
 
