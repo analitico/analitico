@@ -36,7 +36,7 @@ docker commit $DOCKERNAME $DOCKERIMAGENAME
 # remove current container
 docker rm $DOCKERNAME
 # run notebook in a new container using the prepared image
-docker run --name=$DOCKERNAME -d --init --runtime=nvidia $DOCKERIMAGENAME /home/www/analitico/docker-worker-notebook.sh /home/www/analitico/notebooks/notebook.ipynb /home/www/analitico/notebooks/notebook.output.ipynb --cwd /home/www/analitico/notebooks/ $parameters
+docker run --name=$DOCKERNAME -a stderr -a stdout --init --runtime=nvidia $DOCKERIMAGENAME /home/www/analitico/docker-worker-notebook.sh /home/www/analitico/notebooks/notebook.ipynb /home/www/analitico/notebooks/notebook.output.ipynb --cwd /home/www/analitico/notebooks/ $parameters
 # wait papermill execution
 docker wait $DOCKERNAME
 # copy working dir out of container
