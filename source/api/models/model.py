@@ -72,7 +72,7 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
         """ Run job actions on the recipe """
 
         if ACTION_TRAIN not in job.action:
-            factory.exception("Model: does not know action: %s", job.action, item=self, exception=e)
+            factory.exception("Model: does not know action: %s", job.action, item=self)
 
         try:
             # process action runs recipe and creates a trained model

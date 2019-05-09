@@ -34,11 +34,7 @@ from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
-
-import logging
-
-logger = logging.getLogger("analitico")
-
+# pylint: disable=unused-variable
 
 class DatasetTests(APITestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
@@ -94,7 +90,7 @@ class DatasetTests(APITestCase):
         self.assertTrue("assets" not in ds_data1["attributes"])
 
         # upload titanic_1.csv
-        asset_url, asset_response = self._upload_titanic("ds_titanic_1")
+        _, asset_response = self._upload_titanic("ds_titanic_1")
         ds_asset1 = asset_response.data[0]
         self.assertEqual(ds_asset1["id"], "titanic_1.csv")
         self.assertEqual(ds_asset1["filename"], "titanic_1.csv")
@@ -122,7 +118,7 @@ class DatasetTests(APITestCase):
 
     def test_dataset_job_action_process(self):
         """ Test uploading csv then requesting to process it """
-        asset_url, asset_response = self._upload_titanic("ds_titanic_1")
+        _, _ = self._upload_titanic("ds_titanic_1")
 
         # request job processing
         job_url = reverse("api:dataset-job-action", args=("ds_titanic_1", ACTION_PROCESS))
@@ -256,7 +252,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset["id"], "titanic_1.csv")
 
         # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
+        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertStatusCode(job_response)
@@ -270,7 +266,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset["id"], "titanic_1.csv")
 
         # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
+        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertStatusCode(job_response)
@@ -295,7 +291,7 @@ class DatasetTests(APITestCase):
         self.assertEqual(ds_asset["id"], "titanic_1.csv")
 
         # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-detail-data-process", args=("ds_titanic_4",)) + "?async=false"
+        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
         job_response = self.client.post(job_url, format="json")
         job_data = job_response.data
         self.assertStatusCode(job_response)
@@ -487,7 +483,7 @@ class DatasetTests(APITestCase):
         total_ms = time_ms(total_ms)
         average_ms = float(total_ms) / 40
         self.assertLess(int(loading_ms), 50, "Average page loading time should be less than 50ms")
-        logger.info("Average page loading time is " + str(average_ms) + " ms")
+        analitico.logger.info("Average page loading time is " + str(average_ms) + " ms")
 
     def test_dataset_paging_larger_page(self):
         self.upload_large_random_data_csv("ds_titanic_4", 1000)

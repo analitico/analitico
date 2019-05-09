@@ -1,20 +1,15 @@
 import collections
 import jsonfield
-import shutil
 
 from django.db import models
 from django.utils.crypto import get_random_string
 
 import analitico
 import analitico.plugin
-
-from analitico.constants import ACTION_TRAIN
-from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
-from analitico.exceptions import AnaliticoException
+import api
 
 from .items import ItemMixin
 from .workspace import Workspace
-from .job import Job
 from .model import Model
 
 
@@ -48,3 +43,42 @@ class Recipe(ItemMixin, models.Model):
 
     # A Jupyter notebook https://nbformat.readthedocs.io/en/latest/
     notebook = jsonfield.JSONField(load_kwargs={"object_pairs_hook": collections.OrderedDict}, blank=True, null=True)
+
+    ##
+    ## Jobs
+    ##
+
+    def create_job(self, action):
+        """ 
+        The recipe does not run training jobs directly, rather it creates a Model
+        and then creates a Job that will perform the "train" action on the model (not
+        on the recipe). Trained models then become self contained immutables.
+        """
+        # create a model which will host the recipe pipeline,
+        # training results and training artifacts as assets
+        model = Model(workspace=self.workspace)
+        model.set_attribute("recipe_id", self.id)
+        model.set_attribute("plugin", self.get_attribute("plugin"))
+        model.set_notebook(self.get_notebook())
+        model.save()
+
+        # create and return job that will train the model
+        # pylint: disable=no-member
+        workspace_id = self.workspace.id if self.workspace else self.id
+        action = model.type + "/" + action
+        job = api.models.Job(
+            item_id=model.id, action=action, workspace_id=workspace_id, status=analitico.status.STATUS_CREATED
+        )
+        job.set_attribute("recipe_id", self.id)
+        job.set_attribute("model_id", model.id)
+        job.save()
+
+        # a job is executed asynchronously, potentially on another server
+        # and may update the model in the database while we keep holding
+        # a reference to a stale and out of date object, so refresh first
+        # pylint: disable=no-member
+        model = Model.objects.get(pk=model.id)
+        model.set_attribute("job_id", job.id)
+        model.save()
+
+        return job

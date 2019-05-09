@@ -17,6 +17,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
 
+import analitico
 import analitico.plugin
 import api.models
 import api.plugin
@@ -208,7 +209,7 @@ class RecipeTests(APITestCase):
             recipe.save()
 
             # train recipe
-            url = reverse("api:recipe-detail-train", args=("rx_1",)) + "?async=false"
+            url = reverse("api:recipe-job-action", args=("rx_1", analitico.ACTION_TRAIN)) + "?async=false"
             response = self.client.post(url, format="json", status_code=status.HTTP_201_CREATED)
 
             # job from recipe train action

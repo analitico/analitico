@@ -93,7 +93,8 @@ class Job(ItemMixin, models.Model):
         with ServerFactory(job=self, request=request, **kwargs) as factory:
             try:
                 # log only warnings while predicting to avoid slowing down predictions
-                predicting = ACTION_PREDICT in self.action
+                action = str(self.action)
+                predicting = ACTION_PREDICT in action
                 if predicting:
                     factory.set_logger_level(logging.WARNING)
 

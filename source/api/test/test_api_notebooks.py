@@ -7,7 +7,11 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 # conflicts with django's dynamically generated model.objects
+
+# relax pylint on testing code
 # pylint: disable=no-member
+# pylint: disable=unused-variable
+# pylint: disable=unused-wildcard-import
 
 from analitico.constants import ACTION_PROCESS
 from analitico.utilities import read_json

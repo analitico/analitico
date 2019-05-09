@@ -1,11 +1,11 @@
-
 from croniter import croniter
 from datetime import datetime
+import dateutil.parser
 from django.utils import timezone
 
+import analitico
 from analitico import AnaliticoException, ACTION_PROCESS, ACTION_TRAIN
-from analitico.status import STATUS_CREATED
-from api.models import Dataset, Recipe, Notebook, Job
+from api.models import Dataset, Recipe, Notebook
 
 # Some notebooks, datasets and recipes are set up with a "schedule"
 # attribute which is used to specify when the item should be processed
@@ -22,7 +22,7 @@ from api.models import Dataset, Recipe, Notebook, Job
 
 
 def schedule_items(items, action):
-    """ Takes a list of datasets, recipes or notebooks and creates jobs for any scheduled updates """    
+    """ Takes a list of datasets, recipes or notebooks and creates jobs for any scheduled updates """
     jobs = []
     for item in items:
         schedule = item.get_attribute("schedule")
@@ -33,15 +33,20 @@ def schedule_items(items, action):
                 cron = schedule.get("cron")
 
                 # when was this item last scheduled?
-                scheduled_at = schedule.get("scheduled_at", None)
-                scheduled_at = item.updated_at
+                scheduled_at = schedule.get("scheduled_at", "2010-01-01T00:00:00Z")  # UTC
+                scheduled_at = dateutil.parser.parse(scheduled_at)
 
                 # when is this item next due according to its cron settings and the last time it was scheduled?
                 schedule_next = croniter(cron, scheduled_at).get_next(datetime)
                 now = timezone.now()
+
+                label = "scheduling" if schedule_next < now else "skip"
+                msg = f"schedule_items: {label}: {item.id}, cron: {cron}, scheduled_at: '{scheduled_at}, schedule_next: {schedule_next}"
+
                 if schedule_next < now:
+                    analitico.logger.info(msg)
                     # create the job that will process the item
-                    job = Job(item_id=item.id, action=action, workspace_id=item.workspace_id, status=STATUS_CREATED)
+                    job = item.create_job(action)
                     job.set_attribute("schedule", schedule)
                     job.save()
                     jobs.append(job)
@@ -51,9 +56,13 @@ def schedule_items(items, action):
                     schedule["scheduled_job"] = job.id
                     item.set_attribute("schedule", schedule)
                     item.save()
+                else:
+                    analitico.logger.debug(msg)
 
             except Exception as exc:
-                raise AnaliticoException(f"schedule_items: an error occoured while trying to schedule '{item.id}' using cron '{cron}'") from exc
+                raise AnaliticoException(
+                    f"schedule_items: an error occoured while trying to schedule '{item.id}' using cron '{cron}'"
+                ) from exc
     return jobs
 
 

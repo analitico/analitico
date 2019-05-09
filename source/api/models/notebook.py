@@ -29,6 +29,7 @@ from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 
 import logging
+
 logger = logging.getLogger("analitico")
 
 NOTEBOOK_MIME_TYPE = "application/x-ipynb+json"
@@ -77,6 +78,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 
     def run(self, job, factory: Factory, **kwargs):
         """ Run notebook, update it, upload artifacts """
+        # TODO should we really upload artifacts or not?
         nb_run(notebook_item=self, factory=factory, upload=True, save=True, tags=None)
 
 
@@ -140,19 +142,15 @@ def nb_run(
             if use_papermill_docker:
                 papermill_cmd = os.environ.get("ANALITICO_PAPERMILL_DOCKER_SCRIPT", None)
                 if not papermill_cmd:
-                    logger.warning("ANALITICO_PAPERMILL_DOCKER_SCRIPT is not configured; using 'papermill' directly which is a SECURITY RISK!!!")
+                    logger.warning(
+                        "ANALITICO_PAPERMILL_DOCKER_SCRIPT is not configured; using 'papermill' directly which is a SECURITY RISK!!!"
+                    )
                     papermill_cmd = "papermill"
 
                 # run papermill via command line. this allows us to run a script which will create
                 # a docker where we can run the notebook via papermill with untrusted content without
                 # having the security issues we would otherwise have in our main environment (eg. env variables, etc)
-                papermill_args = [
-                    papermill_cmd,
-                    notebook_path,
-                    notebook_out_path,
-                    "--cwd",
-                    artifacts_path,
-                ]
+                papermill_args = [papermill_cmd, notebook_path, notebook_out_path, "--cwd", artifacts_path]
                 for key, value in parameters.items():
                     papermill_args.append("-p")
                     papermill_args.append(key)
@@ -175,7 +173,7 @@ def nb_run(
                     cwd=artifacts_path,  # any artifacts will be created in cwd
                 )
 
-    except Exception as exc:
+    except Exception:
         if save:
             try:
                 notebook = read_json(notebook_out_path)

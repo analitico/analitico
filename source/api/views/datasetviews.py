@@ -61,11 +61,6 @@ class DatasetViewSet(
     job_actions = (ACTION_PROCESS,)
 
     @permission_classes((IsAuthenticated,))
-    @action(methods=["post"], detail=True, url_name="detail-data-process", url_path="data/process")
-    def data_process(self, request, pk):
-        return self.job_create(request, pk, ACTION_PROCESS)
-
-    @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="detail-data-csv", url_path="data/csv")
     def data_csv(self, request, pk):
         return self.asset_detail(request, pk, ASSETS_CLASS_DATA, "data.csv")

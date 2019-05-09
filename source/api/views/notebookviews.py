@@ -109,8 +109,3 @@ class NotebookViewSet(
     item_class = api.models.Notebook
     serializer_class = NotebookSerializer
     job_actions = (ACTION_PROCESS,)
-
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["post"], detail=True, url_name="process", url_path="process")
-    def data_process(self, request, pk):
-        return self.job_create(request, pk, ACTION_PROCESS)

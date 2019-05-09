@@ -3,6 +3,7 @@
 import rest_framework
 from rest_framework import serializers
 
+import analitico
 import api.models
 import api.utilities
 
@@ -89,33 +90,6 @@ class JobViewSetMixin:
     # defined in subclass to list acceptable actions
     job_actions = ()
 
-    def create_job(self, request, job_item, job_action, run_async=True):
-
-        # explicit ?async=False in request can override default
-        run_async = get_query_parameter_as_bool(request, "async", run_async)
-        workspace_id = job_item.workspace.id if job_item.workspace else job_item.id
-        job_action = job_item.type + "/" + job_action
-
-        if run_async:
-            job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=STATUS_CREATED)
-            job.save()
-            return job
-
-        factory.warning("Running jobs synchronously is not recommended", item=job_item, action=job_action)
-        job = Job(item_id=job_item.id, action=job_action, workspace_id=workspace_id, status=STATUS_RUNNING)
-        job.save()
-        job.run(request)
-        return job
-
-    def create_job_response(self, request, job_item, job_action, run_async=False, just_payload=False):
-        """ Runs a job and creates a response which can be the job itself or just its payload """
-        job = self.create_job(request, job_item, job_action, run_async=run_async)
-        if job.status == STATUS_COMPLETED and just_payload:
-            payload = job.payload
-            payload["job_id"] = job.id
-            return Response(payload)
-        return Response(job)
-
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
     def job_list(self, request, pk) -> Response:
@@ -132,11 +106,20 @@ class JobViewSetMixin:
     def job_create(self, request, pk, job_action) -> Response:
         """ Creates a job for this item and returns it. """
         job_item = self.get_object()
-        if job_action in self.job_actions:
-            job = self.create_job(request, job_item, job_action)
-            jobs_serializer = JobSerializer(job)
-            return Response(jobs_serializer.data)
-        raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)
+        if job_action not in self.job_actions:
+            raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)
+
+        job = job_item.create_job(job_action)
+
+        run_async = get_query_parameter_as_bool(request, "async", True)
+        if not run_async:
+            job.status = STATUS_RUNNING
+            job.save()
+            analitico.logger.warning("Running jobs synchronously is not recommended, item: {job_item.id}, action: {job.action}")
+            job.run(request)
+
+        serializer = JobSerializer(job)
+        return Response(serializer.data)
 
 
 ##
@@ -175,7 +158,7 @@ class JobViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.Mod
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=False, url_name="schedule", url_path="schedule")
     def schedule(self, request):
-        """ Returns profile of logged in user """
+        """ Check for datasets, recipes or notebook that have cron schedules and creates any jobs to reprocess them if necessary """
         jobs = schedule_jobs()
         jobs_serializer = JobSerializer(jobs, many=True)
         return Response(jobs_serializer.data)

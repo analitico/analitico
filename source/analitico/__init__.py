@@ -8,6 +8,11 @@ import analitico.plugin
 import analitico.dataset
 import analitico.status
 
+import logging
+
+# default logger used by libraries, etc
+logger = logging.getLogger("analitico")
+
 
 def authorize(token=None, endpoint=ANALITICO_STAGING_API_ENDPOINT) -> analitico.factory.Factory:
     """ Returns an API factory which can create datasets, models, run notebooks, plugins, etc """

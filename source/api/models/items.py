@@ -10,9 +10,11 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import APIException, NotFound
 
-import api.storage
+import analitico
+from analitico.status import STATUS_CREATED
+from analitico.utilities import get_dict_dot, set_dict_dot
 
-from analitico.utilities import get_dict_dot, set_dict_dot, logger
+import api.storage
 
 # Most of the models have similar functionality and attributes so the most logical thing
 # would be to implement an abstract Model and then inherit for all the concrete subclasses.
@@ -89,6 +91,18 @@ class ItemMixin:
         if notebook_name is not None and notebook_name != "notebook":
             self.set_attribute(notebook_name, notebook)
         self.notebook = notebook
+
+    ##
+    ## Jobs
+    ##
+
+    def create_job(self, action):
+        """ Create a job that will be used to perform an action on this item """
+        workspace_id = self.workspace.id if self.workspace else self.id
+        action = self.type + "/" + action
+        job = api.models.Job(item_id=self.id, action=action, workspace_id=workspace_id, status=STATUS_CREATED)
+        job.save()
+        return job
 
     ##
     ## Assets
@@ -235,7 +249,7 @@ class ItemAssetsMixin:
         if not deleted:
             # TODO if object cannot deleted it may be better to leave orphan in storage and proceed to deleting from assets?
             message = "Cannot delete {}/{} from storage, try again later.".format(asset_class, asset_id)
-            logger.error(message)
+            analitico.logger.error(message)
             raise APIException(detail=message, code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         assets.remove(asset)
