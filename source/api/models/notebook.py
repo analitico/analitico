@@ -189,15 +189,25 @@ def nb_run(
                     cwd=artifacts_path,  # any artifacts will be created in cwd
                 )
 
-    except Exception:
-        if save:
-            try:
-                notebook = read_json(notebook_out_path)
+    except Exception as exc:
+        evalue = str(exc)
+        try:
+            notebook = read_json(notebook_out_path)
+
+            if save:
                 notebook_item.set_notebook(notebook, notebook_name)
                 notebook_item.save()
-            except Exception:
-                pass
-        factory.exception("An error occoured while running the notebook in %s", notebook_item.id, item=notebook_item)
+
+            errors = nb_get_errors(notebook)
+            if len(errors) > 0:
+                evalue = errors[0]["evalue"]
+                if job:
+                    job.set_attribute("errors", errors)
+        except Exception:
+            pass
+        raise analitico.AnaliticoException(
+            f"An error occoured while running {notebook_item.id}: {evalue}", item=notebook_item, job=job
+        ) from exc
 
     if upload:
         # upload processed artifacts to /data
@@ -211,6 +221,19 @@ def nb_run(
         notebook_item.set_notebook(notebook, notebook_name)
         notebook_item.save()
     return notebook
+
+
+def nb_get_errors(notebook: dict):
+    """ Scans the notebook and returns any and all error outputs """
+    # https://nbformat.readthedocs.io/en/latest/format_description.html#error
+    errors = []
+    for cell in notebook.get("cells", []):
+        for idx, output in enumerate(cell.get("outputs", [])):
+            if output.get("output_type", None) == "error":
+                error = output.copy()
+                error["cell_index"] = idx
+                errors.append(error)
+    return errors
 
 
 def nb_find_cells(notebook: dict, tags: str) -> list:

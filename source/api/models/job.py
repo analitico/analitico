@@ -123,8 +123,10 @@ class Job(ItemMixin, models.Model):
                 self.save()
                 factory.status(self, STATUS_COMPLETED)
 
-            except Exception as e:
+            except Exception as exc:
                 self.status = STATUS_FAILED
                 self.save()
                 factory.status(self, STATUS_FAILED)
-                factory.exception("An error occoured while running the job: %s", self.id, item=self, exception=e)
+                raise analitico.AnaliticoException(
+                    f"An error occoured while running {self.id}", item=self, job=self
+                ) from exc

@@ -489,7 +489,17 @@ class NotebooksTests(APITestCase):
         # Run a notebook containing a cell that raises an exception, check if excption listed in the job
         self.post_notebook("notebook09.ipynb", "nb_09")
 
-        # notebook was NOT executed correctly, it raised an exception!
-        _, notebook = self.process_notebook("nb_09", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertEqual(notebook["metadata"]["papermill"]["exception"], True)
-        self.assertEqual(len(notebook["cells"]), 3)
+        # job should not execute correctly and should contain errors generated within the notebook
+        url = reverse("api:notebook-job-action", args=("nb_09", ACTION_PROCESS)) + "?async=false"
+        response = self.client.post(url, format="json")
+        job_id = response.data["error"]["meta"]["extra"]["job_id"]
+
+        # retrieve the failed job
+        url = reverse("api:job-detail", args=(job_id,))
+        job = self.client.get(url).data
+
+        # job should contain error output from the failed cell
+        self.assertEqual(job["attributes"]["errors"][0]["cell_index"], 0)
+        self.assertEqual(job["attributes"]["errors"][0]["ename"], "Exception")
+        self.assertEqual(job["attributes"]["errors"][0]["evalue"], "The notebook raised this TEST exception")
+        self.assertEqual(job["attributes"]["errors"][0]["output_type"], "error")
