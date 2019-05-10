@@ -1,15 +1,14 @@
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
 
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 from api.factory import factory
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
 
-class PluginTests(APITestCase):
+class PluginTests(AnaliticoApiTestCase):
     """ Test the plugin APIs (not the plugins themselves which are tested in analitico.plugin) """
 
     def test_plugin_list(self):

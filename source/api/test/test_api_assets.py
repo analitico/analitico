@@ -13,12 +13,11 @@ import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from rest_framework import status
-from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
 
 import analitico
 import api.models
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -26,7 +25,7 @@ from .utils import APITestCase
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
 
-class AssetsTests(APITestCase):
+class AssetsTests(AnaliticoApiTestCase):
     def _upload_dog(self):
         """ The same dog image is used in a number of tests """
         url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "oh-my-dog.jpg"))

@@ -18,7 +18,6 @@ import django.utils.http
 import django.core.files
 
 from rest_framework import status
-from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot, time_ms, logger
 
 import analitico
@@ -27,7 +26,7 @@ import api.models
 
 from analitico.status import STATUS_RUNNING
 from api.models import Job
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 from analitico import ACTION_PROCESS
 from api.pagination import MIN_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
 from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
@@ -37,7 +36,7 @@ from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
 # pylint: disable=unused-variable
 
 
-class DatasetTests(APITestCase):
+class DatasetTests(AnaliticoApiTestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
 
     def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv", asset_class="assets"):

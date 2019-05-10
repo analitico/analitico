@@ -4,7 +4,6 @@ import json
 
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
 
 # conflicts with django's dynamically generated model.objects
 
@@ -21,75 +20,13 @@ from api.factory import factory
 from api.models.log import *
 from api.pagination import *
 
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 
 
-class NotebooksTests(APITestCase):
+class NotebooksTests(AnaliticoApiTestCase):
     """ Test notebooks operations via APIs """
-
-    def read_notebook(self, notebook_path):
-        if not os.path.isfile(notebook_path):
-            notebook_path = os.path.join(NOTEBOOKS_PATH, notebook_path)
-            assert os.path.isfile(notebook_path)
-        return read_json(notebook_path)
-
-    def post_notebook(self, notebook_path, notebook_id="nb_1"):
-        """ Posts a notebook model """
-        notebook = self.read_notebook(notebook_path)
-
-        url = reverse("api:notebook-list")
-        self.auth_token(token=self.token1)
-        response = self.client.post(
-            url,
-            dict(
-                id=notebook_id,
-                workspace_id="ws_1",
-                title="title: " + notebook_id,
-                description="description: " + notebook_id,
-                notebook=notebook,
-                extra="extra: " + notebook_id,
-            ),
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        data = response.data
-        self.assertEqual(data["id"], notebook_id)
-        return response
-
-    def update_notebook(self, notebook_id="nb_01", notebook=None, notebook_name=None):
-        url = reverse("api:notebook-detail-notebook", args=(notebook_id,))
-        if notebook_name:
-            url = url + "?name=" + notebook_name
-        response = self.client.put(url, data=notebook, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response = self.client.get(url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        return response.data
-
-    def process_notebook(self, notebook_id="nb_01", query="?async=false", status_code=status.HTTP_200_OK):
-        # process notebook synchronously, return response and updated notebook
-        url = reverse("api:notebook-job-action", args=(notebook_id, ACTION_PROCESS)) + query
-        response = self.client.post(url, format="json")
-        data = response.data
-        self.assertEqual(response.status_code, status_code)
-        if status_code == status.HTTP_200_OK:
-            self.assertEqual(data["attributes"]["status"], "completed")
-
-        # retrieve notebook updated with outputs
-        url = reverse("api:notebook-detail", args=(notebook_id,))
-        response = self.client.get(url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        return response, response.data["attributes"]["notebook"]
-
-    def setUp(self):
-        self.setup_basics()
-        ws_01 = Workspace(id="ws_1", user=self.user1)
-        ws_01.save()
-        ws_02 = Workspace(id="ws_2", user=self.user1)
-        ws_02.save()
 
     def test_notebook_post(self):
         response = self.post_notebook("notebook01.ipynb", "nb_01")
@@ -362,7 +299,7 @@ class NotebooksTests(APITestCase):
             "data": {
                 "id": data["id"],
                 "attributes": {
-                    "workspace_id": "ws_1",  # TODO required here but not in PATCH, why?
+                    "workspace_id": "ws_user1",  # TODO required here but not in PATCH, why?
                     "title": "title1",
                     "description": "description1",
                     "notebook": notebook1,
@@ -383,7 +320,7 @@ class NotebooksTests(APITestCase):
             "data": {
                 "id": data["id"],
                 "attributes": {
-                    "workspace_id": "ws_1",  # TODO required here but not in PATCH, why?
+                    "workspace_id": "ws_user1",  # TODO required here but not in PATCH, why?
                     "description": "description2",
                     "notebook": notebook1,
                 },

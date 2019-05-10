@@ -139,6 +139,7 @@ class Job(ItemMixin, models.Model):
 
 JOB_TIMEOUT_MINUTES = 30
 
+
 def timeout_jobs() -> [Job]:
     """ Find jobs that have been running for over 30 minutes (stuck) and mark them as failed """
     now = datetime.utcnow()

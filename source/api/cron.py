@@ -87,4 +87,3 @@ def schedule_jobs():
     nb_jobs = schedule_items(nb, ACTION_PROCESS)
 
     return nb_jobs + ds_jobs + rx_jobs
-

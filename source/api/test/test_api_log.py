@@ -1,6 +1,5 @@
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -11,10 +10,10 @@ from api.factory import factory
 from api.models.log import *
 from api.pagination import *
 
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 
-class LogTests(APITestCase):
+class LogTests(AnaliticoApiTestCase):
     """ Test log operations like collecting logs and returning them as log entries via APIs """
 
     logger = factory.logger

@@ -8,6 +8,7 @@ from rest_framework import status
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+from analitico import ACTION_PROCESS
 from api.models import Token, User, Workspace
 from analitico.utilities import read_json, get_dict_dot
 
@@ -21,7 +22,7 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 
 
-class APITestCase(APITestCase):
+class AnaliticoApiTestCase(APITestCase):
     """ Base class for testing analitico APIs """
 
     def read_json_asset(self, path):
@@ -36,7 +37,7 @@ class APITestCase(APITestCase):
         return os.path.join(ASSETS_PATH, asset_name)
 
     def get_items(self, item_type, token=None, status_code=status.HTTP_200_OK):
-        url = reverse("api:" + item_type[len] + "-list")
+        url = reverse("api:" + item_type + "-list")
         self.auth_token(token)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status_code)
@@ -157,3 +158,62 @@ class APITestCase(APITestCase):
     def setUp(self):
         """ Prepare test users with test auth tokens """
         self.setup_basics()
+
+    ##
+    ## Notebooks
+    ##
+
+    def read_notebook(self, notebook_path):
+        if not os.path.isfile(notebook_path):
+            notebook_path = os.path.join(NOTEBOOKS_PATH, notebook_path)
+            assert os.path.isfile(notebook_path)
+        return read_json(notebook_path)
+
+    def post_notebook(self, notebook_path, notebook_id="nb_1"):
+        """ Posts a notebook model """
+        notebook = self.read_notebook(notebook_path)
+
+        url = reverse("api:notebook-list")
+        self.auth_token(token=self.token1)
+        response = self.client.post(
+            url,
+            dict(
+                id=notebook_id,
+                workspace_id="ws_user1",
+                title="title: " + notebook_id,
+                description="description: " + notebook_id,
+                notebook=notebook,
+                extra="extra: " + notebook_id,
+            ),
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        self.assertEqual(data["id"], notebook_id)
+        return response
+
+    def update_notebook(self, notebook_id="nb_01", notebook=None, notebook_name=None):
+        url = reverse("api:notebook-detail-notebook", args=(notebook_id,))
+        if notebook_name:
+            url = url + "?name=" + notebook_name
+        response = self.client.put(url, data=notebook, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response.data
+
+    def process_notebook(self, notebook_id="nb_01", query="?async=false", status_code=status.HTTP_200_OK):
+        # process notebook synchronously, return response and updated notebook
+        url = reverse("api:notebook-job-action", args=(notebook_id, ACTION_PROCESS)) + query
+        response = self.client.post(url, format="json")
+        data = response.data
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(data["attributes"]["status"], "completed")
+
+        # retrieve notebook updated with outputs
+        url = reverse("api:notebook-detail", args=(notebook_id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response, response.data["attributes"]["notebook"]

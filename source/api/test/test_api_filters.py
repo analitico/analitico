@@ -3,7 +3,6 @@ import random
 
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -14,7 +13,7 @@ from api.factory import factory
 from api.models.log import *
 from api.pagination import *
 
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 # https://kapeli.com/cheat_sheets/Python_unittest_Assertions.docset/Contents/Resources/Documents/index
 
@@ -34,7 +33,7 @@ CHARACTERS = (
 )
 
 
-class FiltersTests(APITestCase):
+class FiltersTests(AnaliticoApiTestCase):
     """ 
     Test APIs filters like paging, sorting, ordering, searching, etc... 
     Most tests run on logs because they are easy to create but these filters

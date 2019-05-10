@@ -13,20 +13,18 @@ import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from rest_framework import status
-from rest_framework.test import APITestCase
-
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from analitico.utilities import read_json, get_dict_dot
 from django.test import TestCase, override_settings
 
 import api.models
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
 
-class WebsiteTests(APITestCase):
+class WebsiteTests(AnaliticoApiTestCase):
 
     ##
     ## Login, etc

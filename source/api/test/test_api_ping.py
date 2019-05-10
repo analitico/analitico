@@ -1,9 +1,8 @@
 from django.test import TestCase
-from rest_framework.test import APITestCase
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 
-class PingApiTests(APITestCase):
+class PingApiTests(AnaliticoApiTestCase):
     def OFFtest_api_ping(self):
         response = self.client.post("/api/ping", {"test1": "value1", "test2": "value2"}, format="json")
         self.assertIsNotNone(response.data)

@@ -14,7 +14,6 @@ import django.utils.http
 import django.core.files
 
 from rest_framework import status
-from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
 
 import analitico
@@ -23,14 +22,14 @@ import api.models
 import api.plugin
 
 from api.models import Job, Endpoint, Recipe, Model, Endpoint
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
 
-class RecipeTests(APITestCase):
+class RecipeTests(AnaliticoApiTestCase):
     """ Test recipe operations like creating and training models """
 
     def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv", asset_class="assets"):

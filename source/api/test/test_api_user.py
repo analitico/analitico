@@ -1,14 +1,13 @@
 from analitico import TYPE_PREFIX, USER_TYPE
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
 
-class UserTests(APITestCase):
+class UserTests(AnaliticoApiTestCase):
     """ Test user operations like retrieving and updating the logged in user's profile """
 
     def setUp(self):

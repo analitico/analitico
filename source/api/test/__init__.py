@@ -1,4 +1,4 @@
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 from .test_api_assets import AssetsTests
 from .test_api_dataset import DatasetTests

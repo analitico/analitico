@@ -6,14 +6,13 @@ from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
 
 import analitico
 import api.models
 
 from api.models import Workspace
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -21,7 +20,7 @@ from .utils import APITestCase
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
 
-class ItemsTests(APITestCase):
+class ItemsTests(AnaliticoApiTestCase):
     def setUp(self):
         self.setup_basics()
         try:

@@ -1,9 +1,9 @@
 from django.test import TestCase
 from django.urls import reverse
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 
-class SwaggerTests(APITestCase):
+class SwaggerTests(AnaliticoApiTestCase):
     def test_api_swagger_json(self):
         """ Check OpenAPI schema (formerly known as Swagger) """
         url = reverse("schema-json", args=[".json"])

@@ -13,21 +13,20 @@ import django.utils.http
 import django.core.files
 
 from rest_framework import status
-from rest_framework.test import APITestCase
 from analitico.utilities import read_json, get_dict_dot
 
 import analitico
 import analitico.plugin
 import api.models
 from api.models import Job
-from .utils import APITestCase
+from .utils import AnaliticoApiTestCase
 
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 
 
-class ServerPluginTests(APITestCase):
+class ServerPluginTests(AnaliticoApiTestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
 
     def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv"):
