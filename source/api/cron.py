@@ -1,11 +1,12 @@
 from croniter import croniter
-from datetime import datetime
+from datetime import datetime, timedelta
 import dateutil.parser
 from django.utils import timezone
 
 import analitico
 from analitico import AnaliticoException, ACTION_PROCESS, ACTION_TRAIN
-from api.models import Dataset, Recipe, Notebook
+from analitico.status import STATUS_RUNNING, STATUS_CANCELED
+from api.models import Dataset, Recipe, Notebook, Job
 
 # Some notebooks, datasets and recipes are set up with a "schedule"
 # attribute which is used to specify when the item should be processed
@@ -86,3 +87,4 @@ def schedule_jobs():
     nb_jobs = schedule_items(nb, ACTION_PROCESS)
 
     return nb_jobs + ds_jobs + rx_jobs
+

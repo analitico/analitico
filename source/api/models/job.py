@@ -3,6 +3,7 @@ import jsonfield
 import django.utils.crypto
 import logging
 
+from datetime import datetime, timedelta
 from django.db import models
 
 from .items import ItemMixin
@@ -13,7 +14,7 @@ import analitico.plugin
 import analitico.utilities
 
 from analitico.constants import ACTION_PREDICT
-from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED
+from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED, STATUS_CANCELED
 from api.factory import ServerFactory
 
 
@@ -130,3 +131,21 @@ class Job(ItemMixin, models.Model):
                 raise analitico.AnaliticoException(
                     f"An error occoured while running {self.id}", item=self, job=self
                 ) from exc
+
+
+##
+## Utilities
+##
+
+JOB_TIMEOUT_MINUTES = 30
+
+def timeout_jobs() -> [Job]:
+    """ Find jobs that have been running for over 30 minutes (stuck) and mark them as failed """
+    now = datetime.utcnow()
+    earlier = now - timedelta(minutes=JOB_TIMEOUT_MINUTES)
+
+    # pylint: disable=no-member
+    jobs = Job.objects.filter(updated_at__lt=earlier, status=STATUS_RUNNING)
+    jobs.update(status=STATUS_CANCELED)
+
+    return jobs.all()

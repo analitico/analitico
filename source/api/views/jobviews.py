@@ -37,7 +37,8 @@ from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, S
 from analitico.utilities import logger, get_dict_dot
 
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
-from api.models import ItemMixin, Job
+from api.models import ItemMixin
+from api.models.job import Job, timeout_jobs
 from api.factory import factory
 from api.cron import schedule_jobs
 
@@ -160,5 +161,13 @@ class JobViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.Mod
     def schedule(self, request):
         """ Check for datasets, recipes or notebook that have cron schedules and creates any jobs to reprocess them if necessary """
         jobs = schedule_jobs()
+        jobs_serializer = JobSerializer(jobs, many=True)
+        return Response(jobs_serializer.data)
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get"], detail=False, url_name="timeout", url_path="timeout")
+    def timeout(self, request):
+        """ Look for stuck jobs and retry or fail them """
+        jobs = timeout_jobs()
         jobs_serializer = JobSerializer(jobs, many=True)
         return Response(jobs_serializer.data)
