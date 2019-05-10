@@ -155,8 +155,7 @@ class JobViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.Mod
             return Job.objects.all()
         return Job.objects.filter(workspace__user=self.request.user)
 
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["get"], detail=False, url_name="schedule", url_path="schedule")
+    @action(methods=["get"], detail=False, url_name="schedule", url_path="schedule", permission_classes=(IsAdminUser,))
     def schedule(self, request):
         """ 
         Check for datasets, recipes or notebook that have cron schedules and creates 

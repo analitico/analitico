@@ -162,10 +162,24 @@ class JobsTests(AnaliticoApiTestCase):
         # request scheduling and return jobs that were scheduled
         with mock.patch("django.utils.timezone.now") as mock_now:
             mock_now.return_value = tested_at
+            self.auth_token(self.token1)
             url = reverse("api:job-schedule")
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             return response.data
+
+    def test_job_schedule_only_for_admins(self):
+        url = reverse("api:job-schedule")
+
+        # regular user DOES NOT have access
+        self.auth_token(self.token2)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # admin user has access
+        self.auth_token(self.token1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_job_schedule_none(self):
         """ Test not having a cron setting in the schedule """
