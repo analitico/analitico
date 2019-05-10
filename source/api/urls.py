@@ -9,7 +9,6 @@ from rest_framework.response import Response
 
 import analitico.utilities
 import api.views
-import api.cron
 
 app_name = "api"
 
