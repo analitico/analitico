@@ -1,6 +1,7 @@
 from django.urls import reverse
 from datetime import datetime, timedelta
 from unittest import mock
+from dateutil import parser
 
 # relax pylint on testing code
 # pylint: disable=no-member
@@ -15,10 +16,11 @@ from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_CANCELED
 from analitico.constants import ACTION_PROCESS
 
 from api.models import *
-from api.factory import factory
-from api.models.job import Job, timeout_jobs, JOB_TIMEOUT_MINUTES
-
+from api.models.job import *
 from .utils import AnaliticoApiTestCase
+
+# baseline date for tests faking cron based item scheduling
+CRON_DATE = parser.parse("2020-04-17T00:00:00Z")
 
 
 class JobsTests(AnaliticoApiTestCase):
@@ -144,4 +146,105 @@ class JobsTests(AnaliticoApiTestCase):
     ## Cron scheduling of jobs
     ##
 
-    # TODO test notebook scheduling then verify job creation
+    def schedule_mock(self, created_at=CRON_DATE, scheduled_at=CRON_DATE, tested_at=CRON_DATE, cron=None) -> [Job]:
+        # create notebook that will be scheduled
+        with mock.patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = created_at
+            nb = Notebook(id="nb_01", workspace=self.ws1)
+            if cron:
+                schedule = {"cron": cron}
+                if scheduled_at:
+                    schedule["scheduled_at"] = scheduled_at.isoformat()
+                nb.set_attribute("schedule", schedule)
+            nb.save()
+
+        with mock.patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = tested_at
+            return schedule_jobs()
+
+    def test_job_schedule_none(self):
+        """ Test not having a cron setting in the schedule """
+        jobs = self.schedule_mock(cron="")
+        self.assertEqual(len(jobs), 0)
+
+    def test_job_schedule_every_minute_first(self):
+        """ Test schedule that runs every minute, never run before """
+        jobs = self.schedule_mock(scheduled_at=None, cron="* * * * *")
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_minute_next(self):
+        """ Test schedule that runs every minute but has run once already at this very same time """
+        jobs = self.schedule_mock(cron="* * * * *")
+        self.assertEqual(len(jobs), 0)
+
+    def test_job_schedule_every_minute_future(self):
+        """ Test schedule that runs every minute on the next minute """
+        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=1), cron="* * * * *")
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_hour_1(self):
+        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=50), cron=CRON_EVERY_HOUR)
+        self.assertEqual(len(jobs), 0)
+
+    def test_job_schedule_every_hour_2(self):
+        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=60), cron=CRON_EVERY_HOUR)
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_hour_3(self):
+        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=61), cron=CRON_EVERY_HOUR)
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_hour_4(self):
+        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(days=1), cron=CRON_EVERY_HOUR)
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_hour_already_run_1(self):
+        """ Job runs every hour, last ran at 15 minutes, next due on the hour """
+        jobs = self.schedule_mock(
+            scheduled_at=CRON_DATE + timedelta(minutes=15),
+            tested_at=CRON_DATE + timedelta(minutes=59),
+            cron=CRON_EVERY_HOUR,
+        )
+        self.assertEqual(len(jobs), 0)
+
+    def test_job_schedule_every_hour_already_run_2(self):
+        """ Job runs every hour, last ran at 15 minutes, next due on the hour """
+        jobs = self.schedule_mock(
+            scheduled_at=CRON_DATE + timedelta(minutes=15),
+            tested_at=CRON_DATE + timedelta(minutes=60),
+            cron=CRON_EVERY_HOUR,
+        )
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_hour_already_run_3(self):
+        """ Job runs every hour, last ran at 15 minutes, next due on the hour """
+        jobs = self.schedule_mock(
+            scheduled_at=CRON_DATE + timedelta(minutes=15),
+            tested_at=CRON_DATE + timedelta(minutes=62),
+            cron=CRON_EVERY_HOUR,
+        )
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_hour_already_run_4(self):
+        jobs = self.schedule_mock(
+            scheduled_at=CRON_DATE + timedelta(minutes=60),
+            tested_at=CRON_DATE + timedelta(minutes=75),
+            cron=CRON_EVERY_HOUR,
+        )
+        self.assertEqual(len(jobs), 0)
+
+    def test_job_schedule_every_hour_already_run_5(self):
+        jobs = self.schedule_mock(
+            scheduled_at=CRON_DATE + timedelta(minutes=60),
+            tested_at=CRON_DATE + timedelta(minutes=120),
+            cron=CRON_EVERY_HOUR,
+        )
+        self.assertEqual(len(jobs), 1)
+
+    def test_job_schedule_every_hour_already_run_6(self):
+        jobs = self.schedule_mock(
+            scheduled_at=CRON_DATE + timedelta(minutes=60),
+            tested_at=CRON_DATE + timedelta(minutes=119),
+            cron=CRON_EVERY_HOUR,
+        )
+        self.assertEqual(len(jobs), 0)

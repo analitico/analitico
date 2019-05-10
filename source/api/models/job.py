@@ -21,6 +21,9 @@ from analitico.constants import ACTION_PREDICT
 from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED, STATUS_CANCELED
 from api.factory import ServerFactory
 
+CRON_EVERY_MINUTE = "* * * * *"
+CRON_EVERY_HOUR = "0 * * * *"
+
 
 def generate_job_id():
     """ All Job.id have jb_ prefix followed by a random string """
@@ -193,7 +196,7 @@ def schedule_items(items, action: str) -> [Job]:
                 label = "scheduling" if schedule_next < now else "skip"
                 msg = f"schedule_items: {label}: {item.id}, cron: {cron}, scheduled_at: '{scheduled_at}, schedule_next: {schedule_next}"
 
-                if schedule_next < now:
+                if schedule_next <= now:
                     analitico.logger.info(msg)
                     # create the job that will process the item
                     job = item.create_job(action)
