@@ -150,9 +150,11 @@ def timeout_jobs() -> [Job]:
     earlier = now - timedelta(minutes=JOB_TIMEOUT_MINUTES)
 
     # pylint: disable=no-member
-    jobs = Job.objects.filter(updated_at__lt=earlier, status=STATUS_RUNNING)
-    jobs.update(status=STATUS_CANCELED)
-    return list(jobs.all())
+    jobs = list(Job.objects.filter(updated_at__lt=earlier, status=STATUS_RUNNING))
+    for job in jobs:
+        job.status = STATUS_CANCELED
+        job.save()
+    return jobs
 
 
 # Some notebooks, datasets and recipes are set up with a "schedule"
