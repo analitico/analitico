@@ -14,6 +14,7 @@ import api
 from analitico import *
 from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_CANCELED
 from analitico.constants import ACTION_PROCESS
+from rest_framework import status
 
 from api.models import *
 from api.models.job import *
@@ -158,9 +159,13 @@ class JobsTests(AnaliticoApiTestCase):
                 nb.set_attribute("schedule", schedule)
             nb.save()
 
+        # request scheduling and return jobs that were scheduled
         with mock.patch("django.utils.timezone.now") as mock_now:
             mock_now.return_value = tested_at
-            return schedule_jobs()
+            url = reverse("api:job-schedule")
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            return response.data
 
     def test_job_schedule_none(self):
         """ Test not having a cron setting in the schedule """
