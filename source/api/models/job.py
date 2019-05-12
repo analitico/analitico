@@ -21,9 +21,9 @@ from analitico.constants import ACTION_PREDICT
 from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED, STATUS_CANCELED
 from api.factory import ServerFactory
 
+# https://crontab.guru/examples.html
 CRON_EVERY_MINUTE = "* * * * *"
 CRON_EVERY_HOUR = "0 * * * *"
-
 
 def generate_job_id():
     """ All Job.id have jb_ prefix followed by a random string """
