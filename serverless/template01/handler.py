@@ -1,6 +1,8 @@
 import json
 import datetime
 
+#import numpy as np
+
 import pippo
 #import analitico
 
@@ -47,3 +49,14 @@ def echo3(event, context):
     }
 
     return response
+
+
+def echo4(event, context):
+    a = np.arange(15).reshape(3, 5)
+
+    print("Your numpy array:")
+    print(a)
+
+
+if __name__ == "__main__":
+    echo4('', '')

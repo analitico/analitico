@@ -21,3 +21,4 @@ source/.pytest_cache/v/cache/nodeids
 htmlcov
 .coverage
 .DS_Store
+data.csv
