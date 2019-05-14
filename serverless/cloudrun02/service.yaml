@@ -1,7 +1,7 @@
 apiVersion: serving.knative.dev/v1alpha1
 kind: Service
 metadata:
-  name: helloworld-python
+  name: cloudrun02-template
   namespace: default
 spec:
   runLatest:

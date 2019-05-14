@@ -4,9 +4,9 @@ specified, it will use "World" as the TARGET.
 
 ## Commands 
 
-gcloud builds submit --tag gcr.io/analitico-api/template02
-
-gcloud beta run deploy --image gcr.io/analitico-api/template02
+gcloud config set run/region us-central1
+gcloud builds submit --tag gcr.io/analitico-api/cloudrun02
+gcloud beta run deploy cloudrun02 --image gcr.io/analitico-api/cloudrun02
 
 
 ## Prerequisites
