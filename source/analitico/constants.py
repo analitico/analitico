@@ -10,6 +10,7 @@ ANALITICO_API_ENDPOINT = "https://analitico.ai/api/"
 ACTION_PROCESS = "process"  # process a dataframe to retrieve data
 ACTION_TRAIN = "train"  # train a recipe to procude a model
 ACTION_PREDICT = "predict"  # run a model to generate a prediction
+ACTION_DEPLOY = "deploy" # deploy a model to a serverless endpoint
 
 # types/models
 TYPE_PREFIX = "analitico/"
