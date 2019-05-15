@@ -12,6 +12,7 @@ import sys
 import random
 import string
 import dateutil
+import re
 
 # use simplejson instead of standard built in library
 # mostly because it has a parameter which supports replacing nan with nulls
@@ -312,3 +313,16 @@ def get_csv_row_count(filename):
     """ Returns the number of rows in the given csv file (one row is deducted for the header) """
     with open(filename, "r") as f:
         return sum(1 for row in f) - 1
+
+
+##
+## Regular expression
+##
+
+
+def re_match_group(expression: str, content: str, default: str = None, group_index: int = 1) -> str:
+    """ Searches for the first matching group or returns the default value """
+    match = re.search(expression, content)
+    if match:
+        return match.group(group_index)
+    return default
