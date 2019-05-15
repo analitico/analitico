@@ -16,7 +16,7 @@ from analitico.constants import ACTION_PREDICT, ACTION_DEPLOY
 from analitico.plugin import PluginError
 from analitico.utilities import time_ms, read_json, set_dict_dot
 
-from api.docker import docker_build
+from api.docker import docker_build, docker_deploy
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
@@ -63,27 +63,22 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
 
     def run_deploy(self, job: Job, factory: Factory):
         """ Run deploy jobs on the endpoint """
-        try:
-            target_id = job.get_attribute("target_id")
-            if not target_id:
-                raise AnaliticoException("Endpoint.run_deploy - job need to contain the target_id to be deployed")
+        target_id = job.get_attribute("target_id")
+        if not target_id:
+            raise AnaliticoException("Endpoint.run_deploy - job need to contain the target_id to be deployed")
 
-            # TODO: need to validate that factory.get_item checks permissions on item
-            target = factory.get_item(target_id)
-            if not target:
-                factory.exception("Endpoint: target_id is not configured", item=self)
+        # TODO: need to validate that factory.get_item checks permissions on item
+        target = factory.get_item(target_id)
+        if not target:
+            factory.exception("Endpoint: target_id is not configured", item=self)
 
-            # retrieve or build docker, add to job
-            docker = target.get_attribute("docker")
-            if not docker:
-                docker = docker_build(target, job, factory)
-            job.set_attribute("docker", docker)
-            job.save()
+        # retrieve or build docker, then deploy
+        docker = target.get_attribute("docker")
+        if not docker:
+            docker = docker_build(target, job, factory)
 
-            # TODO deploy on aws lambda, google cloudrun or our own knative cluster
-
-        except Exception as exc:
-            raise exc
+        # deploy docker to cloud
+        docker_deploy(target, self, job, factory)
 
     def run(self, job: Job, factory: Factory, **kwargs):
         """ Run predictions on the endpoint (with or without a Job) """

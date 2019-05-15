@@ -5,6 +5,7 @@ import tempfile
 import subprocess
 from subprocess import PIPE
 
+from analitico import AnaliticoException
 from analitico.utilities import re_match_group
 from api.factory import Factory
 from api.models import ItemMixin, Job
@@ -13,6 +14,8 @@ from api.models import ItemMixin, Job
 DOCKER_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "../../serverless/templates/knative")
 assert os.path.isdir(DOCKER_TEMPLATE_DIR)
 
+DOCKER_DEFAULT_CONCURRENCY = 20 # concurrent connection per docker
+DOCKER_DEFAULT_REGION = "us-central1" # only region supported by beta 
 
 def docker_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
     """
@@ -44,11 +47,12 @@ def docker_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
         # https://cloud.google.com/sdk/gcloud/reference/builds/submit
         # https://developers.google.com/resources/api-libraries/documentation/cloudbuild/v1/python/latest/cloudbuild_v1.projects.builds.html#create
         image_name = f"eu.gcr.io/analitico-api/{item.id}"
-        build_args = ["gcloud", "builds", "submit", "--tag", image_name]
+        cmd_args = ["gcloud", "builds", "submit", "--tag", image_name]
+        cmd_line = " ".join(cmd_args)
 
         # run build job using google cloud build
-        job.append_logs("Building Docker\n" + " ".join(build_args) + "\n")
-        response = subprocess.run(build_args, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE)
+        job.append_logs(f"Building Docker\n{cmd_line}\n\n")
+        response = subprocess.run(cmd_args, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE)
         job.append_logs(response.stderr)
         job.append_logs(response.stdout)
         response.check_returncode()
@@ -68,15 +72,84 @@ def docker_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
         image_sha256 = re_match_group(r"latest: digest: sha256:([0-9a-z]*) size: ([\d]*)", response.stdout)
         image_size = re_match_group(r"latest: digest: sha256:[0-9a-z]* size: ([\d]*)", response.stdout)
 
-        # save docker information inside item
+        # save docker information inside item and job
         docker = {
             "image": f"{image_name}@sha256:{image_sha256}",
             "name": image_name,
             "digest": f"sha256:{image_sha256}",
             "size": int(image_size),  # bogus or real?
-            "build": {"type": "google/build", "id": build_id, "url": build_url},
+            "build": {"type": "build/google", "id": build_id, "url": build_url},
         }
         item.set_attribute("docker", docker)
         item.save()
+        job.set_attribute("docker", docker)
+        job.save()
 
         return docker
+
+
+def docker_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Factory) -> dict:
+    """ Takes an item that has already been built into a Docker and deploys it """
+    docker = item.get_attribute("docker")
+    if docker is None:
+        raise AnaliticoException(
+            f"{item.id} cannot be deployed to {endpoint.id} because its docker has not been built yet."
+        )
+
+    # service name is the id of the endpoint unless otherwise specified
+    service = job.get_attribute("service_id", endpoint.id)
+    service = service.lower().replace("_", "-")
+
+    # max concurrent connections per docker
+    concurrency = int(job.get_attribute("concurrency", 20))
+
+    # To deploy on Google Cloud Run we use a command like this:
+    # https://cloud.google.com/sdk/gcloud/reference/beta/run/deploy
+    # gcloud beta run deploy cloudrun02 --image eu.gcr.io/analitico-api/cloudrun02 --set-env-vars=TARGET=Pippo
+    cmd_args = [
+        "gcloud",
+        "beta",
+        "run",
+        "deploy",
+        service,
+        "--image",
+        docker["image"],
+        "--allow-unauthenticated",
+        "--concurrency",
+        str(concurrency),
+        "--region",
+        DOCKER_DEFAULT_REGION
+    ]
+    cmd_line = " ".join(cmd_args)
+
+    # run build job using google cloud build
+    job.append_logs(f"Deploying {item.id} to {endpoint.id} on Google Cloud Run\n{cmd_line}\n\n")
+    response = subprocess.run(cmd_args, encoding="utf-8", stdout=PIPE, stderr=PIPE)
+    job.append_logs(response.stderr)
+    job.append_logs(response.stdout)
+    response.check_returncode()
+
+    # Example of response.sterr:
+    # Deploying container to Cloud Run service [\x1b[1mep-test-001\x1b[m] in project [\x1b[1manalitico-api\x1b[m] region [\x1b[1mus-central1\x1b[m]\n
+    # Deploying new service...\n
+    # Setting IAM Policy.........................done\n
+    # Creating Revision.......................................................done\n
+    # Routing traffic.......................done\n
+    # Done.\n
+    # Service [\x1b[1mep-test-001\x1b[m] revision [\x1b[1mep-test-001-00001\x1b[m] has been deployed and is serving traffic at \x1b[1mhttps://ep-test-001-zqsrcwjkta-uc.a.run.app\x1b[m\n
+
+    # save deployment information inside item and job
+    deploy = {
+        "type": "deploy/google-cloud-run",
+        "service": service,
+        "revision": re_match_group(r"revision \[\x1b\[1m([a-z0-9-]*)\x1b", response.stderr),
+        "region": re_match_group(r"region \[\x1b\[1m([a-z0-9-]*)\x1b", response.stderr),
+        "url": re_match_group(r"is serving traffic at \x1b\[1m(https:\/\/[a-zA-Z0-9-\.]*)\x1b", response.stderr),
+        "concurrency": concurrency,
+    }
+    item.set_attribute("deploy", deploy)
+    item.save()
+    job.set_attribute("deploy", deploy)
+    job.save()
+
+    return deploy
