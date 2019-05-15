@@ -22,6 +22,8 @@ from api.pagination import *
 
 from .utils import AnaliticoApiTestCase
 
+import logging
+logger = logging.getLogger("analitico")
 
 class EndpointsTests(AnaliticoApiTestCase):
     """ Test notebooks operations via APIs """
@@ -45,6 +47,7 @@ class EndpointsTests(AnaliticoApiTestCase):
         self.assertApiResponse(response)
 
         # check job, targets, status, etc
+        logging.info(f"response.content: {str(response.content)}")
         job = response.data
         self.assertEqual(job["attributes"]["action"], "endpoint/deploy")
         self.assertEqual(job["attributes"]["status"], "completed")
