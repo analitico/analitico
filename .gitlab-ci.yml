@@ -166,13 +166,13 @@ staging:
   ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
   ##
   - mkdir -p ~/.ssh
-  - echo "$S6_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
+  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
   - ssh-add ~/.ssh/id_rsa
   script:
     # pull new docker image and run
     # start 2 dockers for jupyter notebook
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$GPU_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter; 
       docker stop analitico; 
@@ -212,7 +212,7 @@ worker-production:
   ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
   ##
   - mkdir -p ~/.ssh
-  - echo "$S6_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
+  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
   - ssh-add ~/.ssh/id_rsa
 
@@ -221,7 +221,7 @@ worker-production:
   # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
 
   script:
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$GPU_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
       docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter; 
       docker stop analitico-worker1; 
