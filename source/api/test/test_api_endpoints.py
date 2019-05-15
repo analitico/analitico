@@ -42,6 +42,7 @@ class EndpointsTests(AnaliticoApiTestCase):
         # the targer of the deploy action is the notebook that needs to be dockerized and deployed
         url = reverse("api:endpoint-job-action", args=(endpoint_id, ACTION_DEPLOY)) + "?async=false"
         response = self.client.post(url, data={"target_id": target_id}, format="json")
+        self.assertApiResponse(response)
 
         # check job, targets, status, etc
         job = response.data

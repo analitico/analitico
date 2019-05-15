@@ -25,6 +25,13 @@ NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 class AnaliticoApiTestCase(APITestCase):
     """ Base class for testing analitico APIs """
 
+    def assertApiResponse(self, response, status_code=status.HTTP_200_OK):
+        """ Assert that the response has succeded and contains "data" """
+        if response.status_code != status_code:
+            logger.warn(f"response.status_code: {response.status_code}")
+            logger.warn(f"response.content: {str(response.content)}")
+        self.assertEqual(response.status_code, status_code)
+
     def read_json_asset(self, path):
         abs_path = os.path.join(ASSETS_PATH, path)
         return read_json(abs_path)
