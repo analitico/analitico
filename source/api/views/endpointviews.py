@@ -10,7 +10,7 @@ import analitico
 import api.models
 import api.utilities
 
-from analitico import ACTION_PREDICT
+from analitico import ACTION_PREDICT, ACTION_DEPLOY
 
 from api.models import Endpoint, Job
 from api.factory import ServerFactory
@@ -44,10 +44,11 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_f
 
     item_class = api.models.Endpoint
     serializer_class = EndpointSerializer
+    job_actions = (ACTION_DEPLOY, ACTION_PREDICT)
 
     @action(methods=["post"], detail=True, url_name="predict", url_path="predict")
     def predict(self, request, pk):
-        """ Runs a synchronous prediction on an endpoint """
+        """ Runs a synchronous prediction on an endpoint TEMPORARY, WILL DEPRECATE AS SOON AS WE DO KNATIVE """
         with ServerFactory(request=request) as factory:
             endpoint = self.get_object()
             results = endpoint.run(None, factory)

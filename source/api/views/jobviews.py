@@ -109,7 +109,14 @@ class JobViewSetMixin:
         if job_action not in self.job_actions:
             raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)
 
-        job = job_item.create_job(job_action)
+        # caller may have posted some attributes for the job. if so we want
+        # to add these to the job. django may have filtered the input and added
+        # a "data" wrapper to make the call more json:api compliant, so we need to strip it
+        data = request.data
+        if data and "data" in data:
+            data = data["data"]
+
+        job = job_item.create_job(job_action, data)
 
         run_async = get_query_parameter_as_bool(request, "async", True)
         if not run_async:

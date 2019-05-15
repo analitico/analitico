@@ -10,15 +10,19 @@ from django.utils.crypto import get_random_string
 import analitico
 import analitico.plugin
 
+from analitico import AnaliticoException
 from analitico.factory import Factory
-from analitico.constants import ACTION_PREDICT
+from analitico.constants import ACTION_PREDICT, ACTION_DEPLOY
 from analitico.plugin import PluginError
 from analitico.utilities import time_ms, read_json, set_dict_dot
+
+from api.docker import docker_build
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
 from .job import Job
 from .notebook import Notebook, nb_run
+
 
 ##
 ## Endpoint
@@ -57,15 +61,43 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
     ## Jobs
     ##
 
+    def run_deploy(self, job: Job, factory: Factory):
+        """ Run deploy jobs on the endpoint """
+        try:
+            target_id = job.get_attribute("target_id")
+            if not target_id:
+                raise AnaliticoException("Endpoint.run_deploy - job need to contain the target_id to be deployed")
+
+            # TODO: need to validate that factory.get_item checks permissions on item
+            target = factory.get_item(target_id)
+            if not target:
+                factory.exception("Endpoint: target_id is not configured", item=self)
+
+            # retrieve or build docker, add to job
+            docker = target.get_attribute("docker")
+            if not docker:
+                docker = docker_build(target, job, factory)
+            job.set_attribute("docker", docker)
+            job.save()
+
+            # TODO deploy on aws lambda, google cloudrun or our own knative cluster
+
+        except Exception as exc:
+            raise exc
+
     def run(self, job: Job, factory: Factory, **kwargs):
         """ Run predictions on the endpoint (with or without a Job) """
         try:
+            # predict action creates a prediction from a trained model
+            action = job.action if job else "{}/{}".format(self.type, ACTION_PREDICT)
+
+            # deploy action will package model as docker and deploy to serverless
+            if action.endswith(ACTION_DEPLOY):
+                return self.run_deploy(job, factory)
+
             # bare bones logging to avoid slowing down predictions
             factory.set_logger_level(logging.WARNING)
             request = factory.request
-
-            # predict action creates a prediction from a trained model
-            action = job.action if job else "{}/{}".format(self.type, ACTION_PREDICT)
 
             model_id = self.get_attribute("model_id")
             if not model_id:
@@ -83,7 +115,7 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
             if os.path.isfile(results_path):
                 os.remove(results_path)
 
-            notebook = model.get_notebook()
+            notebook: Notebook = model.get_notebook()
             if notebook:
                 # retrieve notebook that was used
 

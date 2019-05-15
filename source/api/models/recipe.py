@@ -10,7 +10,7 @@ import api
 
 from .items import ItemMixin
 from .workspace import Workspace
-from .model import Model
+from .model import Model, Job
 
 
 def generate_recipe_id():
@@ -48,7 +48,7 @@ class Recipe(ItemMixin, models.Model):
     ## Jobs
     ##
 
-    def create_job(self, action):
+    def create_job(self, action: str, data: dict = None) -> Job:
         """ 
         The recipe does not run training jobs directly, rather it creates a Model
         and then creates a Job that will perform the "train" action on the model (not

@@ -96,11 +96,17 @@ class ItemMixin:
     ## Jobs
     ##
 
-    def create_job(self, action):
+    def create_job(self, action, data: dict = None):
         """ Create a job that will be used to perform an action on this item """
         workspace_id = self.workspace.id if self.workspace else self.id
         action = self.type + "/" + action
         job = api.models.Job(item_id=self.id, action=action, workspace_id=workspace_id, status=STATUS_CREATED)
+
+        # job may have had some payload sent
+        if data:
+            for key, value in data.items():
+                job.set_attribute(key, value)
+
         job.save()
         return job
 

@@ -25,6 +25,7 @@ from api.factory import ServerFactory
 CRON_EVERY_MINUTE = "* * * * *"
 CRON_EVERY_HOUR = "0 * * * *"
 
+
 def generate_job_id():
     """ All Job.id have jb_ prefix followed by a random string """
     return analitico.JOB_PREFIX + django.utils.crypto.get_random_string()
@@ -93,6 +94,26 @@ class Job(ItemMixin, models.Model):
     @payload.setter
     def payload(self, payload):
         self.set_attribute("payload", payload)
+
+    ##
+    ## Logging
+    ##
+
+    @property
+    def logs(self):
+        """ Logs attached produced while executing this job """
+        return self.get_attribute("logs", "")
+
+    @logs.setter
+    def logs(self, logs):
+        self.set_attribute("logs", logs)
+
+    def append_logs(self, logs, save: bool = True):
+        """ Appends given log string to this job's logs """
+        if logs:
+            self.logs = self.logs + logs
+            if save:
+                self.save()
 
     ##
     ## Execution
