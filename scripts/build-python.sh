@@ -24,6 +24,11 @@ echo "Build Static"
 # do not use docker for papermill unit tests (it is not supported on Gitlab CI)
 unset ANALITICO_PAPERMILL_DOCKER_SCRIPT
 
+echo "Configuring GCloud"
+gcloud auth activate-service-account --key-file /home/www/analitico-ci/gcloud/analitico-api-service-account-key.json
+gcloud config set project analitico-api
+gcloud config set run/region us-central1
+
 echo "Running python tests"
 ./manage.py test
 

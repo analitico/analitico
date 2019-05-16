@@ -12,10 +12,6 @@ source /home/www/analitico-ci/analitico-env.sh
 export LANG=C.UTF-8
 export LC_CTYPE=C.UTF-8
 
-echo "Configuring GCloud"
-gcloud auth activate-service-account --key-file /home/www/analitico-ci/gcloud/analitico-api-service-account-key.json
-#gcloud config set project analitico-api
-#gcloud config set run/region us-central1
 
 echo "Link nginx conf"
 ln -s /home/www/analitico/conf/nginx.conf /etc/nginx/nginx.conf
