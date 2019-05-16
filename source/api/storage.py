@@ -76,7 +76,9 @@ class Storage:
                     driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
                     return Storage(settings, driver)
                 except ValueError as exc:
-                    raise Exception("Storage.factory - could not login to Google Cloud Storage, please check your keys", exc)
+                    raise Exception(
+                        "Storage.factory - could not login to Google Cloud Storage, please check your keys", exc
+                    )
 
             # TODO add other cloud providers as we need them
             raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
