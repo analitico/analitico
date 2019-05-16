@@ -23,7 +23,9 @@ from api.pagination import *
 from .utils import AnaliticoApiTestCase
 
 import logging
+
 logger = logging.getLogger("analitico")
+
 
 class EndpointsTests(AnaliticoApiTestCase):
     """ Test notebooks operations via APIs """

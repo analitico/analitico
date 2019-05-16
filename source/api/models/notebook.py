@@ -336,7 +336,7 @@ def nb_execute_inline(input_path, output_path, parameters=None, cwd=None):
         if language != "python":
             raise Exception("nb_execute_inline: " + language + " is not supported")
 
-        # extract souurce code from cells
+        # extract source code from cells
         source = nb_extract_source(nb, disable_scripts=True)
 
         # execute t in `cwd` if it is set
@@ -407,3 +407,45 @@ def nb_clear_error_cells(notebook: dict) -> dict:
         # cells or keys we looked for are missing, ignore and proceed
         pass
     return notebook
+
+
+# for now we take cells with a variety of tags, we'll restrict later once we decide on naming
+NB_SERVERLESS_TAGS = ["serverless", "handle", "predict", "prediction"]
+
+
+def nb_extract_serverless(nb: dict) -> (str, str):
+    """ Extract source code and scripts from notebook for docker packaging """
+    source, script = "", ""
+
+    # scan all cells in the notebook but consider only code cells
+    for i, cell in enumerate(nb["cells"]):
+        tags = get_dict_dot(cell, "metadata.tags", None)
+        tags_msg = ", ".join(tags) if tags else "none"
+        source += "\n\n# cell: {}, type: {}, tags: {}\n".format(i + 1, cell["cell_type"], tags_msg)
+
+        if cell["cell_type"] != "code":
+            source += "# skipped cell\n"
+        else:
+            # make sure lines contains individual lines, notebooks sometimes
+            # have a single string of multiple lines and sometimes have an array of lines
+            lines = cell["source"]
+            if isinstance(lines, list):
+                lines = "".join(lines)
+            lines = lines.splitlines()
+
+            # is cell tagged or does it contain handle method? if so, include its source
+            is_serverless_cell = tags and any(tag in NB_SERVERLESS_TAGS for tag in tags)
+            if not is_serverless_cell:
+                is_serverless_cell = any(line.startswith("def handle(") for line in lines)
+
+            if not is_serverless_cell:
+                source += "# skipped code\n"
+            else:
+                for j, line in enumerate(lines):
+                    if len(line) > 0 and line[0] in ("!", "%"):
+                        # command that should be passed to setup script?
+                        script += f"# cell: {1+1}, line: {j+1}\n{line[1:]}\n\n"
+                    else:
+                        source += line + "\n"
+
+    return source, script
