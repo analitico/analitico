@@ -15,6 +15,7 @@ from rest_framework import status
 from analitico.constants import ACTION_PROCESS, ACTION_DEPLOY
 from analitico.utilities import read_json
 
+import api
 from api.models import *
 from api.factory import factory
 from api.models.log import *
@@ -32,8 +33,13 @@ class EndpointsTests(AnaliticoApiTestCase):
 
     def test_ep_deploy_notebook_on_google_cloudrun(self):
         # Builds a notebook into a docker, then deploys docker to the cloud
-        endpoint_id = "ep_test_001"
-        target_id = "nb_test_001_pleasedelete"  # help registry cleanups
+        # we're using an id with UPPERCASE chars to test for a cloud run requirement 
+        # of lowercase only IDs
+        endpoint_id = "ep_test_001_UPPER"
+        target_id = "nb_test_001_pleaseDELETE"  # help registry cleanups
+
+        endpoint_id_normalized = "ep-test-001-upper"
+        target_id_normalized = "nb-test-001-pleasedelete"
 
         # create an endpoin  notebook that will be compiled to docker
         self.post_notebook("notebook11.ipynb", target_id)
@@ -49,7 +55,7 @@ class EndpointsTests(AnaliticoApiTestCase):
         self.assertApiResponse(response)
 
         # check job, targets, status, etc
-        logging.info(f"response.content: {str(response.content)}")
+        # logging.info(f"response.content: {str(response.content)}")
         job = response.data
         self.assertEqual(job["attributes"]["action"], "endpoint/deploy")
         self.assertEqual(job["attributes"]["status"], "completed")
@@ -58,8 +64,8 @@ class EndpointsTests(AnaliticoApiTestCase):
 
         # docker that was built for deployment
         docker = job["attributes"]["docker"]
-        self.assertEquals(docker["name"], "eu.gcr.io/analitico-api/" + target_id)
-        self.assertIn(f"gcr.io/analitico-api/{target_id}@sha256:", docker["image"])
+        self.assertEquals(docker["name"], f"eu.gcr.io/analitico-api/{target_id_normalized}") # normalized
+        self.assertIn(f"gcr.io/analitico-api/{target_id_normalized}@sha256:", docker["image"])
         self.assertIn("sha256:", docker["digest"])
         self.assertEquals(docker["build"]["type"], "build/google")
         self.assertIn("https://console.cloud.google.com/gcr/builds/", docker["build"]["url"])
@@ -68,6 +74,6 @@ class EndpointsTests(AnaliticoApiTestCase):
         deploy = job["attributes"]["deploy"]
         self.assertEquals(deploy["type"], "deploy/google-cloud-run")
         self.assertEquals(deploy["region"], "us-central1")
-        self.assertIn("ep-test-001", deploy["revision"])
-        self.assertIn("https://ep-test-001", deploy["url"])
-        self.assertEquals(deploy["service"], "ep-test-001")
+        self.assertIn(endpoint_id_normalized, deploy["revision"])
+        self.assertIn(f"https://{endpoint_id_normalized}", deploy["url"])
+        self.assertEquals(deploy["service"], endpoint_id_normalized) # normalized

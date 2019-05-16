@@ -19,6 +19,8 @@ assert os.path.isdir(DOCKER_TEMPLATE_DIR)
 DOCKER_DEFAULT_CONCURRENCY = 20  # concurrent connection per docker
 DOCKER_DEFAULT_REGION = "us-central1"  # only region supported by beta
 
+def docker_normalize_name(name: str):
+    return name.lower().replace("_", "-")
 
 def docker_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
     """
@@ -57,7 +59,8 @@ def docker_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
         # docker build docker image
         # https://cloud.google.com/sdk/gcloud/reference/builds/submit
         # https://developers.google.com/resources/api-libraries/documentation/cloudbuild/v1/python/latest/cloudbuild_v1.projects.builds.html#create
-        image_name = f"eu.gcr.io/analitico-api/{item.id}"
+        # image name needs to be fully lowercase
+        image_name = "eu.gcr.io/analitico-api/" + docker_normalize_name(item.id)
         cmd_args = ["gcloud", "builds", "submit", "--tag", image_name]
         cmd_line = " ".join(cmd_args)
 
@@ -108,8 +111,7 @@ def docker_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Facto
         )
 
     # service name is the id of the endpoint unless otherwise specified
-    service = job.get_attribute("service_id", endpoint.id)
-    service = service.lower().replace("_", "-")
+    service = docker_normalize_name(job.get_attribute("service_id", endpoint.id))
 
     # max concurrent connections per docker
     concurrency = int(job.get_attribute("concurrency", 20))
