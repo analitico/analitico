@@ -20,7 +20,7 @@ import raven
 import sys
 import tempfile
 
-from analitico.utilities import save_text
+from analitico.utilities import save_text, read_json
 from rest_framework.exceptions import APIException
 
 try:
@@ -151,14 +151,19 @@ try:
     # is used for all assets belonging to the workspace and its children. If the workspace
     # does not have a storage configured, the following configuration is used as a default.
 
+    GCS_KEY_FILENAME = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "../../../analitico-ci/gcloud/analitico-api-service-account-key.json")
+    )
+    gcs_key = read_json(GCS_KEY_FILENAME)
+
     ANALITICO_STORAGE = {
         "driver": "google-storage",
         "container": "data.analitico.ai",
         "basepath": "",
         "credentials": {
-            "key": os.environ["ANALITICO_GCS_KEY"],
-            "secret": os.environ["ANALITICO_GCS_SECRET"],
-            "project": os.environ["ANALITICO_GCS_PROJECT"],
+            "key": gcs_key["client_email"],
+            "secret": gcs_key["private_key"],
+            "project": gcs_key["project_id"],
         },
     }
 

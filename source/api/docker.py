@@ -1,12 +1,13 @@
 import os
 import shutil
 import tempfile
+import django.conf
 
 import subprocess
 from subprocess import PIPE
 
 from analitico import AnaliticoException
-from analitico.utilities import re_match_group
+from analitico.utilities import re_match_group, save_json
 from api.factory import Factory
 from api.models import ItemMixin, Job
 
@@ -14,8 +15,9 @@ from api.models import ItemMixin, Job
 DOCKER_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "../../serverless/templates/knative")
 assert os.path.isdir(DOCKER_TEMPLATE_DIR)
 
-DOCKER_DEFAULT_CONCURRENCY = 20 # concurrent connection per docker
-DOCKER_DEFAULT_REGION = "us-central1" # only region supported by beta 
+DOCKER_DEFAULT_CONCURRENCY = 20  # concurrent connection per docker
+DOCKER_DEFAULT_REGION = "us-central1"  # only region supported by beta
+
 
 def docker_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
     """
@@ -118,7 +120,7 @@ def docker_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Facto
         "--concurrency",
         str(concurrency),
         "--region",
-        DOCKER_DEFAULT_REGION
+        DOCKER_DEFAULT_REGION,
     ]
     cmd_line = " ".join(cmd_args)
 
@@ -136,15 +138,24 @@ def docker_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Facto
     # Creating Revision.......................................................done\n
     # Routing traffic.......................done\n
     # Done.\n
+
+    # This is what it looks like on a Mac:
     # Service [\x1b[1mep-test-001\x1b[m] revision [\x1b[1mep-test-001-00001\x1b[m] has been deployed and is serving traffic at \x1b[1mhttps://ep-test-001-zqsrcwjkta-uc.a.run.app\x1b[m\n
+    # This is what it looks like on the server (no bash bold escape sequences like \x1b[1m):
+    # Service [ep-test-001] revision [ep-test-001-b65066cc-bd08-4e5e-b4fe-aa86c59280be] has been deployed and is serving traffic at https://ep-test-001-zqsrcwjkta-uc.a.run.app\\n
+
+    logs = response.stderr.replace("\x1b[1m", "") # remove escape sequences
+    revision = re_match_group(r"revision \[([a-z0-9-]*)", logs)
+    region = re_match_group(r"region \[([a-z0-9-]*)", logs)
+    url = re_match_group(r"is serving traffic at (https:\/\/[a-zA-Z0-9-\.]*)", logs)
 
     # save deployment information inside item and job
     deploy = {
         "type": "deploy/google-cloud-run",
         "service": service,
-        "revision": re_match_group(r"revision \[\x1b\[1m([a-z0-9-]*)\x1b", response.stderr),
-        "region": re_match_group(r"region \[\x1b\[1m([a-z0-9-]*)\x1b", response.stderr),
-        "url": re_match_group(r"is serving traffic at \x1b\[1m(https:\/\/[a-zA-Z0-9-\.]*)\x1b", response.stderr),
+        "revision": revision,
+        "region": region,
+        "url": url,
         "concurrency": concurrency,
     }
     item.set_attribute("deploy", deploy)
