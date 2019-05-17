@@ -35,11 +35,11 @@ class EndpointsTests(AnaliticoApiTestCase):
         # Builds a notebook into a docker, then deploys docker to the cloud
         # we're using an id with UPPERCASE chars to test for a cloud run requirement 
         # of lowercase only IDs
-        endpoint_id = "ep_test_001_UPPER"
-        target_id = "nb_test_001_pleaseDELETE"  # help registry cleanups
+        endpoint_id = "ep_TEST_001"
+        target_id = "nb_TEST_001"  # help registry cleanups
 
-        endpoint_id_normalized = "ep-test-001-upper"
-        target_id_normalized = "nb-test-001-pleasedelete"
+        endpoint_id_normalized = "ep-test-001"
+        target_id_normalized = "nb-test-001"
 
         # create an endpoin  notebook that will be compiled to docker
         self.post_notebook("notebook11.ipynb", target_id)
