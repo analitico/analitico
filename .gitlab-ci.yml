@@ -5,10 +5,11 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
-  GCP_PROJECT_ID: analitico-api
-  GCP_ZONE: europe-west1
-  BUILD_IMAGE_URL: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA
-  BUILD_JUPYTER_IMAGE_URL: registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter
+  BUILD_IMAGE_URL: s6.analitico.ai:5000/analitico:$CI_COMMIT_SHA # ${BUILD_IMAGE_URL}
+  BUILD_JUPYTER_IMAGE_URL: s6.analitico.ai:5000/analitico:$CI_COMMIT_SHA-jupyter # ${BUILD_JUPYTER_IMAGE_URL}
+  REGISTRY_USER: admin  # ${CI_REGISTRY_USER} 
+  REGISTRY_PASSWORD: ${CONTAINER_REGISTRY_PASSWORD} # ${CI_REGISTRY_PASSWORD}
+  REGISTRY_URL: s6.analitico.ai:5000  # ${CI_REGISTRY}
 
 services:
 - docker:dind
@@ -48,7 +49,7 @@ build_dev:
     # add commit sha to the env script
     - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
     # login to registry
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
     # build docker image
     - echo "$(date +'%T') - Build analitico image"
     - docker build --pull -t $BUILD_IMAGE_URL .
@@ -99,10 +100,10 @@ p1-production:
   - ssh-add ~/.ssh/id_rsa
   script:
     # pull new docker image and run
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@94.130.33.123 "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
-      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@94.130.33.123 "docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}; 
+      docker pull ${BUILD_IMAGE_URL}; 
       docker stop analitico; docker rm analitico; 
-      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/website-start.sh; 
+      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${BUILD_IMAGE_URL} ./scripts/website-start.sh; 
       docker image prune -f -a"
 
 p2-production:
@@ -135,10 +136,10 @@ p2-production:
   - ssh-add ~/.ssh/id_rsa
   script:
     # pull new docker image and run
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@195.201.163.22 "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
-      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@195.201.163.22 "docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}; 
+      docker pull ${BUILD_IMAGE_URL}; 
       docker stop analitico; docker rm analitico; 
-      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/website-start.sh; 
+      docker run --name=analitico --init --restart always -d -p 80:80 -p 443:443 ${BUILD_IMAGE_URL} ./scripts/website-start.sh; 
       docker image prune -f -a"
 
 
@@ -172,18 +173,18 @@ staging:
   script:
     # pull new docker image and run
     # start 2 dockers for jupyter notebook
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
-      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
-      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}; 
+      docker pull ${BUILD_IMAGE_URL}; 
+      docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico; 
       docker rm analitico; 
-      docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/website-start.sh; 
+      docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${BUILD_IMAGE_URL} ./scripts/website-start.sh; 
       docker stop aj-s24; 
       docker rm aj-s24; 
       docker stop aj-generic; 
       docker rm aj-generic; 
-      docker run --name=aj-s24 --init --runtime=nvidia --restart always -d -p 8810:8888 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
-      docker run --name=aj-generic --init --runtime=nvidia --restart always -d -p 8811:8888 ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA-jupyter ./docker-jupyter.sh 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
+      docker run --name=aj-s24 --init --runtime=nvidia --restart always -d -p 8810:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
+      docker run --name=aj-generic --init --runtime=nvidia --restart always -d -p 8811:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
       docker image prune -f -a;" 
 
 
@@ -221,9 +222,9 @@ worker-production:
   # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
 
   script:
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; 
-      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA; 
-      docker pull registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}; 
+      docker pull ${BUILD_IMAGE_URL}; 
+      docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico-worker1; 
       docker rm analitico-worker1; 
       docker stop analitico-worker2; 
@@ -231,8 +232,8 @@ worker-production:
       docker stop analitico-worker3; 
       docker rm analitico-worker3; 
       docker rm analitico-worker-keep-jupyter-image; 
-      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${CI_REGISTRY}/${CI_PROJECT_PATH}:$CI_COMMIT_SHA ./scripts/worker-start.sh; 
-      docker create --name=analitico-worker-keep-jupyter-image registry.gitlab.com/analitico/analitico:$CI_COMMIT_SHA-jupyter;
+      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/worker-start.sh; 
+      docker create --name=analitico-worker-keep-jupyter-image ${BUILD_JUPYTER_IMAGE_URL};
       docker image prune -f -a;" 
