@@ -13,7 +13,7 @@ import api.utilities
 
 from analitico import ACTION_PROCESS
 from api.models import Dataset, Job, ASSETS_CLASS_DATA
-from .itemviewsetmixin import ItemViewSetMixin
+from .itemviewsetmixin import ItemViewSetMixin, filterset
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
 from .jobviews import JobViewSetMixin
@@ -59,6 +59,13 @@ class DatasetViewSet(
     item_class = api.models.Dataset
     serializer_class = DatasetSerializer
     job_actions = (ACTION_PROCESS,)
+
+    filterset_fields = {
+        "id": filterset.ALL,
+        "workspace__id": ['exact'],
+        "attributes": filterset.ATTRIBUTES,
+        "created_at": filterset.DATE,
+    }
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="detail-data-csv", url_path="data/csv")
