@@ -1,0 +1,96 @@
+{
+    "permissions": {
+        "analitico.notebooks.create": "Create notebooks.",
+        "analitico.notebooks.get": "Get notebooks.",
+        "analitico.notebooks.update": "Edit notebooks.",
+        "analitico.notebooks.delete": "Delete notebooks.",
+
+        "analitico.datasets.create": "Create datasets.",
+        "analitico.datasets.get": "Get datasets.",
+        "analitico.datasets.update": "Update datasets' data, metadata and notebooks.",
+        "analitico.datasets.delete": "Delete datasets.",
+
+        "analitico.recipes.create": "Create recipes.",
+        "analitico.recipes.get": "Get recipes and associated models.",
+        "analitico.recipes.update": "Update recipes' notebooks.",
+        "analitico.recipes.delete": "Delete recipes.",
+        "analitico.recipes.train": "Train recipes to produce models",
+
+        "analitico.endpoints.create": "Create endpoints.",
+        "analitico.endpoints.get": "Get endpoints.",
+        "analitico.endpoints.update": "Update endpoints.",
+        "analitico.endpoints.delete": "Delete endpoints.",
+        "analitico.endpoints.deploy": "Deploy models to the endpoint.",
+
+        "analitico.users.edit": "Add or remove users from a workspace, edit permissions"
+    },
+
+    "roles": {
+        "analitico.reader": {
+            "title": "Analitico Reader",
+            "description": "Read access to datasets, notebooks, recipes, models, endpoints.",
+            "permissions": [
+                "analitico.notebooks.get",
+                "analitico.datasets.get",
+                "analitico.recipes.get",
+                "analitico.endpoints.get"
+            ]
+        },
+
+        "analitico.editor": {
+            "title": "Analitico Editor",
+            "description": "Create, edit and delete access to datasets, notebooks, recipes, models, endpoints.",
+            "permissions": [
+                "analitico.notebooks.create",
+                "analitico.notebooks.get",
+                "analitico.notebooks.update",
+                "analitico.notebooks.delete",
+        
+                "analitico.datasets.create",
+                "analitico.datasets.get",
+                "analitico.datasets.update",
+                "analitico.datasets.delete",
+        
+                "analitico.recipes.create",
+                "analitico.recipes.get",
+                "analitico.recipes.update",
+                "analitico.recipes.delete",
+                "analitico.recipes.train",
+        
+                "analitico.endpoints.create",
+                "analitico.endpoints.get",
+                "analitico.endpoints.update",
+                "analitico.endpoints.delete",
+                "analitico.endpoints.deploy"
+            ]
+        },
+
+        "analitico.admin": {
+            "title": "Analitico Admin",
+            "description": "Full access to workspace, datasets, notebooks, recipes, models, endpoints, billing, etc.",
+            "permissions": [
+                "analitico.notebooks.create",
+                "analitico.notebooks.get",
+                "analitico.notebooks.update",
+                "analitico.notebooks.delete",
+        
+                "analitico.datasets.create",
+                "analitico.datasets.get",
+                "analitico.datasets.update",
+                "analitico.datasets.delete",
+        
+                "analitico.recipes.create",
+                "analitico.recipes.get",
+                "analitico.recipes.update",
+                "analitico.recipes.delete",
+                "analitico.recipes.train",
+        
+                "analitico.endpoints.create",
+                "analitico.endpoints.get",
+                "analitico.endpoints.update",
+                "analitico.endpoints.delete",
+                "analitico.endpoints.deploy"
+            ]
+        }
+   }
+}
