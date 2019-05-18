@@ -14,7 +14,7 @@
         "analitico.recipes.get": "Get recipes and associated models.",
         "analitico.recipes.update": "Update recipes' notebooks.",
         "analitico.recipes.delete": "Delete recipes.",
-        "analitico.recipes.train": "Train recipes to produce models",
+        "analitico.recipes.train": "Train recipes to produce models.",
 
         "analitico.endpoints.create": "Create endpoints.",
         "analitico.endpoints.get": "Get endpoints.",
@@ -22,7 +22,7 @@
         "analitico.endpoints.delete": "Delete endpoints.",
         "analitico.endpoints.deploy": "Deploy models to the endpoint.",
 
-        "analitico.users.edit": "Add or remove users from a workspace, edit permissions"
+        "analitico.workspace.users": "Add or remove users from a workspace, edit permissions"
     },
 
     "roles": {
@@ -89,7 +89,9 @@
                 "analitico.endpoints.get",
                 "analitico.endpoints.update",
                 "analitico.endpoints.delete",
-                "analitico.endpoints.deploy"
+                "analitico.endpoints.deploy",
+
+                "analitico.workspace.users"
             ]
         }
    }
