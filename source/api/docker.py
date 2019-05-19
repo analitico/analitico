@@ -19,8 +19,10 @@ assert os.path.isdir(DOCKER_TEMPLATE_DIR)
 DOCKER_DEFAULT_CONCURRENCY = 20  # concurrent connection per docker
 DOCKER_DEFAULT_REGION = "us-central1"  # only region supported by beta
 
+
 def docker_normalize_name(name: str):
     return name.lower().replace("_", "-")
+
 
 def docker_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
     """

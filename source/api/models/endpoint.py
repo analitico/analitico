@@ -202,5 +202,5 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
                 self.id,
                 code="prediction_error",
                 item=self,
-                endpoint_id=self.id
+                endpoint_id=self.id,
             )

@@ -62,7 +62,7 @@ class DatasetViewSet(
 
     filterset_fields = {
         "id": filterset.ALL,
-        "workspace__id": ['exact'],
+        "workspace__id": ["exact"],
         "attributes": filterset.ATTRIBUTES,
         "created_at": filterset.DATE,
     }
