@@ -24,6 +24,7 @@ RECIPE_TYPE = "recipe"
 TOKEN_TYPE = "token"
 USER_TYPE = "user"
 WORKSPACE_TYPE = "workspace"
+ROLE_TYPE = "role"
 
 # types/others
 PLUGIN_TYPE = "plugin"
@@ -40,6 +41,7 @@ RECIPE_PREFIX = "rx_"  # machine learning recipe (an experiment with modules, co
 TOKEN_PREFIX = "tok_"  # authorization token
 USER_PREFIX = "id_"  # an identity profile
 WORKSPACE_PREFIX = "ws_"  # workspace with rights and one or more projects and other resources
+ROLE_PREFIX = "ro_"  # access management rights via roles and permissions
 
 PLUGIN_PREFIX = "pl_"  # plugin instance (not plugin description or metadata)
 WORKER_PREFIX = "wk_"  # worker process
