@@ -1,29 +1,14 @@
 # ItemSerializer and ItemViewSet for item APIs
 # pylint: disable=no-member
 
-import os
 import io
-
-from django.utils.text import slugify
-from django.http.response import StreamingHttpResponse
-from django.utils.http import parse_http_date_safe, http_date
-from django.utils.timezone import now
-from django.urls import reverse
 from django.http.response import HttpResponse
-
-import rest_framework
-import rest_framework.viewsets
-
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action, permission_classes
-from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
-from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
-from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 
-from api.models import ItemMixin, Job
+import api.permissions
 from api.utilities import get_query_parameter, get_query_parameter_as_int, image_open, image_resize
-from analitico.utilities import logger
 
 
 class filterset:
@@ -57,11 +42,7 @@ class ItemViewSetMixin:
     format_kwarg = "json"
 
     def get_queryset(self):
-        """ A user MUST be authenticated and only has access to objects he or his workspaces own. """
-        assert not self.request.user.is_anonymous
-        if self.request.user.is_superuser:
-            return self.item_class.objects.all()
-        return self.item_class.objects.filter(workspace__user=self.request.user)
+        return api.permissions.get_permitted_queryset(self.request, self.item_class)
 
     ##
     ## Avatar action
