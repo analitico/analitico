@@ -3,14 +3,17 @@ Views and ViewSets for API models
 """
 
 import rest_framework
+from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 import api.models
 import api.utilities
 
-from analitico.utilities import logger, get_dict_dot
-from api.models import Workspace, Dataset, Role
+from analitico.utilities import logger, get_dict_dot, comma_separated_to_array, array_to_comma_separated
+from api.models import Workspace, Dataset, Role, User
 from api.permissions import has_item_permission
 
 from .attributeserializermixin import AttributeSerializerMixin
@@ -22,12 +25,6 @@ from .logviews import LogViewSetMixin
 ##
 
 
-def comma_separated_to_array(items: str):
-    if items and items.strip():
-        return [x.strip() for x in items.split(",")]
-    return None
-
-
 class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
     """ Serializer for Workspace model """
 
@@ -37,6 +34,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 
     user = serializers.EmailField(source="user.email", required=False)
     group = serializers.CharField(source="group.name", required=False)
+    permissions = serializers.JSONField(required=False)
 
     def to_representation(self, item):
         """ Serialize object to dictionary, extracts all json key to main level """
@@ -53,9 +51,9 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
             # user has been invited to workspace and only sees his own rights
             roles = roles.filter(user=user)
 
-        data["attributes"]["users"] = {}
+        data["attributes"]["permissions"] = {}
         for role in roles.all():
-            data["attributes"]["users"][role.user.email] = {
+            data["attributes"]["permissions"][role.user.email] = {
                 "roles": comma_separated_to_array(role.roles),
                 "permissions": comma_separated_to_array(role.permissions),
             }
@@ -100,6 +98,23 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
             for (key, value) in validated_data["attributes"].items():
                 # TODO we should consider validating attributes against a fixed schema
                 instance.set_attribute(key, value)
+
+        # only the owner of the workspace and add or remove users and update their rights
+        permissions = get_dict_dot(validated_data, "attributes.permissions")
+        if permissions:
+            user = self.context["request"].user
+            if has_item_permission(user, instance, "analitico.workspace.admin"):
+                # user has been invited to workspace and only sees his own rights
+                with transaction.atomic():
+                    # pylint: disable=no-member
+                    Role.objects.filter(workspace=instance).delete()
+                    for key, value in permissions.items():
+                        role = Role(workspace=instance, user=User.objects.get(email=key))
+                        # TODO could catch here and return a specific exception message if user is unknown
+                        role.roles = array_to_comma_separated(value.get("roles", None))
+                        role.permissions = array_to_comma_separated(value.get("permissions", None))
+                        role.save()
+
         instance.save()
         return instance
 
@@ -130,3 +145,8 @@ class WorkspaceViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewse
                 return Workspace.objects.all()
             return Workspace.objects.filter(user=self.request.user)
         return Workspace.objects.none()
+
+    @action(methods=["get"], detail=False, url_name="permissions", url_path="permissions")
+    def permissions(self, request):
+        """ Returns roles and permissions configurations. """
+        return Response(api.permissions.get_configurations())

@@ -13,9 +13,14 @@ from analitico.utilities import read_json
 
 
 # preload default list of configurations and roles
-configurations = read_json(os.path.join(os.path.dirname(__file__), "permissions.json"))
-STANDARD_ROLES = configurations["roles"]
-STANDARD_PERMISSIONS = configurations["permissions"]
+STANDARD_CONFIGURATIONS = read_json(os.path.join(os.path.dirname(__file__), "permissions.json"))
+STANDARD_ROLES = STANDARD_CONFIGURATIONS["roles"]
+STANDARD_PERMISSIONS = STANDARD_CONFIGURATIONS["permissions"]
+
+
+def get_configurations() -> dict:
+    """ Return default configuration with list of permissions and roles. """
+    return STANDARD_CONFIGURATIONS
 
 
 def get_standard_item_permission(request: Request, item_type: str) -> str:

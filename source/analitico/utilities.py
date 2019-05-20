@@ -326,3 +326,22 @@ def re_match_group(expression: str, content: str, default: str = None, group_ind
     if match:
         return match.group(group_index)
     return default
+
+
+##
+## Text
+##
+
+
+def comma_separated_to_array(items: str) -> [str]:
+    """ Turns a string with a comma separated list of items into an array of strings """
+    if items and items.strip():
+        return [x.strip() for x in items.split(",")]
+    return None
+
+
+def array_to_comma_separated(items: [str]) -> str:
+    """ Turns an array of items into a comma separated string """
+    if items and len(items) > 0:
+        return ",".join(items)
+    return None

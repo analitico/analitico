@@ -16,6 +16,24 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.setup_basics()
 
     ##
+    ## Configurations
+    ##
+
+    def test_permissions_get_configuration(self):
+        """ Retrieve static json with roles and permissions configurations """
+        url = reverse("api:workspace-permissions")
+        response = self.client.get(url, format="json")
+
+        config = response.data
+        self.assertIn("permissions", config)
+        self.assertIn("roles", config)
+        self.assertIn("analitico.reader", config["roles"])
+        self.assertIn("analitico.editor", config["roles"])
+        self.assertIn("analitico.admin", config["roles"])
+        self.assertIn("analitico.datasets.get", config["permissions"])
+        self.assertIn("analitico.datasets.create", config["permissions"])
+
+    ##
     ## Permissions
     ##
 
