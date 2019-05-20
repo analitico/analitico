@@ -8,8 +8,10 @@ from rest_framework import serializers
 
 import api.models
 import api.utilities
+
 from analitico.utilities import logger, get_dict_dot
-from api.models import Workspace, Dataset
+from api.models import Workspace, Dataset, Role
+from api.permissions import has_item_permission
 
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
@@ -18,6 +20,12 @@ from .logviews import LogViewSetMixin
 ##
 ## WorkspaceSerializer
 ##
+
+
+def comma_separated_to_array(items: str):
+    if items and items.strip():
+        return [x.strip() for x in items.split(",")]
+    return None
 
 
 class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
@@ -29,6 +37,30 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 
     user = serializers.EmailField(source="user.email", required=False)
     group = serializers.CharField(source="group.name", required=False)
+
+    def to_representation(self, item):
+        """ Serialize object to dictionary, extracts all json key to main level """
+        data = super().to_representation(item)
+
+        # workspace has an owner which has all permissions on it and the items it contains.
+        # optionally, the owner can invite other users to the workspace and given them access
+        # using specific roles and permissions. only the owner or admins can see all the rights.
+        # while other users that have been invited only see their own rigths
+        # pylint: disable=no-member
+        user = self.context["request"].user
+        roles = Role.objects.filter(workspace=item)
+        if not has_item_permission(user, item, "analitico.workspace.admin"):
+            # user has been invited to workspace and only sees his own rights
+            roles = roles.filter(user=user)
+
+        data["attributes"]["users"] = {}
+        for role in roles.all():
+            data["attributes"]["users"][role.user.email] = {
+                "roles": comma_separated_to_array(role.roles),
+                "permissions": comma_separated_to_array(role.permissions),
+            }
+
+        return data
 
     def create(self, validated_data, *args, **kwargs):
         """ Creates a workspace and assigns it to the currently authenticated user and the requested group (if any) """

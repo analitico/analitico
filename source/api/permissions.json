@@ -22,7 +22,7 @@
         "analitico.endpoints.delete": "Delete endpoints.",
         "analitico.endpoints.deploy": "Deploy models to the endpoint.",
 
-        "analitico.workspace.users": "Add or remove users from a workspace, edit permissions"
+        "analitico.workspace.admin": "Add or remove users from a workspace, edit permissions"
     },
 
     "roles": {
@@ -91,7 +91,7 @@
                 "analitico.endpoints.delete",
                 "analitico.endpoints.deploy",
 
-                "analitico.workspace.users"
+                "analitico.workspace.admin"
             ]
         }
    }

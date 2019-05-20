@@ -16,10 +16,6 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.setup_basics()
 
     ##
-    ## Roles
-    ##
-
-    ##
     ## Permissions
     ##
 
@@ -113,6 +109,10 @@ class PermissionsTests(AnaliticoApiTestCase):
         role.save()
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # item no longer there
+
+    ##
+    ## Roles
+    ##
 
     def test_permissions_non_owner_with_standard_role(self):
         self.auth_token(self.token1)

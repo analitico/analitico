@@ -42,6 +42,12 @@ class ItemViewSetMixin:
     format_kwarg = "json"
 
     def get_queryset(self):
+        """
+        Returns a list of items that are owned by a workspace which in turn is owned by
+        the requesting user. We also add items which are not owned by the user but for
+        which the user has been granted the required permission or belongs to a role that
+        contains the required permission.
+        """
         return api.permissions.get_permitted_queryset(self.request, self.item_class)
 
     ##
