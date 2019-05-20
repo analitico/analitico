@@ -147,14 +147,12 @@ class HasApiPermission(permissions.BasePermission):
 
     permission = None
 
-    def has_object_permission(self, request, view, obj):
-        # Read permissions are allowed to any request,
-        # so we'll always allow GET, HEAD or OPTIONS requests.
-        assert isinstance(obj, ItemMixin)
-        if request.user.is_anonymous:
-            return False
+    def has_permission(self, request, view):
+        """ If we don't know which object we're working on at least we should require authentication """
+        return not request.user.is_anonymous
 
-        permission = self.permission
-        if not permission:
-            permission = get_standard_item_permission(request, obj.type)
+    def has_object_permission(self, request, view, obj):
+        """ Return true if caller has required permissions on specific item. """
+        assert isinstance(obj, ItemMixin)
+        permission = self.permission if self.permission else get_standard_item_permission(request, obj.type)
         return has_item_permission(request.user, obj, permission)
