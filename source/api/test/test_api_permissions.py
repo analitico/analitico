@@ -19,12 +19,15 @@ class PermissionsTests(AnaliticoApiTestCase):
     ## Configurations
     ##
 
-    def test_permissions_get_configuration(self):
+    def test_configurations_get(self):
         """ Retrieve static json with roles and permissions configurations """
+        self.auth_token(self.token1)
         url = reverse("api:workspace-permissions")
         response = self.client.get(url, format="json")
 
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         config = response.data
+        
         self.assertIn("permissions", config)
         self.assertIn("roles", config)
         self.assertIn("analitico.reader", config["roles"])
@@ -32,6 +35,12 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.assertIn("analitico.admin", config["roles"])
         self.assertIn("analitico.datasets.get", config["permissions"])
         self.assertIn("analitico.datasets.create", config["permissions"])
+
+    def test_configurations_get_without_auth(self):
+        """ Retrieve static json with roles and permissions configurations WITHOUT a token """
+        url = reverse("api:workspace-permissions")
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     ##
     ## Permissions
@@ -132,7 +141,7 @@ class PermissionsTests(AnaliticoApiTestCase):
     ## Roles
     ##
 
-    def test_permissions_non_owner_with_standard_role(self):
+    def test_roles_non_owner_with_standard_role(self):
         self.auth_token(self.token1)
         self.post_notebook("notebook01.ipynb", "nb_01")
 
@@ -164,3 +173,24 @@ class PermissionsTests(AnaliticoApiTestCase):
         role.save()
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # item no longer there
+
+
+    def test_roles_reader_cant_change_editor_can(self):
+        self.auth_token(self.token1)
+        self.post_notebook("notebook01.ipynb", "nb_01")
+
+        self.auth_token(self.token3)
+        role = Role(workspace=self.ws1, user=self.user3)
+        url = reverse("api:notebook-detail", args=("nb_01",))
+
+        # analitico.editor cannot change title
+        role.roles = "role1,role2,analitico.editor,role3"
+        role.save()
+        response = self.client.patch(url, { "title": "Title2" }, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # analitico.reader CANNOT change title
+        role.roles = "role1,role2,analitico.reader,role3"
+        role.save()
+        response = self.client.patch(url, { "title": "Title3" }, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
