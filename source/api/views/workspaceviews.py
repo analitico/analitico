@@ -17,6 +17,7 @@ from api.models import Workspace, Dataset, Role, User
 from api.permissions import has_item_permission
 
 from .attributeserializermixin import AttributeSerializerMixin
+from .itemviewsetmixin import ItemViewSetMixin
 from .assetviewsetmixin import AssetViewSetMixin
 from .logviews import LogViewSetMixin
 
@@ -121,30 +122,14 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 
 ##
 ## WorkspaceViewSet - list, detail, post and update workspaces
-## pylint: disable=no-member
+##
 
 
-class WorkspaceViewSet(AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
-    """ 
-    List, detail, create, update and delete machine learning project trainings
-
-    retrieve: Retrieve a specific project.
-    list: Retrieve a list of projects for the user.
-    create: Create a new project for the user.
-    update: Update a previously created project.
-    partial_update: Modify a previously created project.
-    delete: Delete a project.
-    """
+class WorkspaceViewSet(ItemViewSetMixin, AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
+    """ Views for workspaces and their access permissions. """
 
     item_class = api.models.Workspace
     serializer_class = WorkspaceSerializer
-
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Workspace.objects.all()
-            return Workspace.objects.filter(user=self.request.user)
-        return Workspace.objects.none()
 
     @action(methods=["get"], detail=False, url_name="permissions", url_path="permissions")
     def permissions(self, request):
