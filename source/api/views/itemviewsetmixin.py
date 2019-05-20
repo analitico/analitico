@@ -1,13 +1,11 @@
-# ItemSerializer and ItemViewSet for item APIs
-# pylint: disable=no-member
-
 import io
+
 from django.http.response import HttpResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 
-import api.permissions
+from api.permissions import HasApiPermission, get_permitted_queryset
 from api.utilities import get_query_parameter, get_query_parameter_as_int, image_open, image_resize
 
 
@@ -36,7 +34,7 @@ class ItemViewSetMixin:
     serializer_class = None
 
     # All methods require prior authentication, no token, no access
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasApiPermission)
 
     # Default format for requests is json
     format_kwarg = "json"
@@ -48,7 +46,7 @@ class ItemViewSetMixin:
         which the user has been granted the required permission or belongs to a role that
         contains the required permission.
         """
-        return api.permissions.get_permitted_queryset(self.request, self.item_class)
+        return get_permitted_queryset(self.request, self.item_class)
 
     ##
     ## Avatar action

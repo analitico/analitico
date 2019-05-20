@@ -27,7 +27,7 @@ class PermissionsTests(AnaliticoApiTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         config = response.data
-        
+
         self.assertIn("permissions", config)
         self.assertIn("roles", config)
         self.assertIn("analitico.reader", config["roles"])
@@ -174,8 +174,28 @@ class PermissionsTests(AnaliticoApiTestCase):
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # item no longer there
 
+    def test_roles_reader_CANT_POST_editor_can(self):
+        self.auth_token(self.token3)
+        url = reverse("api:dataset-list")
+        role = Role(workspace=self.ws1, user=self.user3)
 
-    def test_roles_reader_cant_change_editor_can(self):
+        # no rights, no posting
+        response = self.client.post(url, {"workspace": "ws_user1", "title": "Created by reader3"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # analitico.reader CANNOT post dataset
+        role.roles = "role1,role2,analitico.reader,role3"
+        role.save()
+        response = self.client.post(url, {"workspace": "ws_user1", "title": "Created by reader3"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # analitico.editor can post dataset
+        role.roles = "role1,role2,analitico.editor,role3"
+        role.save()
+        response = self.client.post(url, {"workspace": "ws_user1", "title": "Created by editor3"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_roles_reader_CANT_PATCH_editor_can(self):
         self.auth_token(self.token1)
         self.post_notebook("notebook01.ipynb", "nb_01")
 
@@ -183,14 +203,8 @@ class PermissionsTests(AnaliticoApiTestCase):
         role = Role(workspace=self.ws1, user=self.user3)
         url = reverse("api:notebook-detail", args=("nb_01",))
 
-        # analitico.editor cannot change title
+        # analitico.editor can change title
         role.roles = "role1,role2,analitico.editor,role3"
         role.save()
-        response = self.client.patch(url, { "title": "Title2" }, format="json")
+        response = self.client.patch(url, {"title": "Title2"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # analitico.reader CANNOT change title
-        role.roles = "role1,role2,analitico.reader,role3"
-        role.save()
-        response = self.client.patch(url, { "title": "Title3" }, format="json")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

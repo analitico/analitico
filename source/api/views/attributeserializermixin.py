@@ -20,11 +20,13 @@ from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework import status
 
 import analitico
+
 from analitico import TYPE_PREFIX
+from analitico.utilities import logger
 from api.factory import factory
 from api.models import ItemMixin, Job, User
 from api.utilities import get_query_parameter
-from analitico.utilities import logger
+from api.permissions import get_standard_item_permission, has_item_permission_or_exception
 
 # Django Serializers
 # https://www.django-rest-framework.org/api-guide/serializers/
@@ -66,6 +68,15 @@ class AttributeSerializerMixin:
             return url
         except Exception as exc:
             raise exc
+
+    def validate(self, data):
+        """ Check that user has correct permissions for the data. """
+        if "workspace" in data:
+            request = self.context["request"]
+            item_type = self.context["view"].item_class().type
+            permission = get_standard_item_permission(request, item_type)
+            has_item_permission_or_exception(request.user, data["workspace"], permission)
+        return data
 
     def to_representation(self, item):
         """ Serialize object to dictionary, extracts all json key to main level """
