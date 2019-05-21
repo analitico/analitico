@@ -156,19 +156,19 @@ class PermissionsTests(AnaliticoApiTestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # user is an analitico.reader and can read but not delete
+        # analitico.reader CANNOT delete
         role.roles = "role1,role2,analitico.reader,role3"
         role.save()
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # user is an analitico.editor and can delete
+        # analitico.editor CAN delete
         role.roles = "role1,role2,analitico.editor"
         role.save()
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)  # item deleted
 
-        # user is an analitico.editor and can delete but notebook is no longer there
+        # analitico.editor CAN delete but notebook is no longer there
         role.roles = "analitico.editor,role3"
         role.save()
         response = self.client.delete(url, format="json")
