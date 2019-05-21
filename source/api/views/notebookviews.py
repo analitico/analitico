@@ -13,7 +13,7 @@ from rest_framework.renderers import JSONRenderer, StaticHTMLRenderer, Browsable
 import api.models
 import api.utilities
 
-from analitico import ACTION_PROCESS
+from analitico import ACTION_PROCESS, ACTION_DEPLOY
 from api.models import Notebook, NOTEBOOK_MIME_TYPE
 from api.renderers import NotebookRenderer
 
@@ -108,4 +108,4 @@ class NotebookViewSet(
 
     item_class = api.models.Notebook
     serializer_class = NotebookSerializer
-    job_actions = (ACTION_PROCESS,)
+    job_actions = (ACTION_PROCESS, ACTION_DEPLOY,)
