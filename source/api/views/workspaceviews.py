@@ -48,7 +48,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
         # pylint: disable=no-member
         user = self.context["request"].user
         roles = Role.objects.filter(workspace=item)
-        if not has_item_permission(user, item, "analitico.workspace.admin"):
+        if not has_item_permission(user, item, "analitico.workspaces.admin"):
             # user has been invited to workspace and only sees his own rights
             roles = roles.filter(user=user)
 
@@ -104,7 +104,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
         permissions = get_dict_dot(validated_data, "attributes.permissions")
         if permissions:
             user = self.context["request"].user
-            if has_item_permission(user, instance, "analitico.workspace.admin"):
+            if has_item_permission(user, instance, "analitico.workspaces.admin"):
                 # user has been invited to workspace and only sees his own rights
                 with transaction.atomic():
                     # pylint: disable=no-member
@@ -115,7 +115,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
                         role.roles = array_to_comma_separated(value.get("roles", None))
                         role.permissions = array_to_comma_separated(value.get("permissions", None))
                         role.save()
-
+                            
         instance.save()
         return instance
 

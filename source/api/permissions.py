@@ -75,7 +75,9 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
     if not permission:
         permission = get_standard_item_permission(request, (item_class()).type)
     if not re.match(r"analitico.[a-z]*\.[a-z]*", permission):
-        raise AnaliticoException(f"Permission '{permission}' does not look like a valid permission.", status_code=status.HTTP_400_BAD_REQUEST)
+        raise AnaliticoException(
+            f"Permission '{permission}' does not look like a valid permission.", status_code=status.HTTP_400_BAD_REQUEST
+        )
     roles = get_standard_roles_with_permission(permission)
 
     # select all items whose workspace is owned by this user OR
@@ -118,7 +120,7 @@ def has_item_permission_or_exception(user, item: ItemMixin, permission: str) -> 
     if user.is_superuser:
         return True
 
-    # if the item on which we're checking rights is a user itself 
+    # if the item on which we're checking rights is a user itself
     # then only a user himself can change his own record
     if isinstance(item, User):
         return user.email == item.email

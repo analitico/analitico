@@ -1,5 +1,11 @@
 {
     "permissions": {
+        "analitico.workspaces.create": "Create workspaces.",
+        "analitico.workspaces.get": "Get workspaces.",
+        "analitico.workspaces.update": "Edit workspaces.",
+        "analitico.workspaces.delete": "Delete workspaces.",
+        "analitico.workspaces.admin": "Add or remove users from a workspace, edit permissions",
+
         "analitico.notebooks.create": "Create notebooks.",
         "analitico.notebooks.get": "Get notebooks.",
         "analitico.notebooks.update": "Edit notebooks.",
@@ -20,9 +26,7 @@
         "analitico.endpoints.get": "Get endpoints.",
         "analitico.endpoints.update": "Update endpoints.",
         "analitico.endpoints.delete": "Delete endpoints.",
-        "analitico.endpoints.deploy": "Deploy models to the endpoint.",
-
-        "analitico.workspace.admin": "Add or remove users from a workspace, edit permissions"
+        "analitico.endpoints.deploy": "Deploy models to the endpoint."
     },
 
     "roles": {
@@ -30,6 +34,7 @@
             "title": "Analitico Reader",
             "description": "Read access to datasets, notebooks, recipes, models, endpoints.",
             "permissions": [
+                "analitico.workspaces.get",
                 "analitico.notebooks.get",
                 "analitico.datasets.get",
                 "analitico.recipes.get",
@@ -41,6 +46,11 @@
             "title": "Analitico Editor",
             "description": "Create, edit and delete access to datasets, notebooks, recipes, models, endpoints.",
             "permissions": [
+                "analitico.workspaces.create",
+                "analitico.workspaces.get",
+                "analitico.workspaces.update",
+                "analitico.workspaces.delete",
+
                 "analitico.notebooks.create",
                 "analitico.notebooks.get",
                 "analitico.notebooks.update",
@@ -69,6 +79,12 @@
             "title": "Analitico Admin",
             "description": "Full access to workspace, datasets, notebooks, recipes, models, endpoints, billing, etc.",
             "permissions": [
+                "analitico.workspaces.create",
+                "analitico.workspaces.get",
+                "analitico.workspaces.update",
+                "analitico.workspaces.delete",
+                "analitico.workspaces.admin",
+
                 "analitico.notebooks.create",
                 "analitico.notebooks.get",
                 "analitico.notebooks.update",
@@ -89,9 +105,7 @@
                 "analitico.endpoints.get",
                 "analitico.endpoints.update",
                 "analitico.endpoints.delete",
-                "analitico.endpoints.deploy",
-
-                "analitico.workspace.admin"
+                "analitico.endpoints.deploy"
             ]
         }
    }
