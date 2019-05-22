@@ -180,8 +180,8 @@ class LogTests(AnaliticoApiTestCase):
         self.assertEqual(response.data["error"]["code"], "not_authenticated")
         url = reverse("api:workspace-log-list", args=(ws2.id,))
         response = self.client.get(url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data["error"]["code"], "not_found")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data["error"]["code"], "not_authenticated")
 
         self.auth_token(self.token1)  # admin reads single log attached to his workspace
         url = reverse("api:workspace-log-list", args=(ws1.id,))
