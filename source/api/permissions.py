@@ -75,16 +75,24 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
     if not permission:
         permission = get_standard_item_permission(request, (item_class()).type)
     if not re.match(r"analitico.[a-z]*\.[a-z]*", permission):
-        raise AnaliticoException(f"Permission '{permission}' does not look like a valid permission.")
+        raise AnaliticoException(f"Permission '{permission}' does not look like a valid permission.", status_code=status.HTTP_400_BAD_REQUEST)
     roles = get_standard_roles_with_permission(permission)
 
     # select all items whose workspace is owned by this user OR
     # items on whose workspace the user has a custom permission OR
     # items on whose workspace the user is in a role with required permission
-    filters = [Q(workspace__user=request.user)]
-    filters.append(Q(workspace__roles__user=request.user, workspace__roles__permissions__icontains=permission))
-    for role in roles:
-        filters.append(Q(workspace__roles__user=request.user, workspace__roles__roles__icontains=role))
+    if Workspace == item_class:
+        # we check for rights directly on the workspace itself
+        filters = [Q(user=request.user)]
+        filters.append(Q(roles__user=request.user, roles__permissions__icontains=permission))
+        for role in roles:
+            filters.append(Q(roles__user=request.user, roles__roles__icontains=role))
+    else:
+        # the items has a reference to the workspace on which we check for rights
+        filters = [Q(workspace__user=request.user)]
+        filters.append(Q(workspace__roles__user=request.user, workspace__roles__permissions__icontains=permission))
+        for role in roles:
+            filters.append(Q(workspace__roles__user=request.user, workspace__roles__roles__icontains=role))
 
     # combine all filters into a single OR
     return item_class.objects.filter(functools.reduce(operator.or_, filters))
