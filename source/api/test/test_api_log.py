@@ -176,7 +176,7 @@ class LogTests(AnaliticoApiTestCase):
         self.auth_token()  # anon CANNOT read any logs
         url = reverse("api:workspace-log-list", args=(ws1.id,))
         response = self.client.get(url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.data["error"]["code"], "not_found")
         url = reverse("api:workspace-log-list", args=(ws2.id,))
         response = self.client.get(url, format="json")

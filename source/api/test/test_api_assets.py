@@ -126,7 +126,7 @@ class AssetsTests(AnaliticoApiTestCase):
             # asset_id matches filename
             url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "image_dog1.jpg"))
             response = self.upload_file(
-                url, "image_dog1.jpg", "image/jpeg", token=None, status_code=status.HTTP_404_NOT_FOUND
+                url, "image_dog1.jpg", "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED
             )
         except Exception as exc:
             raise exc
