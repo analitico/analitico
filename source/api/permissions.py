@@ -8,7 +8,7 @@ from rest_framework import permissions, status
 from rest_framework.request import Request
 
 from analitico import AnaliticoException
-from api.models import Workspace, Role, ItemMixin
+from api.models import Workspace, Role, ItemMixin, User
 from analitico.utilities import read_json
 
 
@@ -109,6 +109,11 @@ def has_item_permission_or_exception(user, item: ItemMixin, permission: str) -> 
     # superusers have all permissions on all items
     if user.is_superuser:
         return True
+
+    # if the item on which we're checking rights is a user itself 
+    # then only a user himself can change his own record
+    if isinstance(item, User):
+        return user.email == item.email
 
     # workspace owner has all permissions on the workspace and all the items owned by the workspace
     workspace = item if isinstance(item, Workspace) else item.workspace
