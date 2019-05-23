@@ -51,7 +51,8 @@ build_dev:
     # add commit sha to the env script
     - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
     # build
-    - chsh -s /bin/bash
+    - apk add bash
+    - bash
     - /home/www/analitico/scripts/build.sh
     # login to registry
     - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
