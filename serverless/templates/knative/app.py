@@ -1,13 +1,16 @@
 
 import os
 import json 
+import logging
+import notebook
 
 from flask import Flask
 from flask import request
 
-app = Flask(__name__)
+logger = logging.getLogger("analitico")
+logger.info("Starting")
 
-import notebook
+app = Flask(__name__)
 
 @app.route('/', methods = ['GET', 'POST'])
 def handle_main():
@@ -27,6 +30,14 @@ def handle_main():
 def hello_world():
     target = os.environ.get('TARGET', 'World')
     return f'Hello {target}'
+
+@app.route('/echo')
+def handle_echo():
+    message = request.args.get('message', "Hello")
+    level = int(request.args.get('level', 20))
+    logger.log(level, message)
+    return json.dumps({ "message": message, "level": level })
+
 
 
 if __name__ == "__main__":
