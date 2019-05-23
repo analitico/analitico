@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-import django.conf
 import collections
 import json
 
@@ -10,10 +9,10 @@ from subprocess import PIPE
 
 
 from analitico import AnaliticoException
-from analitico.utilities import re_match_group, save_json, save_text, read_text, read_json, get_dict_dot
-from api.factory import Factory
+from analitico.utilities import save_json, save_text, read_text, get_dict_dot
+from api.factory import factory
 from api.models import ItemMixin, Job
-from api.models.notebook import nb_filter_tags, nb_extract_serverless
+from api.models.notebook import nb_extract_serverless
 
 K8_DEFAULT_NAMESPACE = "cloud"  # service.cloud.analitico.ai
 K8_DEFAULT_CONCURRENCY = 20  # concurrent connection per docker
@@ -28,7 +27,7 @@ def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
 
 
-def k8_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
+def k8_build(item: ItemMixin, job: Job = None) -> dict:
     """
     Takes an item, extracts its notebook then extracts python code marked for deployment
     from the notebook. Then takes a template directory and applies customizations to it.
@@ -47,7 +46,7 @@ def k8_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
         factory.restore_artifacts(item, artifacts_path=docker_dst)
 
         # extract code from notebook
-        notebook_name = job.get_attribute("notebook_name", None)
+        notebook_name = job.get_attribute("notebook_name", None) if job else None
         notebook = item.get_notebook(notebook_name=notebook_name)
         if not notebook:
             raise AnaliticoException(
@@ -62,54 +61,64 @@ def k8_build(item: ItemMixin, job: Job, factory: Factory) -> dict:
         save_text(source, os.path.join(docker_dst, "notebook.py"))
         save_text(script, os.path.join(docker_dst, "notebook.sh"))
 
-        # docker build docker image
-        # https://cloud.google.com/sdk/gcloud/reference/builds/submit
-        # https://developers.google.com/resources/api-libraries/documentation/cloudbuild/v1/python/latest/cloudbuild_v1.projects.builds.html#create
-        # image name needs to be fully lowercase
+        # docker build docker image need to be lowercase
         image_name = "eu.gcr.io/analitico-api/" + k8_normalize_name(item.id)
-        cmd_args = ["gcloud", "builds", "submit", "--tag", image_name]
-        cmd_line = " ".join(cmd_args)
 
-        # run build job using google cloud build
-        job.append_logs(f"Building Docker\n{cmd_line}\n\n")
-        response = subprocess.run(cmd_args, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE)
-        job.append_logs(response.stderr)
-        job.append_logs(response.stdout)
+        # build docker image
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
+            docker_build_cmds = ["docker", "build", "--iidfile", f.name, "-t", image_name, "."]
+            response = subprocess.run(
+                docker_build_cmds, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=360
+            )
+            if job:
+                job.append_logs(response.stderr)
+                job.append_logs(response.stdout)
+            response.check_returncode()
+
+            # sha256 of the newly built image
+            image_id = read_text(f.name)
+            image = f"{image_name}@{image_id}"
+
+        # push docker image to registry
+        docker_build_cmds = ["docker", "push", image_name]
+        response = subprocess.run(
+            docker_build_cmds, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=360
+        )
+        if job:
+            job.append_logs(response.stderr)
+            job.append_logs(response.stdout)
         response.check_returncode()
 
-        # extract information on the image from process logs
-        # stderr...
-        # Logs are available at [https://console.cloud.google.com/gcr/builds/f9bbb62e-ba84-4e91-8d01-e4261454f1fc?project=411722217226]
-        # stdout...
-        # Successfully built b9bf7caec8c2
-        # latest: digest: sha256:068f27226c6cdfd9082142fd93bbd3456c265d8f9719ad767a290c6db9c8be89 size: 3056
-
-        build_id_re = r"Logs are available at \[https://console.cloud.google.com/gcr/builds/([a-z0-9-]*)\?"
-        build_id = re_match_group(build_id_re, response.stderr)
-        build_url_re = r"Logs are available at \[(https://console.cloud.google.com/gcr/builds/[a-z0-9-]*)\?"
-        build_url = re_match_group(build_url_re, response.stderr)
-
-        image_sha256 = re_match_group(r"latest: digest: sha256:([0-9a-z]*) size: ([\d]*)", response.stdout)
-        image_size = re_match_group(r"latest: digest: sha256:[0-9a-z]* size: ([\d]*)", response.stdout)
+        # retrieve docker information, output is json, parse and add basic info to docker dict
+        docker_build_cmds = ["docker", "inspect", image_name]
+        response = subprocess.run(
+            docker_build_cmds, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=360
+        )
+        if job:
+            job.append_logs(response.stderr)
+            job.append_logs(response.stdout)
+        response.check_returncode()
+        docker_inspect = json.loads(response.stdout)[0]
 
         # save docker information inside item and job
-        docker = collections.OrderedDict(
-            {
-                "image": f"{image_name}@sha256:{image_sha256}",
-                "name": image_name,
-                "digest": f"sha256:{image_sha256}",
-                "size": int(image_size),  # bogus or real?
-                "build": {"type": "build/google", "id": build_id, "url": build_url},
-            }
-        )
+        docker = collections.OrderedDict()
+        docker["type"] = "analitico/docker"
+        docker["image"] = image
+        docker["image_name"] = image_name
+        docker["image_id"] = image_id
+        docker["created_at"] = docker_inspect["Created"]
+        docker["size"] = docker_inspect["Size"]
+        docker["virtual_size"] = docker_inspect["VirtualSize"]
+
         item.set_attribute("docker", docker)
         item.save()
-        job.set_attribute("docker", docker)
-        job.save()
+        if job:
+            job.set_attribute("docker", docker)
+            job.save()
         return docker
 
 
-def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Factory) -> dict:
+def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
     """
     Takes an item that already has a docker and deploys it to our knative cloud.
     Deployment performed by customizing a template service.yaml which is then
@@ -128,7 +137,8 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Factory) 
             )
 
         # name of service we are deploying
-        service_name = k8_normalize_name(job.get_attribute("service_id", endpoint.id))
+        service_id = job.get_attribute("service_id", endpoint.id) if job else endpoint.id
+        service_name = k8_normalize_name(service_id)
         service_namespace = "cloud"
         docker_image = docker["image"]
 
@@ -141,7 +151,7 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Factory) 
                 service_namespace=service_namespace,
                 item_id=item.id,
                 target_id=endpoint.id,
-                docker_image=docker_image
+                docker_image=docker_image,
             )
             save_text(service_yaml, f.name)
 
@@ -152,33 +162,39 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Factory) 
             cmd_args = ["kubectl", "apply", "--filename", f.name, "-o", "json"]
             cmd_line = " ".join(cmd_args)
 
-            job.append_logs(f"Deploying {item.id} to {endpoint.id}\n{cmd_line}\n\n")
+            if job:
+                job.append_logs(f"Deploying {item.id} to {endpoint.id}\n{cmd_line}\n\n")
             response = subprocess.run(cmd_args, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=20)
 
             if response.returncode:
-                job.append_logs(f"kubectl apply failure:\n{response.stderr}\n\n")
-                raise AnaliticoException(f"Item {item.id} cannot be deployed to {endpoint.id} because: {response.stderr}")
+                if job:
+                    job.append_logs(f"kubectl apply failure:\n{response.stderr}\n\n")
+                raise AnaliticoException(
+                    f"Item {item.id} cannot be deployed to {endpoint.id} because: {response.stderr}"
+                )
 
-            job.append_logs(f"kubectl apply success\nresponse:\n\n{response.stdout}\n\n")
+            if job:
+                job.append_logs(f"kubectl apply success\nresponse:\n\n{response.stdout}\n\n")
             service_json = json.loads(response.stdout)
 
             # save deployment information inside item, endpoint and job
-            attrs = collections.OrderedDict(
-                {
-                    "type": "analitico/service",
-                    "name": service_name,
-                    "namespace": service_namespace,
-                    "url": get_dict_dot(service_json, "status.url", None),
-                    "docker": docker,
-                    "response": service_json,
-                }
-            )
+            attrs = collections.OrderedDict()
+            attrs["type"] = "analitico/service"
+            attrs["name"] = service_name
+            attrs["namespace"] = service_namespace
+            attrs["url"] = get_dict_dot(service_json, "status.url", None)
+            attrs["docker"] = docker
+            attrs["response"] = service_json
+
             item.set_attribute("service", attrs)
             item.save()
             endpoint.set_attribute("service", attrs)
             endpoint.save()
-            job.set_attribute("service", attrs)
-            job.save()
+
+            if job:
+                job.set_attribute("service", attrs)
+                job.save()
+
             return attrs
 
     except AnaliticoException as exc:
@@ -186,6 +202,7 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job, factory: Factory) 
 
     except Exception as exc:
         raise AnaliticoException(f"Could not deploy {item.id} to {endpoint.id} because: {exc}") from exc
+
 
 def k8_status(item: ItemMixin) -> dict:
     """ Returns the current status of a service that was previously deployed to a kubernets cluster. """

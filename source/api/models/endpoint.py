@@ -75,10 +75,10 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
         # retrieve or build docker, then deploy
         docker = target.get_attribute("docker")
         if not docker:
-            docker = k8_build(target, job, factory)
+            docker = k8_build(target, job)
 
         # deploy docker to cloud
-        k8_deploy(target, self, job, factory)
+        k8_deploy(target, self, job)
 
     def run(self, job: Job, factory: Factory, **kwargs):
         """ Run predictions on the endpoint (with or without a Job) """
