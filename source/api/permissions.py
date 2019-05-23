@@ -85,19 +85,20 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
     # items on whose workspace the user is in a role with required permission
     if Workspace == item_class:
         # we check for rights directly on the workspace itself
-        filters = [Q(user=request.user)]
-        filters.append(Q(roles__user=request.user, roles__permissions__icontains=permission))
+        ff = Q(user=request.user)
+        ff = ff | Q(roles__user=request.user, roles__permissions__icontains=permission)
         for role in roles:
-            filters.append(Q(roles__user=request.user, roles__roles__icontains=role))
+            ff = ff | Q(roles__user=request.user, roles__roles__icontains=role)
     else:
         # the items has a reference to the workspace on which we check for rights
-        filters = [Q(workspace__user=request.user)]
-        filters.append(Q(workspace__roles__user=request.user, workspace__roles__permissions__icontains=permission))
+        ff = Q(workspace__user=request.user)
+        ff = ff | Q(workspace__roles__user=request.user, workspace__roles__permissions__icontains=permission)
         for role in roles:
-            filters.append(Q(workspace__roles__user=request.user, workspace__roles__roles__icontains=role))
+            ff = ff | Q(workspace__roles__user=request.user, workspace__roles__roles__icontains=role)
 
-    # combine all filters into a single OR
-    return item_class.objects.filter(functools.reduce(operator.or_, filters))
+    # remove multiple copies of items
+    queryset = item_class.objects.filter(ff).distinct()
+    return queryset
 
 
 def has_item_permission(user, item: ItemMixin, permission: str) -> bool:
