@@ -16,6 +16,8 @@ services:
 
 stages:
   - build
+  - deploy-staging
+  - deploy-workers
   - deploy
 
 cache:
@@ -28,8 +30,8 @@ build_dev:
     - apk update && apk add git
     # remove repo
     - rm -rf /builds/analitico/analitico
-    - mkdir -p /builds/analitico/
-    - cd /builds/analitico/
+    - mkdir -p /home/www/analitico/
+    - cd /home/www/
     # clone with submodule 
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
@@ -48,6 +50,8 @@ build_dev:
     - rm /.git-credentials
     # add commit sha to the env script
     - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
+    # build
+    - ./scripts/build.sh
     # login to registry
     - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
     # build docker image
@@ -144,7 +148,7 @@ p2-production:
 
 
 staging:
-  stage: deploy
+  stage: deploy-staging
   image: ubuntu:18.04
   only:
     - master
@@ -189,7 +193,7 @@ staging:
 
 
 worker-production:
-  stage: deploy
+  stage: deploy-workers
   when: manual
   image: ubuntu:18.04
   only:
