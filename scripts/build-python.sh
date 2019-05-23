@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Build static Python assets and execute Python tests
 # exit if error
 set -e

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Build static documentation
 # exit if error
 set -e

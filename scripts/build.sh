@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # exit if error
 set -e
 BASEDIR=$(dirname "$0")
