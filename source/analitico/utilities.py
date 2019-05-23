@@ -13,6 +13,7 @@ import random
 import string
 import dateutil
 import re
+import subprocess
 
 # use simplejson instead of standard built in library
 # mostly because it has a parameter which supports replacing nan with nulls
@@ -345,3 +346,42 @@ def array_to_comma_separated(items: [str]) -> str:
     if items and len(items) > 0:
         return ",".join(items)
     return None
+
+##
+## Subprocess
+##
+
+def json_from_string_if_possible(value: str):
+    """ If your string is json then it will be parsed and returned otherwise you just get your string back """
+    try:
+        return json.loads(value) if len(value) > 4 else value
+    except:
+        pass
+    return value
+
+def subprocess_run(cmd_args, job=None, timeout=300) -> (str, str):
+    """
+    Run a subprocess with the given command arguments. Logs the command, the response
+    and the time it took to run it. If an error occours, raises an explanatory exception
+    otherwise it returns the stdout and stderr from the command possibly parse as json
+    if the response was in json.
+    """
+    message = "Running:\n" + " ".join(cmd_args) + "\n\n"
+    logger.info(message)
+    if job: job.append_logs(message)
+
+    started_on = time_ms()
+    response = subprocess.run(cmd_args, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+
+    elapsed_ms = time_ms(started_on)
+    message = f"Completed in {elapsed_ms} ms, returned code: {response.returncode}\n\n{response.stdout}\n\n{response.stderr}"
+    if job: job.append_logs(message)
+
+    if response.returncode:
+        message = "An error occoured while executing '" + " ".join(cmd_args) + "', stdout: " + response.stdout + ", stderr: " + response.stderr
+        logger.error(message)
+        raise AnaliticoException(message)
+
+    stdout = json_from_string_if_possible(response.stdout)
+    stderr = json_from_string_if_possible(response.stderr)
+    return stdout, stderr
