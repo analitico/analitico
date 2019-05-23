@@ -40,7 +40,7 @@ build_dev:
     # clone the repo
     - git clone --recurse-submodules https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git 
     - cd analitico
-    # pwd /builds/analitico/analitico
+    - pwd 
     # check out corrent commit because repo may have gone further
     - git checkout --recurse-submodules $CI_COMMIT_SHA
     # clone secrets
@@ -51,7 +51,7 @@ build_dev:
     # add commit sha to the env script
     - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
     # build
-    - /home/www/analitico/scripts/build.sh
+    - exec /home/www/analitico/scripts/build.sh
     # login to registry
     - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
     # build docker image
