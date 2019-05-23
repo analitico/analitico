@@ -15,6 +15,7 @@
         "analitico.datasets.get": "Get datasets.",
         "analitico.datasets.update": "Update datasets' data, metadata and notebooks.",
         "analitico.datasets.delete": "Delete datasets.",
+        "analitico.datasets.process": "Process datasets",
 
         "analitico.recipes.create": "Create recipes.",
         "analitico.recipes.get": "Get recipes and associated models.",
@@ -26,7 +27,17 @@
         "analitico.endpoints.get": "Get endpoints.",
         "analitico.endpoints.update": "Update endpoints.",
         "analitico.endpoints.delete": "Delete endpoints.",
-        "analitico.endpoints.deploy": "Deploy models to the endpoint."
+        "analitico.endpoints.deploy": "Deploy models to the endpoint.",
+
+        "analitico.models.create": "Create models.",
+        "analitico.models.get": "Get models.",
+        "analitico.models.update": "Update models.",
+        "analitico.models.delete": "Delete models.",
+
+        "analitico.jobs.create": "Create jobs.",
+        "analitico.jobs.get": "Get jobs.",
+        "analitico.jobs.update": "Update jobs.",
+        "analitico.jobs.delete": "Delete jobs."
     },
 
     "roles": {
@@ -38,7 +49,9 @@
                 "analitico.notebooks.get",
                 "analitico.datasets.get",
                 "analitico.recipes.get",
-                "analitico.endpoints.get"
+                "analitico.endpoints.get",
+                "analitico.models.get",
+                "analitico.jobs.get"
             ]
         },
 
@@ -60,6 +73,7 @@
                 "analitico.datasets.get",
                 "analitico.datasets.update",
                 "analitico.datasets.delete",
+                "analitico.datasets.process",
         
                 "analitico.recipes.create",
                 "analitico.recipes.get",
@@ -71,7 +85,17 @@
                 "analitico.endpoints.get",
                 "analitico.endpoints.update",
                 "analitico.endpoints.delete",
-                "analitico.endpoints.deploy"
+                "analitico.endpoints.deploy",
+
+                "analitico.models.create",
+                "analitico.models.get",
+                "analitico.models.update",
+                "analitico.models.delete",
+
+                "analitico.jobs.create",
+                "analitico.jobs.get",
+                "analitico.jobs.update",
+                "analitico.jobs.delete"
             ]
         },
 
@@ -94,6 +118,7 @@
                 "analitico.datasets.get",
                 "analitico.datasets.update",
                 "analitico.datasets.delete",
+                "analitico.datasets.process",
         
                 "analitico.recipes.create",
                 "analitico.recipes.get",
@@ -105,7 +130,17 @@
                 "analitico.endpoints.get",
                 "analitico.endpoints.update",
                 "analitico.endpoints.delete",
-                "analitico.endpoints.deploy"
+                "analitico.endpoints.deploy",
+
+                "analitico.models.create",
+                "analitico.models.get",
+                "analitico.models.update",
+                "analitico.models.delete",
+
+                "analitico.jobs.create",
+                "analitico.jobs.get",
+                "analitico.jobs.update",
+                "analitico.jobs.delete"
             ]
         }
    }
