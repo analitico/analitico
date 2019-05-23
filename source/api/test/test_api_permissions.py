@@ -212,6 +212,9 @@ class PermissionsTests(AnaliticoApiTestCase):
     def test_roles_non_owner_with_read_role_on_notebooks(self):
         self.editor_role_tests_by_item_class(Notebook, analitico.NOTEBOOK_PREFIX, analitico.NOTEBOOK_TYPE)
 
+    def test_roles_non_owner_with_read_role_on_logs(self):
+        self.editor_role_tests_by_item_class(Log, analitico.LOG_PREFIX, analitico.LOG_TYPE)
+
     def test_roles_non_owner_with_read_role_can_read_jobs_explicit_code(self):
         # jobs belong to ws1 which belongs to user1
         for i in range(0, 20):

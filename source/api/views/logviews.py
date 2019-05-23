@@ -90,15 +90,10 @@ class LogViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
 
     def get_queryset(self):
         """ A user only has access to log entries he or his workspaces owns. Superusers see all log entries. """
-
+        queryset = super().get_queryset()
         if hasattr(self, "item_id"):
-            return Log.objects.filter(item_id=self.item_id)
-
-        if self.request.user.is_anonymous:
-            return Log.objects.none()
-        if self.request.user.is_staff:  # NOTE: this is staff, not superuser
-            return Log.objects.all()
-        return Log.objects.filter(workspace__user=self.request.user)
+            queryset = queryset.filter(item_id=self.item_id)
+        return queryset
 
     def list_by_item_id(self, request, item_id, **kwargs):
         """ Returns logs belonging to a specific item_id with all filters applied """

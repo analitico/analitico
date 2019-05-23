@@ -37,7 +37,12 @@
         "analitico.jobs.create": "Create jobs.",
         "analitico.jobs.get": "Get jobs.",
         "analitico.jobs.update": "Update jobs.",
-        "analitico.jobs.delete": "Delete jobs."
+        "analitico.jobs.delete": "Delete jobs.",
+
+        "analitico.logs.create": "Create logs.",
+        "analitico.logs.get": "Get logs.",
+        "analitico.logs.update": "Update logs.",
+        "analitico.logs.delete": "Delete logs."
     },
 
     "roles": {
@@ -51,7 +56,8 @@
                 "analitico.recipes.get",
                 "analitico.endpoints.get",
                 "analitico.models.get",
-                "analitico.jobs.get"
+                "analitico.jobs.get",
+                "analitico.logs.get"
             ]
         },
 
@@ -95,7 +101,12 @@
                 "analitico.jobs.create",
                 "analitico.jobs.get",
                 "analitico.jobs.update",
-                "analitico.jobs.delete"
+                "analitico.jobs.delete",
+
+                "analitico.logs.create",
+                "analitico.logs.get",
+                "analitico.logs.update",
+                "analitico.logs.delete"
             ]
         },
 
@@ -140,7 +151,12 @@
                 "analitico.jobs.create",
                 "analitico.jobs.get",
                 "analitico.jobs.update",
-                "analitico.jobs.delete"
+                "analitico.jobs.delete",
+
+                "analitico.logs.create",
+                "analitico.logs.get",
+                "analitico.logs.update",
+                "analitico.logs.delete"
             ]
         }
    }
