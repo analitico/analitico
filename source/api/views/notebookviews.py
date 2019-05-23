@@ -108,4 +108,4 @@ class NotebookViewSet(
 
     item_class = api.models.Notebook
     serializer_class = NotebookSerializer
-    job_actions = (ACTION_PROCESS, ACTION_DEPLOY,)
+    job_actions = (ACTION_PROCESS, ACTION_DEPLOY)
