@@ -3,7 +3,8 @@ from django.urls import reverse
 from rest_framework import status
 from .utils import AnaliticoApiTestCase
 
-from api.models import Role
+import analitico
+from api.models import Role, Job, Dataset, Model, Recipe, Endpoint, Log, Token, User, Notebook
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -11,6 +12,58 @@ from api.models import Role
 
 class PermissionsTests(AnaliticoApiTestCase):
     """ Test granular API roles and permissions """
+
+    def editor_role_tests_by_item_class(self, item_class, item_prefix, item_type):
+        # item belong to ws1 which belongs to user1
+        for i in range(0, 20):
+            item = item_class(workspace=self.ws1, id=f"{item_prefix}ws1_{i}")
+            item.save()
+        for i in range(0, 10):
+            item = item_class(workspace=self.ws2, id=f"{item_prefix}ws2_{i}")
+            item.save()
+        for i in range(0, 5):
+            item = item_class(workspace=self.ws3, id=f"{item_prefix}ws3_{i}")
+            item.save()
+
+        # user is an analitico.reader and can read
+        self.auth_token(self.token3)
+        role = Role(workspace=self.ws1, user=self.user3)
+        role.roles = "role1,role2,analitico.reader,role3"
+        role.save()
+
+        # can see his item and the ones of
+        url = reverse(f"api:{item_type}-list") + "?sort=created_at"
+        response = self.client.get(url, format="json")
+        items = response.data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(items), 20 + 5)
+
+        # can GET specific item he owns
+        item_id = items[23]["id"]
+        url = reverse(f"api:{item_type}-detail", args=(item_id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["type"], f"analitico/{item_type}")
+        self.assertEqual(response.data["id"], item_id)
+
+        # can GET specific item that user1 owns
+        item_id = items[0]["id"]
+        url = reverse(f"api:{item_type}-detail", args=(item_id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["type"], f"analitico/{item_type}")
+        self.assertEqual(response.data["id"], item_id)
+
+        # can DELETE his own item
+        url = reverse(f"api:{item_type}-detail", args=(items[23]["id"],))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)  # deleted
+
+        # cannot DELETE other people's items
+        item_id = items[0]["id"]
+        url = reverse(f"api:{item_type}-detail", args=(item_id,))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def setUp(self):
         self.setup_basics()
@@ -140,6 +193,76 @@ class PermissionsTests(AnaliticoApiTestCase):
     ##
     ## Roles
     ##
+
+    def test_roles_non_owner_with_read_role_on_jobs(self):
+        self.editor_role_tests_by_item_class(Job, analitico.JOB_PREFIX, analitico.JOB_TYPE)
+
+    def test_roles_non_owner_with_read_role_on_models(self):
+        self.editor_role_tests_by_item_class(Model, analitico.MODEL_PREFIX, analitico.MODEL_TYPE)
+
+    def test_roles_non_owner_with_read_role_on_datasets(self):
+        self.editor_role_tests_by_item_class(Dataset, analitico.DATASET_PREFIX, analitico.DATASET_TYPE)
+
+    def test_roles_non_owner_with_read_role_on_recipes(self):
+        self.editor_role_tests_by_item_class(Recipe, analitico.RECIPE_PREFIX, analitico.RECIPE_TYPE)
+
+    def test_roles_non_owner_with_read_role_on_endpoints(self):
+        self.editor_role_tests_by_item_class(Endpoint, analitico.ENDPOINT_PREFIX, analitico.ENDPOINT_TYPE)
+
+    def test_roles_non_owner_with_read_role_on_notebooks(self):
+        self.editor_role_tests_by_item_class(Notebook, analitico.NOTEBOOK_PREFIX, analitico.NOTEBOOK_TYPE)
+
+    def test_roles_non_owner_with_read_role_can_read_jobs_explicit_code(self):
+        # jobs belong to ws1 which belongs to user1
+        for i in range(0, 20):
+            job = Job(workspace=self.ws1, id=f"jb_ws1_{i}")
+            job.save()
+        for i in range(0, 10):
+            job = Job(workspace=self.ws2, id=f"jb_ws2_{i}")
+            job.save()
+        for i in range(0, 5):
+            job = Job(workspace=self.ws3, id=f"jb_ws3_{i}")
+            job.save()
+
+        # user is an analitico.reader and can read
+        self.auth_token(self.token3)
+        role = Role(workspace=self.ws1, user=self.user3)
+        role.roles = "role1,role2,analitico.reader,role3"
+        role.save()
+
+        # can see his jobs and the ones of
+        url = reverse("api:job-list") + "?sort=created_at"
+        response = self.client.get(url, format="json")
+        jobs = response.data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(jobs), 20 + 5)
+
+        # can GET specific job he owns
+        job_id = jobs[23]["id"]
+        url = reverse("api:job-detail", args=(job_id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["type"], "analitico/job")
+        self.assertEqual(response.data["id"], job_id)
+
+        # can GET specific job that user1 owns
+        job_id = jobs[0]["id"]
+        url = reverse("api:job-detail", args=(job_id,))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["type"], "analitico/job")
+        self.assertEqual(response.data["id"], job_id)
+
+        # can DELETE his own job
+        url = reverse("api:job-detail", args=(jobs[23]["id"],))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)  # deleted
+
+        # cannot DELETE other people's jobs
+        job_id = jobs[0]["id"]
+        url = reverse("api:job-detail", args=(job_id,))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_roles_non_owner_with_standard_role(self):
         self.auth_token(self.token1)
