@@ -6,7 +6,7 @@ import json
 
 import subprocess
 from subprocess import PIPE
-
+from rest_framework import status
 
 from analitico import AnaliticoException
 from analitico.utilities import save_json, save_text, read_text, get_dict_dot
@@ -204,7 +204,26 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
         raise AnaliticoException(f"Could not deploy {item.id} to {endpoint.id} because: {exc}") from exc
 
 
-def k8_status(item: ItemMixin) -> dict:
-    """ Returns the current status of a service that was previously deployed to a kubernets cluster. """
-    # kubectl get ksvc ep-test-001-v5 -n cloud -o json
-    return {"status": "unknown"}
+def k8_get_service(service_name: str, service_namespace: str) -> dict:
+    """ 
+    Returns the current status of a service directly from the kubernetes cluster.
+    """
+    # eg: kubectl get ksvc ep-test-001-v5 -n cloud -o json
+    kubectl_args = ["kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json"]
+    response = subprocess.run(kubectl_args, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=20)
+    response.check_returncode()
+    service = json.loads(response.stdout)
+    return service
+
+
+def k8_get_item_service(item: ItemMixin) -> dict:
+    """ 
+    Returns the current status of a service that was previously deployed 
+    to a kubernets cluster from the given item (normally and endpoint). 
+    If the endpoint has not been deployed to a service the method will raise a 404.
+    """
+    service = item.get_attribute("service", None)
+    if not service:
+        message = f"Cannot get status on {item.id} because it has not been deployed as a service"
+        raise AnaliticoException(message, status_code=status.HTTP_404_NOT_FOUND)
+    return k8_get_service(service["name"], service["namespace"])

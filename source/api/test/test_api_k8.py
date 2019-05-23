@@ -1,6 +1,7 @@
 import os
 import os.path
 import json
+import time
 
 from django.urls import reverse
 from rest_framework import status
@@ -57,3 +58,14 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEquals(service["name"], self.endpoint_id_normalized)
         self.assertEquals(service["namespace"], "cloud")
         self.assertIn("url", service)
+
+        # give it a moment so it can, maybe, deploy...
+        time.sleep(10)
+
+        # retrieve service information from kubernetes cluster
+        service = api.k8.k8_get_item_service(endpoint)
+        self.assertEquals(service["apiVersion"], "serving.knative.dev/v1alpha1")
+        self.assertEquals(service["kind"], "Service")
+        self.assertIn("metadata", service)
+        self.assertIn("spec", service)
+        self.assertIn("status", service)
