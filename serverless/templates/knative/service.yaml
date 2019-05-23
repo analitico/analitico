@@ -1,15 +1,17 @@
 apiVersion: serving.knative.dev/v1alpha1
 kind: Service
 metadata:
-  name: cloudrun02-template
-  namespace: default
+  name: {service_name}
+  namespace: {service_namespace}
 spec:
   runLatest:
     configuration:
       revisionTemplate:
         spec:
           container:
-            image: docker.io/{username}/helloworld-python
+            image: {docker_image}
             env:
-            - name: TARGET
-              value: "Python Sample v1"
+            - name: ANALITICO_TARGET_ID
+              value: "{target_id}"
+            - name: ANALITICO_ITEM_ID
+              value: "{item_id}"

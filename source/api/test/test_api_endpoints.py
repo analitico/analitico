@@ -31,7 +31,7 @@ logger = logging.getLogger("analitico")
 class EndpointsTests(AnaliticoApiTestCase):
     """ Test notebooks operations via APIs """
 
-    def test_ep_deploy_notebook_on_google_cloudrun(self):
+    def test_ep_deploy_notebook(self):
         # Builds a notebook into a docker, then deploys docker to the cloud
         # we're using an id with UPPERCASE chars to test for a cloud run requirement
         # of lowercase only IDs
@@ -70,10 +70,8 @@ class EndpointsTests(AnaliticoApiTestCase):
         self.assertEquals(docker["build"]["type"], "build/google")
         self.assertIn("https://console.cloud.google.com/gcr/builds/", docker["build"]["url"])
 
-        # {'concurrency': 20, 'region': 'us-central1', 'revision': 'ep-test-001-00004', 'service': 'ep-test-001', 'type': 'deploy/google-cloud-run', 'url': 'https://ep-test-001...a.run.app'}
-        deploy = job["attributes"]["deploy"]
-        self.assertEquals(deploy["type"], "deploy/google-cloud-run")
-        self.assertEquals(deploy["region"], "us-central1")
-        self.assertIn(endpoint_id_normalized, deploy["revision"])
-        self.assertIn(f"https://{endpoint_id_normalized}", deploy["url"])
-        self.assertEquals(deploy["service"], endpoint_id_normalized)  # normalized
+        service = job["attributes"]["service"]
+        self.assertEquals(service["type"], "analitico/service")
+        self.assertEquals(service["name"], endpoint_id_normalized)
+        self.assertEquals(service["namespace"], "cloud")
+        self.assertIn("url", service)

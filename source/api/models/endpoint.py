@@ -16,7 +16,7 @@ from analitico.constants import ACTION_PREDICT, ACTION_DEPLOY
 from analitico.plugin import PluginError
 from analitico.utilities import time_ms, read_json, set_dict_dot
 
-from api.docker import docker_build, docker_deploy
+from api.k8 import k8_build, k8_deploy
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
@@ -75,10 +75,10 @@ class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):
         # retrieve or build docker, then deploy
         docker = target.get_attribute("docker")
         if not docker:
-            docker = docker_build(target, job, factory)
+            docker = k8_build(target, job, factory)
 
         # deploy docker to cloud
-        docker_deploy(target, self, job, factory)
+        k8_deploy(target, self, job, factory)
 
     def run(self, job: Job, factory: Factory, **kwargs):
         """ Run predictions on the endpoint (with or without a Job) """
