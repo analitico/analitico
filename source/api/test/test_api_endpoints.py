@@ -64,11 +64,10 @@ class EndpointsTests(AnaliticoApiTestCase):
 
         # docker that was built for deployment
         docker = job["attributes"]["docker"]
-        self.assertEquals(docker["name"], f"eu.gcr.io/analitico-api/{target_id_normalized}")  # normalized
+        self.assertEquals(docker["type"], "analitico/docker")
+        self.assertEquals(docker["image_name"], f"eu.gcr.io/analitico-api/{target_id_normalized}")  # normalized
         self.assertIn(f"gcr.io/analitico-api/{target_id_normalized}@sha256:", docker["image"])
-        self.assertIn("sha256:", docker["digest"])
-        self.assertEquals(docker["build"]["type"], "build/google")
-        self.assertIn("https://console.cloud.google.com/gcr/builds/", docker["build"]["url"])
+        self.assertIn("sha256:", docker["image_id"])
 
         service = job["attributes"]["service"]
         self.assertEquals(service["type"], "analitico/service")
