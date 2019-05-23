@@ -53,3 +53,10 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_f
             endpoint = self.get_object()
             results = endpoint.run(None, factory)
         return Response(results)
+
+    @action(methods=["get"], detail=True, url_name="service", url_path="service")
+    def service(self, request, pk):
+        """ Query kubernetes for the current status of the endpoint """
+        endpoint = self.get_object()
+        status = api.k8.k8_get_item_service(endpoint)
+        return Response(status)

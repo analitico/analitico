@@ -74,3 +74,14 @@ class EndpointsTests(AnaliticoApiTestCase):
         self.assertEquals(service["name"], endpoint_id_normalized)
         self.assertEquals(service["namespace"], "cloud")
         self.assertIn("url", service)
+
+        # retrieve realtime service status for the service running on the endpoint
+        url = reverse("api:endpoint-service", args=(endpoint_id,))
+        response = self.client.get(url, data={"target_id": target_id}, format="json")
+        self.assertApiResponse(response)
+        service = response.data
+        self.assertEquals(service["apiVersion"], "serving.knative.dev/v1alpha1")
+        self.assertEquals(service["kind"], "Service")
+        self.assertIn("metadata", service)
+        self.assertIn("spec", service)
+        self.assertIn("status", service)
