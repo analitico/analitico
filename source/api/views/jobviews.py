@@ -154,14 +154,6 @@ class JobViewSet(ItemViewSetMixin, AssetViewSetMixin, LogViewSetMixin, rest_fram
         "item_id": filterset.ALL,
     }
 
-    def get_queryset(self):
-        """ A user only has access to jobs he or his workspaces owns. """
-        if self.request.user.is_anonymous:
-            return Job.objects.none()
-        if self.request.user.is_superuser:
-            return Job.objects.all()
-        return Job.objects.filter(workspace__user=self.request.user)
-
     @action(methods=["get"], detail=False, url_name="schedule", url_path="schedule", permission_classes=(IsAdminUser,))
     def schedule(self, request):
         """ 
