@@ -347,9 +347,11 @@ def array_to_comma_separated(items: [str]) -> str:
         return ",".join(items)
     return None
 
+
 ##
 ## Subprocess
 ##
+
 
 def json_from_string_if_possible(value: str):
     """ If your string is json then it will be parsed and returned otherwise you just get your string back """
@@ -359,6 +361,7 @@ def json_from_string_if_possible(value: str):
         pass
     return value
 
+
 def subprocess_run(cmd_args, job=None, timeout=300) -> (str, str):
     """
     Run a subprocess with the given command arguments. Logs the command, the response
@@ -366,19 +369,27 @@ def subprocess_run(cmd_args, job=None, timeout=300) -> (str, str):
     otherwise it returns the stdout and stderr from the command possibly parse as json
     if the response was in json.
     """
-    message = "Running:\n" + " ".join(cmd_args) + "\n\n"
+    message = "Running: " + " ".join(cmd_args)
     logger.info(message)
-    if job: job.append_logs(message)
+    if job:
+        job.append_logs(message)
 
     started_on = time_ms()
-    response = subprocess.run(cmd_args, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+    response = subprocess.run(
+        cmd_args, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
+    )
 
     elapsed_ms = time_ms(started_on)
     message = f"subprocess_run completed in {elapsed_ms} ms, returned code: {response.returncode}\n\n{response.stdout}\n\n{response.stderr}"
-    if job: job.append_logs(message)
+    if job:
+        job.append_logs(message)
 
     if response.returncode:
-        message = "An error occoured while executing '" + " ".join(cmd_args) + "', stdout: " + response.stdout + ", stderr: " + response.stderr
+        message = "An error occoured while executing '" + " ".join(cmd_args) + "'."
+        if response.stdout:
+            message = f"{message}\nResponse.stdout:\n{response.stdout}"
+        if response.stderr:
+            message = f"{message}\nResponse.stderr:\n{response.stderr}"
         logger.error(message)
         raise AnaliticoException(message)
 
