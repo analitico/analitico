@@ -39,7 +39,8 @@ class K8Tests(AnaliticoApiTestCase):
     endpoint_id_normalized = "ep-test-001"
     target_id_normalized = "nb-test-001"
 
-    def test_k8_build_and_deploy_docker(self):
+    # TODO cannot run this in CI/CD pipeline, should be added to live testing?
+    def OFFtest_k8_build_and_deploy_docker(self):
         """ Test building a docker from a notebook then deploying it """
 
         self.post_notebook("notebook11.ipynb", self.target_id)
