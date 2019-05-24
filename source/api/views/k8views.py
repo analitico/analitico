@@ -46,10 +46,28 @@ class K8ViewSet(rest_framework.viewsets.GenericViewSet):
                 f"Item {item.id} has not been found.", status_code=status.HTTP_404_NOT_FOUND
             ) from exc
 
+    def get_kubctl_response(self, *args):
+        """ Runs kubectl command, returns result as json """
+        stdout, _ = analitico.utilities.subprocess_run(args)
+        return Response(stdout, content_type="json")
+
     @action(methods=["get"], detail=True, url_name="ksvc", url_path="ksvc")
     def ksvc(self, request, pk):
         """ Return given kubernetes service. The primary key can be the service name or an item that was deployed to a service. """
         service_name, service_namespace = self.resolve_item_id_to_service_name(request, pk)
-        kubectl_args = ["kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json"]
-        stdout, _ = analitico.utilities.subprocess_run(kubectl_args)
-        return Response(stdout, content_type="json")
+        # kubectl get ksvc {service_name} -n {service_namespace} -o json
+        return self.get_kubctl_response("kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json")
+
+    @action(methods=["get"], detail=True, url_name="revisions", url_path="revisions")
+    def revisions(self, request, pk):
+        """ Return a list of revisions for the given service. """
+        service_name, service_namespace = self.resolve_item_id_to_service_name(request, pk)
+        # kubectl get revisions -l serving.knative.dev/service={service_name} -n {service_namespace} -o json --sort-by .metadata.creationTimestamp
+        return self.get_kubctl_response("kubectl", "get", "revisions", "-l", f"serving.knative.dev/service={service_name}", "-n", service_namespace, "-o", "json", "--sort-by", ".metadata.creationTimestamp")
+
+    @action(methods=["get"], detail=True, url_name="pods", url_path="pods")
+    def pods(self, request, pk):
+        """ Returns a list of pods owned by the service """
+        service_name, service_namespace = self.resolve_item_id_to_service_name(request, pk)
+        # kubectl get pods -l serving.knative.dev/service={service_name} -n {service_namespace} -o json
+        return self.get_kubctl_response("kubectl", "get", "pods", "-l", f"serving.knative.dev/service={service_name}", "-n", service_namespace, "-o", "json", "--sort-by", ".metadata.creationTimestamp")
