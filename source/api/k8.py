@@ -8,8 +8,10 @@ import subprocess
 from subprocess import PIPE
 from rest_framework import status
 
+import analitico.utilities
+
 from analitico import AnaliticoException
-from analitico.utilities import save_json, save_text, read_text, get_dict_dot
+from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run
 from api.factory import factory
 from api.models import ItemMixin, Job
 from api.models.notebook import nb_extract_serverless
@@ -65,40 +67,20 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         image_name = "eu.gcr.io/analitico-api/" + k8_normalize_name(item.id)
 
         # build docker image
-        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt") as f:
             docker_build_cmds = ["docker", "build", "--iidfile", f.name, "-t", image_name, "."]
-            response = subprocess.run(
-                docker_build_cmds, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=360
-            )
-            if job:
-                job.append_logs(response.stderr)
-                job.append_logs(response.stdout)
-            response.check_returncode()
-
+            subprocess_run(docker_build_cmds, job)
             # sha256 of the newly built image
             image_id = read_text(f.name)
             image = f"{image_name}@{image_id}"
 
         # push docker image to registry
         docker_build_cmds = ["docker", "push", image_name]
-        response = subprocess.run(
-            docker_build_cmds, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=360
-        )
-        if job:
-            job.append_logs(response.stderr)
-            job.append_logs(response.stdout)
-        response.check_returncode()
+        subprocess_run(docker_build_cmds, job)
 
         # retrieve docker information, output is json, parse and add basic info to docker dict
-        docker_build_cmds = ["docker", "inspect", image_name]
-        response = subprocess.run(
-            docker_build_cmds, cwd=docker_dst, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=360
-        )
-        if job:
-            job.append_logs(response.stderr)
-            job.append_logs(response.stdout)
-        response.check_returncode()
-        docker_inspect = json.loads(response.stdout)[0]
+        docker_inspect_args = ["docker", "inspect", image_name]
+        docker_inspect, _ = subprocess_run(docker_inspect_args, job)
 
         # save docker information inside item and job
         docker = collections.OrderedDict()
@@ -202,28 +184,3 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
 
     except Exception as exc:
         raise AnaliticoException(f"Could not deploy {item.id} to {endpoint.id} because: {exc}") from exc
-
-
-def k8_get_service(service_name: str, service_namespace: str) -> dict:
-    """ 
-    Returns the current status of a service directly from the kubernetes cluster.
-    """
-    # eg: kubectl get ksvc ep-test-001-v5 -n cloud -o json
-    kubectl_args = ["kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json"]
-    response = subprocess.run(kubectl_args, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=20)
-    response.check_returncode()
-    service = json.loads(response.stdout)
-    return service
-
-
-def k8_get_item_service(item: ItemMixin) -> dict:
-    """ 
-    Returns the current status of a service that was previously deployed 
-    to a kubernets cluster from the given item (normally and endpoint). 
-    If the endpoint has not been deployed to a service the method will raise a 404.
-    """
-    service = item.get_attribute("service", None)
-    if not service:
-        message = f"Cannot get status on {item.id} because it has not been deployed as a service"
-        raise AnaliticoException(message, status_code=status.HTTP_404_NOT_FOUND)
-    return k8_get_service(service["name"], service["namespace"])

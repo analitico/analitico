@@ -1,23 +1,19 @@
 import rest_framework
 
 from rest_framework import serializers
-from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import APIException
 
-import analitico
 import api.models
 import api.utilities
 
 from analitico import ACTION_PREDICT, ACTION_DEPLOY
 
-from api.models import Endpoint, Job
+from api.models import Endpoint
 from api.factory import ServerFactory
 
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
-from .assetviewsetmixin import AssetViewSetMixin
 from .jobviews import JobViewSetMixin
 from .logviews import LogViewSetMixin
 
@@ -53,10 +49,3 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_f
             endpoint = self.get_object()
             results = endpoint.run(None, factory)
         return Response(results)
-
-    @action(methods=["get"], detail=True, url_name="service", url_path="service")
-    def service(self, request, pk):
-        """ Query kubernetes for the current status of the endpoint """
-        endpoint = self.get_object()
-        status = api.k8.k8_get_item_service(endpoint)
-        return Response(status)

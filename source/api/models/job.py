@@ -111,7 +111,7 @@ class Job(ItemMixin, models.Model):
     def append_logs(self, logs, save: bool = True):
         """ Appends given log string to this job's logs """
         if logs:
-            self.logs = self.logs + logs
+            self.logs = self.logs + logs + "\n"
             if save:
                 self.save()
 
