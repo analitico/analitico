@@ -31,7 +31,8 @@ logger = logging.getLogger("analitico")
 class EndpointsTests(AnaliticoApiTestCase):
     """ Test notebooks operations via APIs """
 
-    def test_ep_deploy_notebook(self):
+    # TODO move these tests to live testing
+    def OFFtest_ep_deploy_notebook(self):
         # Builds a notebook into a docker, then deploys docker to the cloud
         # we're using an id with UPPERCASE chars to test for a cloud run requirement
         # of lowercase only IDs
