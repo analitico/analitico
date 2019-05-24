@@ -30,8 +30,8 @@ build_dev:
     - apk update && apk add git
     # remove repo
     - rm -rf /builds/analitico/analitico
-    - mkdir -p /home/www/analitico/
-    - cd /home/www/
+    - mkdir -p /builds/analitico/
+    - cd /builds/analitico/
     # clone with submodule 
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
@@ -40,7 +40,7 @@ build_dev:
     # clone the repo
     - git clone --recurse-submodules https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git 
     - cd analitico
-    - pwd 
+    # pwd /builds/analitico/analitico
     # check out corrent commit because repo may have gone further
     - git checkout --recurse-submodules $CI_COMMIT_SHA
     # clone secrets
@@ -50,10 +50,6 @@ build_dev:
     - rm /.git-credentials
     # add commit sha to the env script
     - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
-    # build
-    - apk add bash
-    - bash
-    - /home/www/analitico/scripts/build.sh
     # login to registry
     - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
     # build docker image
