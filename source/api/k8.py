@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import datetime
 import collections
 import json
 
@@ -37,7 +38,7 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
     Returns a dictionary with information on the built docker and adds the same dictionary to
     the job as well. Logs operations to the job while they are being performed.
     """
-    with tempfile.TemporaryDirectory() as tmpdirname:
+    with tempfile.TemporaryDirectory(prefix="build") as tmpdirname:
         # directory where template files are copied must not exist yet for copytree
         docker_dst = os.path.join(tmpdirname, "docker")
 
@@ -66,21 +67,21 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         # docker build docker image need to be lowercase
         image_name = "eu.gcr.io/analitico-api/" + k8_normalize_name(item.id)
 
-        # build docker image
-        with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt") as f:
-            docker_build_cmds = ["docker", "build", "--iidfile", f.name, "-t", image_name, "."]
-            subprocess_run(docker_build_cmds, job)
-            # sha256 of the newly built image
+        # build docker image, save id temporary file...
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".dockerid.txt") as f:
+            docker_build_args = ["docker", "build", "--iidfile", f.name, "-t", image_name, docker_dst]
+            subprocess_run(docker_build_args, job, cwd=docker_dst)
             image_id = read_text(f.name)
             image = f"{image_name}@{image_id}"
 
         # push docker image to registry
-        docker_build_cmds = ["docker", "push", image_name]
-        subprocess_run(docker_build_cmds, job)
+        docker_push_args = ["docker", "push", image_name]
+        subprocess_run(docker_push_args, job)
 
         # retrieve docker information, output is json, parse and add basic info to docker dict
         docker_inspect_args = ["docker", "inspect", image_name]
         docker_inspect, _ = subprocess_run(docker_inspect_args, job)
+        docker_inspect = docker_inspect[0]
 
         # save docker information inside item and job
         docker = collections.OrderedDict()
@@ -142,22 +143,7 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
             # https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#apply
             # export KUBECONFIG=$HOME/.kube/config/admin.conf
             cmd_args = ["kubectl", "apply", "--filename", f.name, "-o", "json"]
-            cmd_line = " ".join(cmd_args)
-
-            if job:
-                job.append_logs(f"Deploying {item.id} to {endpoint.id}\n{cmd_line}\n\n")
-            response = subprocess.run(cmd_args, encoding="utf-8", stdout=PIPE, stderr=PIPE, timeout=20)
-
-            if response.returncode:
-                if job:
-                    job.append_logs(f"kubectl apply failure:\n{response.stderr}\n\n")
-                raise AnaliticoException(
-                    f"Item {item.id} cannot be deployed to {endpoint.id} because: {response.stderr}"
-                )
-
-            if job:
-                job.append_logs(f"kubectl apply success\nresponse:\n\n{response.stdout}\n\n")
-            service_json = json.loads(response.stdout)
+            service_json, _ = subprocess_run(cmd_args, job)
 
             # save deployment information inside item, endpoint and job
             attrs = collections.OrderedDict()
