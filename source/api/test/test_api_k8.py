@@ -14,7 +14,7 @@ from rest_framework import status
 # pylint: disable=unused-wildcard-import
 
 from analitico.constants import ACTION_PROCESS, ACTION_DEPLOY
-from analitico.utilities import read_json
+from analitico.utilities import read_json, subprocess_run
 
 import api
 import api.k8
@@ -64,7 +64,7 @@ class K8Tests(AnaliticoApiTestCase):
         time.sleep(10)
 
         # retrieve service information from kubernetes cluster
-        service = api.k8.k8_get_item_service(endpoint)
+        service, _ = subprocess_run(cmd_args=["kubectl", "get", "ksvc", self.endpoint_id_normalized, "-n", api.k8.K8_DEFAULT_NAMESPACE, "-o", "json"])
         self.assertEquals(service["apiVersion"], "serving.knative.dev/v1alpha1")
         self.assertEquals(service["kind"], "Service")
         self.assertIn("metadata", service)
