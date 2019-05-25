@@ -362,25 +362,26 @@ def json_from_string_if_possible(value: str):
     return value
 
 
-def subprocess_run(cmd_args, job=None, timeout=300) -> (str, str):
+def subprocess_run(cmd_args, job=None, timeout=300, cwd=None) -> (str, str):
     """
     Run a subprocess with the given command arguments. Logs the command, the response
     and the time it took to run it. If an error occours, raises an explanatory exception
     otherwise it returns the stdout and stderr from the command possibly parse as json
     if the response was in json.
     """
-    message = "Running: " + " ".join(cmd_args)
+    message = "subprocess_run:\n" + " ".join(cmd_args)
     logger.info(message)
     if job:
         job.append_logs(message)
 
     started_on = time_ms()
     response = subprocess.run(
-        cmd_args, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
+        cmd_args, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout, cwd=cwd
     )
 
     elapsed_ms = time_ms(started_on)
-    message = f"subprocess_run completed in {elapsed_ms} ms, returned code: {response.returncode}\n\n{response.stdout}\n\n{response.stderr}"
+    message = f"completed in {elapsed_ms} ms, returned code: {response.returncode}\n\n{response.stdout}\n\n{response.stderr}"
+    logger.info(message)
     if job:
         job.append_logs(message)
 
