@@ -75,7 +75,8 @@ class K8Tests(AnaliticoApiTestCase):
     ## K8s APIs
     ##
 
-    def test_k8s_get_nodes(self):
+    # TODO we need to setup the credentials for kubectl in gitlab CI/CD
+    def OFFtest_k8s_get_nodes(self):
         url = reverse("api:k8-nodes")
 
         # regular user CANNOT get nodes
