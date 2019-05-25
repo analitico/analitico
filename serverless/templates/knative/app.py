@@ -26,6 +26,11 @@ def handle_main():
 
     return json.dumps(response["body"])
 
+@app.route('/health')
+def handle_health():
+    # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#define-a-liveness-http-request
+    return 'ready'
+
 @app.route('/hello')
 def hello_world():
     target = os.environ.get('TARGET', 'World')
