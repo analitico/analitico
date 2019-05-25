@@ -70,3 +70,29 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("metadata", service)
         self.assertIn("spec", service)
         self.assertIn("status", service)
+
+    ##
+    ## K8s APIs
+    ##
+
+    def test_k8s_get_nodes(self):
+        url = reverse("api:k8-nodes")
+
+        # regular user CANNOT get nodes
+        self.auth_token(self.token3)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # admin user CAN get nodes
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # should have at least one node running
+        nodes = response.data["items"]
+        self.assertGreaterEqual(len(nodes), 1)
+        self.assertEqual(nodes[0]["apiVersion"], "v1")
+        self.assertEqual(nodes[0]["kind"], "Node")
+        self.assertIn("metadata", nodes[0])
+        self.assertIn("spec", nodes[0])
+        self.assertIn("status", nodes[0])

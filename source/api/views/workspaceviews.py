@@ -115,7 +115,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
                         role.roles = array_to_comma_separated(value.get("roles", None))
                         role.permissions = array_to_comma_separated(value.get("permissions", None))
                         role.save()
-                            
+
         instance.save()
         return instance
 
