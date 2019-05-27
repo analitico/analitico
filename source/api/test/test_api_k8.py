@@ -40,7 +40,7 @@ class K8Tests(AnaliticoApiTestCase):
     target_id_normalized = "nb-test-001"
 
     # TODO cannot run this in CI/CD pipeline, should be added to live testing?
-    def OFFtest_k8_build_and_deploy_docker(self):
+    def test_k8_build_and_deploy_docker(self):
         """ Test building a docker from a notebook then deploying it """
 
         self.post_notebook("notebook11.ipynb", self.target_id)
@@ -64,7 +64,18 @@ class K8Tests(AnaliticoApiTestCase):
         time.sleep(10)
 
         # retrieve service information from kubernetes cluster
-        service, _ = subprocess_run(cmd_args=["kubectl", "get", "ksvc", self.endpoint_id_normalized, "-n", api.k8.K8_DEFAULT_NAMESPACE, "-o", "json"])
+        service, _ = subprocess_run(
+            cmd_args=[
+                "kubectl",
+                "get",
+                "ksvc",
+                self.endpoint_id_normalized,
+                "-n",
+                api.k8.K8_DEFAULT_NAMESPACE,
+                "-o",
+                "json",
+            ]
+        )
         self.assertEquals(service["apiVersion"], "serving.knative.dev/v1alpha1")
         self.assertEquals(service["kind"], "Service")
         self.assertIn("metadata", service)
@@ -75,8 +86,8 @@ class K8Tests(AnaliticoApiTestCase):
     ## K8s APIs
     ##
 
-    # TODO we need to setup the credentials for kubectl in gitlab CI/CD
-    def OFFtest_k8s_get_nodes(self):
+    # we need to setup the credentials for kubectl in gitlab CI/CD
+    def test_k8s_get_nodes(self):
         url = reverse("api:k8-nodes")
 
         # regular user CANNOT get nodes
