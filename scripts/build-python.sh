@@ -28,6 +28,8 @@ echo "Configuring GCloud"
 gcloud auth activate-service-account --key-file /home/www/analitico-ci/gcloud/analitico-api-service-account-key.json
 gcloud config set project analitico-api
 gcloud config set run/region us-central1
+# configure gcloud docker
+gcloud -q auth configure-docker
 
 echo "Running python tests"
 ./manage.py test
