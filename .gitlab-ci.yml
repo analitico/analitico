@@ -49,7 +49,7 @@ build_dev:
     # remove credentials
     - rm /.git-credentials
     # add commit sha to the env script
-    - echo declare -x ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
+    - echo export ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
     # login to registry
     - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
     # build docker image
