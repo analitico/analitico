@@ -31,6 +31,9 @@ gcloud config set run/region us-central1
 # configure gcloud docker
 gcloud -q auth configure-docker
 
+# Path to admin.conf for kubectl
+export KUBECONFIG="/home/www/analitico-ci/k8/admin.conf"
+
 echo "Running python tests"
 ./manage.py test
 
