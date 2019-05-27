@@ -11,7 +11,7 @@ from rest_framework import status
 
 import analitico.utilities
 
-from analitico import AnaliticoException
+from analitico import AnaliticoException, logger
 from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run
 from api.factory import factory
 from api.models import ItemMixin, Job
@@ -58,6 +58,7 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
 
         # extract source code and scripting from notebook
         source, script = nb_extract_serverless(notebook)
+        logger.info(f"source:\n{source}\nscripts:{script}")
 
         # overwrite template files
         save_json(notebook, os.path.join(docker_dst, "notebook.ipynb"), indent=2)
@@ -68,11 +69,8 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         image_name = "eu.gcr.io/analitico-api/" + k8_normalize_name(item.id)
 
         # build docker image, save id temporary file...
-        with tempfile.NamedTemporaryFile(mode="w+", suffix=".dockerid.txt") as f:
-            docker_build_args = ["docker", "build", "--iidfile", f.name, "-t", image_name, docker_dst]
-            subprocess_run(docker_build_args, job, cwd=docker_dst)
-            image_id = read_text(f.name)
-            image = f"{image_name}@{image_id}"
+        docker_build_args = ["docker", "build", "-t", image_name, docker_dst]
+        subprocess_run(docker_build_args, job, cwd=docker_dst)
 
         # push docker image to registry
         docker_push_args = ["docker", "push", image_name]
@@ -82,6 +80,9 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         docker_inspect_args = ["docker", "inspect", image_name]
         docker_inspect, _ = subprocess_run(docker_inspect_args, job)
         docker_inspect = docker_inspect[0]
+
+        image = docker_inspect["RepoDigests"][0]
+        image_id = image[image.find("sha256:") :]
 
         # save docker information inside item and job
         docker = collections.OrderedDict()
@@ -98,6 +99,8 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         if job:
             job.set_attribute("docker", docker)
             job.save()
+
+        logger.info(json.dumps(docker, indent=4))
         return docker
 
 
@@ -163,6 +166,7 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
                 job.set_attribute("service", attrs)
                 job.save()
 
+            logger.info(json.dumps(attrs, indent=4))
             return attrs
 
     except AnaliticoException as exc:
