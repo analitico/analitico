@@ -76,32 +76,32 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         docker_push_args = ["docker", "push", image_name]
         subprocess_run(docker_push_args, job)
 
-        # retrieve docker information, output is json, parse and add basic info to docker dict
-        docker_inspect_args = ["docker", "inspect", image_name]
-        docker_inspect, _ = subprocess_run(docker_inspect_args, job)
-        docker_inspect = docker_inspect[0]
+    # retrieve docker information, output is json, parse and add basic info to docker dict
+    docker_inspect_args = ["docker", "inspect", image_name]
+    docker_inspect, _ = subprocess_run(docker_inspect_args, job)
+    docker_inspect = docker_inspect[0]
 
-        image = docker_inspect["RepoDigests"][0]
-        image_id = image[image.find("sha256:") :]
+    image = docker_inspect["RepoDigests"][0]
+    image_id = image[image.find("sha256:") :]
 
-        # save docker information inside item and job
-        docker = collections.OrderedDict()
-        docker["type"] = "analitico/docker"
-        docker["image"] = image
-        docker["image_name"] = image_name
-        docker["image_id"] = image_id
-        docker["created_at"] = docker_inspect["Created"]
-        docker["size"] = docker_inspect["Size"]
-        docker["virtual_size"] = docker_inspect["VirtualSize"]
+    # save docker information inside item and job
+    docker = collections.OrderedDict()
+    docker["type"] = "analitico/docker"
+    docker["image"] = image
+    docker["image_name"] = image_name
+    docker["image_id"] = image_id
+    docker["created_at"] = docker_inspect["Created"]
+    docker["size"] = docker_inspect["Size"]
+    docker["virtual_size"] = docker_inspect["VirtualSize"]
 
-        item.set_attribute("docker", docker)
-        item.save()
-        if job:
-            job.set_attribute("docker", docker)
-            job.save()
+    item.set_attribute("docker", docker)
+    item.save()
+    if job:
+        job.set_attribute("docker", docker)
+        job.save()
 
-        logger.info(json.dumps(docker, indent=4))
-        return docker
+    logger.info(json.dumps(docker, indent=4))
+    return docker
 
 
 def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
@@ -129,7 +129,6 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
         docker_image = docker["image"]
 
         with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
-
             service_filename = os.path.join(K8_TEMPLATE_DIR, "service.yaml")
             service_yaml = read_text(service_filename)
             service_yaml = service_yaml.format(
