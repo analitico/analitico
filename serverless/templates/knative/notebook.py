@@ -15,7 +15,7 @@ def handle2(event, context):
 
 
 # predict
-def handle(event, **kwargs):
+def handle(event, context, **kwargs):
     global calls
     calls += 1
     event["calls"] = calls # add number of calls
