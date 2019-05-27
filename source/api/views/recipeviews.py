@@ -12,7 +12,7 @@ from analitico import ACTION_TRAIN
 from api.models import Recipe, Job, Model
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
-from .itemviewsetmixin import ItemViewSetMixin
+from .itemviewsetmixin import ItemViewSetMixin, filterset
 from .jobviews import JobViewSetMixin, JobSerializer
 from .logviews import LogViewSetMixin
 from .notebookviews import NotebookViewSetMixin
@@ -49,3 +49,16 @@ class RecipeViewSet(
     item_class = api.models.Recipe
     serializer_class = RecipeSerializer
     job_actions = (ACTION_TRAIN,)
+    
+    # Default search fields
+    search_fields = ("item_id", "title", "attributes")
+
+    # Default query filters
+    filterset_fields = {
+        "id": filterset.ALL,
+        "title": filterset.ALL,
+        "workspace__id": ["exact"],
+        "attributes": filterset.ATTRIBUTES,
+        "created_at": filterset.DATE,
+        "updated_at": filterset.DATE,
+    }

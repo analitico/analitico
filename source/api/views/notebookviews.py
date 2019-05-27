@@ -20,7 +20,7 @@ from api.renderers import NotebookRenderer
 from api.models.notebook import nb_convert_to_html, nb_filter_tags
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
 
-from .itemviewsetmixin import ItemViewSetMixin
+from .itemviewsetmixin import ItemViewSetMixin, filterset
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
 from .jobviews import JobViewSetMixin
@@ -109,3 +109,16 @@ class NotebookViewSet(
     item_class = api.models.Notebook
     serializer_class = NotebookSerializer
     job_actions = (ACTION_PROCESS, ACTION_DEPLOY)
+ 
+    # Default search fields
+    search_fields = ("item_id", "title", "attributes")
+
+    # Default query filters
+    filterset_fields = {
+        "id": filterset.ALL,
+        "title": filterset.ALL,
+        "workspace__id": ["exact"],
+        "attributes": filterset.ATTRIBUTES,
+        "created_at": filterset.DATE,
+        "updated_at": filterset.DATE,
+    }
