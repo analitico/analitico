@@ -24,7 +24,7 @@ def handle_main():
             "body": str(exc)
         }
 
-    return json.dumps(response["body"])
+    return json.dumps(response["body"] if "body" in response else response)
 
 @app.route('/health')
 def handle_health():
