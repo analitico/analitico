@@ -11,7 +11,7 @@ import api.utilities
 from api.models import Model
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
-from .itemviewsetmixin import ItemViewSetMixin, filterset
+from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .jobviews import JobViewSetMixin
 from .logviews import LogViewSetMixin
 from .notebookviews import NotebookViewSetMixin
@@ -49,13 +49,9 @@ class ModelViewSet(
     item_class = api.models.Model
     serializer_class = ModelSerializer
 
-    search_fields = ("item_id", "title", "attributes")
-    filterset_fields = {
-        "id": filterset.ALL,
-        "title": filterset.ALL,
-        "attributes": filterset.ATTRIBUTES,
-        "created_at": filterset.DATE,
-    }
+    ordering = ("-updated_at",)
+    search_fields = ITEM_SEARCH_FIELDS  # defaults
+    filterset_fields = ITEM_FILTERSET_FIELDS  # defaults
 
     # The only action that can be performed on a recipe is to train it
     job_actions = ("train",)

@@ -19,6 +19,19 @@ class filterset:
     ATTRIBUTES = ("icontains", "contains", "iexact", "exact")
 
 
+# Default search fields
+ITEM_SEARCH_FIELDS = ("item_id", "title", "attributes")
+
+# Default query filters
+ITEM_FILTERSET_FIELDS = {
+    "id": filterset.ALL,
+    "title": filterset.ALL,
+    "workspace__id": ["exact"],
+    "attributes": filterset.ATTRIBUTES,
+    "created_at": filterset.DATE,
+    "updated_at": filterset.DATE,
+}
+
 ##
 ## ItemViewSetMixin
 ##

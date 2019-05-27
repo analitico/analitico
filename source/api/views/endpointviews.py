@@ -13,7 +13,7 @@ from api.models import Endpoint
 from api.factory import ServerFactory
 
 from .attributeserializermixin import AttributeSerializerMixin
-from .itemviewsetmixin import ItemViewSetMixin, filterset
+from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .jobviews import JobViewSetMixin
 from .logviews import LogViewSetMixin
 
@@ -42,18 +42,9 @@ class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_f
     serializer_class = EndpointSerializer
     job_actions = (ACTION_DEPLOY, ACTION_PREDICT)
 
-    # Default search fields
-    search_fields = ("item_id", "title", "attributes")
-
-    # Default query filters
-    filterset_fields = {
-        "id": filterset.ALL,
-        "title": filterset.ALL,
-        "workspace__id": ["exact"],
-        "attributes": filterset.ATTRIBUTES,
-        "created_at": filterset.DATE,
-        "updated_at": filterset.DATE,
-    }
+    ordering = ("-updated_at",)
+    search_fields = ITEM_SEARCH_FIELDS  # defaults
+    filterset_fields = ITEM_FILTERSET_FIELDS  # defaults
 
     @action(methods=["post"], detail=True, url_name="predict", url_path="predict")
     def predict(self, request, pk):

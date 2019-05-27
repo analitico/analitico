@@ -96,16 +96,16 @@ class EndpointsTests(AnaliticoApiTestCase):
         id = "ep_uammagamma08"
         id_staging = id + "_staging"
 
-        response = self.client.post(url, data={ "id": id, "workspace": "ws_user1"})
+        response = self.client.post(url, data={"id": id, "workspace": "ws_user1"})
         self.assertEquals(response.status_code, status.HTTP_201_CREATED)
 
-        response = self.client.post(url, data={ "id": id_staging, "workspace": "ws_user1"})
+        response = self.client.post(url, data={"id": id_staging, "workspace": "ws_user1"})
         self.assertEquals(response.status_code, status.HTTP_201_CREATED)
 
         url = reverse("api:endpoint-detail", args=(id,))
         response = self.client.get(url)
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        
+
         url = reverse("api:endpoint-detail", args=(id_staging,))
         response = self.client.get(url)
         self.assertEquals(response.status_code, status.HTTP_200_OK)
