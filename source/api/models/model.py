@@ -108,8 +108,9 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
             shutil.rmtree(artifacts, ignore_errors=True)
 
             # job will return information linking to the trained model
-            job.set_attribute("recipe_id", self.id)
-            job.set_attribute("model_id", self.id)
+            #job.set_attribute("recipe_id", self.get_attribute("recipe_id"))
+            #job.set_attribute("model_id", self.id)
+            # TODO status below should be applied to job?
             job.save()
 
             factory.status(self, STATUS_COMPLETED)
