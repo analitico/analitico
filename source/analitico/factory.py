@@ -1,5 +1,4 @@
 import tempfile
-import shutil
 import os
 import os.path
 import requests
@@ -10,6 +9,7 @@ import hashlib
 import inspect
 import urllib.parse
 import io
+import pandas as pd
 
 from .mixin import AttributeMixin
 from .exceptions import AnaliticoException
@@ -372,3 +372,17 @@ class Factory(AttributeMixin):
     def __exit__(self, exception_type, exception_value, traceback):
         """ Leave any temporary files upon exiting """
         pass
+
+    ##
+    ## SDK utility methods
+    ##
+
+    def get_dataframe(self, item_id: str) -> pd.DataFrame:
+        """ 
+        Returns the processed data from the given dataset in Analitico as a pandas DataFrame object. 
+        """
+        df = self.run_plugin(settings = {
+            "name": "analitico.plugin.DatasetSourcePlugin",
+            "dataset_id": item_id
+        })
+        return df
