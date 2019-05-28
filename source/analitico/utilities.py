@@ -14,6 +14,9 @@ import string
 import dateutil
 import re
 import subprocess
+import traceback
+
+from collections import OrderedDict
 
 # use simplejson instead of standard built in library
 # mostly because it has a parameter which supports replacing nan with nulls
@@ -34,6 +37,87 @@ from analitico.schema import analitico_to_pandas_type, apply_schema, NA_VALUES
 
 # default logger for analitico's libraries
 logger = logging.getLogger("analitico")
+
+
+# RESTful API Design Tips from Experience
+# https://medium.com/studioarmix/learn-restful-api-design-ideals-c5ec915a430f
+
+# Trying to follow this spec for naming, etc
+# https://jsonapi.org/format/#document-top-level
+
+# Following this format for errors:
+# https://jsonapi.org/format/#errors
+
+
+##
+## Exceptions
+##
+
+
+def first_or_list(items):
+    try:
+        if items and len(items) == 1:
+            return items[0]
+    except Exception:
+        pass  # validation errors pass a dictionary so we just pass it through
+    return items
+
+
+def exception_to_dict(exception: Exception, add_context=True, add_formatted=True, add_traceback=True) -> dict:
+    """ Returns a dictionary with detailed information on the given exception and its inner (chained) exceptions """
+
+    # trying to adhere as much as possible to json:api specs here
+    # https://jsonapi.org/format/#errors
+    d = OrderedDict()
+    d["status"] = None,  # want this to go first
+    d["code"] = type(exception).__name__.lower(),
+    d["title"] = str(exception.args[0]) if len(exception.args) > 0 else str(exception),
+    d["meta"] = {}
+
+    if isinstance(exception, AnaliticoException):
+        d["status"] = str(exception.status_code)
+        d["code"] = exception.code
+        d["title"] = exception.message
+        if exception.extra and len(exception.extra) > 0:
+            d["meta"]["extra"] = json_sanitize_dict(exception.extra)
+
+    if add_context and exception.__context__:
+        d["meta"]["context"] = exception_to_dict(
+            exception.__context__, add_context=True, add_formatted=False, add_traceback=False
+        )
+
+    # information on exception currently being handled
+    _, _, exc_traceback = sys.exc_info()
+
+    if add_formatted:
+        # printout of error condition
+        d["meta"]["formatted"] = traceback.format_exception(type(exception), exception, exc_traceback)
+
+    if add_traceback:
+        # extract frame summaries from traceback and convert them
+        # to list of dictionaries with file and line number information
+        d["meta"]["traceback"] = []
+        for fs in traceback.extract_tb(exc_traceback, 20):
+            d["meta"]["traceback"].append(
+                OrderedDict(
+                    {
+                        "summary": "File '{}', line {}, in {}".format(fs.filename, fs.lineno, fs.name),
+                        "filename": fs.filename,
+                        "line": fs.line,
+                        "lineno": fs.lineno,
+                        "name": fs.name,
+                    }
+                )
+            )
+
+    if d["status"] is None:
+        d.pop("status")
+    if len(d["meta"]) < 1:
+        d.pop("meta")
+    return d
+
+
+
 
 ##
 ## Crypto

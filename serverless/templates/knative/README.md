@@ -4,6 +4,14 @@ specified, it will use "World" as the TARGET.
 
 ## Commands 
 
+Build this image:
+`docker build  . -t analitico/serverless`
+
+Test image locally on port 8080:
+`docker run -e PORT=8080 -p 8080:8080 eu.gcr.io/analitico-api/nb-test-001`
+
+
+
 gcloud config set run/region us-central1
 gcloud builds submit --tag gcr.io/analitico-api/cloudrun02
 gcloud beta run deploy cloudrun02 --image gcr.io/analitico-api/cloudrun02 --set-env-vars=TARGET=Pippo

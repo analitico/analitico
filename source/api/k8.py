@@ -19,11 +19,13 @@ from api.models.notebook import nb_extract_serverless
 
 K8_DEFAULT_NAMESPACE = "cloud"  # service.cloud.analitico.ai
 K8_DEFAULT_CONCURRENCY = 20  # concurrent connection per docker
-K8_DEFAULT_CLOUDRUN_REGION = "us-central1"  # only region supported by beta
 
 # directory where the template used to dockerize notebooks is stored
-K8_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "../../serverless/templates/knative")
+K8_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../serverless/templates/knative"))
 assert os.path.isdir(K8_TEMPLATE_DIR)
+
+SOURCE_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../source"))
+assert os.path.isdir(SOURCE_TEMPLATE_DIR)
 
 
 def k8_normalize_name(name: str):
@@ -44,6 +46,11 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
 
         # copy items from the template used to dockerize
         shutil.copytree(K8_TEMPLATE_DIR, docker_dst)
+
+        # copy analitico SDK and s24 helper methods
+        # TODO /analitico and /s24 need to be built into standalone libraries
+        shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(docker_dst, "analitico"))
+        shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(docker_dst, "s24"))
 
         # copy artifacts from the model
         factory.restore_artifacts(item, artifacts_path=docker_dst)
@@ -74,7 +81,7 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
 
         # push docker image to registry
         docker_push_args = ["docker", "push", image_name]
-        subprocess_run(docker_push_args, job)
+        subprocess_run(docker_push_args, job, timeout=600) # 10 minutes to upload image
 
     # retrieve docker information, output is json, parse and add basic info to docker dict
     docker_inspect_args = ["docker", "inspect", image_name]
