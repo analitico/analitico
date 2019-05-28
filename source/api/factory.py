@@ -139,7 +139,7 @@ class ServerFactory(Factory):
                     # upload asset and extras, item will take care of saving to database
                     item.upload_asset_stream(f, "data", path, path_size, None, path, extras)
 
-    def restore_artifacts(self, item, artifacts_path=None):
+    def restore_artifacts(self, item, artifacts_path=None, symlink=True):
         """ Restores artifacts stored by item to the artifacts directory """
         assets = item.get_attribute("data")
         if not assets:
@@ -150,7 +150,12 @@ class ServerFactory(Factory):
         for asset in assets:
             cache_path = self.get_cache_asset(item, "data", asset["id"])
             artifact_path = os.path.join(artifacts_path, asset["id"])
-            os.symlink(cache_path, artifact_path)
+            if symlink:
+                # when running locally we can symlink files and save time
+                os.symlink(cache_path, artifact_path)
+            else:
+                # when building docker images we need to really copy the files
+                shutil.copyfile(cache_path, artifact_path)
 
     ##
     ## Log methods

@@ -52,8 +52,8 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(docker_dst, "analitico"))
         shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(docker_dst, "s24"))
 
-        # copy artifacts from the model
-        factory.restore_artifacts(item, artifacts_path=docker_dst)
+        # copy artifacts from the model (make actual copies, not symlinks)
+        factory.restore_artifacts(item, artifacts_path=docker_dst, symlink=False)
 
         # extract code from notebook
         notebook_name = job.get_attribute("notebook_name", None) if job else None
