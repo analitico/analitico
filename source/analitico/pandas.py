@@ -1,30 +1,13 @@
-import os
-import time
 import pandas as pd
 import json
-import logging
-import socket
-import platform
-import multiprocessing
-import psutil
-import collections
-import subprocess
-import sys
-import random
-import string
 import dateutil
 from io import StringIO
 
-from datetime import datetime
-
-try:
-    import distro
-    import GPUtil
-except Exception:
-    pass
-
+import analitico
 import analitico.schema
 import analitico.utilities
+
+from analitico import AnaliticoException, logger
 from analitico.schema import analitico_to_pandas_type, NA_VALUES
 
 ##
@@ -50,11 +33,98 @@ def pd_date_parser(x):
     return date
 
 
-def pd_cast_datetime(df, column):
+def pd_cast_datetime(df: pd.DataFrame, column: str) -> pd.DataFrame:
     """ Casts a string column to a date column, assumes format is recognizable """
     df[column] = pd.to_datetime(df[column], infer_datetime_format=True, errors="coerce")
+    return df
 
 
+def move_column(df: pd.DataFrame, column: str, index=0) -> pd.DataFrame:
+    """ Moves the column with the given name to the given index, returns dataframe """
+    columns = list(df.columns)
+    if column not in columns:
+        logger.warning(f"move_column - column {column} is not present in df.columns: {df.columns}")
+        return df
+    columns.insert(index, columns.pop(columns.index(column)))
+    return df[columns]
+
+EXPAND_ALL_COLUMNS = ["dayofweek", "year", "month", "day", "hour", "minute"]
+
+def augment_dates(df: pd.DataFrame, column: str = None, expand=None, drop=True) -> pd.DataFrame:
+    """
+    Augment the specific column contaning dates into a number of separate columns with the day of the week,
+    year, month, day, hour and minute. If a column name is not specified, the method will expand all columns
+    of type datetime. If a column is specified but it's not of type datetime, the column will be converted to
+    datetime. The expanded column is the dropped from the dataframe unless otherwise specified.
+    """
+    try:
+        if not isinstance(df, pd.DataFrame):
+            raise AnaliticoException("augment_dates - requires a pd.DataFrame")
+
+        # if a specific column was not specified we scan all columns and
+        # apply date augmentation to all columns of type datetime
+        if not column:
+            # TODO figure out why analitico.schema.PD_TYPE_DATETIME doesn't work
+            for col1 in df.columns.copy():
+                if df[col1].dtype == "datetime64[ns]":
+                    df = augment_dates(df, col1, expand, drop)
+            return df
+
+        if column not in df.columns:
+            raise AnaliticoException(f"augment_dates - cannot find column {column} in df.columns: {df.columns}")
+
+        if df[column].dtype != analitico.schema.PD_TYPE_DATETIME:
+            logger.info(
+                f"augment_dates - changing column {column} from type {df[column].dtype} to {analitico.schema.PD_TYPE_DATETIME}"
+            )
+            df = pd_cast_datetime(df, column)
+
+        # TODO warn of missing date fields, log number of missing records
+
+        if not expand:
+            expand = EXPAND_ALL_COLUMNS
+
+        loc = df.columns.get_loc(column) + 1
+        dates = pd.DatetimeIndex(df[column])
+        if "dayofweek" in expand:
+            df[column + ".dayofweek"] = dates.dayofweek.astype("category")
+            df = move_column(df, column + ".dayofweek", loc)
+            loc += 1
+        if "year" in expand:
+            df[column + ".year"] = dates.year.astype("category")
+            df = move_column(df, column + ".year", loc)
+            loc += 1
+        if "month" in expand:
+            df[column + ".month"] = dates.month.astype("category")
+            df = move_column(df, column + ".month", loc)
+            loc += 1
+        if "day" in expand:
+            df[column + ".day"] = dates.day.astype("category")
+            df = move_column(df, column + ".day", loc)
+            loc += 1
+        if "hour" in expand:
+            df[column + ".hour"] = dates.hour.astype("category")
+            df = move_column(df, column + ".hour", loc)
+            loc += 1
+        if "minute" in expand:
+            df[column + ".minute"] = dates.minute.astype("category", copy=False)
+            df = move_column(df, column + ".minute", loc)
+            loc += 1
+
+        if drop:
+            df = df.drop([column], axis=1, inplace=False)
+
+    except AnaliticoException:
+        raise
+    except Exception as exc:
+        raise AnaliticoException(
+            f"augment_dates - an error occoured while augmenting dates in column {column}"
+        ) from exc
+
+    return df
+
+
+# DEPRECATED
 def pd_augment_date(df, column):
     """ Augments a datetime column into year, month, day, dayofweek, hour, minute """
     if column not in df.columns:
@@ -122,7 +192,7 @@ def pd_to_csv(df: pd.DataFrame, filename, schema=False, samples=0):
         schema = analitico.schema.generate_schema(df)
         schemaname = filename + ".info"
         analitico.utilities.save_json({"schema": schema}, schemaname)
-    if samples > 0 and len(df) > 0:
+    if samples > 0 and df.index:
         samples = pd_sample(df, samples)
         samplesname = filename[:-4] + ".samples.csv"
         samples.to_csv(samplesname, encoding="utf-8")
