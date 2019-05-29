@@ -81,7 +81,7 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
 
         # push docker image to registry
         docker_push_args = ["docker", "push", image_name]
-        subprocess_run(docker_push_args, job, timeout=600) # 10 minutes to upload image
+        subprocess_run(docker_push_args, job, timeout=600)  # 10 minutes to upload image
 
     # retrieve docker information, output is json, parse and add basic info to docker dict
     docker_inspect_args = ["docker", "inspect", image_name]

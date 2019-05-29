@@ -381,8 +381,5 @@ class Factory(AttributeMixin):
         """ 
         Returns the processed data from the given dataset in Analitico as a pandas DataFrame object. 
         """
-        df = self.run_plugin(settings = {
-            "name": "analitico.plugin.DatasetSourcePlugin",
-            "dataset_id": item_id
-        })
+        df = self.run_plugin(settings={"name": "analitico.plugin.DatasetSourcePlugin", "dataset_id": item_id})
         return df
