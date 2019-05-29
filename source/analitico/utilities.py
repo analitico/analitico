@@ -69,9 +69,9 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
     # trying to adhere as much as possible to json:api specs here
     # https://jsonapi.org/format/#errors
     d = OrderedDict()
-    d["status"] = None,  # want this to go first
-    d["code"] = type(exception).__name__.lower(),
-    d["title"] = str(exception.args[0]) if len(exception.args) > 0 else str(exception),
+    d["status"] = None  # want this to go first
+    d["code"] = type(exception).__name__.lower()
+    d["title"] = str(exception.args[0]) if len(exception.args) > 0 else str(exception)
     d["meta"] = {}
 
     if isinstance(exception, AnaliticoException):
@@ -115,8 +115,6 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
     if len(d["meta"]) < 1:
         d.pop("meta")
     return d
-
-
 
 
 ##
