@@ -249,3 +249,10 @@ class DockerTests(AnaliticoApiTestCase):
             self.assertEqual(data[5]["2Nan"], None)
             self.assertEqual(data[5]["3None"], None)
             self.assertEqual(data[5]["4Inf"], None)
+
+    @tag("slow", "docker")
+    def test_docker_custom_library(self):
+        """ Notebook that installs a custom library we don't provide and uses it """
+        with self.DockerNotebookRunner(self, "notebook-docker-custom-library.ipynb") as runner:
+            response, json = runner.get_container_response_json("/")
+            self.assertEqual(json["data"], "Hello fuzz: 85")
