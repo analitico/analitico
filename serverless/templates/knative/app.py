@@ -3,18 +3,15 @@ import os
 import json 
 import logging
 
-
-
 import notebook
 import analitico.utilities
+from analitico import AnaliticoException, logger
 
 from flask import Flask
 from flask import request, Response
 
-
 app = Flask(__name__)
 app.logger.info("Started")
-
 
 @app.route('/', methods = ['GET', 'POST'])
 def handle_main():
@@ -26,13 +23,24 @@ def handle_main():
         if request.is_json:
             event = request.get_json()
             app.logger.info(event)
-        response = notebook.handle(event=event, context=request)
+        try:
+            # method declared as handle(event, context)
+            response = notebook.handle(event=event, context=request)
+        except AttributeError:
+            raise AnaliticoException("The notebook should declare a handle(event, context) method that handles serverless requests.", status_code=405)
+        except TypeError:
+            try:
+                # method declared as handle(event)
+                response = notebook.handle(event=event)
+            except TypeError:
+                raise AnaliticoException("The notebook should declare a handle(event, context) method that handles serverless requests.", status_code=405)
 
     except Exception as exception:
-        response = analitico.utilities.exception_to_dict(exception)
+        response = { "error": analitico.utilities.exception_to_dict(exception) }
+        status = int(response["error"].get("status", 500))
         response_json = json.dumps(response)
         app.logger.error(response_json)
-        return Response(response_json, status=int(response.get("status", 500)), mimetype='application/json')
+        return Response(response_json, status=status, mimetype='application/json')
 
     return json.dumps(response["body"] if "body" in response else response)
 
