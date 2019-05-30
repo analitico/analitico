@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 
@@ -7,10 +6,7 @@ calls = 0
 
 
 def handle2(event, context):
-    response = {
-        "statusCode": 200,
-        "body": event
-    }
+    response = {"statusCode": 200, "body": event}
     return response
 
 
@@ -18,11 +14,7 @@ def handle2(event, context):
 def handle(event, **kwargs):
     global calls
     calls += 1
-    event["calls"] = calls # add number of calls
-    
-    response = {
-        "statusCode": 200,
-        "body": event,
-        "zio": "billy"
-    }
+    event["calls"] = calls  # add number of calls
+
+    response = {"statusCode": 200, "body": event, "zio": "billy"}
     return response
