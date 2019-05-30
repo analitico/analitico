@@ -12,3 +12,5 @@ from .test_api_plugin import PluginTests
 from .test_api_log import LogTests
 from .test_api_filters import FiltersTests
 from .test_api_notebooks import NotebooksTests
+from .test_api_docker import DockerTests
+from .test_api_k8 import K8Tests

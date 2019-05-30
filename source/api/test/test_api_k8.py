@@ -3,6 +3,7 @@ import os.path
 import json
 import time
 
+from django.test import tag
 from django.urls import reverse
 from rest_framework import status
 
@@ -40,6 +41,7 @@ class K8Tests(AnaliticoApiTestCase):
     target_id_normalized = "nb-test-001"
 
     # TODO cannot run this in CI/CD pipeline, should be added to live testing?
+    @tag("slow", "docker", "k8s")
     def OFFtest_k8_build_and_deploy_docker(self):
         """ Test building a docker from a notebook then deploying it """
 
@@ -87,6 +89,7 @@ class K8Tests(AnaliticoApiTestCase):
     ##
 
     # we need to setup the credentials for kubectl in gitlab CI/CD
+    @tag("k8s")
     def test_k8s_get_nodes(self):
         url = reverse("api:k8-nodes")
 
