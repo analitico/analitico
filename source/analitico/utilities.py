@@ -69,7 +69,7 @@ def exception_to_dict(exception: Exception, add_context=True, add_formatted=True
     # trying to adhere as much as possible to json:api specs here
     # https://jsonapi.org/format/#errors
     d = OrderedDict()
-    d["status"] = None  # want this to go first
+    d["status"] = "500"  # want this to go first
     d["code"] = type(exception).__name__.lower()
     d["title"] = str(exception.args[0]) if len(exception.args) > 0 else str(exception)
     d["meta"] = {}
