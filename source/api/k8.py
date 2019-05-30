@@ -32,7 +32,7 @@ def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
 
 
-def k8_build(item: ItemMixin, job: Job = None) -> dict:
+def k8_build(item: ItemMixin, job: Job = None, push=True) -> dict:
     """
     Takes an item, extracts its notebook then extracts python code marked for deployment
     from the notebook. Then takes a template directory and applies customizations to it.
@@ -79,17 +79,22 @@ def k8_build(item: ItemMixin, job: Job = None) -> dict:
         docker_build_args = ["docker", "build", "-t", image_name, docker_dst]
         subprocess_run(docker_build_args, job, cwd=docker_dst)
 
-        # push docker image to registry
-        docker_push_args = ["docker", "push", image_name]
-        subprocess_run(docker_push_args, job, timeout=600)  # 10 minutes to upload image
+        if push:
+            # push docker image to registry
+            docker_push_args = ["docker", "push", image_name]
+            subprocess_run(docker_push_args, job, timeout=600)  # 10 minutes to upload image
 
     # retrieve docker information, output is json, parse and add basic info to docker dict
     docker_inspect_args = ["docker", "inspect", image_name]
     docker_inspect, _ = subprocess_run(docker_inspect_args, job)
     docker_inspect = docker_inspect[0]
 
-    image = docker_inspect["RepoDigests"][0]
-    image_id = image[image.find("sha256:") :]
+    if push:
+        image = docker_inspect["RepoDigests"][0]
+        image_id = image[image.find("sha256:") :]
+    else:
+        image = image_name + ":latest"
+        image_id = "latest"
 
     # save docker information inside item and job
     docker = collections.OrderedDict()
