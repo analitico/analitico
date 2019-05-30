@@ -4,13 +4,36 @@ import pandas as pd
 import logging
 from io import StringIO
 
-import notebook
 import analitico.utilities
 from analitico import AnaliticoException, logger
 
 import flask
 from flask import Flask
 from flask import request, Response
+
+try:
+    # This module is dinamically generated from the customer's
+    # code and may have problems, fail to compile, fail to import,
+    # use libraries that crash and or a thousand other issues
+    # we try our best to import and install a custom handler if not
+    import notebook
+
+except Exception as exc:
+    message = f"The notebook's code cannot be imported: {exc}"
+
+    class NotebookReplacement:
+        """ Replacement method returns a detailed error message whenever it's called """
+
+        def __init__(self, exc):
+            self.exception = exc
+
+        def handle(self, **kwargs):
+            raise AnaliticoException(message) from self.exception
+
+    global notebook
+    notebook = NotebookReplacement(exc)
+    logger.error(message)
+
 
 # pylint: disable=no-member
 # pylint: disable=no-value-for-parameter
