@@ -1,6 +1,5 @@
-# Use the official Python image.
-# https://hub.docker.com/_/python
-FROM python:3.7
+# Use analitico's baseline image with base requirements.txt installed
+FROM eu.gcr.io/analitico-api/knative-baseline
 
 # Copy local code to the container image.
 ENV APP_HOME /app
@@ -22,4 +21,5 @@ RUN ./notebook.sh
 # webserver, with one worker process and 8 threads.
 # For environments with multiple CPU cores, increase the number of workers
 # to be equal to the cores available.
+CMD echo Listening on port $PORT
 CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app
