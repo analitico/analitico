@@ -35,7 +35,7 @@ gcloud -q auth configure-docker
 export KUBECONFIG="/home/www/analitico-ci/k8/admin.conf"
 
 echo "Running python tests"
-./manage.py test
+./manage.py test --exclude-tag=slow --exclude-tag=docker
 
 # make tmp and subfolders public
 chmod -R 777 /tmp
