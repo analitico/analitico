@@ -65,7 +65,7 @@ def k8_build(item: ItemMixin, job: Job = None, push=True) -> dict:
 
         # extract source code and scripting from notebook
         source, script = nb_extract_serverless(notebook)
-        logger.info(f"source:\n{source}\nscripts:{script}")
+        logger.info(f"scripts:{script}\nsource:\n{source}")
 
         # overwrite template files
         save_json(notebook, os.path.join(docker_dst, "notebook.ipynb"), indent=2)
