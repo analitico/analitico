@@ -10,8 +10,6 @@ from django.test import tag
 from django.urls import reverse
 from rest_framework import status
 
-# conflicts with django's dynamically generated model.objects
-
 # relax pylint on testing code
 # pylint: disable=no-member
 # pylint: disable=unused-variable
@@ -30,10 +28,6 @@ from api.models.log import *
 from api.pagination import *
 
 from .utils import AnaliticoApiTestCase
-
-import logging
-
-logger = logging.getLogger("analitico")
 
 # port that we use for the HTTP server in our
 DOCKER_PORT = 8001
@@ -256,3 +250,12 @@ class DockerTests(AnaliticoApiTestCase):
         with self.DockerNotebookRunner(self, "notebook-docker-custom-library.ipynb") as runner:
             response, json = runner.get_container_response_json("/")
             self.assertEqual(json["data"], "Hello fuzz: 85")
+
+    @tag("slow", "docker")
+    def test_docker_custom_library_missing_install(self):
+        """ Notebook that uses a library that it forgot to install """
+        with self.DockerNotebookRunner(self, "notebook-docker-custom-library-missing-install.ipynb") as runner:
+            response, json = runner.get_container_response_json("/", status_code=500)
+            self.assertEqual(
+                json["error"]["title"], "The notebook's code cannot be imported: No module named 'fuzzywuzzy'"
+            )
