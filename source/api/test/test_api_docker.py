@@ -78,9 +78,12 @@ class DockerTests(AnaliticoApiTestCase):
             url = self.get_container_url(relative_url)
             return requests.post(url, json=post) if post else requests.get(url)
 
-        def get_container_response_json(self, relative_url, post=None):
+        def get_container_response_json(self, relative_url, post=None, status_code=200):
             response = self.get_container_response(relative_url, post)
-            return response, response.json()
+            self.tests.assertEqual(response.status_code, status_code)
+            # we don't use response.json() because we want to retain item's order
+            response_json = json.loads(response.text, object_pairs_hook=OrderedDict)
+            return response, response_json
 
         def __enter__(self):
             self.build_docker()
@@ -104,35 +107,49 @@ class DockerTests(AnaliticoApiTestCase):
             if self.docker_container:
                 self.docker_container.kill()
                 self.docker_container = None
-    
+
     @tag("slow", "docker")
     def test_docker_hello_world(self):
         """ Notebook that returns a string """
         with self.DockerNotebookRunner(self, "notebook-docker-hello-world.ipynb") as runner:
             # test docker build attributes
+            image = f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}:latest"
+            image_name = f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}"
             self.assertEquals(runner.docker_build["type"], "analitico/docker")
-            self.assertEquals(
-                runner.docker_build["image_name"], f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}"
-            )  # normalized
-            self.assertEquals(
-                f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}:latest", runner.docker_build["image"]
-            )
+            self.assertEquals(runner.docker_build["image_name"], image_name)  # normalized
+            self.assertEquals(runner.docker_build["image"], image)
 
             response, json = runner.get_container_response_json("/")
-            self.assertEqual(json, "Hello Analitico")
+            self.assertEqual(json["data"], "Hello Analitico")
+
+    @tag("slow", "docker")
+    def test_docker_hello_world_custom_json(self):
+        """ Notebook that returns a custom json payload """
+        with self.DockerNotebookRunner(self, "notebook-docker-hello-world-custom-json.ipynb") as runner:
+            response, json = runner.get_container_response_json("/")
+            self.assertEqual(json["custom"], "Hello custom json")
+
+    @tag("slow", "docker")
+    def test_docker_hello_world_custom_json_and_status(self):
+        """ Notebook that returns a custom json payload, status code, utf-8 encoding """
+        with self.DockerNotebookRunner(self, "notebook-docker-hello-world-custom-json-and-status.ipynb") as runner:
+            response, json = runner.get_container_response_json("/", status_code=201)
+
+            # response string needs to be UTF-8 encoded for Birgün
+            self.assertEqual(json["custom"], "Hello Birgün")
 
     @tag("slow", "docker")
     def test_docker_handle_no_kwargs(self):
         """ Notebook that returns a string, simpler signature of handle method """
         with self.DockerNotebookRunner(self, "notebook-docker-handle-no-kwargs.ipynb") as runner:
             response, json = runner.get_container_response_json("/")
-            self.assertEqual(json, "Hello Analitico, no kwargs")
+            self.assertEqual(json["data"], "Hello Analitico, no kwargs")
 
     @tag("slow", "docker")
     def test_docker_no_handle_method(self):
         """ Notebook that does not declare a handle(event, context) method """
         with self.DockerNotebookRunner(self, "notebook-docker-no-handle-method.ipynb") as runner:
-            response, json = runner.get_container_response_json("/")
+            response, json = runner.get_container_response_json("/", status_code=405)
 
             self.assertEqual(response.status_code, 405)
             self.assertIn("error", json)
@@ -149,7 +166,7 @@ class DockerTests(AnaliticoApiTestCase):
     def test_docker_throw_exception(self):
         """ Notebook that throws an Exception """
         with self.DockerNotebookRunner(self, "notebook-docker-throw-exception.ipynb") as runner:
-            response, json = runner.get_container_response_json("/")
+            response, json = runner.get_container_response_json("/", status_code=500)
 
             self.assertEqual(response.status_code, 500)
             self.assertIn("error", json)
@@ -165,7 +182,7 @@ class DockerTests(AnaliticoApiTestCase):
     def test_docker_throw_analitico_exception(self):
         """ Notebook that throws an AnaliticoException """
         with self.DockerNotebookRunner(self, "notebook-docker-throw-analitico-exception.ipynb") as runner:
-            response, json = runner.get_container_response_json("/")
+            response, json = runner.get_container_response_json("/", status_code=402)
 
             self.assertEqual(response.status_code, 402)
             self.assertIn("error", json)
@@ -184,16 +201,51 @@ class DockerTests(AnaliticoApiTestCase):
 
             # do a get an pass nothing to it
             response, json = runner.get_container_response_json("/")
-            self.assertEqual(json["call"], 1)
+            data = json["data"]
+            self.assertEqual(data["call"], 1)
 
             # do a post with a simple dictionary that will be passed as the "event"
             response, json = runner.get_container_response_json("/", post={"key1": "value1"})
-            self.assertEqual(response.encoding, "utf-8")
-            self.assertEqual(json["call"], 2)
-            self.assertEqual(json["key1"], "value1")
+            data = json["data"]
+            self.assertEqual(data["call"], 2)
+            self.assertEqual(data["key1"], "value1")
 
             # do another POST with different data
             response, json = runner.get_container_response_json("/", post={"key2": "value2"})
-            self.assertEqual(response.encoding, "utf-8")
-            self.assertEqual(json["call"], 3)
-            self.assertEqual(json["key2"], "value2")
+            data = json["data"]
+            self.assertEqual(data["call"], 3)
+            self.assertEqual(data["key2"], "value2")
+
+    @tag("slow", "docker")
+    def test_docker_echo_pandas_dataframe(self):
+        """ Notebook that returns a pandas dataframe """
+        with self.DockerNotebookRunner(self, "notebook-docker-return-pandas-dataframe.ipynb") as runner:
+            # handle should return a pandas dataframe converted to json
+            response, json = runner.get_container_response_json("/")
+
+            self.assertIn("data", json)
+            data = json["data"]
+
+            self.assertEqual(len(data), 15)  # 15 rows
+            self.assertEqual(len(data[0]), 5)  # 5 columns
+
+            # check presence of columns
+            self.assertIn("0Seq", data[0])
+            self.assertIn("1Rand", data[0])
+            self.assertIn("2Nan", data[0])
+            self.assertIn("3None", data[0])
+            self.assertIn("4Inf", data[0])
+
+            # check order of keys (must maintain original order)
+            keys = list(data[5].keys())
+            self.assertEqual(keys.index("0Seq"), 0)
+            self.assertEqual(keys.index("1Rand"), 1)
+            self.assertEqual(keys.index("2Nan"), 2)
+            self.assertEqual(keys.index("3None"), 3)
+            self.assertEqual(keys.index("4Inf"), 4)
+
+            # check values
+            self.assertEqual(data[5]["0Seq"], 5)
+            self.assertEqual(data[5]["2Nan"], None)
+            self.assertEqual(data[5]["3None"], None)
+            self.assertEqual(data[5]["4Inf"], None)

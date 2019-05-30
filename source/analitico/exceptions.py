@@ -2,6 +2,7 @@ import sys
 
 from analitico import logger
 
+
 class AnaliticoException(Exception):
     """ Base exception used in the project that can carry extra information with it in the form of a dictionary """
 

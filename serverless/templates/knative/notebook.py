@@ -1,4 +1,3 @@
-
 print("pippo")
 
 import analitico
@@ -12,11 +11,7 @@ calls = 0
 def handle(event, context, **kwargs):
     global calls
     calls += 1
-    event["calls"] = calls # add number of calls
+    event["calls"] = calls  # add number of calls
     raise analitico.AnaliticoException("This is an analitico exception", status_code=400)
-    response = {
-        "statusCode": 200,
-        "body": event,
-        "zio": "billy"
-    }
+    response = {"statusCode": 200, "body": event, "zio": "billy"}
     return response

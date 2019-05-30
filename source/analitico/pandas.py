@@ -48,7 +48,9 @@ def move_column(df: pd.DataFrame, column: str, index=0) -> pd.DataFrame:
     columns.insert(index, columns.pop(columns.index(column)))
     return df[columns]
 
+
 EXPAND_ALL_COLUMNS = ["dayofweek", "year", "month", "day", "hour", "minute"]
+
 
 def augment_dates(df: pd.DataFrame, column: str = None, expand=None, drop=True) -> pd.DataFrame:
     """
