@@ -1,18 +1,17 @@
-import os
 import time
-import logging
 import datetime
 import socket
 
 from django.db import transaction
-from analitico.constants import WORKER_TYPE, WORKER_PREFIX
+from django.core.management.base import BaseCommand
+
+from analitico import logger
+from analitico.constants import WORKER_PREFIX
 from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
+from analitico.utilities import time_ms, get_runtime
 
 from api.models import Job
-from analitico.utilities import time_ms, get_runtime
-from api.factory import ServerFactory, factory
-
-from django.core.management.base import BaseCommand, CommandError
+from api.factory import factory
 
 # Writing custom django-admin commands
 # https://docs.djangoproject.com/en/2.1/howto/custom-management-commands/
@@ -43,26 +42,23 @@ class Command(BaseCommand):
     def __init__(self, *args, **kwargs):
         self.id = generate_worker_id()
 
-    def info(self, *args, **kwargs):
-        factory.logger.info(*args, item=self, runtime=get_runtime(), **kwargs)
-
-    def warning(self, *args, **kwargs):
-        factory.logger.warning(*args, item=self, runtime=get_runtime(), **kwargs)
-
     def run_job(self, job) -> Job:
         """ Run job with given id """
         try:
-            self.info("worker: %s, job: %s, action: %s", job.status, job.id, job.action, job=job)
+            logger.info(f"Worker processing job: {job.id}, item: {job.item_id}, action: {job.action}")
             started_ms = time_ms()
 
             job.run(request=None, action=job.action)
+            job.set_status(STATUS_COMPLETED)
 
-            message = "worker: %s, job: %s, action: %s, elapsed: %dms"
-            self.info(message, job.status, job.id, job.action, time_ms(started_ms), job=job)
+            elapsed_ms = time_ms(started_ms)
+            logger.info(f"Worker completed job: {job.id}, item: {job.item_id}, action: {job.action}, elapsed: {elapsed_ms}ms")
             return job
-        except Exception as e:
-            self.warning("worker: %s, job: %s, action: %s", job.status, job.id, job.action, job=job, exception=e)
-            raise e
+
+        except Exception as exc:
+            logger.error(f"Worker failed job: {job.id}, item: {job.item_id}, action: {job.action}, exception: {exc}")
+            job.set_status(STATUS_FAILED)
+            raise exc
 
     def get_pending_job(self, **options):
         # TODO use tags to further filter jobs
@@ -93,19 +89,20 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """ Called when command is run will keep processing jobs """
-        self.info("worker: started, id: %s", self.id)
+        logger.info(f"Worker started, id: {self.id}")
 
         # if given a list of jobs to perform, run them then quit
-        if len(options["job_id"]) > 0:
+        if options["job_id"]:
             for job_id in options["job_id"]:
                 try:
                     job = factory.get_item(job_id)
-                    job.status = STATUS_RUNNING
-                    job.save()
+                    job.set_status(STATUS_RUNNING)
                     self.run_job(job)
-                except:
+                except Exception as exc:
+                    logger.error(f"Worker can't query jobs: {exc}")
                     return WORKER_ERROR
-            self.info("worker: quitting, completed command line jobs, bye")
+
+            logger.info("Worker quitting, completed command line jobs")
             return WORKER_SUCCESS
 
         max_jobs = options["max_jobs"]
@@ -124,22 +121,22 @@ class Command(BaseCommand):
                 else:
                     if int(time_ms(idle_ms) / 1000) > 120:
                         uptime_sec = int(time_ms(started_ms) / 1000)
-                        self.info("worker: idle, uptime: %ds", uptime_sec)
+                        logger.info(f"Worker idle, uptime: {uptime_sec}s")
                         idle_ms = time_ms()
                     time.sleep(POLLING_DELAY_SHORT)
-            except:
+            except Exception:
                 # sleep a little before returning to avoid getting
                 # stuck in really quick loops of failure-relaunch, repeat-rinse
                 time.sleep(POLLING_DELAY_LONG)
                 return WORKER_ERROR
 
-            if max_jobs > 0 and processed_jobs >= max_jobs:
-                self.info("worker: quitting, max-jobs: %d completed, bye", processed_jobs)
+            if (max_jobs > 0) and (processed_jobs >= max_jobs):
+                logger.info(f"Worker quitting, max-jobs: {processed_jobs} completed")
                 return WORKER_SUCCESS
 
-            if max_secs > 0 and int(time_ms(started_ms) / 1000) >= max_secs:
-                self.info("worker: quitting, max-secs: %ds expired, bye", max_secs)
+            if (max_secs > 0) and (int(time_ms(started_ms) / 1000) >= max_secs):
+                logger.info(f"Worker quitting, max-secs: {max_secs}s expired")
                 return WORKER_SUCCESS
 
-        self.info("worker: quitting, stop requested, bye")
+        logger.info("Worker quitting, stop requested, bye")
         return WORKER_SUCCESS

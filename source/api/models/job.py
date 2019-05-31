@@ -106,7 +106,7 @@ class Job(ItemMixin, models.Model):
         """ Changes a job status and tracks changes in the log """
         if status != self.status:
             assert status in STATUS_ALL, f"job.set_status({status}) is not a valid status"
-            logger.info(f"Job {self.id} changed status from {self.status} to {status}")
+            logger.info(f"Job: {self.id} changing status from: {self.status}, to: {status}")
             self.status = status
             if save:
                 self.save()
