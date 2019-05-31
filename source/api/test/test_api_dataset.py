@@ -6,6 +6,7 @@ import pandas as pd
 import tempfile
 import random
 import string
+import pytest
 
 from django.conf import settings
 from django.test import TestCase
@@ -35,7 +36,7 @@ from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
 # pylint: disable=no-member
 # pylint: disable=unused-variable
 
-
+@pytest.mark.django_db
 class DatasetTests(AnaliticoApiTestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
 

@@ -1,5 +1,5 @@
 import unittest
-
+import pytest
 import pandas as pd
 
 from analitico.schema import generate_schema, apply_schema
@@ -8,7 +8,7 @@ from .test_mixin import TestMixin
 
 # pylint: disable=no-member
 
-
+@pytest.mark.django_db
 class DatasetTests(unittest.TestCase, TestMixin):
     """ Unit testing of Dataset functionality, reading, converting, transforms, saving, etc """
 

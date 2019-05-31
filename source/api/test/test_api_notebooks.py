@@ -1,6 +1,7 @@
 import os
 import os.path
 import json
+import pytest
 
 from django.urls import reverse
 from rest_framework import status
@@ -25,6 +26,7 @@ from .utils import AnaliticoApiTestCase
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 
 
+@pytest.mark.django_db
 class NotebooksTests(AnaliticoApiTestCase):
     """ Test notebooks operations via APIs """
 

@@ -1,6 +1,7 @@
 import unittest
 import tempfile
 import numpy as np
+import pytest
 
 import pandas as pd
 import numpy as np
@@ -8,7 +9,7 @@ from datetime import datetime, timedelta
 
 from analitico.pandas import *
 
-
+@pytest.mark.django_db
 class PandasTests(unittest.TestCase):
     def get_random_dates_df(self):
         date_today = datetime.now()

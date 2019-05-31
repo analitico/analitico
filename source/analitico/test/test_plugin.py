@@ -1,7 +1,7 @@
 import unittest
 import os
 import os.path
-
+import pytest
 import pandas as pd
 
 from analitico.plugin import PluginError, PLUGIN_TYPE
@@ -15,7 +15,7 @@ from .test_mixin import TestMixin
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets"
 
-
+@pytest.mark.django_db
 class PluginTests(unittest.TestCase, TestMixin):
     """ Unit testing of Plugin functionalities """
 

@@ -1,10 +1,9 @@
 import os
 import os.path
+import pytest
 
 from rest_framework.test import APITestCase
-
 from rest_framework import status
-
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -21,7 +20,7 @@ logger = logging.getLogger("analitico")
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 
-
+@pytest.mark.django_db
 class AnaliticoApiTestCase(APITestCase):
     """ Base class for testing analitico APIs """
 

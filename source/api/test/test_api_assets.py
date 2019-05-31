@@ -1,6 +1,7 @@
 import io
 import os
 import os.path
+import pytest
 
 from django.conf import settings
 from django.test import TestCase
@@ -24,7 +25,7 @@ from .utils import AnaliticoApiTestCase
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
-
+@pytest.mark.django_db
 class AssetsTests(AnaliticoApiTestCase):
     def _upload_dog(self):
         """ The same dog image is used in a number of tests """
