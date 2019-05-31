@@ -10,6 +10,7 @@ import inspect
 import urllib.parse
 import io
 import pandas as pd
+import tempfile
 
 from .mixin import AttributeMixin
 from .exceptions import AnaliticoException
@@ -383,3 +384,26 @@ class Factory(AttributeMixin):
         """
         df = self.run_plugin(settings={"name": "analitico.plugin.DatasetSourcePlugin", "dataset_id": item_id})
         return df
+
+    def upload(self, item_id: str, df: pd.DataFrame, filename: str = "data.parquet"):
+
+        #if not (filename.startswith("data/") or filename.startswith("assets/")):
+        #    raise AnaliticoException("Filename should start with assets/ or data/")
+
+        item_type = self.get_item_type(item_id)
+        url = f"{self.endpoint}{item_type}s/{item_id}/assets/{filename}"
+
+        if filename.endswith(".parquet"):
+            with tempfile.TemporaryDirectory() as tmpdir:
+                filepath = os.path.join(tmpdir, filename)
+                df.to_parquet(filepath)
+                response = requests.post(
+                    url, 
+                    files = { "file": filepath },
+                    headers = {"Authorization": "Bearer " + self.token}
+                )
+                if response.status_code != 201:
+                    raise AnaliticoException(f"Asset {filename} could not be uploaded to item {item_id}", response=response.json())
+        else:
+            raise AnaliticoException(f"Did not recognize file format for {filename}")
+        return self.get_item(item_id)
