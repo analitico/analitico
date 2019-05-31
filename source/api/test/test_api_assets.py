@@ -25,6 +25,7 @@ from .utils import AnaliticoApiTestCase
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
+
 @pytest.mark.django_db
 class AssetsTests(AnaliticoApiTestCase):
     def _upload_dog(self):
