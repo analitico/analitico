@@ -35,7 +35,7 @@ class K8ViewSet(GenericViewSet):
         """
         try:
             item = api.factory.factory.get_item(pk)
-            api.permissions.has_item_permission_or_exception(request.user, item, "analitico.endpoint.get")
+            api.permissions.has_item_permission_or_exception(request.user, item, "analitico.endpoints.get")
             service = item.get_attribute("service")
             if service:
                 return service["name"], service["namespace"]
