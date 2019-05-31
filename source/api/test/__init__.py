@@ -1,3 +1,7 @@
+
+import django
+django.setup()
+
 from .utils import AnaliticoApiTestCase
 
 from .test_api_assets import AssetsTests
