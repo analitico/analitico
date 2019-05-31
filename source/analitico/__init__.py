@@ -25,6 +25,5 @@ def authorize(token=None, endpoint=ANALITICO_API_ENDPOINT) -> analitico.factory.
     if not token:
         token = os.environ.get("ANALITICO_API_TOKEN", None)
         if not token:
-            message = "You should pass an API token or set the variable ANALITICO_API_ENDPOINT"
-            raise AnaliticoException(message, status_code=401)
+            logger.warning("authorize - you should pass an API token or set the environment variable ANALITICO_API_ENDPOINT")
     return analitico.factory.Factory(token=token, endpoint=endpoint)
