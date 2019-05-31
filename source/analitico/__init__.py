@@ -1,3 +1,4 @@
+import os
 import logging
 
 # default logger used by libraries, etc
@@ -14,25 +15,16 @@ import analitico.dataset
 import analitico.status
 
 
-def authorize(token=None, endpoint=ANALITICO_STAGING_API_ENDPOINT) -> analitico.factory.Factory:
-    """ Returns an API factory which can create datasets, models, run notebooks, plugins, etc """
-    try:
-        # TODO: we could go up the call stack and find the first factory we can and use that
-
-        # import api.factory
-
-        # if we have api.factory installed, it means that we're running in a server or runner
-        # context. we should use a server factory which will access models and data directly
-        # rather than via APIs. we should not have the factory create its own temporary directory
-        # since we're most likely running within the context of a job or notebook which will be
-        # cleaned up automatically anyway
-
-        # return api.factory.ServerFactory(token=token, endpoint=endpoint, mkdtemp=False)
-        pass
-    except:
-        pass
-
-    # if server factory is unknown, we're running in Jupyter, Colab or similar
-    # and we can use a regular factory with an auth token which will be used to
-    # access our data and models via regular API calls
+def authorize(token=None, endpoint=ANALITICO_API_ENDPOINT) -> analitico.factory.Factory:
+    """ 
+    Returns an API factory which can create datasets, models, run notebooks, plugins, etc.
+    You can pass an API token as a parameter or you can set the ANALITICO_API_ENDPOINT environment
+    variable with a token that should be used to authorize API calls. By default calls will be
+    made to the production environment but you can specify staging or any other endpoint.
+    """
+    if not token:
+        token = os.environ.get("ANALITICO_API_TOKEN", None)
+        if not token:
+            message = "You should pass an API token or set the variable ANALITICO_API_ENDPOINT"
+            raise AnaliticoException(message, status_code=401)
     return analitico.factory.Factory(token=token, endpoint=endpoint)
