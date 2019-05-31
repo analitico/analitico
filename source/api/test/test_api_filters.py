@@ -158,7 +158,8 @@ class FiltersTests(AnaliticoApiTestCase):
             self.assertEqual(data["meta"]["pagination"]["pages"], num_pages)
 
             for i, log in enumerate(data["data"]):
-                log_index = ((page - 1) * page_size) + i
+                # logs are sorted newest to oldest
+                log_index = num_items - (((page - 1) * page_size) + i) - 1
                 self.assertEqual(log["attributes"]["title"], "log {}".format(log_index))
 
     def test_filters_sorting_by_title(self):

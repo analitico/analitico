@@ -96,9 +96,8 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
         for role in roles:
             ff = ff | Q(workspace__roles__user=request.user, workspace__roles__roles__icontains=role)
 
-    # remove multiple copies of items
-    # TODO for daniele, figure out how to retrieve single copy of each item without distinct
-    queryset = item_class.objects.filter(ff).distinct()
+    # remove multiple copies of items, sort newer to older
+    queryset = item_class.objects.filter(ff).distinct().order_by("-created_at")
     return queryset
 
 

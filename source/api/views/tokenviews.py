@@ -70,8 +70,8 @@ class TokenViewSet(LogViewSetMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Token.objects.all()
-        return Token.objects.filter(user=self.request.user)
+            return Token.objects.all().order_by("-created_at")
+        return Token.objects.filter(user=self.request.user).order_by("-created_at")
 
     def create(self, request):
         serializer = TokenSerializer(data=request.data)
