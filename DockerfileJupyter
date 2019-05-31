@@ -2,7 +2,7 @@ FROM s6.analitico.ai:5000/analitico:base
 # we want to copy only requirements and ssl certificates
 # execute everything as a new users with restricted access
 # create user and change ownership of analitico venv
-RUN /bin/bash -c 'adduser --disabled-password --gecos "" analiticoj; chown -R analiticoj:analiticoj /home/www'
+RUN /bin/bash -c 'adduser --disabled-password --gecos "" analiticoj; chown analiticoj:analiticoj /home/www/analitico'
 WORKDIR /home/www/analitico
 # copy requirements
 COPY ./requirements.txt /home/www/analitico
