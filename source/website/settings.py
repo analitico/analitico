@@ -52,9 +52,7 @@ try:
                         "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
                     }
                 },
-                "handlers": {
-                    "console": {"class": "logging.StreamHandler", "formatter": "console"}
-                },
+                "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "console"}},
                 "loggers": {
                     # root logger
                     "": {"level": "DEBUG", "handlers": ["console"]}
@@ -73,9 +71,7 @@ try:
                         "datefmt": "%H:%M:%S",
                     }
                 },
-                "handlers": {
-                    "console": {"class": "logging.StreamHandler", "formatter": "console"},
-                },
+                "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "console"}},
                 "loggers": {
                     # root logger
                     "": {"level": "INFO", "handlers": ["console"]}

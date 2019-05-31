@@ -52,7 +52,9 @@ class Command(BaseCommand):
             job.set_status(STATUS_COMPLETED)
 
             elapsed_ms = time_ms(started_ms)
-            logger.info(f"Worker completed job: {job.id}, item: {job.item_id}, action: {job.action}, elapsed: {elapsed_ms}ms")
+            logger.info(
+                f"Worker completed job: {job.id}, item: {job.item_id}, action: {job.action}, elapsed: {elapsed_ms}ms"
+            )
             return job
 
         except Exception as exc:
@@ -69,7 +71,7 @@ class Command(BaseCommand):
             jobs = Job.objects.select_for_update().filter(status=STATUS_CREATED).order_by("created_at")
             for job in jobs:
                 # a job can have an attribute 'tags' which may contain one or more tags, like 'testing'
-                # or 'gpu,premium', etc. if the job is tagged, the worker will take it only if it was 
+                # or 'gpu,premium', etc. if the job is tagged, the worker will take it only if it was
                 # launched with the specific tags requested by the job.
                 tags = comma_separated_to_array(job.get_attribute("tags", None))
                 if tags:

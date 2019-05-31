@@ -13,6 +13,7 @@ from .test_mixin import TestMixin
 
 # pylint: disable=no-member
 
+
 @pytest.mark.django_db
 class ExceptionTests(unittest.TestCase, TestMixin):
     """ Unit testing of AnaliticoException """

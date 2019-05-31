@@ -1,5 +1,5 @@
-
 import django
+
 django.setup()
 
 from .utils import AnaliticoApiTestCase

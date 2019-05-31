@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from analitico.pandas import *
 
+
 @pytest.mark.django_db
 class PandasTests(unittest.TestCase):
     def get_random_dates_df(self):
