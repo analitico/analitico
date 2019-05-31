@@ -14,7 +14,7 @@ import api.utilities
 
 from analitico.utilities import logger, get_dict_dot, comma_separated_to_array, array_to_comma_separated
 from api.models import Workspace, Dataset, Role, User
-from api.permissions import has_item_permission
+from api.permissions import has_item_permission, has_item_permission_or_exception
 
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
@@ -101,20 +101,20 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
                 instance.set_attribute(key, value)
 
         # only the owner of the workspace and add or remove users and update their rights
-        permissions = get_dict_dot(validated_data, "attributes.permissions")
+        permissions = validated_data.get("permissions", None)
         if permissions:
             user = self.context["request"].user
-            if has_item_permission(user, instance, "analitico.workspaces.admin"):
-                # user has been invited to workspace and only sees his own rights
-                with transaction.atomic():
-                    # pylint: disable=no-member
-                    Role.objects.filter(workspace=instance).delete()
-                    for key, value in permissions.items():
-                        role = Role(workspace=instance, user=User.objects.get(email=key))
-                        # TODO could catch here and return a specific exception message if user is unknown
-                        role.roles = array_to_comma_separated(value.get("roles", None))
-                        role.permissions = array_to_comma_separated(value.get("permissions", None))
-                        role.save()
+            has_item_permission_or_exception(user, instance, "analitico.workspaces.admin")
+            # user has been invited to workspace and only sees his own rights
+            with transaction.atomic():
+                # pylint: disable=no-member
+                Role.objects.filter(workspace=instance).delete()
+                for key, value in permissions.items():
+                    role = Role(workspace=instance, user=User.objects.get(email=key))
+                    # TODO could catch here and return a specific exception message if user is unknown
+                    role.roles = array_to_comma_separated(value.get("roles", None))
+                    role.permissions = array_to_comma_separated(value.get("permissions", None))
+                    role.save()
 
         instance.save()
         return instance

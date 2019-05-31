@@ -99,6 +99,153 @@ class PermissionsTests(AnaliticoApiTestCase):
     ## Permissions
     ##
 
+    def test_permissions_setting_to_owned_workspace(self):
+        self.auth_token(self.token1)
+        url = reverse("api:workspace-detail", args=("ws_user1",))
+
+        # GET the workspace as it is now, no permissions specified
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+
+        # POST on specific workspace should not work
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 405)
+
+        # PATCH with no changes
+        response = self.client.patch(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        # PUT with no changes
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        # PUT with new roles and permissions for user2@analitico.ai
+        data = response.data
+        data["attributes"]["permissions"] = {
+            "user2@analitico.ai": {"roles": ["role1", "role2"], "permissions": ["permission1", "permission2"]}
+        }
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(len(data["attributes"]["permissions"].keys()), 1)
+        self.assertEqual(len(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"][0], "role1")
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"][1], "role2")
+        self.assertEqual(len(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"][0], "permission1")
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"][1], "permission2")
+
+        # PATCH with new roles and permissions for user3@analitico.ai
+        data = response.data
+        data["attributes"]["permissions"] = {
+            "user3@analitico.ai": {"roles": ["role1a", "role2a"], "permissions": ["permission1a", "permission2a"]}
+        }
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(len(data["attributes"]["permissions"].keys()), 1)
+        self.assertEqual(len(data["attributes"]["permissions"]["user3@analitico.ai"]["roles"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user3@analitico.ai"]["roles"][0], "role1a")
+        self.assertEqual(data["attributes"]["permissions"]["user3@analitico.ai"]["roles"][1], "role2a")
+        self.assertEqual(len(data["attributes"]["permissions"]["user3@analitico.ai"]["permissions"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user3@analitico.ai"]["permissions"][0], "permission1a")
+        self.assertEqual(data["attributes"]["permissions"]["user3@analitico.ai"]["permissions"][1], "permission2a")
+
+        # PATCH permissions for multiple users
+        data = response.data
+        data["attributes"]["permissions"] = {
+            "user2@analitico.ai": {"roles": ["role1a", "role2a"], "permissions": ["permission1a", "permission2a"]},
+            "user3@analitico.ai": {"roles": ["role1a"]},
+            "user4@analitico.ai": {"permissions": ["permission1a", "permission2a", "permission3a"]},
+        }
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(len(data["attributes"]["permissions"].keys()), 3)
+        # user2
+        self.assertEqual(len(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"][0], "role1a")
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"][1], "role2a")
+        self.assertEqual(len(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"][0], "permission1a")
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"][1], "permission2a")
+        # user3
+        self.assertEqual(len(data["attributes"]["permissions"]["user3@analitico.ai"]["roles"]), 1)
+        self.assertEqual(data["attributes"]["permissions"]["user3@analitico.ai"]["roles"][0], "role1a")
+        self.assertEqual(data["attributes"]["permissions"]["user3@analitico.ai"]["permissions"], None)
+        # user4
+        self.assertEqual(len(data["attributes"]["permissions"]["user4@analitico.ai"]["permissions"]), 3)
+        self.assertEqual(data["attributes"]["permissions"]["user4@analitico.ai"]["permissions"][0], "permission1a")
+        self.assertEqual(data["attributes"]["permissions"]["user4@analitico.ai"]["permissions"][1], "permission2a")
+        self.assertEqual(data["attributes"]["permissions"]["user4@analitico.ai"]["permissions"][2], "permission3a")
+
+    def test_permissions_setting_to_someone_elses_workspace(self):
+        url = reverse("api:workspace-detail", args=("ws_user2",))
+        # this is a long story so bear with me...
+
+        # user2 has a workspace all of his own
+        self.auth_token(self.token2)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        ws2 = response.data
+        self.assertEqual(ws2["attributes"]["title"], "Workspace2")
+
+        # user3 cannot see the workspace
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # user2 gives access to user3 in read/write mode so user3 can see the workspace
+        self.auth_token(self.token2)
+        ws2["attributes"]["permissions"] = {"user3@analitico.ai": {"roles": ["analitico.reader", "analitico.editor"]}}
+        response = self.client.put(url, data=ws2)
+        self.assertEqual(response.status_code, 200)
+
+        # user3 can now see the workspace
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        ws2 = response.data
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(ws2["attributes"]["title"], "Workspace2")
+
+        # user3 is allowed to change the title of the workspace
+        self.auth_token(self.token3)
+        data = {"attributes": {"title": "New title by user3"}}
+        response = self.client.patch(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["attributes"]["title"], "New title by user3")
+
+        # user3 trying to change permissions on the workspace and cannot do that
+        self.auth_token(self.token3)
+        ws2["attributes"]["permissions"] = {"user4@analitico.ai": {"roles": ["analitico.reader", "analitico.editor"]}}
+        response = self.client.put(url, data=ws2)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # user2 gives super admin rights on his workspace to user3
+        self.auth_token(self.token2)
+        ws2["attributes"]["permissions"] = {
+            "user3@analitico.ai": {"roles": ["analitico.reader", "analitico.editor", "analitico.admin"]}
+        }
+        response = self.client.put(url, data=ws2)
+        self.assertEqual(response.status_code, 200)
+
+        # user3 can now change permissions on the workspace and add user4
+        self.auth_token(self.token3)
+        ws2["attributes"]["permissions"] = {"user4@analitico.ai": {"roles": ["analitico.reader", "analitico.editor"]}}
+        response = self.client.put(url, data=ws2)
+        self.assertEqual(response.status_code, 200)
+
+        # user3 now locked himself out of the workspace
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # but user4 is out having a beer, will be back next year...
+        self.auth_token(self.token4)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
     def test_permissions_superuser_can_delete(self):
         self.auth_token(self.token1)
         self.post_notebook("notebook01.ipynb", "nb_01")

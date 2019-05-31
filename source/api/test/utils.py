@@ -20,6 +20,7 @@ logger = logging.getLogger("analitico")
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 
+
 @pytest.mark.django_db
 class AnaliticoApiTestCase(APITestCase):
     """ Base class for testing analitico APIs """
@@ -147,10 +148,10 @@ class AnaliticoApiTestCase(APITestCase):
         self.token3 = Token.objects.create(pk="tok_user3", user=self.user3)
         self.token4 = Token.objects.create(pk="tok_user4", user=self.user4)
 
-        self.ws1 = Workspace.objects.create(pk="ws_user1", user=self.user1)
-        self.ws2 = Workspace.objects.create(pk="ws_user2", user=self.user2)
-        self.ws3 = Workspace.objects.create(pk="ws_user3", user=self.user3)
-        self.ws4 = Workspace.objects.create(pk="ws_user4", user=self.user4)
+        self.ws1 = Workspace.objects.create(pk="ws_user1", user=self.user1, title="Workspace1")
+        self.ws2 = Workspace.objects.create(pk="ws_user2", user=self.user2, title="Workspace2")
+        self.ws3 = Workspace.objects.create(pk="ws_user3", user=self.user3, title="Workspace3")
+        self.ws4 = Workspace.objects.create(pk="ws_user4", user=self.user4, title="Workspace4")
 
     def assertStatusCode(self, response, status_code=status.HTTP_200_OK):
         if response.status_code != status_code:
