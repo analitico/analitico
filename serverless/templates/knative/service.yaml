@@ -4,14 +4,12 @@ metadata:
   name: {service_name}
   namespace: {service_namespace}
 spec:
-  runLatest:
-    configuration:
-      revisionTemplate:
-        spec:
-          container:
-            image: {docker_image}
-            env:
-            - name: ANALITICO_TARGET_ID
-              value: "{target_id}"
-            - name: ANALITICO_ITEM_ID
-              value: "{item_id}"
+  template:
+    spec:
+      containers:
+      - image: {docker_image}
+        env:
+        - name: ANALITICO_TARGET_ID
+          value: "{target_id}"
+        - name: ANALITICO_ITEM_ID
+          value: "{item_id}"

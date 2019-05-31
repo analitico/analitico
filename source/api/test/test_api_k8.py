@@ -42,7 +42,7 @@ class K8Tests(AnaliticoApiTestCase):
 
     # TODO cannot run this in CI/CD pipeline, should be added to live testing?
     @tag("slow", "docker", "k8s")
-    def OFFtest_k8_build_and_deploy_docker(self):
+    def test_k8_build_and_deploy_docker(self):
         """ Test building a docker from a notebook then deploying it """
 
         self.post_notebook("notebook11.ipynb", self.target_id)
