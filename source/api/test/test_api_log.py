@@ -42,7 +42,7 @@ class LogTests(AnaliticoApiTestCase):
         self.logger.debug("debug message")
         self.logger.info("info message")
         self.logger.warning("warning message")
-        self.logger.error("error message")  # this triggers Sentry to send useless report :(
+        self.logger.error("error message")
         logs = Log.objects.all()
 
         # debug message was NOT logged to database

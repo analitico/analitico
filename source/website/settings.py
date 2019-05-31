@@ -15,8 +15,6 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import logging.config
-import sentry_sdk
-import raven
 import sys
 import tempfile
 
@@ -40,23 +38,6 @@ try:
     # Examples of logging configuration:
     # https://lincolnloop.com/blog/django-logging-right-way/
 
-    # Sentry/Django documentation
-    # https://docs.sentry.io/clients/python/integrations/django/
-
-    # See logs here:
-    # https://sentry.io/analiticoai/python/
-
-    sentry_sdk.init("https://3cc8a3cf05e140a9bef3946e24756dc5@sentry.io/1336917")
-
-    RAVEN_CONFIG = {
-        "dsn": "https://3cc8a3cf05e140a9bef3946e24756dc5:30ab9adb8199489a962d94566cd746bc@sentry.io/1336917",
-        # If you are using git, you can also automatically configure the
-        # release based on the git info.
-        #   'release': raven.fetch_git_sha(os.path.abspath(os.getcwd())),
-        #   'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
-        "release": "v0.11",
-    }
-
     LOGLEVEL = os.environ.get("LOGLEVEL", "info").upper()
 
     LOGGING_CONFIG = None
@@ -72,8 +53,7 @@ try:
                     }
                 },
                 "handlers": {
-                    "console": {"class": "logging.StreamHandler", "formatter": "console"},
-                    # NO SENTRY
+                    "console": {"class": "logging.StreamHandler", "formatter": "console"}
                 },
                 "loggers": {
                     # root logger
@@ -95,8 +75,6 @@ try:
                 },
                 "handlers": {
                     "console": {"class": "logging.StreamHandler", "formatter": "console"},
-                    # Add Handler for Sentry for `warning` and above
-                    "sentry": {"level": "WARNING", "class": "raven.contrib.django.raven_compat.handlers.SentryHandler"},
                 },
                 "loggers": {
                     # root logger
@@ -194,7 +172,6 @@ try:
         "rest_framework",
         "django_filters",
         "drf_yasg",  # openapi schema generator
-        "raven.contrib.django.raven_compat",
         "django.contrib.admin",
         "django.contrib.auth",
         "django.contrib.contenttypes",

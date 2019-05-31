@@ -125,7 +125,6 @@ python3-openid==3.1.0
 pytz==2018.9
 PyYAML==3.13
 pyzmq==17.1.2
-raven==6.9.0
 readme-renderer==24.0
 requests==2.20.1
 requests-oauthlib==1.2.0
@@ -140,7 +139,6 @@ scikit-learn==0.20.0
 scipy==1.1.0
 seaborn==0.9.0
 Send2Trash==1.5.0
-sentry-sdk==0.6.0
 setoptconf==0.2.0
 simplejson==3.16.0
 six==1.12.0
