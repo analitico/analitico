@@ -70,8 +70,8 @@ class UserViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_frame
         """ A user MUST be authenticated and only has access to his own user object (unless superuser) """
         assert self.request.user.is_authenticated
         if self.request.user.is_superuser:
-            return User.objects.all()
-        return User.objects.filter(email=self.request.user.email)
+            return User.objects.all().order_by("email")
+        return User.objects.filter(email=self.request.user.email).order_by("email")
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=False, url_name="me", url_path="me")
