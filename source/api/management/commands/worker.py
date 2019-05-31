@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from analitico import logger
 from analitico.constants import WORKER_PREFIX
 from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
-from analitico.utilities import time_ms, get_runtime
+from analitico.utilities import time_ms, get_runtime, comma_separated_to_array
 
 from api.models import Job
 from api.factory import factory
@@ -61,18 +61,29 @@ class Command(BaseCommand):
             raise exc
 
     def get_pending_job(self, **options):
-        # TODO use tags to further filter jobs
-        # TODO order by time posted desc
+        """ Returns a job if there's one pending and we have all the required tags to run it (if any) """
         with transaction.atomic():
             # use select for update so that rows with selected jobs are
             # locked while we pick our job and change its status. this will
             # prevent other workers from taking this same job at the same time
             jobs = Job.objects.select_for_update().filter(status=STATUS_CREATED).order_by("created_at")
-            if len(jobs) > 0:
-                job = jobs[0]
-                job.status = STATUS_RUNNING
-                job.save()
-                return job
+            for job in jobs:
+                # a job can have an attribute 'tags' which may contain one or more tags, like 'testing'
+                # or 'gpu,premium', etc. if the job is tagged, the worker will take it only if it was 
+                # launched with the specific tags requested by the job.
+                tags = comma_separated_to_array(job.get_attribute("tags", None))
+                if tags:
+                    for tag in tags:
+                        if options["tags"] and tag in options["tags"]:
+                            logger.info(f"Worker checking job: {job.id}, has required tag: {tag}")
+                        else:
+                            logger.info(f"Worker checking job: {job.id}, does not have required tag: {tag}")
+                            job = None
+                if job:
+                    job = jobs[0]
+                    job.status = STATUS_RUNNING
+                    job.save()
+                    return job
         return None
 
     def add_arguments(self, parser):
