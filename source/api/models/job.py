@@ -16,9 +16,16 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 
-from analitico import AnaliticoException, ACTION_PROCESS, ACTION_TRAIN
+from analitico import AnaliticoException, ACTION_PROCESS, ACTION_TRAIN, logger
 from analitico.constants import ACTION_PREDICT
-from analitico.status import STATUS_RUNNING, STATUS_FAILED, STATUS_COMPLETED, STATUS_CANCELED
+from analitico.status import (
+    STATUS_CREATED,
+    STATUS_RUNNING,
+    STATUS_FAILED,
+    STATUS_COMPLETED,
+    STATUS_CANCELED,
+    STATUS_ALL,
+)
 from api.factory import ServerFactory
 
 # https://crontab.guru/examples.html
@@ -95,6 +102,15 @@ class Job(ItemMixin, models.Model):
     def payload(self, payload):
         self.set_attribute("payload", payload)
 
+    def set_status(self, status: str, save: bool = True):
+        """ Changes a job status and tracks changes in the log """
+        if status != self.status:
+            assert status in STATUS_ALL, f"job.set_status({status}) is not a valid status"
+            logger.info(f"Job {self.id} changed status from {self.status} to {status}")
+            self.status = status
+            if save:
+                self.save()
+
     ##
     ## Logging
     ##
@@ -129,9 +145,7 @@ class Job(ItemMixin, models.Model):
                 if predicting:
                     factory.set_logger_level(logging.WARNING)
 
-                self.status = STATUS_RUNNING
-                self.save()
-                factory.status(self, STATUS_RUNNING)
+                self.set_status(STATUS_RUNNING)
 
                 # item runs the job
                 item = factory.get_item(self.item_id)
@@ -148,17 +162,16 @@ class Job(ItemMixin, models.Model):
                 item.run(job=self, factory=factory)
                 item.save()
 
-                self.status = STATUS_COMPLETED
-                self.save()
-                factory.status(self, STATUS_COMPLETED)
+                self.set_status(STATUS_COMPLETED)
+
+            except AnaliticoException as exc:
+                self.set_status(STATUS_FAILED)
+                raise exc
 
             except Exception as exc:
-                self.status = STATUS_FAILED
-                self.save()
-                factory.status(self, STATUS_FAILED)
-                raise analitico.AnaliticoException(
-                    f"An error occoured while running {self.id}", item=self, job=self
-                ) from exc
+                self.set_status(STATUS_FAILED)
+                message = f"An error occoured while running job: {self.id} on item: {self.item_id}"
+                raise analitico.AnaliticoException(message, item=self, job=self) from exc
 
 
 ##

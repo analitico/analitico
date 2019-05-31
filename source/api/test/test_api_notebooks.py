@@ -114,6 +114,32 @@ class NotebooksTests(AnaliticoApiTestCase):
         self.assertEqual(notebook["metadata"]["kernelspec"]["name"], "python3")
         self.assertEqual(notebook["metadata"]["kernelspec"]["language"], "python")
 
+    def test_notebook_process_with_exception(self):
+        self.post_notebook("notebook12-with-exception.ipynb", "nb_12")
+
+        # notebook will raise an exception and stop being processed
+        url = reverse("api:notebook-job-action", args=("nb_12", ACTION_PROCESS)) + "?async=false"
+        response = self.client.post(url, format="json")
+        data = response.data
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(
+            data["error"]["title"],
+            "An error occoured while running nb_12: Notebook wants to fail and raised an exception",
+        )
+
+    def test_notebook_process_with_missing_import(self):
+        self.post_notebook("notebook13-with-missing-import.ipynb", "nb_13")
+
+        # notebook includes some import for libraries that cannot be found
+        url = reverse("api:notebook-job-action", args=("nb_13", ACTION_PROCESS)) + "?async=false"
+        response = self.client.post(url, format="json")
+        data = response.data
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(
+            data["error"]["title"],
+            "An error occoured while running nb_13: No module named 'themissinglibrarythatdoesntexist'",
+        )
+
     def test_notebook_process_twice(self):
         self.post_notebook("notebook01.ipynb", "nb_01")
 

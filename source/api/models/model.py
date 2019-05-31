@@ -8,6 +8,7 @@ from django.utils.crypto import get_random_string
 
 import analitico
 
+from analitico import logger
 from analitico.factory import Factory
 from analitico.constants import ACTION_TRAIN
 from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
@@ -71,12 +72,12 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
     def run(self, job: Job, factory: Factory, **kwargs):
         """ Run job actions on the recipe """
 
-        if ACTION_TRAIN not in job.action:
-            factory.exception("Model: does not know action: %s", job.action, item=self)
-
         try:
+            if ACTION_TRAIN not in job.action:
+                raise AnaliticoException(f"Model {self.id} does not know job action {job.action}")
+
             # process action runs recipe and creates a trained model
-            factory.status(self, STATUS_RUNNING)
+            job.set_status(STATUS_RUNNING)
 
             notebook = self.get_notebook()
             if notebook:
@@ -86,7 +87,7 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
                     training_path = os.path.join(factory.get_artifacts_directory(), "training.json")
                     training = read_json(training_path)
                 except:
-                    factory.warning("Model: could not read training.json")
+                    logger.warning("Model: could not read training.json")
                     training = {}
             else:
                 # if dataset does not have a notebook we will run its plugins
@@ -101,25 +102,20 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
                 # a recipe has a one to many relation with trained models
                 factory.upload_artifacts(self)
 
-            self.set_attribute("training", training)
+            if training:
+                self.set_attribute("training", training)
             self.save()
 
+            job.set_status(STATUS_COMPLETED)
+
+        except AnaliticoException as exc:
+            job.set_status(STATUS_FAILED)
+            raise exc
+
+        except Exception as exc:
+            job.set_status(STATUS_FAILED)
+            raise AnaliticoException(f"Model: an error occoured while training {self.id}", item=self) from exc
+
+        finally:
             artifacts = factory.get_artifacts_directory()
             shutil.rmtree(artifacts, ignore_errors=True)
-
-            # job will return information linking to the trained model
-            # job.set_attribute("recipe_id", self.get_attribute("recipe_id"))
-            # job.set_attribute("model_id", self.id)
-            # TODO status below should be applied to job?
-            job.save()
-
-            factory.status(self, STATUS_COMPLETED)
-
-        except AnaliticoException as e:
-            factory.status(self, STATUS_FAILED)
-            e.extra["recipe"] = self
-            raise e
-
-        except Exception as e:
-            factory.status(self, STATUS_FAILED)
-            factory.exception("Model: an error occoured while training '%s'", self.id, item=self, exception=e)
