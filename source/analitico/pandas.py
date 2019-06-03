@@ -194,7 +194,7 @@ def pd_to_csv(df: pd.DataFrame, filename, schema=False, samples=0):
         schema = analitico.schema.generate_schema(df)
         schemaname = filename + ".info"
         analitico.utilities.save_json({"schema": schema}, schemaname)
-    if samples > 0 and df.index:
+    if samples > 0 and not df.empty:
         samples = pd_sample(df, samples)
         samplesname = filename[:-4] + ".samples.csv"
         samples.to_csv(samplesname, encoding="utf-8")
@@ -219,8 +219,9 @@ def pd_to_dict(df):
 
 def pd_sample(df, n=20):
     """ Returns a sample from the given DataFrame, either number of rows or percentage. """
-    if n < 1:
-        return df.sample(frac=n)
-    if n < len(df.index):
-        return df.sample(n=n)
+    if df and not df.empty:
+        if n < 1:
+            return df.sample(frac=n)
+        if n < len(df.index):
+            return df.sample(n=n)
     return df
