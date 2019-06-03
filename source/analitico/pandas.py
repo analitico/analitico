@@ -219,9 +219,8 @@ def pd_to_dict(df):
 
 def pd_sample(df, n=20):
     """ Returns a sample from the given DataFrame, either number of rows or percentage. """
-    if df and not df.empty:
-        if n < 1:
-            return df.sample(frac=n)
-        if n < len(df.index):
-            return df.sample(n=n)
+    if n < 1:
+        return df.sample(frac=n)
+    if n < len(df.index):
+        return df.sample(n=n)
     return df
