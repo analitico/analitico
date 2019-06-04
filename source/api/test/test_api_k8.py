@@ -56,6 +56,9 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn(f"gcr.io/analitico-api/{self.target_id_normalized}@sha256:", docker["image"])
         self.assertIn("sha256:", docker["image_id"])
 
+        logger.info("Run this image locally with:")
+        logger.info(f"docker run -e PORT=8080 -p 8080:8080 {docker['image']}")
+
         service = api.k8.k8_deploy(notebook, endpoint)
         self.assertEquals(service["type"], "analitico/service")
         self.assertEquals(service["name"], self.endpoint_id_normalized)

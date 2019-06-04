@@ -10,6 +10,7 @@ from analitico import AnaliticoException, logger
 import flask
 from flask import Flask
 from flask import request, Response
+from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 
 try:
     # This module is dinamically generated from the customer's
@@ -39,7 +40,11 @@ except Exception as exc:
 # pylint: disable=no-value-for-parameter
 
 app = Flask(__name__)
-app.logger.info("Started")
+app.logger.info("Starting Flask")
+
+# metrics = GunicornPrometheusMetrics(app)
+# app.logger.info("Starting Prometheus")
+
 
 
 def is_json(presumed_json: str):

@@ -6,3 +6,5 @@ numpy
 psutil
 simplejson
 scikit-learn
+prometheus-flask-exporter
+gunicorn
