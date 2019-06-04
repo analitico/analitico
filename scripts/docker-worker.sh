@@ -38,10 +38,14 @@ docker rm $DOCKERNAME
 # run notebook in a new container using the prepared image
 docker run --name=$DOCKERNAME -a stderr -a stdout --init --runtime=nvidia $DOCKERIMAGENAME /home/www/analitico/docker-worker-notebook.sh /home/www/analitico/notebooks/notebook.ipynb /home/www/analitico/notebooks/notebook.output.ipynb --cwd /home/www/analitico/notebooks/ $parameters
 # wait papermill execution
-docker wait $DOCKERNAME
+EXITCODE=`docker wait $DOCKERNAME`
+
+echo "Docker exit code $EXITCODE"
 # copy working dir out of container
 docker cp $DOCKERNAME:/home/www/analitico/notebooks/. $4
 # remove container
 docker rm $DOCKERNAME
 # remove container image
 docker image rm $DOCKERIMAGENAME
+# return exit code of docker execution
+exit $EXITCODE
