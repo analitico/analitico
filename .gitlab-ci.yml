@@ -27,8 +27,8 @@ cache:
 
 build_dev:
   stage: build
+  image: google/cloud-sdk:latest
   script:
-    - apk update && apk add git
     # remove repo
     - rm -rf /builds/analitico/analitico
     - mkdir -p /builds/analitico/
@@ -67,11 +67,13 @@ build_dev:
     # push docker jupyter
     - docker push $BUILD_JUPYTER_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico jupyter image"
-    # remove secrets
-    - rm -R -f analitico-ci
+    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
+    - gcloud -q auth configure-docker
     # tag on google registry
     - docker tag $BUILD_IMAGE_URL $BUILD_IMAGE_GOOGLE_URL
     - docker push $BUILD_IMAGE_GOOGLE_URL
+    # remove secrets
+    - rm -R -f analitico-ci
   only:
     - master
 
