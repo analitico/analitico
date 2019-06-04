@@ -112,7 +112,7 @@ class Command(BaseCommand):
                     job.set_status(STATUS_RUNNING)
                     self.run_job(job)
                 except Exception as exc:
-                    logger.error(f"Worker can't query jobs: {exc}")
+                    logger.error(f"Worker job {job_id} failed: {exc}")
                     return WORKER_ERROR
 
             logger.info("Worker quitting, completed command line jobs")
