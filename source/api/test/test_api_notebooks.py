@@ -468,3 +468,73 @@ class NotebooksTests(AnaliticoApiTestCase):
         self.assertEqual(job["attributes"]["errors"][0]["ename"], "Exception")
         self.assertEqual(job["attributes"]["errors"][0]["evalue"], "The notebook raised this TEST exception")
         self.assertEqual(job["attributes"]["errors"][0]["output_type"], "error")
+
+    def test_notebook_generate_dataset(self):
+        # Run a notebook that generates a dataset with a variable number of rows
+        self.post_notebook("notebook14-generate-dataset.ipynb", "nb_14")
+        nb = Notebook.objects.get(pk="nb_14")
+
+        ##
+        ## number of rows is not specified (will do default of 100 rows)
+        ##
+        nb_out1 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True, job=None) 
+
+        # updated metadata and assets
+        nb = Notebook.objects.get(pk="nb_14")
+        assets = nb.get_attribute("data")
+
+        # check number of rows
+        pandas_csv = next(asset for asset in assets if asset["id"] == "pandas.csv")
+        self.assertEqual(pandas_csv["rows"], 100)
+        data_csv = next(asset for asset in assets if asset["id"] == "data.csv")
+        self.assertEqual(data_csv["rows"], 100)
+        self.assertEqual(data_csv["schema"]["columns"][0]["name"], "A_100")
+
+        ##
+        ## now we specify a parameter indicating that we want 500 rows
+        ##
+        nb_out2 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True, parameters = { "rows": "500" }) 
+
+        # updated metadata and assets
+        nb = Notebook.objects.get(pk="nb_14")
+        assets = nb.get_attribute("data")
+
+        # check number of rows, schema updates
+        pandas_csv = next(asset for asset in assets if asset["id"] == "pandas.csv")
+        self.assertEqual(pandas_csv["rows"], 500)
+        
+        data_csv = next(asset for asset in assets if asset["id"] == "data.csv")
+        self.assertEqual(data_csv["rows"], 500)
+        self.assertEqual(data_csv["schema"]["columns"][0]["name"], "A_500")
+
+        ##
+        ## now we specify a parameter indicating that we want 90 rows
+        ##
+        nb_out2 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True, parameters = { "rows": "90" }) 
+
+        # updated metadata and assets
+        nb = Notebook.objects.get(pk="nb_14")
+        assets = nb.get_attribute("data")
+
+        # check number of rows
+        pandas_csv = next(asset for asset in assets if asset["id"] == "pandas.csv")
+        self.assertEqual(pandas_csv["rows"], 90)
+        data_csv = next(asset for asset in assets if asset["id"] == "data.csv")
+        self.assertEqual(data_csv["rows"], 90)
+        self.assertEqual(data_csv["schema"]["columns"][0]["name"], "A_90")
+
+        ##
+        ## now we specify NO parameter again and it should go back to 100
+        ##
+        nb_out2 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True) 
+
+        # updated metadata and assets
+        nb = Notebook.objects.get(pk="nb_14")
+        assets = nb.get_attribute("data")
+
+        # check number of rows
+        pandas_csv = next(asset for asset in assets if asset["id"] == "pandas.csv")
+        self.assertEqual(pandas_csv["rows"], 100)
+        data_csv = next(asset for asset in assets if asset["id"] == "data.csv")
+        self.assertEqual(data_csv["rows"], 100)
+        self.assertEqual(data_csv["schema"]["columns"][0]["name"], "A_100")

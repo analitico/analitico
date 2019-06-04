@@ -205,6 +205,12 @@ class ItemAssetsMixin:
                 asset = {"id": asset_id}
                 assets.append(asset)
 
+            # if caller provided some extra info it can be saved along with the assets. 
+            # some keys are reserved and will be overwritten if used (eg. hash)
+            if asset_extras:
+                for key, value in asset_extras.items():
+                    asset[key] = value
+
             asset["created_at"] = now().isoformat()
             asset["filename"] = filename
             asset["path"] = asset_obj.name
@@ -212,14 +218,6 @@ class ItemAssetsMixin:
             asset["content_type"] = content_type
             asset["size"] = max(size, asset_obj.size)
             asset["url"] = "analitico://{}s/{}/{}/{}".format(self.type, self.id, asset_class, asset_id)
-
-            # if caller provided some extra info it can be saved along
-            # with the assets info. we need to check that it is not information
-            # that will overwrite anything that's already there
-            if asset_extras:
-                for key, value in asset_extras.items():
-                    if key not in asset:
-                        asset[key] = value
 
             # update assets in model and on database
             self.set_attribute(asset_class, assets)
