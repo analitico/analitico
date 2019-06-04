@@ -18,7 +18,5 @@ done
 echo $parameters
 # execute papermill 
 echo "Start papermill" 
-papermill $parameters &
+papermill $parameters
 
-# wait for temination
-wait
