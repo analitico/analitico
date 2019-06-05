@@ -208,7 +208,7 @@ staging-k8:
     - master
   script:
     - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.jsonk
+    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
     - yaml=`cat ./analitico-ci/k8/service.yaml`
     - echo "${yaml/"{docker_image}"/$BUILD_IMAGE_GOOGLE_URL}" > service.yaml
