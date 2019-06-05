@@ -27,10 +27,14 @@ cache:
 
 build_dev:
   stage: build
-  image: google/cloud-sdk:alpine
   script:
-    - apk add docker
-    - git --version
+    - apk add git bash curl python
+    - curl https://sdk.cloud.google.com > script.sh
+    - chmod +x script.sh
+    - ./script.sh --disable-prompts
+    - bash
+    - source /root/google-cloud-sdk/completion.bash.inc
+    - source /root/google-cloud-sdk/path.bash.inc
     # remove repo
     - rm -rf /builds/analitico/analitico
     - mkdir -p /builds/analitico/
