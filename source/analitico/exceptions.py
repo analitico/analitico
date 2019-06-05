@@ -16,7 +16,11 @@ class AnaliticoException(Exception):
     extra = None
 
     def __init__(self, message, *args, code=None, status_code=None, extra=None, **kwargs):
-        self.message = message % (args) if message else self.default_message
+        try:
+            self.message = message % (args)
+        except:
+            self.message = message if message else self.default_message
+
         self.code = code if code else self.default_code
         self.status_code = status_code if status_code else self.default_status_code
 
