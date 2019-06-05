@@ -30,6 +30,7 @@ build_dev:
   image: google/cloud-sdk:latest
   script:
     - apt update
+    - apt upgrade -y
     - apt install git
     # remove repo
     - rm -rf /builds/analitico/analitico
