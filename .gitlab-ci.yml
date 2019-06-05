@@ -27,10 +27,9 @@ cache:
 
 build_dev:
   stage: build
-  image: google/cloud-sdk:latest
+  image: google/cloud-sdk:alpine
   script:
-    - apt-get update
-    - apt-get install git
+    - apk add docker
     - git --version
     # remove repo
     - rm -rf /builds/analitico/analitico
@@ -201,7 +200,7 @@ staging:
 
 staging-k8:
   stage: deploy-staging
-  image: google/cloud-sdk:latest
+  image: google/cloud-sdk:alpine
   when: manual
   only:
     - master
