@@ -29,9 +29,9 @@ build_dev:
   stage: build
   image: google/cloud-sdk:latest
   script:
-    - apt update
-    - apt upgrade -y
-    - apt install git
+    - apt-get update
+    - apt-get install git
+    - git --version
     # remove repo
     - rm -rf /builds/analitico/analitico
     - mkdir -p /builds/analitico/
