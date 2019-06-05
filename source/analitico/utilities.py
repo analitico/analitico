@@ -444,7 +444,7 @@ def json_from_string_if_possible(value: str):
     return value
 
 
-def subprocess_run(cmd_args, job=None, timeout=300, cwd=None) -> (str, str):
+def subprocess_run(cmd_args, job=None, timeout=3600, cwd=None) -> (str, str):
     """
     Run a subprocess with the given command arguments. Logs the command, the response
     and the time it took to run it. If an error occours, raises an explanatory exception
@@ -472,9 +472,9 @@ def subprocess_run(cmd_args, job=None, timeout=300, cwd=None) -> (str, str):
     if response.returncode:
         message = "An error occoured while executing '" + " ".join(cmd_args) + "'."
         if response.stdout:
-            message = f"{message}\nResponse.stdout:\n{response.stdout}"
+            message += "\nResponse.stdout:\n" + response.stdout
         if response.stderr:
-            message = f"{message}\nResponse.stderr:\n{response.stderr}"
+            message += "\nResponse.stderr:\n" + response.stderr
         logger.error(message)
         raise AnaliticoException(message)
 
