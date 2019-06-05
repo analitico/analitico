@@ -202,14 +202,13 @@ staging:
 
 staging-k8:
   stage: deploy-staging
-  image: google/cloud-sdk:alpine
+  image: google/cloud-sdk:latest
   when: manual
   only:
     - master
   script:
     - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
-    - gcloud -q auth configure-docker
+    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.jsonk
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
     - yaml=`cat ./analitico-ci/k8/service.yaml`
     - echo "${yaml/"{docker_image}"/$BUILD_IMAGE_GOOGLE_URL}" > service.yaml
