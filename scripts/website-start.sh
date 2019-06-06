@@ -1,6 +1,18 @@
 #!/bin/bash
 # exit if error
 set -e
+
+# check if KNATIVE PORT is set and configure nginx
+if [ -z "$PORT" ]
+then
+      echo "PORT is not set"
+else
+      echo "PORT is set to: $PORT"
+      conf=`cat /etc/nginx/nginx.conf`
+      echo "${conf/"#KNATIVE_LISTEN_PORT"/listen $PORT;}" > /etc/nginx/nginx.conf
+fi
+
+
 # import env
 source /home/www/analitico/scripts/import-env.sh
 
