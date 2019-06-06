@@ -10,7 +10,7 @@ variables:
   REGISTRY_USER: admin  # ${CI_REGISTRY_USER} 
   REGISTRY_PASSWORD: ${CONTAINER_REGISTRY_PASSWORD} # ${CI_REGISTRY_PASSWORD}
   REGISTRY_URL: s6.analitico.ai:5000  # ${CI_REGISTRY}
-  BUILD_IMAGE_GOOGLE_URL: eu.gcr.io/analitico-api/analitico:$CI_COMMIT_SHA 
+  BUILD_IMAGE_GOOGLE_URL: eu.gcr.io/analitico-api/website:$CI_COMMIT_SHA 
 
 services:
 - docker:dind
@@ -200,7 +200,7 @@ staging:
       docker image prune -f -a;" 
 
 
-staging-k8:
+website-k8:
   stage: deploy-staging
   image: google/cloud-sdk:latest
   when: manual
@@ -212,6 +212,7 @@ staging-k8:
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
     - yaml=`cat ./analitico-ci/k8/service.yaml`
     - echo "${yaml/"{docker_image}"/$BUILD_IMAGE_GOOGLE_URL}" > service.yaml
+    - cat service.yaml
     - kubectl apply --filename ./service.yaml
 
 worker-production:
