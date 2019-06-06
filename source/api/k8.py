@@ -140,7 +140,7 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
         service_namespace = "cloud"
         docker_image = docker["image"]
 
-        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".yaml") as f:
             service_filename = os.path.join(K8_TEMPLATE_DIR, "service.yaml")
             service_yaml = read_text(service_filename)
             service_yaml = service_yaml.format(
