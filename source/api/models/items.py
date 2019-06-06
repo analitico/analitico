@@ -205,7 +205,7 @@ class ItemAssetsMixin:
                 asset = {"id": asset_id}
                 assets.append(asset)
 
-            # if caller provided some extra info it can be saved along with the assets. 
+            # if caller provided some extra info it can be saved along with the assets.
             # some keys are reserved and will be overwritten if used (eg. hash)
             if asset_extras:
                 for key, value in asset_extras.items():

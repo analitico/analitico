@@ -12,5 +12,9 @@
     "python.pythonPath": "venv/bin/python",
     "python.envFile": "${workspaceFolder}/source/.env",
     "python.testing.cwd": "${workspaceFolder}/source",
-    "python.linting.pylintEnabled": true
+    "python.linting.pylintEnabled": true,
+    "python.testing.pyTestArgs": [
+        "source"
+    ],
+    "python.testing.unittestEnabled": false
 }
