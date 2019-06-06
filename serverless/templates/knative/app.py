@@ -42,9 +42,8 @@ except Exception as exc:
 app = Flask(__name__)
 app.logger.info("Starting Flask")
 
-# metrics = GunicornPrometheusMetrics(app)
-# app.logger.info("Starting Prometheus")
-
+metrics = GunicornPrometheusMetrics(app)
+app.logger.info("Starting Prometheus")
 
 
 def is_json(presumed_json: str):

@@ -31,6 +31,8 @@ from .utils import AnaliticoApiTestCase
 
 # port that we use for the HTTP server in our
 DOCKER_PORT = 8001
+# port to expose prometheus metrics
+DOCKER_PROMETHEUS_PORT = 9090
 
 
 class DockerTests(AnaliticoApiTestCase):
@@ -68,9 +70,16 @@ class DockerTests(AnaliticoApiTestCase):
         def get_container_url(self, relative_url):
             return f"http://127.0.0.1:{DOCKER_PORT}{relative_url}"
 
+        def get_prometheus_url(self, relative_url):
+            return f"http://127.0.0.1:{DOCKER_PROMETHEUS_PORT}{relative_url}"
+
         def get_container_response(self, relative_url, post=None):
             url = self.get_container_url(relative_url)
             return requests.post(url, json=post) if post else requests.get(url)
+
+        def get_prometheus_response(self, relative_url, post=None):
+            url = self.get_prometheus_url(relative_url)
+            return requests.get(url)
 
         def get_container_response_json(self, relative_url, post=None, status_code=200):
             response = self.get_container_response(relative_url, post)
@@ -90,7 +99,7 @@ class DockerTests(AnaliticoApiTestCase):
             self.docker_container = self.docker_client.containers.run(
                 self.docker_build["image"],
                 detach=True,
-                ports={f"{DOCKER_PORT}/tcp": DOCKER_PORT},
+                ports={f"{DOCKER_PORT}/tcp": DOCKER_PORT, f"{DOCKER_PROMETHEUS_PORT}/tcp": DOCKER_PROMETHEUS_PORT},
                 environment={"PORT": DOCKER_PORT},
             )
             # wait for gunicorn to start up
@@ -259,3 +268,19 @@ class DockerTests(AnaliticoApiTestCase):
             self.assertEqual(
                 json["error"]["title"], "The notebook's code cannot be imported: No module named 'fuzzywuzzy'"
             )
+
+    @tag("slow", "docker")
+    def test_docker_gunicorn_exposes_prometheus_metrics_endpoint(self):
+        """ Gunicorn exposes /metrics endpoint with prometheus metrics """
+        with self.DockerNotebookRunner(self, "notebook-docker-hello-world-custom-json.ipynb") as runner:
+            # exec a request to generate some metrics
+            runner.get_container_response("/")
+
+            response = runner.get_prometheus_response("/metrics")
+            content = response.text
+
+            self.assertEqual(200, response.status_code)
+            self.assertIn("# HELP flask_exporter_info Multiprocess metric", content)
+            self.assertIn("flask_exporter_info", content)
+            self.assertIn("# HELP flask_http_request_total Multiprocess metric", content)
+            self.assertIn("flask_http_request_total", content)
