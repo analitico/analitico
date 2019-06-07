@@ -201,7 +201,7 @@ staging:
 
 
 website-k8:
-  stage: deploy-staging
+  stage: deploy
   image: google/cloud-sdk:latest
   when: manual
   only:
