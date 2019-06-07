@@ -338,7 +338,7 @@ class OrderSortingModel(analitico.models.TabularRegressorModel):
         # process the solution
         sorted_details = []
         index = routing.Start(0)  # single vehicle (courier)
-        print("item, cat_id")
+
         while not routing.IsEnd(index):
             if index > 0:  # skip entrance, exit
                 # convert variable indices to node indices in the route
