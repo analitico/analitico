@@ -160,29 +160,36 @@ def pd_columns_to_string(df):
 
 def pd_read_csv(filepath_or_buffer, schema=None):
     """ Read csv file from file or stream and apply optional schema """
-    dtype = None
+    try:
+        dtype = None
 
-    if schema:
-        # array of types for each column in the source
-        columns = schema.get("columns")
-        if columns:
-            dtype = {}
-            for column in columns:
-                if "type" in column:  # type is optionally defined
-                    if column["type"] == "datetime":
-                        dtype[column["name"]] = "object"
-                    elif column["type"] == "timespan":
-                        dtype[column["name"]] = "object"
-                    else:
-                        dtype[column["name"]] = analitico_to_pandas_type(column["type"])
+        if schema:
+            # array of types for each column in the source
+            columns = schema.get("columns")
+            if columns:
+                dtype = {}
+                for column in columns:
+                    if "type" in column:  # type is optionally defined
+                        if column["type"] == "datetime":
+                            dtype[column["name"]] = "object"
+                        elif column["type"] == "timespan":
+                            dtype[column["name"]] = "object"
+                        elif column["type"] == "integer":
+                            pass # do not cast so we can deal with nulls later
+                        else:
+                            dtype[column["name"]] = analitico_to_pandas_type(column["type"])
 
-    # read csv from file or stream
-    df = pd.read_csv(filepath_or_buffer, dtype=dtype, encoding="utf-8", na_values=NA_VALUES, low_memory=False)
+        # read csv from file or stream
+        df = pd.read_csv(filepath_or_buffer, dtype=dtype, encoding="utf-8", na_values=NA_VALUES, low_memory=False)
 
-    if schema:
-        # reorder, filter, apply types, rename columns as requested in schema
-        df = analitico.schema.apply_schema(df, schema)
-    return df
+        if schema:
+            # reorder, filter, apply types, rename columns as requested in schema
+            df = analitico.schema.apply_schema(df, schema)
+        return df
+
+    except Exception as exc:
+        logger.error(f"Could not read csv file from {filepath_or_buffer}, schema: {schema}, dtype: {dtype}")
+        raise exc
 
 
 def pd_to_csv(df: pd.DataFrame, filename, schema=False, samples=0):
@@ -203,9 +210,10 @@ def pd_to_csv(df: pd.DataFrame, filename, schema=False, samples=0):
 def pd_drop_column(df, column, inplace=False):
     """ Drops a column, no exceptions if it's not there """
     try:
-        df.drop([column], axis=1, inplace=inplace)
+        return df.drop([column], axis=1, inplace=inplace)
     except:
-        pass
+        logger.warning(f"pd_drop_column - could not find column {column}")
+    return df
 
 
 def pd_to_dict(df):
