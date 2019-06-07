@@ -51,20 +51,19 @@ class ParquetTests(AnaliticoApiTestCase):
     ## Workspace storage
     ##
 
-    def get_random_dataframe(self, rows = 10 * 1000):
-        return pd.DataFrame({
-            "String": [get_random_string(length=32) for _ in range(rows)],
-            "Int": [int(1000 * random()) for _ in range(rows)],
-            "Float": [random() for _ in range(rows)]
-        })
+    def get_random_dataframe(self, rows=10 * 1000):
+        return pd.DataFrame(
+            {
+                "String": [get_random_string(length=32) for _ in range(rows)],
+                "Int": [int(1000 * random()) for _ in range(rows)],
+                "Float": [random() for _ in range(rows)],
+            }
+        )
 
     def test_parquet_upload(self):
 
         df = self.get_random_dataframe()
         self.assertIsNotNone(df)
-
-
-
 
         factory = analitico.authorize("tok_demo1_croJ7gVp4cW9")
         response = factory.upload("ds_WKIIILcZg9rF", df, "random-table.parquet")

@@ -477,7 +477,9 @@ class NotebooksTests(AnaliticoApiTestCase):
         ##
         ## number of rows is not specified (will do default of 100 rows)
         ##
-        nb_out1 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True, job=None) 
+        nb_out1 = api.models.notebook.nb_run(
+            notebook_item=nb, notebook_name=None, factory=factory, upload=True, job=None
+        )
 
         # updated metadata and assets
         nb = Notebook.objects.get(pk="nb_14")
@@ -493,7 +495,9 @@ class NotebooksTests(AnaliticoApiTestCase):
         ##
         ## now we specify a parameter indicating that we want 500 rows
         ##
-        nb_out2 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True, parameters = { "rows": "500" }) 
+        nb_out2 = api.models.notebook.nb_run(
+            notebook_item=nb, notebook_name=None, factory=factory, upload=True, parameters={"rows": "500"}
+        )
 
         # updated metadata and assets
         nb = Notebook.objects.get(pk="nb_14")
@@ -502,7 +506,7 @@ class NotebooksTests(AnaliticoApiTestCase):
         # check number of rows, schema updates
         pandas_csv = next(asset for asset in assets if asset["id"] == "pandas.csv")
         self.assertEqual(pandas_csv["rows"], 500)
-        
+
         data_csv = next(asset for asset in assets if asset["id"] == "data.csv")
         self.assertEqual(data_csv["rows"], 500)
         self.assertEqual(data_csv["schema"]["columns"][0]["name"], "A_500")
@@ -510,7 +514,9 @@ class NotebooksTests(AnaliticoApiTestCase):
         ##
         ## now we specify a parameter indicating that we want 90 rows
         ##
-        nb_out2 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True, parameters = { "rows": "90" }) 
+        nb_out2 = api.models.notebook.nb_run(
+            notebook_item=nb, notebook_name=None, factory=factory, upload=True, parameters={"rows": "90"}
+        )
 
         # updated metadata and assets
         nb = Notebook.objects.get(pk="nb_14")
@@ -526,7 +532,7 @@ class NotebooksTests(AnaliticoApiTestCase):
         ##
         ## now we specify NO parameter again and it should go back to 100
         ##
-        nb_out2 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True) 
+        nb_out2 = api.models.notebook.nb_run(notebook_item=nb, notebook_name=None, factory=factory, upload=True)
 
         # updated metadata and assets
         nb = Notebook.objects.get(pk="nb_14")
