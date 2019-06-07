@@ -387,7 +387,7 @@ class Factory(AttributeMixin):
 
     def upload(self, item_id: str, df: pd.DataFrame, filename: str = "data.parquet"):
 
-        #if not (filename.startswith("data/") or filename.startswith("assets/")):
+        # if not (filename.startswith("data/") or filename.startswith("assets/")):
         #    raise AnaliticoException("Filename should start with assets/ or data/")
 
         item_type = self.get_item_type(item_id)
@@ -398,12 +398,12 @@ class Factory(AttributeMixin):
                 filepath = os.path.join(tmpdir, filename)
                 df.to_parquet(filepath)
                 response = requests.post(
-                    url, 
-                    files = { "file": filepath },
-                    headers = {"Authorization": "Bearer " + self.token}
+                    url, files={"file": filepath}, headers={"Authorization": "Bearer " + self.token}
                 )
                 if response.status_code != 201:
-                    raise AnaliticoException(f"Asset {filename} could not be uploaded to item {item_id}", response=response.json())
+                    raise AnaliticoException(
+                        f"Asset {filename} could not be uploaded to item {item_id}", response=response.json()
+                    )
         else:
             raise AnaliticoException(f"Did not recognize file format for {filename}")
         return self.get_item(item_id)
