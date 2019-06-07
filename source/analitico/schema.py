@@ -124,15 +124,18 @@ def apply_column(df: pd.DataFrame, column):
             elif column_type == "float":
                 if missing:
                     df[column_name] = np.nan
+                df[column_name].fillna(0)
                 df[column_name] = df[column_name].astype(float)
             elif column_type == "boolean":
                 if missing:
                     df[column_name] = False
-                df[column_name] = df[column_name].astype(bool)
+                # missing values are converted to False 
+                df[column_name] = df[column_name].fillna(False).astype(bool)
             elif column_type == "integer":
                 if missing:
                     df[column_name] = 0
-                df[column_name] = df[column_name].astype(int)
+                # missing values converted to 0
+                df[column_name] = df[column_name].fillna(0).astype(int)
             elif column_type == "datetime":
                 if missing:
                     df[column_name] = None
