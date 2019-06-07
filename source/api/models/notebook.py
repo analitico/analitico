@@ -23,7 +23,7 @@ import analitico.plugin
 import analitico.utilities
 
 from analitico.factory import Factory
-from analitico.utilities import save_json, read_json, get_dict_dot, time_ms
+from analitico.utilities import save_json, read_json, get_dict_dot, time_ms, subprocess_run
 from analitico.exceptions import AnaliticoException
 
 from .items import ItemMixin, ItemAssetsMixin
@@ -164,18 +164,8 @@ def nb_run(
                     args.append(key)
                     args.append(value)
 
-                # capture stderr and add them to the job or to the exception if there is one
-                # subprocess.run(args, cwd=artifacts_path, encoding="utf-8", capture_output=capture)
-                # capture_output was introduced in python 3.7 and does not work on the server
-                capture: bool = job is not None
-                response = subprocess.run(args, cwd=artifacts_path, encoding="utf-8", stdout=PIPE, stderr=PIPE)
+                subprocess_run(args, cwd=artifacts_path, job=job)
                 notebook = read_json(notebook_out_path)
-
-                if capture:
-                    job.set_attribute("logs", response.stderr)
-                    job.save()
-
-                response.check_returncode()
 
             else:
                 # SECURITY WARNING: if we run papermill here via its direct api it will run in our
