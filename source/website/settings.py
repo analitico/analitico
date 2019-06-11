@@ -402,9 +402,21 @@ try:
     }
 
     ##
-    ##  Prometheus metrics 
+    ## Prometheus service used for metrics on kubernetes cluster
     ##
-    PROMETHEUS_API_TOKEN = os.environ.get("ANALITICO_PROMETHEUS_API_TOKEN", "")
+
+    PROMETHEUS_SERVICE_URL = "https://prometheus.cloud.analitico.ai/api/v1/query"
+
+    ##
+    ##  Elastic search used for cluster logs
+    ##
+
+    # kubernetes endpoint used for elastic search service
+    ELASTIC_SEARCH_URL = "https://cloud.analitico.ai:6443/api/v1/namespaces/knative-monitoring/services/elasticsearch-logging/proxy/_search"
+
+    # bearer token used to authenticate on elastic search service
+    ELASTIC_SEARCH_API_TOKEN = os.environ.get("ANALITICO_ELASTIC_SEARCH_API_TOKEN", None)
+    assert ELASTIC_SEARCH_API_TOKEN, "Did you forget to configure the env variable ANALITICO_ELASTIC_SEARCH_API_TOKEN?"
 
 except KeyError as exc:
     detail = (

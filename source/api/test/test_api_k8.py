@@ -88,7 +88,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("status", service)
 
     ##
-    ## K8s APIs
+    ## K8s APIs that work on ENTIRE cluster
     ##
 
     # we need to setup the credentials for kubectl in gitlab CI/CD
@@ -115,26 +115,33 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("spec", nodes[0])
         self.assertIn("status", nodes[0])
 
+    ##
+    ## K8s APIs that work on specific service
+    ##
+
+    def deploy_service(self):
+        self.post_notebook("notebook11.ipynb", self.target_id)
+        notebook = Notebook.objects.get(pk=self.target_id)
+        endpoint = Endpoint(id=self.endpoint_id, workspace=self.ws1)
+        endpoint.save()
+
+        docker = api.k8.k8_build(notebook)
+        service = api.k8.k8_deploy(notebook, endpoint)
+        time.sleep(10)
+        return service
+
     @tag("k8s")
     def test_k8_get_metrics(self):
-        # self.post_notebook("notebook11.ipynb", self.target_id)
-        # notebook = Notebook.objects.get(pk=self.target_id)
-        # endpoint = Endpoint(id=self.endpoint_id, workspace=self.ws1)
-        # endpoint.save()
-
-        # docker = api.k8.k8_build(notebook)
-        # service = api.k8.k8_deploy(notebook, endpoint)
-        # time.sleep(10)
-
+        self.deploy_service()
         url = reverse("api:k8-metrics", args=(self.endpoint_id,))
 
         # regular user CANNOT get metrics
-        # self.auth_token(self.token3)
-        # response = self.client.get(url, format="json")
-        # self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.auth_token(self.token3)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # request fails if query parameters does not specify any filter in braces
-        self.auth_token(self.token3)
+        self.auth_token(self.token1)
         response = self.client.get(url, data={"query": "flask_http_request_total"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
 
@@ -142,48 +149,59 @@ class K8Tests(AnaliticoApiTestCase):
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
 
-        # expect metrics
-        prometheusStatus = response.data["status"]
-        self.assertEqual(prometheusStatus, "success")
-        results = response.data["data"]["result"]
-        self.assertGreater(len(results), 0)
-        # TODO
-        # self.assertEqual(results, {"__name__": "up"})
+        # expect array of metrics from specific service
+        self.assertEqual(data["status"], "success")
+        self.assertGreater(len(data["data"]["result"]), 20)
+        for metric in data["data"]["result"]:
+            self.assertEqual(metric["metric"]["serving_knative_dev_service"], self.endpoint_id_normalized)
 
-        # expect success with prometheus query
-        response = self.client.get(url, data={"query": 'flask_http_request_total{kubernetes_namespace="cloud",serving_knative_dev_service="ep-test-001"}'}, format="json")
+        # filter a specific type of event over a specific time range
+        query = 'flask_http_request_total{kubernetes_namespace="cloud",serving_knative_dev_service="ep-test-001"}[30m]'
+        response = self.client.get(url, data={"query": query}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        prometheusStatus = response.data["status"]
-        self.assertEqual(prometheusStatus, "success")
+        data = response.data
+        self.assertEqual(response.data["status"], "success")
+        self.assertEqual(data["status"], "success")
+        for metric in data["data"]["result"]:
+            self.assertEqual(metric["metric"]["serving_knative_dev_service"], self.endpoint_id_normalized)
+            self.assertEqual(metric["metric"]["__name__"], "flask_http_request_total")
+            self.assertGreater(len(metric["values"]), 30)  # 59 samples for 30 minutes?
+
+        # filter a specific type of event for some other service which I don't have rights to
+        # api should filter for my service AND this other service and I should get no results
+        query = 'flask_http_request_total{kubernetes_namespace="cloud",serving_knative_dev_service="ep-test-002"}[30m]'
+        response = self.client.get(url, data={"query": query}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(response.data["status"], "success")
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(len(data["data"]["result"]), 0)  # no results
 
     @tag("k8s")
     def test_k8_get_logs(self):
+        self.deploy_service()
         url = reverse("api:k8-logs", args=(self.endpoint_id,))
 
-        # TODO: remove comments
-        # regular user CANNOT get metrics
-        # self.auth_token(self.token3)
-        # response = self.client.get(url, format="json")
-        # self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # user CANNOT read logs from items he does not have access to
+        self.auth_token(self.token3)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # admin user CAN get metrics
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertGreater(len(data["hits"]["hits"]), 20)
+        self.assertEqual(data["timed_out"], False)
+        self.assertGreater(data["hits"]["total"], 20)
 
-        # expect logs
-        timedOut = response.data["timed_out"]
-        self.assertEqual(timedOut, False)
-        totalHits = response.data["hits"]["total"]
-        self.assertGreater(totalHits, 0)
-
-        # limit the number of results with size parameter
-        response = self.client.get(url, data={"size": 1}, format="json")
+        # limit the number of results with ?size= parameter
+        response = self.client.get(url, data={"size": 20}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        hits = response.data["hits"]["hits"]
-        self.assertEqual(len(hits), 1)
-
-
-
-
+        data = response.data
+        self.assertEqual(len(data["hits"]["hits"]), 20)
+        self.assertEqual(data["timed_out"], False)
+        self.assertGreater(data["hits"]["total"], 50)
