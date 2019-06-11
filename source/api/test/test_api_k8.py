@@ -114,3 +114,76 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("metadata", nodes[0])
         self.assertIn("spec", nodes[0])
         self.assertIn("status", nodes[0])
+
+    @tag("k8s")
+    def test_k8_get_metrics(self):
+        # self.post_notebook("notebook11.ipynb", self.target_id)
+        # notebook = Notebook.objects.get(pk=self.target_id)
+        # endpoint = Endpoint(id=self.endpoint_id, workspace=self.ws1)
+        # endpoint.save()
+
+        # docker = api.k8.k8_build(notebook)
+        # service = api.k8.k8_deploy(notebook, endpoint)
+        # time.sleep(10)
+
+        url = reverse("api:k8-metrics", args=(self.endpoint_id,))
+
+        # regular user CANNOT get metrics
+        # self.auth_token(self.token3)
+        # response = self.client.get(url, format="json")
+        # self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # request fails if query parameters does not specify any filter in braces
+        self.auth_token(self.token3)
+        response = self.client.get(url, data={"query": "flask_http_request_total"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        # admin user CAN get metrics
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # expect metrics
+        prometheusStatus = response.data["status"]
+        self.assertEqual(prometheusStatus, "success")
+        results = response.data["data"]["result"]
+        self.assertGreater(len(results), 0)
+        # TODO
+        # self.assertEqual(results, {"__name__": "up"})
+
+        # expect success with prometheus query
+        response = self.client.get(url, data={"query": 'flask_http_request_total{kubernetes_namespace="cloud",serving_knative_dev_service="ep-test-001"}'}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        prometheusStatus = response.data["status"]
+        self.assertEqual(prometheusStatus, "success")
+
+    @tag("k8s")
+    def test_k8_get_logs(self):
+        url = reverse("api:k8-logs", args=(self.endpoint_id,))
+
+        # TODO: remove comments
+        # regular user CANNOT get metrics
+        # self.auth_token(self.token3)
+        # response = self.client.get(url, format="json")
+        # self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # admin user CAN get metrics
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # expect logs
+        timedOut = response.data["timed_out"]
+        self.assertEqual(timedOut, False)
+        totalHits = response.data["hits"]["total"]
+        self.assertGreater(totalHits, 0)
+
+        # limit the number of results with size parameter
+        response = self.client.get(url, data={"size": 1}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        hits = response.data["hits"]["hits"]
+        self.assertEqual(len(hits), 1)
+
+
+
+

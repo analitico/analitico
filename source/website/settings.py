@@ -401,6 +401,11 @@ try:
         }
     }
 
+    ##
+    ##  Prometheus metrics 
+    ##
+    PROMETHEUS_API_TOKEN = os.environ.get("ANALITICO_PROMETHEUS_API_TOKEN", "")
+
 except KeyError as exc:
     detail = (
         "settings.py - Configuration error, did you forget to declare " + exc.args[0] + " as an environment variable?"
