@@ -39,3 +39,6 @@ echo "Running python tests"
 
 # make tmp and subfolders public
 chmod -R 777 /tmp
+
+# remove google token
+rm /home/www/.google*
