@@ -19,3 +19,12 @@ Login gcloud registry
 
 To run the image we need to map external ports
 `docker run -d -p 80:80 -p 443:443 -p 6445:6445 --restart always --name=analitico-k8-nginx-balancer eu.gcr.io/analitico-api/k8-nginx-balancer`
+
+Update image configuration
+
+```bash
+docker pull eu.gcr.io/analitico-api/k8-nginx-balancer && \
+docker stop analitico-k8-nginx-balancer && \
+docker rm analitico-k8-nginx-balancer && \
+docker run -d -p 80:80 -p 443:443 -p 6445:6445 --restart always --name=analitico-k8-nginx-balancer eu.gcr.io/analitico-api/k8-nginx-balancer
+```
