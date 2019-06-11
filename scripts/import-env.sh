@@ -16,8 +16,6 @@ fi
 echo $MYHOME
 export HOME=$MYHOME
 export PYTHONPATH=$MYHOME/analitico/source/
-# Path to admin.conf for kubectl
-export KUBECONFIG="/home/www/analitico-ci/k8/admin.conf"
 
 echo "Activate virtual env"
 
