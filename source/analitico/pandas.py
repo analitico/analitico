@@ -175,7 +175,7 @@ def pd_read_csv(filepath_or_buffer, schema=None):
                         elif column["type"] == "timespan":
                             dtype[column["name"]] = "object"
                         elif column["type"] == "integer":
-                            pass # do not cast so we can deal with nulls later
+                            pass  # do not cast so we can deal with nulls later
                         else:
                             dtype[column["name"]] = analitico_to_pandas_type(column["type"])
 

@@ -80,7 +80,7 @@ class OrderSortingPlugin(analitico.plugin.CatBoostRegressorPlugin):
                     "odt_category_id",
                     "odt_category_id.level2",
                     "odt_category_id.level3",
-                    "odt_touched_at", 
+                    "odt_touched_at",
                     "odt_variable_weight",
                     "odt_replaceable",
                     "ord_id",
@@ -168,7 +168,7 @@ class OrderSortingPlugin(analitico.plugin.CatBoostRegressorPlugin):
             samples_path = os.path.join(artifacts_path, "prediction-samples.json")
             save_json(samples, samples_path)
             self.info("saved: %s (%d bytes)", samples_path, os.path.getsize(samples_path))
-            
+
             # augment time of day when item is picked into multiple columns
             df_joined = analitico.pandas.augment_dates(df_joined, "odt_touched_at")
 
@@ -183,9 +183,9 @@ class OrderSortingPlugin(analitico.plugin.CatBoostRegressorPlugin):
             # because most likely these are items where the picker is picking multiple things
             # and them marking them all at once. items were time elapsed is really long are also
             # an indicator that data may be bogus
-            quantile = df_joined["dyn_elapsed_sec"].quantile(.95)
+            quantile = df_joined["dyn_elapsed_sec"].quantile(0.95)
             df_joined = df_joined[df_joined["dyn_elapsed_sec"] < quantile]
-            df_joined = df_joined[df_joined["dyn_elapsed_sec"] > 10] # 10 seconds min or this is bogus
+            df_joined = df_joined[df_joined["dyn_elapsed_sec"] > 10]  # 10 seconds min or this is bogus
 
             # mark categorical columns, remove columns that are not needed for training model, reorder columns
             df_joined["odt_status"] = df_joined["odt_status"].astype("category")
@@ -240,30 +240,32 @@ class OrderSortingPlugin(analitico.plugin.CatBoostRegressorPlugin):
             started_on = time_ms()
             test_df = pd.DataFrame(
                 [
-                    collections.OrderedDict([
-                        ( "odt_status", "PURCHASED"),
-                        ("sto_ref_id", sto_ref_id),
-                        ("sto_name", sto_name),
-                        ("sto_area", sto_area),
-                        ("sto_province", sto_province),
-                        # from
-                        ("prev_odt_category_id", categories[from_node]["odt_category_id"]),
-                        ("prev_odt_category_id.level2", categories[from_node]["odt_category_id.level2"]),
-                        ("prev_odt_category_id.level3", categories[from_node]["odt_category_id.level3"]),
-                        # to
-                        ("odt_category_id", categories[to_node]["odt_category_id"]),
-                        ("odt_category_id.level2", categories[to_node]["odt_category_id.level2"]),
-                        ("odt_category_id.level3", categories[to_node]["odt_category_id.level3"]),
-                        # fixed for all items
-                        # TODO could use now date or order time date
-                        ("odt_variable_weight", 0), #categories[to_node]["odt_variable_weight"], 
-                        ("odt_replaceable", 0),
-                        ("odt_touched_at.year", 2019),
-                        ("odt_touched_at.month", 6),
-                        ("odt_touched_at.day", 6),
-                        ("odt_touched_at.hour", 12),
-                        ("odt_touched_at.dayofweek", 1)
-                    ])
+                    collections.OrderedDict(
+                        [
+                            ("odt_status", "PURCHASED"),
+                            ("sto_ref_id", sto_ref_id),
+                            ("sto_name", sto_name),
+                            ("sto_area", sto_area),
+                            ("sto_province", sto_province),
+                            # from
+                            ("prev_odt_category_id", categories[from_node]["odt_category_id"]),
+                            ("prev_odt_category_id.level2", categories[from_node]["odt_category_id.level2"]),
+                            ("prev_odt_category_id.level3", categories[from_node]["odt_category_id.level3"]),
+                            # to
+                            ("odt_category_id", categories[to_node]["odt_category_id"]),
+                            ("odt_category_id.level2", categories[to_node]["odt_category_id.level2"]),
+                            ("odt_category_id.level3", categories[to_node]["odt_category_id.level3"]),
+                            # fixed for all items
+                            # TODO could use now date or order time date
+                            ("odt_variable_weight", 0),  # categories[to_node]["odt_variable_weight"],
+                            ("odt_replaceable", 0),
+                            ("odt_touched_at.year", 2019),
+                            ("odt_touched_at.month", 6),
+                            ("odt_touched_at.day", 6),
+                            ("odt_touched_at.hour", 12),
+                            ("odt_touched_at.dayofweek", 1),
+                        ]
+                    )
                 ]
             )
 
@@ -330,7 +332,7 @@ class OrderSortingPlugin(analitico.plugin.CatBoostRegressorPlugin):
                     "odt_category_id.level3": s24.categories.s24_get_category_id_level3(item_category_id),
                     "odt_category_id.slug": s24.categories.s24_get_category_slug_level1(item_category_id),
                     "odt_category_id.level2.slug": s24.categories.s24_get_category_slug_level2(item_category_id),
-                    "odt_category_id.level3.slug": s24.categories.s24_get_category_slug_level3(item_category_id)
+                    "odt_category_id.level3.slug": s24.categories.s24_get_category_slug_level3(item_category_id),
                 }
             )
         # cashier
@@ -363,7 +365,9 @@ class OrderSortingPlugin(analitico.plugin.CatBoostRegressorPlugin):
         routing.SetArcCostEvaluatorOfAllVehicles(dist_callback)
         assignment = routing.SolveWithParameters(search_parameters)
         if assignment is False:
-            raise AnaliticoException("Could not come up with an optimal route for this order", status_code=417)  # expectation failed
+            raise AnaliticoException(
+                "Could not come up with an optimal route for this order", status_code=417
+            )  # expectation failed
 
         # calculate how long we estimate it would have taken to shop this list without sorting
         unsorted_distance = 0
