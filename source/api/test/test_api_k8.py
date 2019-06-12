@@ -130,7 +130,7 @@ class K8Tests(AnaliticoApiTestCase):
         time.sleep(10)
         return service
 
-    @tag("k8s")
+    @tag("slow", "docker", "k8s")
     def test_k8_get_metrics(self):
         self.deploy_service()
         url = reverse("api:k8-metrics", args=(self.endpoint_id,))
@@ -179,7 +179,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(data["status"], "success")
         self.assertEqual(len(data["data"]["result"]), 0)  # no results
 
-    @tag("k8s")
+    @tag("slow", "docker", "k8s")
     def test_k8_get_logs(self):
         self.deploy_service()
         url = reverse("api:k8-logs", args=(self.endpoint_id,))
