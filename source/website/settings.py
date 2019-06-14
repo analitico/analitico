@@ -154,7 +154,13 @@ try:
         "138.201.196.111",  # s1.analitico.ai
         "78.46.46.165",  # s2.analitico.ai
         "159.69.242.143",  # s5.analitico.ai
-        "analitico.test",  # for local testing
+        # serve webdav proxy mount
+        "*.cloud.analitico.ai",
+        # for local testing
+        "analitico.test",
+        # server local clients in LAN
+        "192.168.1.*:8000",
+        "192.168.1.*",
     ]
 
     # Disable maximum upload size
@@ -187,6 +193,7 @@ try:
     ]
 
     MIDDLEWARE = [
+        "api.webdav.WebDavProxyMiddleware",
         "corsheaders.middleware.CorsMiddleware",
         "django.middleware.security.SecurityMiddleware",
         "django.contrib.sessions.middleware.SessionMiddleware",
