@@ -1,69 +1,50 @@
-import requests
-import urllib.parse
+# This middleware component is used to let customers mount their files as webdav
+# volumes on their desktops. We support item-id.cloud.analitico.ai routes mapping
+# to each workspace by its id. When a call is made to a host like this the middleware
+# will intercept it, verify the callers credentials with analitico, retrieve the
+# credentials to be used on the webdav share where the files are stored and tunnel the
+# call to the server then returning its reply.
 
-from django.conf import settings
-from django.http import HttpResponse, QueryDict
-from django.http import QueryDict
-from django.http.response import StreamingHttpResponse
-
-from rest_framework import status
-from rest_framework.response import Response
-
-from analitico import AnaliticoException, logger
-from analitico.utilities import re_match_group, get_dict_dot
-from api.models import Workspace
-
-# HTTP methods used by WebDAV protocol
-# https://www.ibm.com/support/knowledgecenter/en/ssw_ibm_i_72/rzaie/rzaiewebdav.htm
-WEBDAV_HTTP_METHODS = [
-    "COPY",
-    "DELETE",
-    "GET",
-    "HEAD",
-    "LOCK",
-    "MKCOL",
-    "MOVE",
-    "OPTIONS",
-    "POST",
-    "PROPFIND",
-    "PROPPATCH",
-    "PUT",
-    "TRACE",
-    "UNLOCK",
-]
-WEBDAV_HTTP_METHODS_LOWER = [
-    "copy",
-    "delete",
-    "get",
-    "head",
-    "lock",
-    "mkcol",
-    "move",
-    "options",
-    "post",
-    "propfind",
-    "proppatch",
-    "put",
-    "trace",
-    "unlock",
-]
-
-# Proxy code
-# https://github.com/mjumbewu/django-proxy/blob/master/proxy/views.py
-
-# Files APIs design objectives:
-# - if possible use WebDAV and do not reinvent the wheel
+# Design objectives:
+# - use WebDAV and do not reinvent the wheel
 # - APIs should use our tokens for authentication and permissions
 # - we should let WebDAV passthrough and be able to "mount" on Windows, Mac, Linux
 # - we should stream http requests so we don't use much memory or slow down uploads
 
-STORAGE_URL_RE = r"(ws_.*)\.cloud\.analitico\.ai(:[0-9]+)?(.*)$"
+# pylint: disable=no-member
+
+import requests
+import urllib.parse
+
+from django.http import HttpResponse, QueryDict
+
+import rest_framework.authentication
+import rest_framework.request
+from rest_framework import status
+
+from analitico import AnaliticoException, logger
+from analitico.utilities import re_match_group, get_dict_dot
+
+import api.authentication
+from api.models import Workspace
+from api.permissions import has_item_permission_or_exception
+
+# HTTP methods used by WebDAV protocol in readonly mode
+# https://www.ibm.com/support/knowledgecenter/en/ssw_ibm_i_72/rzaie/rzaiewebdav.htm
+WEBDAV_READONLY_HTTP_METHODS = ["GET", "HEAD", "LOCK", "OPTIONS", "PROPFIND", "TRACE", "UNLOCK"]
+
+# Proxy code
+# https://github.com/mjumbewu/django-proxy/blob/master/proxy/views.py
+
+STORAGE_URL_RE = r"(ws[-_].*)\.cloud\.analitico\.ai(:[0-9]+)?(.*)$"
 
 
 class WebDavProxyMiddleware:
+    """ Intercept calls to webdav volumes and proxy then through to our storage boxes. """
+
     def __init__(self, get_response):
+        """ One-time configuration and initialization. """
         self.get_response = get_response
-        # One-time configuration and initialization.
 
     def proxy_view(self, request, url, requests_args=None):
         """
@@ -84,7 +65,7 @@ class WebDavProxyMiddleware:
             if "params" not in requests_args:
                 requests_args["params"] = QueryDict("", mutable=True)
 
-            logger.info(f"proxy_view {request.method} {url}")
+            # logger.info(f"proxy_view {request.method} {url}")
             # logger.info(f"proxy, request body: {request.body}")
 
             # Overwrite any headers and params from the incoming request with explicitly
@@ -160,7 +141,6 @@ class WebDavProxyMiddleware:
         box (after authentication) while all other calls go on and get handled via
         the regular Django routes.
         """
-
         # if we sit behind a reverse proxy or load balancer than the original
         # host name will be in the X-Forwarded-For header, if we received a direct
         # connection than it's the regular Host header. we intercept for webdav
@@ -172,11 +152,31 @@ class WebDavProxyMiddleware:
         if host:
             workspace_id = re_match_group(STORAGE_URL_RE, host)
             if workspace_id:
-                # pylint: disable=no-member
+                workspace_id = workspace_id.replace("-", "_")
                 workspace = Workspace.objects.get(pk=workspace_id)
                 if not workspace:
                     msg = f"Workspace {workspace_id} could not be found, please check your server url."
                     raise AnaliticoException(msg, status_code=status.HTTP_404_NOT_FOUND)
+
+                # create a rest_framework request which will help checking if the user
+                # is authenticating either with basic auth or using a bearer token
+                request2 = rest_framework.request.Request(
+                    request,
+                    authenticators=(
+                        rest_framework.authentication.SessionAuthentication(),
+                        rest_framework.authentication.BasicAuthentication(),
+                        api.authentication.BearerAuthentication(),
+                    ),
+                )
+
+                # check for read only or read and write permission based on request method
+                permission = (
+                    "analitico.webdav.get"
+                    if request.method in WEBDAV_READONLY_HTTP_METHODS
+                    else "analitico.webdav.create"
+                )
+                # TODO return proper response for WebDAV requesting for credentials
+                has_item_permission_or_exception(request2.user, workspace, permission)
 
                 # TODO #211 storage / add caching of credentials and permissions checks to webdav proxy
                 # retrieve mount configuration and credentials
@@ -190,6 +190,7 @@ class WebDavProxyMiddleware:
                 webdav_username = storage["credentials"]["username"]
                 webdav_password = storage["credentials"]["password"]
 
+                # proxy this call through to webdav server
                 return self.proxy_view(request, webdav_url, requests_args={"auth": (webdav_username, webdav_password)})
 
         # all other requests proceed with regular django handling

@@ -42,7 +42,10 @@
         "analitico.logs.create": "Create logs.",
         "analitico.logs.get": "Get logs.",
         "analitico.logs.update": "Update logs.",
-        "analitico.logs.delete": "Delete logs."
+        "analitico.logs.delete": "Delete logs.",
+
+        "analitico.webdav.get": "Mount desktop volume (read only).",
+        "analitico.webdav.create": "Mount desktop volume (read and write)."
     },
 
     "roles": {
@@ -57,7 +60,8 @@
                 "analitico.endpoints.get",
                 "analitico.models.get",
                 "analitico.jobs.get",
-                "analitico.logs.get"
+                "analitico.logs.get",
+                "analitico.webdav.get"
             ]
         },
 
@@ -106,7 +110,10 @@
                 "analitico.logs.create",
                 "analitico.logs.get",
                 "analitico.logs.update",
-                "analitico.logs.delete"
+                "analitico.logs.delete",
+
+                "analitico.webdav.get",
+                "analitico.webdav.create"
             ]
         },
 
@@ -156,8 +163,11 @@
                 "analitico.logs.create",
                 "analitico.logs.get",
                 "analitico.logs.update",
-                "analitico.logs.delete"
-            ]
+                "analitico.logs.delete",
+
+                "analitico.webdav.get",
+                "analitico.webdav.create"
+             ]
         }
    }
 }
