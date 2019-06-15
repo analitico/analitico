@@ -142,7 +142,7 @@ class WebdavStorageDriver(StorageDriver):
         extra = {
             "content_type": item.contenttype,
             "creation_time": item.ctime,
-            "modify_time": item.mtime
+            "last_modified": item.mtime
             # 'access_time': item.a
         }
 
@@ -178,7 +178,7 @@ class WebdavStorageDriver(StorageDriver):
             extra = {
                 "content_type": item.contenttype,
                 "creation_time": item.ctime,
-                "modify_time": item.mtime
+                "last_modified": item.mtime
                 # "access_time": item.atime
             }
 
@@ -399,7 +399,8 @@ class WebdavStorageDriver(StorageDriver):
         :rtype: ``object``
         """
         full_path = os.path.join(obj.container.name, obj.name)
-        self.client.download_as_stream(full_path, chunk_size)
+        return self.client.download_as_stream(full_path, chunk_size)
+
 
     def upload_object(self, file_path, container, object_name, extra=None, verify_hash=True):
         """

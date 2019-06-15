@@ -200,13 +200,14 @@ class Client(object):
         headers = {"Depth": "1"}
         response = self._send("PROPFIND", remote_path, (207, 301), headers=headers)
 
-        # Redirect
+        # follow redirects if content has moved
         if response.status_code == 301:
             url = urlparse(response.headers["location"])
             return self.ls(url.path)
 
         tree = xml.fromstring(response.content)
-        return [elem2file(elem) for elem in tree.findall("{DAV:}response")]
+        items = [elem2file(elem) for elem in tree.findall("{DAV:}response")]
+        return items
 
     def exists(self, remote_path):
         response = self._send("HEAD", remote_path, (200, 301, 404))
