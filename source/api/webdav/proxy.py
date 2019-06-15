@@ -10,13 +10,16 @@
 # - APIs should use our tokens for authentication and permissions
 # - we should let WebDAV passthrough and be able to "mount" on Windows, Mac, Linux
 # - we should stream http requests so we don't use much memory or slow down uploads
+# - we should not get tied into vendor specific extensions, etc.
 
 # pylint: disable=no-member
 
 import requests
 import urllib.parse
 
-from django.http import HttpResponse, QueryDict
+from cacheout import Cache
+from django.http import HttpResponse, QueryDict, Http404
+from django.core.exceptions import PermissionDenied
 
 import rest_framework.authentication
 import rest_framework.request
@@ -26,8 +29,9 @@ from analitico import AnaliticoException, logger
 from analitico.utilities import re_match_group, get_dict_dot
 
 import api.authentication
-from api.models import Workspace
-from api.permissions import has_item_permission_or_exception
+from api.models import Workspace, User
+from api.permissions import has_item_permission
+
 
 # HTTP methods used by WebDAV protocol in readonly mode
 # https://www.ibm.com/support/knowledgecenter/en/ssw_ibm_i_72/rzaie/rzaiewebdav.htm
@@ -35,8 +39,46 @@ WEBDAV_READONLY_HTTP_METHODS = ["GET", "HEAD", "LOCK", "OPTIONS", "PROPFIND", "T
 
 # Proxy code
 # https://github.com/mjumbewu/django-proxy/blob/master/proxy/views.py
-
 STORAGE_URL_RE = r"(ws[-_].*)\.cloud\.analitico\.ai(:[0-9]+)?(.*)$"
+
+# each call to a webdav endpoint is stateless and carries its own credentials which
+# need to be checked against the user and workspace in our database. we create a small
+# cache here where credentials are stored for up to a minute so we can cut down on queries.
+# the memoize decorator below will cache calls and results.
+# https://cacheout.readthedocs.io/en/latest/cache.html#cacheout.cache.Cache.memoize
+cache = Cache(maxsize=1024, ttl=60)
+
+
+@cache.memoize()
+def get_webdav_credentials_or_exception(workspace_id: str, user: User, method: str):
+    """
+    Checks if the user has the proper credentials for accessing the given webdav resource.
+    Will raise an exception if the user does not have the required credentials or if the
+    workspace is not setu up to use a WebDAV storage. Returns server, username, password 
+    to be used for access.
+    """
+    workspace = Workspace.objects.get(pk=workspace_id)
+    if not workspace:
+        # we should NOT raise AnaliticoException as we're not handling views here
+        raise Http404(f"Workspace {workspace_id} could not be found, please check your server url.")
+
+    # check for read only or read and write permission based on request method
+    permission = "analitico.webdav.get" if method in WEBDAV_READONLY_HTTP_METHODS else "analitico.webdav.create"
+    if not has_item_permission(user, workspace, permission):
+        raise PermissionDenied("WebDAV requires valid credentials")
+
+    storage = workspace.get_attribute("storage")
+    if get_dict_dot(storage, "driver", "").lower() != "webdav":
+        raise PermissionDenied(f"Workspace {workspace_id} is not configured for WebDAV mounting.")
+
+    # extract server and credentials
+    server = storage["url"]
+    username = storage["credentials"]["username"]
+    password = storage["credentials"]["password"]
+    logger.info(
+        f"webdav_check_permissions - workspace_id: {workspace_id}, user: {user.email}, method: {method}, server: {server}, username: {username}"
+    )
+    return server, username, password
 
 
 class WebDavProxyMiddleware:
@@ -53,6 +95,7 @@ class WebDavProxyMiddleware:
         response as possible. If there are any additional arguments you wish to send 
         to requests, put them in the requests_args dictionary.
         """
+        logger.info(f"webdav - {request.method} {url}")
         try:
             requests_args = (requests_args or {}).copy()
             headers = self.get_headers(request.META)
@@ -64,9 +107,6 @@ class WebDavProxyMiddleware:
                 requests_args["data"] = request.body
             if "params" not in requests_args:
                 requests_args["params"] = QueryDict("", mutable=True)
-
-            # logger.info(f"proxy_view {request.method} {url}")
-            # logger.info(f"proxy, request body: {request.body}")
 
             # Overwrite any headers and params from the incoming request with explicitly
             # specified values for the requests library.
@@ -119,6 +159,7 @@ class WebDavProxyMiddleware:
 
             return proxy_response
         except Exception as exc:
+            # TODO make sure wrappers return status code, not generic exception
             raise exc
 
     def get_headers(self, environ):
@@ -153,10 +194,6 @@ class WebDavProxyMiddleware:
             workspace_id = re_match_group(STORAGE_URL_RE, host)
             if workspace_id:
                 workspace_id = workspace_id.replace("-", "_")
-                workspace = Workspace.objects.get(pk=workspace_id)
-                if not workspace:
-                    msg = f"Workspace {workspace_id} could not be found, please check your server url."
-                    raise AnaliticoException(msg, status_code=status.HTTP_404_NOT_FOUND)
 
                 # create a rest_framework request which will help checking if the user
                 # is authenticating either with basic auth or using a bearer token
@@ -169,26 +206,11 @@ class WebDavProxyMiddleware:
                     ),
                 )
 
-                # check for read only or read and write permission based on request method
-                permission = (
-                    "analitico.webdav.get"
-                    if request.method in WEBDAV_READONLY_HTTP_METHODS
-                    else "analitico.webdav.create"
+                # check credentials, raise hell if not authorized
+                webdav_server, webdav_username, webdav_password = get_webdav_credentials_or_exception(
+                    workspace_id, request2.user, request.method
                 )
-                # TODO return proper response for WebDAV requesting for credentials
-                has_item_permission_or_exception(request2.user, workspace, permission)
-
-                # TODO #211 storage / add caching of credentials and permissions checks to webdav proxy
-                # retrieve mount configuration and credentials
-                storage = workspace.get_attribute("storage")
-                if get_dict_dot(storage, "driver", "").lower() != "webdav":
-                    msg = f"Workspace {workspace_id} is not configured for WebDAV mounting."
-                    raise AnaliticoException(msg, status_code=status.HTTP_404_NOT_FOUND)
-
-                # extract path which could be nothing, / or /dir/dir/etc...
-                webdav_url = urllib.parse.urljoin(storage["url"], request.path)
-                webdav_username = storage["credentials"]["username"]
-                webdav_password = storage["credentials"]["password"]
+                webdav_url = urllib.parse.urljoin(webdav_server, request.path)
 
                 # proxy this call through to webdav server
                 return self.proxy_view(request, webdav_url, requests_args={"auth": (webdav_username, webdav_password)})
