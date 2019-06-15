@@ -187,6 +187,11 @@ class Client(object):
         else:
             self._download(local_path_or_fileobj, response)
 
+    def download_as_stream(self, remote_path, chunk_size=DOWNLOAD_CHUNK_SIZE_BYTES):
+        response = self._send("GET", remote_path, 200, stream=True)
+        for chunk in response.iter_content(chunk_size):
+            yield chunk
+
     def _download(self, fileobj, response):
         for chunk in response.iter_content(DOWNLOAD_CHUNK_SIZE_BYTES):
             fileobj.write(chunk)

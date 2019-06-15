@@ -1,3 +1,4 @@
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -14,7 +15,7 @@
 # limitations under the License.
 
 """
-Provides storage driver for working with local filesystem
+Provides storage driver for WebDAV network filesystem
 """
 
 from __future__ import with_statement
@@ -24,7 +25,7 @@ import errno
 import os
 import shutil
 import sys
-
+import urllib.parse
 
 from libcloud.utils.files import read_in_chunks
 from libcloud.utils.py3 import relpath
@@ -41,10 +42,6 @@ from libcloud.storage.types import InvalidContainerNameError
 
 # easywebdav client
 from .client import Client, OperationFailed
-
-import logging
-
-logger = logging.getLogger("webdav")
 
 # Tips: easywebdav does not seem to work with Python3
 # https://github.com/amnong/easywebdav
@@ -96,7 +93,6 @@ class WebdavStorageDriver(StorageDriver):
         self.url = url
         server = "u206378-sub4.your-storagebox.de"
         self.client = Client(server, username=username, password=password, protocol="https", cert=certificate)
-        logger.info(f"Connected to {url}")
 
     def _make_path(self, path, ignore_existing=True):
         """
@@ -133,7 +129,6 @@ class WebdavStorageDriver(StorageDriver):
         """
 
         self._check_container_name(container_name)
-
         try:
             ls = self.client.ls(container_name)
         except OperationFailed as exc:
@@ -144,11 +139,12 @@ class WebdavStorageDriver(StorageDriver):
         if "directory" not in item.contenttype:
             raise ContainerDoesNotExistError(value=None, driver=self, container_name=container_name)
 
-        extra = {}
-        extra["content_type"] = item.contenttype
-        extra["creation_time"] = item.ctime
-        extra["modify_time"] = item.mtime
-        # extra['access_time'] = item.a
+        extra = {
+            "content_type": item.contenttype,
+            "creation_time": item.ctime,
+            "modify_time": item.mtime
+            # 'access_time': item.a
+        }
 
         return Container(name=container_name, extra=extra, driver=self)
 
@@ -270,12 +266,8 @@ class WebdavStorageDriver(StorageDriver):
         :return: A CDN URL for this container.
         :rtype: ``str``
         """
-        path = os.path.join(self.base_path, container.name)
-
-        if check and not os.path.isdir(path):
-            raise ContainerDoesNotExistError(value=None, driver=self, container_name=container.name)
-
-        return path
+        container_url = urllib.parse.urljoin(self.url, container.name)
+        return container_url
 
     def get_object(self, container_name, object_name):
         """
@@ -406,10 +398,8 @@ class WebdavStorageDriver(StorageDriver):
         :return: A stream of binary chunks of data.
         :rtype: ``object``
         """
-        path = self.get_object_cdn_url(obj)
-        with open(path, "rb") as obj_file:
-            for data in read_in_chunks(obj_file, chunk_size=chunk_size):
-                yield data
+        full_path = os.path.join(obj.container.name, obj.name)
+        self.client.download_as_stream(full_path, chunk_size)
 
     def upload_object(self, file_path, container, object_name, extra=None, verify_hash=True):
         """
@@ -500,31 +490,8 @@ class WebdavStorageDriver(StorageDriver):
         :return: ``bool`` True on success.
         :rtype: ``bool``
         """
-
-        path = self.get_object_cdn_url(obj)
-
-        with LockWebdavStorage(path):
-            try:
-                os.unlink(path)
-            except Exception:
-                return False
-
-        # Check and delete all the empty parent folders
-        path = os.path.dirname(path)
-        container_url = obj.container.get_cdn_url()
-
-        # Delete the empty parent folders till the container's level
-        while path != container_url:
-            try:
-                os.rmdir(path)
-            except OSError:
-                exp = sys.exc_info()[1]
-                if exp.errno == errno.ENOTEMPTY:
-                    break
-                raise exp
-
-            path = os.path.dirname(path)
-
+        full_path = os.path.join(obj.container.name, obj.name)
+        self.client.delete(full_path)
         return True
 
     def create_container(self, container_name):
