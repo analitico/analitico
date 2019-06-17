@@ -1,0 +1,19 @@
+{
+    "type": "analitico/workspace",
+    "id": "ws_storage_webdav",
+    "attributes": {
+        "user": "user1@analitico.ai",
+        "title": "This is the title",
+        "description": "This is the description",
+        "notes": "A workspace used to test WebDAV integration with Hetzner",
+        "storage": {
+            "driver": "webdav",
+            "url": "https://u206378-sub4.your-storagebox.de",
+            "notes": "This subuser is reserved for unit testing use",
+            "credentials": {
+                "username": "u206378-sub4",
+                "password": "nGGGWuPsvqcOqzN8"
+            }
+        }
+    }
+}
