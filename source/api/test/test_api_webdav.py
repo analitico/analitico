@@ -531,7 +531,8 @@ class WebdavTests(AnaliticoApiTestCase):
         self.assertTrue(driver.exists(remote_path))
 
         # download file as a stream, check contents
-        remote_data = iter(driver.download_as_stream(remote_path))
+        remote_data = next(iter(driver.download_as_stream(remote_path)))
+        self.assertEqual(file_data, remote_data)
 
         with tempfile.NamedTemporaryFile() as f:
             # download to file object
@@ -668,7 +669,7 @@ class WebdavTests(AnaliticoApiTestCase):
             driver.rmdir(container_name)
 
 
-    def test_webdav_driver_get_object_download_object(self):
+    def test_webdav_driver_upload_get_download_object(self):
         driver = self.get_driver()
         try:
             base_name = "/" + django.utils.crypto.get_random_string() + "/"
@@ -687,16 +688,21 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertIsInstance(obj, Object)
             self.assertEqual(obj.name, container_name + obj_name)
             self.assertEqual(obj.container.name, container_name)
+
+            # can't overwrite unless specified
             with tempfile.NamedTemporaryFile() as f:
-                # can't overwrite unless specified
                 with self.assertRaises(libcloud.common.types.LibcloudError):
                     driver.download_object(obj, f.name)
 
+            # download and overwrite
             with tempfile.NamedTemporaryFile() as f:
-                # download and overwrite
                 driver.download_object(obj, f.name, overwrite_existing=True)
                 downloaded_data = f.file.read()
                 self.assertEqual(obj_data, downloaded_data)
+            
+            # streaming download
+            downloaded_data = next(iter(driver.download_object_as_stream(obj)))
+            self.assertEqual(obj_data, downloaded_data)
 
         finally:
             driver.rmdir(container_name)

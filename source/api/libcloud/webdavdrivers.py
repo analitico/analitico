@@ -402,7 +402,7 @@ class WebdavStorageDriver(StorageDriver):
     def download_object_as_stream(self, obj: Object, chunk_size=None) -> object:
         """ Return a generator which yields object's data. """
         full_path = os.path.join(obj.container.name, obj.name)
-        return self.download_as_stream(full_path, chunk_size)
+        yield from self.download_as_stream(full_path, chunk_size)
 
     def upload_object(
         self, file_path: str, container: Container, object_name: str, extra=None, verify_hash=True
