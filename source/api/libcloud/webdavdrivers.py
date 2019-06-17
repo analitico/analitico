@@ -1,13 +1,11 @@
-"""
-Storage driver for WebDAV network filesystem in Apache libcloud
-"""
+""" Storage driver for WebDAV network filesystem in Apache libcloud. """
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
 # The ASF licenses this file to You under the Apache License, Version 2.0
 # (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
+# the License. You may obtain a copy of the License at:
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -19,61 +17,36 @@ Storage driver for WebDAV network filesystem in Apache libcloud
 
 from __future__ import with_statement
 
-import io
-import errno
 import os
-import shutil
-import sys
-import urllib.parse
 
-from libcloud.utils.files import read_in_chunks
-from libcloud.utils.py3 import relpath
 from libcloud.utils.py3 import u
 from libcloud.common.base import Connection
 from libcloud.storage.base import Object, Container, StorageDriver
 from libcloud.common.types import LibcloudError
-from libcloud.storage.types import ContainerAlreadyExistsError
-from libcloud.storage.types import ContainerDoesNotExistError
-from libcloud.storage.types import ContainerIsNotEmptyError
-from libcloud.storage.types import ObjectError
-from libcloud.storage.types import ObjectDoesNotExistError
-from libcloud.storage.types import InvalidContainerNameError
+from libcloud.storage.types import (
+    ContainerAlreadyExistsError,
+    ContainerDoesNotExistError,
+    InvalidContainerNameError,
+    ObjectError,
+)
 
 import requests
-import platform
-from numbers import Number
 import xml.etree.cElementTree as xml
-from collections import namedtuple
 
-from libcloud.storage.base import Object
-
-py_majversion, py_minversion, py_revversion = platform.python_version_tuple()
-
+from numbers import Number
 from http.client import responses as HTTP_CODES
 from urllib.parse import urlparse
 
 DOWNLOAD_CHUNK_SIZE_BYTES = 1 * 1024 * 1024
 
 
-class WebdavException(Exception):
-    pass
-
-
-class ConnectionFailed(WebdavException):
-    pass
-
-
-# Base on code from:
-# https://raw.githubusercontent.com/amnong/easywebdav/master/easywebdav/client.py
+# WebDAV methods are base on code from easywebdav updated/fixed for python3/libcloud:
 # Copyright (c) 2012 year, Amnon Grossman
-# Updated and improved for Python 3
+# https://raw.githubusercontent.com/amnong/easywebdav/master/easywebdav/client.py
 
 
 def codestr(code):
     return HTTP_CODES.get(code, "UNKNOWN")
-
-
-File = namedtuple("File", ["name", "content_length", "last_modified", "creation_date", "content_type", "etag"])
 
 
 def xml_prop(elem, name, default=None):
@@ -86,7 +59,9 @@ def prop(elem, name, default=None):
     return default if child is None else child.text
 
 
-class OperationFailed(WebdavException):
+class WebdavException(LibcloudError):
+    """ WebdavException shows method, expected status codes and actual status code reported by server. """
+
     _OPERATIONS = dict(
         HEAD="get header",
         GET="download",
@@ -102,48 +77,20 @@ class OperationFailed(WebdavException):
         self.expected_code = expected_code
         self.actual_code = actual_code
         operation_name = self._OPERATIONS[method]
-        self.reason = 'Failed to {operation_name} "{path}"'.format(**locals())
+        self.reason = f'Failed to {operation_name} "{path}"'
         expected_codes = (expected_code,) if isinstance(expected_code, Number) else expected_code
         expected_codes_str = ", ".join("{0} {1}".format(code, codestr(code)) for code in expected_codes)
         actual_code_str = codestr(actual_code)
-        msg = """\
-{self.reason}.
-  Operation     :  {method} {path}
-  Expected code :  {expected_codes_str}
-  Actual code   :  {actual_code} {actual_code_str}""".format(
-            **locals()
-        )
-        super(OperationFailed, self).__init__(msg)
-
-
-IGNORE_FOLDERS = [".lock", ".hash"]
-
-
-class LockWebdavStorage(object):
-    """
-    A class to help in locking a local path before being updated
-    """
-
-    def __init__(self, path):
-        pass
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, type, value, traceback):
-        pass
+        msg = f"{self.reason}.\noperation:  {method} {path}\nexpected: {expected_codes_str}, actual: {actual_code} {actual_code_str}"
+        super(WebdavException, self).__init__(msg)
 
 
 class WebdavStorageDriver(StorageDriver):
-    """
-    Implementation of local file-system based storage. This is helpful
-    where the user would want to use the same code (using libcloud) and
-    switch between cloud storage and local storage
-    """
+    """ Apache libcloud storage driver for WebDAV shares. """
 
     connectionCls = Connection
     name = "WebDAV"
-    website = "http://example.com"
+    website = "https://analitico.ai"
     hash_type = "md5"
 
     # server base url
@@ -191,10 +138,10 @@ class WebdavStorageDriver(StorageDriver):
         """ Returns path of parent directory or None """
         if path is None or len(path) < 3:
             return None
-        dir = os.path.dirname(path)
+        dir_path = os.path.dirname(path)
         if not os.path.basename(path):
-            dir = os.path.dirname(dir)
-        return dir + "/" if len(dir) > 1 else dir
+            dir_path = os.path.dirname(dir_path)
+        return dir_path + "/" if len(dir_path) > 1 else dir_path
 
     def _xml_element_to_object(self, element):
         """ Convert xml item returned by WebDAV into a libcloud Object. """
@@ -218,7 +165,7 @@ class WebdavStorageDriver(StorageDriver):
                 data_hash.update(u(extra["creation_time"]).encode("ascii"))
                 data_hash = data_hash.hexdigest()
 
-            if "httpd/unix-directory" == extra["content_type"]:
+            if extra["content_type"] == "httpd/unix-directory":
                 return Container(name=name, extra=extra, driver=self)
 
             return Object(
@@ -248,7 +195,7 @@ class WebdavStorageDriver(StorageDriver):
             or not isinstance(expected_code, Number)
             and response.status_code not in expected_code
         ):
-            raise OperationFailed(method, path, expected_code, response.status_code)
+            raise WebdavException(method, path, expected_code, response.status_code)
         return response
 
     def cd(self, path):
@@ -275,14 +222,14 @@ class WebdavStorageDriver(StorageDriver):
             dirs[0] = "/" + dirs[0]
         old_cwd = self.cwd
         try:
-            for dir in dirs:
+            for dir_path in dirs:
                 try:
-                    self.mkdir(dir, safe=True)
+                    self.mkdir(dir_path, safe=True)
                 except Exception as e:
                     if e.actual_code == 409:
                         raise
                 finally:
-                    self.cd(dir)
+                    self.cd(dir_path)
         finally:
             self.cd(old_cwd)
 
@@ -361,25 +308,14 @@ class WebdavStorageDriver(StorageDriver):
     ## StorageDriver utility methods
     ##
 
-    def _make_path(self, path, ignore_existing=True):
-        """ Create a path by checking if it already exists """
-
-        try:
-            os.makedirs(path)
-        except OSError:
-            exp = sys.exc_info()[1]
-            if exp.errno == errno.EEXIST and not ignore_existing:
-                raise exp
-
-
     def _make_container(self, container_name: str) -> Container:
         """ Create a container instance (defaults to root directory of server). """
         try:
             container_name = self._normalize_container_name(container_name)
             ls = self.ls(container_name)
             return ls[0]
-        except OperationFailed as exc:
-            raise ContainerDoesNotExistError(value=None, driver=self, container_name=container_name)
+        except WebdavException as exc:
+            raise ContainerDoesNotExistError(value=None, driver=self, container_name=container_name) from exc
 
     def _make_object(self, container: Container, object_name: str) -> Object:
         """ Create an object instance. """
@@ -388,8 +324,8 @@ class WebdavStorageDriver(StorageDriver):
             ls = self.ls(full_path)
             assert ls and len(ls) == 1 and isinstance(ls[0], Object)
             return ls[0]
-        except OperationFailed as exc:
-            raise ObjectError(value=None, driver=self, object_name=object_name)
+        except WebdavException as exc:
+            raise ObjectError(value=None, driver=self, object_name=object_name) from exc
 
     ##
     ## StorageDriver methods
@@ -456,7 +392,9 @@ class WebdavStorageDriver(StorageDriver):
         :rtype: ``bool``
         """
         if not overwrite_existing and os.path.exists(destination_path):
-            raise LibcloudError(value=f"{destination_path} already exists, use overwrite_existing=True to replace", driver=self)
+            raise LibcloudError(
+                value=f"{destination_path} already exists, use overwrite_existing=True to replace", driver=self
+            )
         with open(destination_path, "wb") as f:
             self.download_as_stream(f)
         return True
@@ -473,7 +411,9 @@ class WebdavStorageDriver(StorageDriver):
         with open(file_path, "rb") as f:
             return self.upload_object_via_stream(f, container, extra)
 
-    def upload_object_via_stream(self, iterator, container: Container, object_name: str, extra=None, header=None) -> Object:
+    def upload_object_via_stream(
+        self, iterator, container: Container, object_name: str, extra=None, header=None
+    ) -> Object:
         """
         Upload an object using an iterator.
 
@@ -512,7 +452,6 @@ class WebdavStorageDriver(StorageDriver):
         directory = os.path.dirname(full_path)
         self.mkdirs(directory)
         self.upload(iterator, full_path)
-
         return self._make_object(container, object_name)
 
     def delete_object(self, obj: Object) -> bool:
@@ -549,13 +488,13 @@ class WebdavStorageDriver(StorageDriver):
     ##
 
     def get_container_cdn_url(self, container, check=False):
-        raise LibcloudError(value="CDN is not supported", driver=self)
+        raise NotImplementedError("get_container_cdn_url not implemented for this driver")
 
     def get_object_cdn_url(self, obj):
-        raise LibcloudError(value="CDN is not supported", driver=self)
+        raise NotImplementedError("get_object_cdn_url not implemented for this driver")
 
     def enable_container_cdn(self, container):
-        raise LibcloudError(value="CDN is not supported", driver=self)
+        raise NotImplementedError("enable_container_cdn not implemented for this driver")
 
     def enable_object_cdn(self, obj):
-        raise LibcloudError(value="CDN is not supported", driver=self)
+        raise NotImplementedError("enable_object_cdn not implemented for this driver")

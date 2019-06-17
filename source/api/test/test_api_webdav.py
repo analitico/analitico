@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.http.response import StreamingHttpResponse
 from django.utils.dateparse import parse_datetime
 
+import django
 import django.utils.http
 import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -32,9 +33,9 @@ WEBDAV_URL = "https://u206378-sub4.your-storagebox.de"
 WEBDAV_USERNAME = "u206378-sub4"
 WEBDAV_PASSWORD = "nGGGWuPsvqcOqzN8"
 
+
 @pytest.mark.django_db
 class WebdavTests(AnaliticoApiTestCase):
-    
     def get_driver(self):
         """ Driver for WebDAV container used by unit testing """
         return api.libcloud.WebdavStorageDriver(WEBDAV_URL, WEBDAV_USERNAME, WEBDAV_PASSWORD)
@@ -423,8 +424,8 @@ class WebdavTests(AnaliticoApiTestCase):
         path = None
         self.assertEqual(driver._parent_path(path), None)
 
-    
     def test_webdav_driver_ls(self):
+        """ List contents of a directory. """
         driver = self.get_driver()
         ls = driver.ls("/")
 
@@ -433,3 +434,98 @@ class WebdavTests(AnaliticoApiTestCase):
         container = ls[0]
         self.assertTrue(isinstance(container, libcloud.storage.base.Container))
         self.assertEqual(container.name, "/")
+
+    def test_webdav_driver_mkdir(self):
+        """ Make a directory. """
+        driver = self.get_driver()
+
+        # directory does not exist yet
+        dir_name = "/" + django.utils.crypto.get_random_string() + "/"
+        self.assertFalse(driver.exists(dir_name))
+
+        # directory was created?
+        driver.mkdir(dir_name)
+        self.assertTrue(driver.exists(dir_name))
+
+        # directory was removed?
+        driver.rmdir(dir_name)
+        self.assertFalse(driver.exists(dir_name))
+
+    def test_webdav_driver_mkdirs(self):
+        """ Make and delete a directory with subdirectories. """
+        driver = self.get_driver()
+
+        # directory does not exist yet
+        dir_name = "/" + django.utils.crypto.get_random_string() + "/sub1/sub2/"
+        self.assertFalse(driver.exists(dir_name))
+
+        # mkdir should not work on multiple levels of directory
+        with self.assertRaises(api.libcloud.WebdavException):
+            driver.mkdir(dir_name)
+        self.assertFalse(driver.exists(dir_name))
+
+        # mkdirs works on multiple levels of directory
+        driver.mkdirs(dir_name)
+        self.assertTrue(driver.exists(dir_name))
+
+        # directory was removed?
+        driver.rmdir(dir_name)
+        self.assertFalse(driver.exists(dir_name))
+
+    def test_webdav_driver_rmdir_not_empty(self):
+        """ Delete a directory that is NOT empty. """
+        driver = self.get_driver()
+
+        # create directory
+        dir_name = "/" + django.utils.crypto.get_random_string() + "/sub1/sub2/"
+        self.assertFalse(driver.exists(dir_name))
+        driver.mkdirs(dir_name)
+        self.assertTrue(driver.exists(dir_name))
+
+        # write a file in it
+        remote_path = os.path.join(dir_name, "pippo.txt")
+        data = io.BytesIO(b"This is some stuff")
+        driver.upload(data, remote_path)
+
+        # file exists?
+        self.assertTrue(driver.exists(remote_path))
+
+        # delete directory that has file in it
+        driver.rmdir(dir_name)
+        self.assertFalse(driver.exists(dir_name))
+        self.assertFalse(driver.exists(remote_path))
+
+    def test_webdav_driver_cdn(self):
+        """ CDN methods are not implemented. """
+        driver = self.get_driver()
+        with self.assertRaises(NotImplementedError):
+            driver.get_container_cdn_url(None)
+        with self.assertRaises(NotImplementedError):
+            driver.get_object_cdn_url(None)
+        with self.assertRaises(NotImplementedError):
+            driver.enable_container_cdn(None)
+        with self.assertRaises(NotImplementedError):
+            driver.enable_object_cdn(None)
+
+    def test_webdav_driver_rmdir_not_empty2(self):
+        """ Delete a directory that is NOT empty. """
+        driver = self.get_driver()
+
+        # create directory
+        dir_name = "/" + django.utils.crypto.get_random_string() + "/sub1/sub2/"
+        self.assertFalse(driver.exists(dir_name))
+        driver.mkdirs(dir_name)
+        self.assertTrue(driver.exists(dir_name))
+
+        # write a file in it
+        remote_path = os.path.join(dir_name, "pippo.txt")
+        data = io.BytesIO(b"This is some stuff")
+        driver.upload(data, remote_path)
+
+        # file exists?
+        self.assertTrue(driver.exists(remote_path))
+
+        # delete directory that has file in it
+        driver.rmdir(dir_name)
+        self.assertFalse(driver.exists(dir_name))
+        self.assertFalse(driver.exists(remote_path))
