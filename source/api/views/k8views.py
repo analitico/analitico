@@ -159,12 +159,15 @@ class K8ViewSet(GenericViewSet):
         service_name, service_namespace = self.get_service_name(request, pk)
 
         # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-uri-request.html
+        query = api.utilities.get_query_parameter(request, "query", "")
         from_hit = api.utilities.get_query_parameter(request, "from", 0)
         batch_size = api.utilities.get_query_parameter(request, "size", 1000)
         sort_by = api.utilities.get_query_parameter(request, "sort", "@timestamp:desc")
 
         # query the current service only
-        query = f'kubernetes.labels.serving_knative_dev\/service:"{service_name}" AND kubernetes.namespace_name:"{service_namespace}"'
+        if query:
+            query = f"{query} AND "
+        query += f'kubernetes.labels.serving_knative_dev\/service:"{service_name}" AND kubernetes.namespace_name:"{service_namespace}"'
 
         url = django.conf.settings.ELASTIC_SEARCH_URL
         token = django.conf.settings.ELASTIC_SEARCH_API_TOKEN

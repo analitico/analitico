@@ -131,7 +131,7 @@ class K8Tests(AnaliticoApiTestCase):
         return service
 
     @tag("slow", "docker", "k8s")
-    def test_k8_get_metrics(self):
+    def test_k8s_get_metrics(self):
         self.deploy_service()
         url = reverse("api:k8-metrics", args=(self.endpoint_id,))
 
@@ -180,7 +180,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(len(data["data"]["result"]), 0)  # no results
 
     @tag("slow", "docker", "k8s")
-    def test_k8_get_logs(self):
+    def test_k8s_get_logs(self):
         self.deploy_service()
         url = reverse("api:k8-logs", args=(self.endpoint_id,))
 
@@ -205,3 +205,19 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(len(data["hits"]["hits"]), 20)
         self.assertEqual(data["timed_out"], False)
         self.assertGreater(data["hits"]["total"], 50)
+
+        # user can provide a query string
+        self.auth_token(self.token1)
+        response = self.client.get(url, data={"query": '"this-is-a-string-that-will-never-be-present-in-a-log"'}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(len(data["hits"]["hits"]), 0)
+
+        # search for error only
+        self.auth_token(self.token1)
+        response = self.client.get(url, data={"query": "level:info"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertGreater(len(data["hits"]["hits"]), 20)
+        for d in data["hits"]["hits"]:
+            self.assertEqual("info", d["_source"]["level"])
