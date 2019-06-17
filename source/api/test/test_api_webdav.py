@@ -9,6 +9,14 @@ from django.urls import reverse
 from django.http.response import StreamingHttpResponse
 from django.utils.dateparse import parse_datetime
 
+from libcloud.storage.base import Object, Container, StorageDriver
+from libcloud.storage.types import (
+    ContainerAlreadyExistsError,
+    ContainerDoesNotExistError,
+    InvalidContainerNameError,
+    ObjectError,
+)
+
 import django
 import django.utils.http
 import django.core.files
@@ -17,12 +25,14 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from analitico.utilities import read_json, get_dict_dot
 
+import api
 import analitico
 import api.models
 import api.libcloud
 from .utils import AnaliticoApiTestCase
 
 import libcloud
+import tempfile
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -406,7 +416,7 @@ class WebdavTests(AnaliticoApiTestCase):
             raise exc
 
     ##
-    ## WebDAV driver
+    ## WebDAV driver direct webdav methods
     ##
 
     def test_webdav_driver_parent_path(self):
@@ -507,25 +517,150 @@ class WebdavTests(AnaliticoApiTestCase):
         with self.assertRaises(NotImplementedError):
             driver.enable_object_cdn(None)
 
-    def test_webdav_driver_rmdir_not_empty2(self):
-        """ Delete a directory that is NOT empty. """
+    def test_webdav_driver_download(self):
+        """ Create a file, download to file-obj, download to filename, check. """
         driver = self.get_driver()
 
-        # create directory
         dir_name = "/" + django.utils.crypto.get_random_string() + "/sub1/sub2/"
-        self.assertFalse(driver.exists(dir_name))
+        remote_path = dir_name + "file.txt"
+        file_data = b"This is some stuff"
+
+        # create file
         driver.mkdirs(dir_name)
-        self.assertTrue(driver.exists(dir_name))
-
-        # write a file in it
-        remote_path = os.path.join(dir_name, "pippo.txt")
-        data = io.BytesIO(b"This is some stuff")
-        driver.upload(data, remote_path)
-
-        # file exists?
+        driver.upload(io.BytesIO(file_data), remote_path)
         self.assertTrue(driver.exists(remote_path))
 
-        # delete directory that has file in it
+        # download file as a stream, check contents
+        remote_data = iter(driver.download_as_stream(remote_path))
+
+        with tempfile.NamedTemporaryFile() as f:
+            # download to file object
+            driver.download(remote_path, f.file)
+            f.file.seek(0)
+            remote_data = f.file.read()
+            self.assertEqual(file_data, remote_data)
+
+        with tempfile.NamedTemporaryFile() as f:
+            # download to file name
+            driver.download(remote_path, f.name)
+            f.file.seek(0)
+            remote_data = f.file.read()
+            self.assertEqual(file_data, remote_data)
+
         driver.rmdir(dir_name)
-        self.assertFalse(driver.exists(dir_name))
-        self.assertFalse(driver.exists(remote_path))
+
+    ##
+    ## StorageDriver methods
+    ##
+
+    CONTAINER_NAMES = ["Mickey Mouse", "Donald Duck", "Goofy", "Clarabelle", "Daisy Duck", "Scrooge McDuck"]
+
+    def test_webdav_driver_create_container(self):
+        driver = self.get_driver()
+
+        # new container does not exist
+        container_name = "/" + django.utils.crypto.get_random_string() + "/sub1/sub2/"
+        with self.assertRaises(ContainerDoesNotExistError):
+            driver.get_container(container_name)
+
+        # create and check
+        container = driver.create_container(container_name)
+        self.assertIsInstance(container, Container)
+        self.assertEqual(container.name, container_name)
+
+        # get and check
+        container = driver.get_container(container_name)
+        self.assertIsInstance(container, Container)
+        self.assertEqual(container.name, container_name)
+
+        # delete and check
+        driver.delete_container(container)
+        with self.assertRaises(ContainerDoesNotExistError):
+            driver.get_container(container_name)
+
+    def test_webdav_driver_iterate_containers(self):
+        driver = self.get_driver()
+        container_name = "/" + django.utils.crypto.get_random_string() + "/"
+        try:
+            for name in self.CONTAINER_NAMES:
+                subcontainer_name = os.path.join(container_name, name) + "/"
+
+                subcontainer = driver.create_container(subcontainer_name)
+                self.assertEqual(subcontainer.name, subcontainer_name)
+                subcontainer = driver.get_container(subcontainer_name)
+                self.assertEqual(subcontainer.name, subcontainer_name)
+
+            # iterate top level containers (there should be a few but at the very least one)
+            container = next(item for item in driver.iterate_containers() if item.name == container_name)
+            self.assertIsNotNone(container)
+
+        finally:
+            driver.rmdir(container_name)
+
+    def test_webdav_driver_iterate_container_objects(self):
+        driver = self.get_driver()
+        try:
+            container_name = "/" + django.utils.crypto.get_random_string() + "/"
+
+            # create a number of directories
+            for name in self.CONTAINER_NAMES:
+                subcontainer_name = os.path.join(container_name, name) + "/"
+                subcontainer = driver.create_container(subcontainer_name)
+                self.assertEqual(subcontainer.name, subcontainer_name)
+                subcontainer = driver.get_container(subcontainer_name)
+                self.assertEqual(subcontainer.name, subcontainer_name)
+
+            # containers are listed by ls()
+            items = driver.ls(container_name)
+            self.assertEqual(len(items), len(self.CONTAINER_NAMES) + 1)
+
+            # containers are NOT listed by storage APIs
+            parent_container = driver.get_container(container_name)
+            items = list(driver.iterate_container_objects(parent_container))
+            self.assertEqual(len(items), 0)
+
+            # now upload a few text files
+            for name in self.CONTAINER_NAMES:
+                driver.upload_object_via_stream(io.BytesIO(b"This is it"), parent_container, name + ".txt")
+
+            # containers + object are listed by ls()
+            items = driver.ls(container_name)
+            self.assertEqual(len(items), (2 * len(self.CONTAINER_NAMES)) + 1)
+
+            # now the list should contain the text files
+            items = list(driver.iterate_container_objects(parent_container))
+            self.assertEqual(len(items), len(self.CONTAINER_NAMES))
+
+        finally:
+            driver.rmdir(container_name)
+
+    def test_webdav_driver_get_container(self):
+        """ Create a container with nested folders then retrieve them individually. """
+        driver = self.get_driver()
+        try:
+            base_name = "/" + django.utils.crypto.get_random_string() + "/"
+            container_name = base_name + "abc/def/ghi/"
+            container = driver.create_container(container_name)
+            self.assertEqual(container.name, container_name)
+
+            obj = driver.upload_object_via_stream(io.BytesIO(b"This is it"), container, "test.txt")
+            self.assertIsInstance(obj, Object)
+            self.assertEqual(obj.name, container_name + "test.txt")
+
+            container1_name = base_name + "abc/"
+            container1 = driver.get_container(container1_name)
+            self.assertIsInstance(container1, Container)
+            self.assertEqual(container1.name, container1_name)
+
+            container2_name = base_name + "abc/def/"
+            container2 = driver.get_container(container2_name)
+            self.assertIsInstance(container2, Container)
+            self.assertEqual(container2.name, container2_name)
+
+            container3_name = base_name + "abc/def/ghi/"
+            container3 = driver.get_container(container3_name)
+            self.assertIsInstance(container3, Container)
+            self.assertEqual(container3.name, container3_name)
+
+        finally:
+            driver.rmdir(container_name)

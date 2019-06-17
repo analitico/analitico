@@ -129,7 +129,7 @@ def apply_column(df: pd.DataFrame, column):
             elif column_type == "boolean":
                 if missing:
                     df[column_name] = False
-                # missing values are converted to False 
+                # missing values are converted to False
                 df[column_name] = df[column_name].fillna(False).astype(bool)
             elif column_type == "integer":
                 if missing:

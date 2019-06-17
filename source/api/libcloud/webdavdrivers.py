@@ -30,6 +30,7 @@ from libcloud.storage.types import (
     ObjectError,
 )
 
+import urllib
 import requests
 import xml.etree.cElementTree as xml
 
@@ -40,8 +41,8 @@ from urllib.parse import urlparse
 DOWNLOAD_CHUNK_SIZE_BYTES = 1 * 1024 * 1024
 
 
-# WebDAV methods are base on code from easywebdav updated/fixed for python3/libcloud:
-# Copyright (c) 2012 year, Amnon Grossman
+# WebDAV methods based on code from easywebdav updated/fixed for python3/libcloud:
+# Copyright (c) 2012, Amnon Grossman
 # https://raw.githubusercontent.com/amnong/easywebdav/master/easywebdav/client.py
 
 
@@ -146,7 +147,10 @@ class WebdavStorageDriver(StorageDriver):
     def _xml_element_to_object(self, element):
         """ Convert xml item returned by WebDAV into a libcloud Object. """
         try:
+            # extract name then convert %20 and + to regular spaces, etc...
             name = xml_prop(element, "href")
+            name = urllib.parse.unquote_plus(name)
+
             extra = {
                 "content_type": xml_prop(element, "getcontenttype", None),
                 "creation_time": xml_prop(element, "creationdate", ""),
@@ -243,16 +247,13 @@ class WebdavStorageDriver(StorageDriver):
         """ Delete specific file. """
         self._send("DELETE", path, 204)
 
-    def _upload(self, fileobj, remote_path):
-        self._send("PUT", remote_path, (200, 201, 204), data=fileobj)
-
     def upload(self, local_path_or_fileobj, remote_path):
         """ Upload a single file from filename or file-like object. """
         if isinstance(local_path_or_fileobj, str):
             with open(local_path_or_fileobj, "rb") as f:
-                self._upload(f, remote_path)
+                self._send("PUT", remote_path, (200, 201, 204), data=f)
         else:
-            self._upload(local_path_or_fileobj, remote_path)
+            self._send("PUT", remote_path, (200, 201, 204), data=local_path_or_fileobj)
 
     def download(self, remote_path, local_path_or_fileobj):
         response = self._send("GET", remote_path, 200, stream=True)
@@ -471,10 +472,6 @@ class WebdavStorageDriver(StorageDriver):
         :rtype: :class:`Container`
         """
         container_name = self._normalize_container_name(container_name)
-        ls = self.ls(container_name)
-        if len(ls) == 1 and isinstance(ls, Container):
-            msg = f"Container {container_name} already exists."
-            raise ContainerAlreadyExistsError(value=msg, container_name=container_name, driver=self)
         self.mkdirs(container_name)
         return self.get_container(container_name)
 
