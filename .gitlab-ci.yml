@@ -103,7 +103,7 @@ staging:
   script:
     # pull new docker image and run
     # start 2 dockers for jupyter notebook
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "gcloud -q auth configure-docker;
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
       docker pull ${BUILD_IMAGE_URL}; 
       docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico; 
@@ -167,7 +167,7 @@ worker-production:
   # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
 
   script:
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "gcloud -q auth configure-docker;
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
       docker pull ${BUILD_IMAGE_URL}; 
       docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico-worker1; 
