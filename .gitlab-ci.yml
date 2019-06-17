@@ -5,12 +5,8 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
-  BUILD_IMAGE_URL: s6.analitico.ai:5000/analitico:$CI_COMMIT_SHA # ${BUILD_IMAGE_URL}
-  BUILD_JUPYTER_IMAGE_URL: s6.analitico.ai:5000/analitico:$CI_COMMIT_SHA-jupyter # ${BUILD_JUPYTER_IMAGE_URL}
-  REGISTRY_USER: admin  # ${CI_REGISTRY_USER} 
-  REGISTRY_PASSWORD: ${CONTAINER_REGISTRY_PASSWORD} # ${CI_REGISTRY_PASSWORD}
-  REGISTRY_URL: s6.analitico.ai:5000  # ${CI_REGISTRY}
-  BUILD_IMAGE_GOOGLE_URL: eu.gcr.io/analitico-api/website:$CI_COMMIT_SHA 
+  BUILD_IMAGE_URL: eu.gcr.io/analitico-api/website:$CI_COMMIT_SHA # ${BUILD_IMAGE_URL}
+  BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/website:$CI_COMMIT_SHA-jupyter # ${BUILD_JUPYTER_IMAGE_URL}
 
 services:
 - docker:dind
@@ -55,8 +51,9 @@ build_dev:
     - rm /.git-credentials
     # add commit sha to the env script
     - echo export ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
-    # login to registry
-    - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
+    # authentication for Google Cloud Container Registry
+    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
+    - gcloud -q auth configure-docker
     # build docker image
     - echo "$(date +'%T') - Build analitico image"
     - docker build --pull -t $BUILD_IMAGE_URL .
@@ -71,11 +68,6 @@ build_dev:
     # push docker jupyter
     - docker push $BUILD_JUPYTER_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico jupyter image"
-    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
-    - gcloud -q auth configure-docker
-    # tag on google registry
-    - docker tag $BUILD_IMAGE_URL $BUILD_IMAGE_GOOGLE_URL
-    - docker push $BUILD_IMAGE_GOOGLE_URL
     # remove secrets
     - rm -R -f analitico-ci
   only:
@@ -111,8 +103,7 @@ staging:
   script:
     # pull new docker image and run
     # start 2 dockers for jupyter notebook
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}; 
-      docker pull ${BUILD_IMAGE_URL}; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker pull ${BUILD_IMAGE_URL}; 
       docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico; 
       docker rm analitico; 
@@ -175,8 +166,7 @@ worker-production:
   # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
 
   script:
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}; 
-      docker pull ${BUILD_IMAGE_URL}; 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "docker pull ${BUILD_IMAGE_URL}; 
       docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico-worker1; 
       docker rm analitico-worker1; 

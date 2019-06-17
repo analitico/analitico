@@ -1,8 +1,7 @@
-FROM s6.analitico.ai:5000/analitico:base
+FROM eu.gcr.io/analitico-api/analitico-website
 # we want to copy only requirements and ssl certificates
 # execute everything as a new users with restricted access
 # create user and change ownership of analitico venv
-RUN /bin/bash -c 'adduser --disabled-password --gecos "" analiticoj; chown analiticoj:analiticoj /home/www/analitico'
 WORKDIR /home/www/analitico
 # copy requirements
 COPY ./requirements.txt /home/www/analitico
@@ -19,6 +18,6 @@ COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico/analitico.ai.key
 # install new requirements, if any
 RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt;'
 # switch user
-USER analiticoj
+USER www
 # create notebook folder
 RUN /bin/bash -c 'mkdir -p /home/www/analitico/notebooks'
