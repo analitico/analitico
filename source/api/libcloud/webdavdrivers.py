@@ -396,8 +396,7 @@ class WebdavStorageDriver(StorageDriver):
             raise LibcloudError(
                 value=f"{destination_path} already exists, use overwrite_existing=True to replace", driver=self
             )
-        with open(destination_path, "wb") as f:
-            self.download_as_stream(f)
+        self.download(obj.name, destination_path)
         return True
 
     def download_object_as_stream(self, obj: Object, chunk_size=None) -> object:

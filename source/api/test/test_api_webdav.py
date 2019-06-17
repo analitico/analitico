@@ -643,9 +643,11 @@ class WebdavTests(AnaliticoApiTestCase):
             container = driver.create_container(container_name)
             self.assertEqual(container.name, container_name)
 
-            obj = driver.upload_object_via_stream(io.BytesIO(b"This is it"), container, "test.txt")
+            obj_data = b"This is it"
+            obj_name = "test.txt"
+            obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name)
             self.assertIsInstance(obj, Object)
-            self.assertEqual(obj.name, container_name + "test.txt")
+            self.assertEqual(obj.name, container_name + obj_name)
 
             container1_name = base_name + "abc/"
             container1 = driver.get_container(container1_name)
@@ -661,6 +663,40 @@ class WebdavTests(AnaliticoApiTestCase):
             container3 = driver.get_container(container3_name)
             self.assertIsInstance(container3, Container)
             self.assertEqual(container3.name, container3_name)
+
+        finally:
+            driver.rmdir(container_name)
+
+
+    def test_webdav_driver_get_object_download_object(self):
+        driver = self.get_driver()
+        try:
+            base_name = "/" + django.utils.crypto.get_random_string() + "/"
+            container_name = base_name + "abc/def/ghi/"
+            container = driver.create_container(container_name)
+            self.assertEqual(container.name, container_name)
+
+            obj_data = b"This is it"
+            obj_name = "test.txt"
+            obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name)
+            self.assertIsInstance(obj, Object)
+            self.assertEqual(obj.name, container_name + obj_name)
+
+            # get and download object
+            obj = driver.get_object(container_name, obj_name)
+            self.assertIsInstance(obj, Object)
+            self.assertEqual(obj.name, container_name + obj_name)
+            self.assertEqual(obj.container.name, container_name)
+            with tempfile.NamedTemporaryFile() as f:
+                # can't overwrite unless specified
+                with self.assertRaises(libcloud.common.types.LibcloudError):
+                    driver.download_object(obj, f.name)
+
+            with tempfile.NamedTemporaryFile() as f:
+                # download and overwrite
+                driver.download_object(obj, f.name, overwrite_existing=True)
+                downloaded_data = f.file.read()
+                self.assertEqual(obj_data, downloaded_data)
 
         finally:
             driver.rmdir(container_name)
