@@ -12,4 +12,4 @@ RUN adduser www --disabled-login --disabled-password  --gecos ""
 # switch to user www
 USER www
 # create analitico folder, create python venv, install requirements
-RUN /bin/bash -c 'mkdir -p /home/www/analitico && cd /home/www/analitico && python3 -m venv venv && source venv/bin/activate && pip3 install -r /requirements.txt'
+RUN /bin/bash -c 'mkdir -p /home/www/analitico && cd /home/www/analitico && python3 -m venv venv && source venv/bin/activate && pip3 install wheel && pip3 install -r /requirements.txt'
