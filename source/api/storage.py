@@ -6,6 +6,12 @@ import libcloud
 import libcloud.storage.base
 import libcloud.storage.types
 import libcloud.storage.drivers.google_storage
+from libcloud.storage.providers import get_driver
+
+from analitico import AnaliticoException, logger
+
+# registers webdav driver
+import api.libcloud
 
 # Storage options are configured from json blobs looking like this:
 # {
@@ -50,10 +56,12 @@ class Storage:
     def __init__(self, settings, driver):
         self.settings = settings
         self.driver = driver
+
+        container_name = settings.get("container", "/")
         try:
-            self.container = driver.get_container(settings["container"])
+            self.container = driver.get_container(container_name)
         except libcloud.storage.types.ContainerDoesNotExistError:
-            self.container = driver.create_container(settings["container"])
+            self.container = driver.create_container(container_name)
 
     @staticmethod
     def factory(settings: dict):
@@ -80,8 +88,16 @@ class Storage:
                         "Storage.factory - could not login to Google Cloud Storage, please check your keys", exc
                     )
 
-            # TODO add other cloud providers as we need them
-            raise NotFound("Storage.factory - driver for '" + driver + "' was not found.")
+            if driver == "webdav":
+                driver = api.libcloud.WebdavStorageDriver(
+                    url=settings["url"],
+                    username=settings["credentials"]["username"],
+                    password=settings["credentials"]["password"],
+                )
+                return Storage(settings, driver)
+
+            raise AnaliticoException(f"Storage driver {driver} was not found.")
+
         except Exception as exc:
             raise exc
 

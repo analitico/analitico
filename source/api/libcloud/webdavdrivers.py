@@ -1,3 +1,6 @@
+"""
+Storage driver for WebDAV network filesystem in Apache libcloud
+"""
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -13,10 +16,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Provides storage driver for WebDAV network filesystem
-"""
 
 from __future__ import with_statement
 
@@ -40,18 +39,82 @@ from libcloud.storage.types import ObjectError
 from libcloud.storage.types import ObjectDoesNotExistError
 from libcloud.storage.types import InvalidContainerNameError
 
-# easywebdav client
-from .client import Client, OperationFailed
+import requests
+import platform
+from numbers import Number
+import xml.etree.cElementTree as xml
+from collections import namedtuple
 
-# Tips: easywebdav does not seem to work with Python3
-# https://github.com/amnong/easywebdav
+from libcloud.storage.base import Object
 
-try:
-    # https://github.com/amnong/easywebdav
-    # https://pypi.org/project/easywebdav/
-    import easywebdav
-except ImportError:
-    raise ImportError("Missing easywebdav dependency, you can install it with `pip install easywebdav`")
+py_majversion, py_minversion, py_revversion = platform.python_version_tuple()
+
+from http.client import responses as HTTP_CODES
+from urllib.parse import urlparse
+
+DOWNLOAD_CHUNK_SIZE_BYTES = 1 * 1024 * 1024
+
+
+class WebdavException(Exception):
+    pass
+
+
+class ConnectionFailed(WebdavException):
+    pass
+
+
+# Base on code from:
+# https://raw.githubusercontent.com/amnong/easywebdav/master/easywebdav/client.py
+# Copyright (c) 2012 year, Amnon Grossman
+# Updated and improved for Python 3
+
+
+def codestr(code):
+    return HTTP_CODES.get(code, "UNKNOWN")
+
+
+File = namedtuple("File", ["name", "content_length", "last_modified", "creation_date", "content_type", "etag"])
+
+
+def xml_prop(elem, name, default=None):
+    child = elem.find(".//{DAV:}" + name)
+    return default if child is None else child.text
+
+
+def prop(elem, name, default=None):
+    child = elem.find(".//{DAV:}" + name)
+    return default if child is None else child.text
+
+
+class OperationFailed(WebdavException):
+    _OPERATIONS = dict(
+        HEAD="get header",
+        GET="download",
+        PUT="upload",
+        DELETE="delete",
+        MKCOL="create directory",
+        PROPFIND="list directory",
+    )
+
+    def __init__(self, method, path, expected_code, actual_code):
+        self.method = method
+        self.path = path
+        self.expected_code = expected_code
+        self.actual_code = actual_code
+        operation_name = self._OPERATIONS[method]
+        self.reason = 'Failed to {operation_name} "{path}"'.format(**locals())
+        expected_codes = (expected_code,) if isinstance(expected_code, Number) else expected_code
+        expected_codes_str = ", ".join("{0} {1}".format(code, codestr(code)) for code in expected_codes)
+        actual_code_str = codestr(actual_code)
+        msg = """\
+{self.reason}.
+  Operation     :  {method} {path}
+  Expected code :  {expected_codes_str}
+  Actual code   :  {actual_code} {actual_code_str}""".format(
+            **locals()
+        )
+        super(OperationFailed, self).__init__(msg)
+
 
 IGNORE_FOLDERS = [".lock", ".hash"]
 
@@ -79,25 +142,227 @@ class WebdavStorageDriver(StorageDriver):
     """
 
     connectionCls = Connection
-    name = "Local Storage"
+    name = "WebDAV"
     website = "http://example.com"
     hash_type = "md5"
 
     # server base url
-    host: str = None
+    url = None
 
-    # client used for webdav access
-    client = None
+    def __init__(self, url, username=None, password=None, auth=None, verify_ssl=True, certificate=None):
+        assert url and not url.endswith("/"), "WebDAV server url should not end with slash"
 
-    def __init__(self, url, username, password, certificate=None, **kwargs):
         self.url = url
-        server = "u206378-sub4.your-storagebox.de"
-        self.client = Client(server, username=username, password=password, protocol="https", cert=certificate)
+        self.cwd = "/"
+
+        self.session = requests.session()
+        self.session.verify = verify_ssl
+        self.session.stream = True
+
+        if certificate:
+            self.session.cert = certificate
+        if auth:
+            self.session.auth = auth
+        elif username and password:
+            self.session.auth = (username, password)
+
+    ##
+    ## WebDAV direct access extensions
+    ##
+
+    def _normalize_path(self, path):
+        base_name = os.path.basename(path)
+        dir_name = os.path.dirname(path)
+        return f"{dir_name}/{base_name}"
+
+    def _normalize_container_name(self, container_name: str) -> str:
+        """ Check if the container name is valid. """
+        if "\\" in container_name:
+            raise InvalidContainerNameError(value=None, driver=self, container_name=container_name)
+        if not container_name:
+            container_name = "/"
+        if not container_name.startswith("/"):
+            container_name = "/" + container_name
+        if not container_name.endswith("/"):
+            container_name += "/"
+        return container_name
+
+    def _parent_path(self, path):
+        """ Returns path of parent directory or None """
+        if path is None or len(path) < 3:
+            return None
+        dir = os.path.dirname(path)
+        if not os.path.basename(path):
+            dir = os.path.dirname(dir)
+        return dir + "/" if len(dir) > 1 else dir
+
+    def _xml_element_to_object(self, element):
+        """ Convert xml item returned by WebDAV into a libcloud Object. """
+        try:
+            name = xml_prop(element, "href")
+            extra = {
+                "content_type": xml_prop(element, "getcontenttype", None),
+                "creation_time": xml_prop(element, "creationdate", ""),
+                "last_modified": xml_prop(element, "getlastmodified", None),
+                "etag": xml_prop(element, "getetag"),
+            }
+
+            if extra["etag"]:
+                data_hash = "".join(e for e in extra["etag"] if e.isalnum())
+
+            if not data_hash:
+                # Make a hash for the file based on the metadata. We can safely
+                # use only the creation_time attribute here. If the file contents change,
+                # the underlying file-system will change creation_time.
+                data_hash = self._get_hash_function()
+                data_hash.update(u(extra["creation_time"]).encode("ascii"))
+                data_hash = data_hash.hexdigest()
+
+            if "httpd/unix-directory" == extra["content_type"]:
+                return Container(name=name, extra=extra, driver=self)
+
+            return Object(
+                name=name,
+                size=int(xml_prop(element, "getcontentlength", 0)),
+                extra=extra,
+                driver=self,
+                container=None,
+                hash=data_hash,
+                meta_data=None,  # to be extracted!!
+            )
+        except Exception as exc:
+            raise exc
+
+    def _get_url(self, path):
+        path = str(path).strip()
+        if path.startswith("/"):
+            return self.url + path
+        return "".join((self.url, self.cwd, path))
+
+    def _send(self, method, path, expected_code, **kwargs):
+        url = self._get_url(path)
+        response = self.session.request(method, url, allow_redirects=False, **kwargs)
+        if (
+            isinstance(expected_code, Number)
+            and response.status_code != expected_code
+            or not isinstance(expected_code, Number)
+            and response.status_code not in expected_code
+        ):
+            raise OperationFailed(method, path, expected_code, response.status_code)
+        return response
+
+    def cd(self, path):
+        path = path.strip()
+        if not path:
+            return
+        stripped_path = "/".join(part for part in path.split("/") if part) + "/"
+        if stripped_path == "/":
+            self.cwd = stripped_path
+        elif path.startswith("/"):
+            self.cwd = "/" + stripped_path
+        else:
+            self.cwd += stripped_path
+
+    def mkdir(self, path, safe=False):
+        expected_codes = 201 if not safe else (201, 301, 405)
+        self._send("MKCOL", path, expected_codes)
+
+    def mkdirs(self, path):
+        dirs = [d for d in path.split("/") if d]
+        if not dirs:
+            return
+        if path.startswith("/"):
+            dirs[0] = "/" + dirs[0]
+        old_cwd = self.cwd
+        try:
+            for dir in dirs:
+                try:
+                    self.mkdir(dir, safe=True)
+                except Exception as e:
+                    if e.actual_code == 409:
+                        raise
+                finally:
+                    self.cd(dir)
+        finally:
+            self.cd(old_cwd)
+
+    def rmdir(self, path, safe=False):
+        """ Delete directory with given path. """
+        path = str(path).rstrip("/") + "/"
+        expected_codes = 204 if not safe else (204, 404)
+        self._send("DELETE", path, expected_codes)
+
+    def delete(self, path):
+        """ Delete specific file. """
+        self._send("DELETE", path, 204)
+
+    def _upload(self, fileobj, remote_path):
+        self._send("PUT", remote_path, (200, 201, 204), data=fileobj)
+
+    def upload(self, local_path_or_fileobj, remote_path):
+        """ Upload a single file from filename or file-like object. """
+        if isinstance(local_path_or_fileobj, str):
+            with open(local_path_or_fileobj, "rb") as f:
+                self._upload(f, remote_path)
+        else:
+            self._upload(local_path_or_fileobj, remote_path)
+
+    def download(self, remote_path, local_path_or_fileobj):
+        response = self._send("GET", remote_path, 200, stream=True)
+        if isinstance(local_path_or_fileobj, str):
+            with open(local_path_or_fileobj, "wb") as f:
+                for chunk in response.iter_content(DOWNLOAD_CHUNK_SIZE_BYTES):
+                    f.write(chunk)
+        else:
+            for chunk in response.iter_content(DOWNLOAD_CHUNK_SIZE_BYTES):
+                local_path_or_fileobj.write(chunk)
+
+    def download_as_stream(self, remote_path, chunk_size=DOWNLOAD_CHUNK_SIZE_BYTES):
+        """ Streaming download of remote path. """
+        response = self._send("GET", remote_path, 200, stream=True)
+        for chunk in response.iter_content(chunk_size):
+            yield chunk
+
+    def ls(self, remote_path):
+        """ List given path and return individual item or directory contents as list of Object and Container items. """
+        remote_path = self._normalize_path(remote_path)
+        headers = {"Depth": "1"}
+        response = self._send("PROPFIND", remote_path, (207, 301), headers=headers)
+
+        # follow redirects if content has moved to a new location
+        # this will not follow content
+        if response.status_code == 301:
+            redirect_url = response.headers["location"]
+            redirect_path = urlparse(redirect_url).path
+            if remote_path != redirect_path:
+                return self.ls(redirect_path)
+            else:
+                raise LibcloudError(f"Content has been moved (301). {response.content}", driver=self)
+
+        tree = xml.fromstring(response.content)
+        items = [self._xml_element_to_object(elem) for elem in tree.findall("{DAV:}response")]
+
+        # link objects to parent container
+        assert remote_path.startswith("/")
+        parent_path = self._parent_path(remote_path)
+        if parent_path and parent_path != remote_path:
+            parent = Container(parent_path, None, self)
+            for item in items:
+                if isinstance(item, Object):
+                    item.container = parent
+        return items
+
+    def exists(self, remote_path):
+        """ Returns True if given path exists on remote server. """
+        response = self._send("HEAD", remote_path, (200, 301, 404))
+        return True if response.status_code != 404 else False
+
+    ##
+    ## StorageDriver utility methods
+    ##
 
     def _make_path(self, path, ignore_existing=True):
-        """
-        Create a path by checking if it already exists
-        """
+        """ Create a path by checking if it already exists """
 
         try:
             os.makedirs(path)
@@ -106,127 +371,42 @@ class WebdavStorageDriver(StorageDriver):
             if exp.errno == errno.EEXIST and not ignore_existing:
                 raise exp
 
-    def _check_container_name(self, container_name):
-        """
-        Check if the container name is valid
 
-        :param container_name: Container name
-        :type container_name: ``str``
-        """
-
-        if "/" in container_name or "\\" in container_name:
-            raise InvalidContainerNameError(value=None, driver=self, container_name=container_name)
-
-    def _make_container(self, container_name):
-        """
-        Create a container instance
-
-        :param container_name: Container name.
-        :type container_name: ``str``
-
-        :return: Container instance.
-        :rtype: :class:`Container`
-        """
-
-        self._check_container_name(container_name)
+    def _make_container(self, container_name: str) -> Container:
+        """ Create a container instance (defaults to root directory of server). """
         try:
-            ls = self.client.ls(container_name)
+            container_name = self._normalize_container_name(container_name)
+            ls = self.ls(container_name)
+            return ls[0]
         except OperationFailed as exc:
             raise ContainerDoesNotExistError(value=None, driver=self, container_name=container_name)
 
-        item = ls[0]
-
-        if "directory" not in item.contenttype:
-            raise ContainerDoesNotExistError(value=None, driver=self, container_name=container_name)
-
-        extra = {
-            "content_type": item.contenttype,
-            "creation_time": item.ctime,
-            "last_modified": item.mtime
-            # 'access_time': item.a
-        }
-
-        return Container(name=container_name, extra=extra, driver=self)
-
-    def _make_object(self, container, object_name):
-        """
-        Create an object instance
-
-        :param container: Container.
-        :type container: :class:`Container`
-
-        :param object_name: Object name.
-        :type object_name: ``str``
-
-        :return: Object instance.
-        :rtype: :class:`Object`
-        """
-
-        full_path = os.path.join(container.name, object_name)
+    def _make_object(self, container: Container, object_name: str) -> Object:
+        """ Create an object instance. """
         try:
-            ls = self.client.ls(full_path)
-            assert ls and len(ls) == 1
-            item = ls[0]
-
-            # Make a hash for the file based on the metadata. We can safely
-            # use only the mtime attribute here. If the file contents change,
-            # the underlying file-system will change mtime
-            data_hash = self._get_hash_function()
-            data_hash.update(u(item.mtime).encode("ascii"))
-            data_hash = data_hash.hexdigest()
-
-            extra = {
-                "content_type": item.contenttype,
-                "creation_time": item.ctime,
-                "last_modified": item.mtime
-                # "access_time": item.atime
-            }
-
-            return Object(
-                name=object_name,
-                size=item.size,
-                extra=extra,
-                driver=self,
-                container=container,
-                hash=data_hash,
-                meta_data=None,
-            )
-
+            full_path = os.path.join(container.name, object_name)
+            ls = self.ls(full_path)
+            assert ls and len(ls) == 1 and isinstance(ls[0], Object)
+            return ls[0]
         except OperationFailed as exc:
             raise ObjectError(value=None, driver=self, object_name=object_name)
 
+    ##
+    ## StorageDriver methods
+    ##
 
     def iterate_containers(self):
         """
-        Return a generator of containers.
-
+        Return a generator of containers. This method simulates the behaviour of storage
+        on Google Cloud Storage or Amazon S3 where you only have top level buckets by treating
+        top level directorties as containers. You can use the ls() method to scan folders, etc.
         :return: A generator of Container instances.
         :rtype: ``generator`` of :class:`Container`
         """
-
-        for container_name in os.listdir(self.base_path):
-            full_path = os.path.join(self.base_path, container_name)
-            if not os.path.isdir(full_path):
-                continue
-            yield self._make_container(container_name)
-
-    def _get_objects(self, container):
-        """
-        Recursively iterate through the file-system and return the object names
-        """
-
-        cpath = self.get_container_cdn_url(container, check=True)
-
-        for folder, subfolders, files in os.walk(cpath, topdown=True):
-            # Remove unwanted subfolders
-            for subf in IGNORE_FOLDERS:
-                if subf in subfolders:
-                    subfolders.remove(subf)
-
-            for name in files:
-                full_path = os.path.join(folder, name)
-                object_name = relpath(full_path, start=cpath)
-                yield self._make_object(container, object_name)
+        items = self.ls("/")
+        for item in items:
+            if isinstance(item, Container):
+                yield item
 
     def iterate_container_objects(self, container):
         """
@@ -238,100 +418,19 @@ class WebdavStorageDriver(StorageDriver):
         :return: A generator of Object instances.
         :rtype: ``generator`` of :class:`Object`
         """
+        items = self.ls(container.name)
+        for item in items:
+            if isinstance(item, Object):
+                yield item
 
-        return self._get_objects(container)
-
-    def get_container(self, container_name):
-        """
-        Return a container instance.
-
-        :param container_name: Container name.
-        :type container_name: ``str``
-
-        :return: :class:`Container` instance.
-        :rtype: :class:`Container`
-        """
+    def get_container(self, container_name: str) -> Container:
+        """ Return a container instance. """
         return self._make_container(container_name)
 
-    def get_container_cdn_url(self, container, check=False):
-        """
-        Return a container CDN URL.
-
-        :param container: Container instance
-        :type  container: :class:`Container`
-
-        :param check: Indicates if the path's existence must be checked
-        :type check: ``bool``
-
-        :return: A CDN URL for this container.
-        :rtype: ``str``
-        """
-        container_url = urllib.parse.urljoin(self.url, container.name)
-        return container_url
-
-    def get_object(self, container_name, object_name):
-        """
-        Return an object instance.
-
-        :param container_name: Container name.
-        :type  container_name: ``str``
-
-        :param object_name: Object name.
-        :type  object_name: ``str``
-
-        :return: :class:`Object` instance.
-        :rtype: :class:`Object`
-        """
+    def get_object(self, container_name: str, object_name: str) -> Object:
+        """ Return an object instance. """
         container = self._make_container(container_name)
         return self._make_object(container, object_name)
-
-    def get_object_cdn_url(self, obj):
-        """
-        Return an object CDN URL.
-
-        :param obj: Object instance
-        :type  obj: :class:`Object`
-
-        :return: A CDN URL for this object.
-        :rtype: ``str``
-        """
-        return os.path.join(self.base_path, obj.container.name, obj.name)
-
-    def enable_container_cdn(self, container):
-        """
-        Enable container CDN.
-
-        :param container: Container instance
-        :type  container: :class:`Container`
-
-        :rtype: ``bool``
-        """
-
-        path = self.get_container_cdn_url(container)
-        self._make_path(path)
-        return True
-
-    def enable_object_cdn(self, obj):
-        """
-        Enable object CDN.
-
-        :param obj: Object instance
-        :type  obj: :class:`Object`
-
-        :rtype: ``bool``
-        """
-        path = self.get_object_cdn_url(obj)
-
-        with LockWebdavStorage(path):
-            if os.path.exists(path):
-                return False
-            try:
-                obj_file = open(path, "w")
-                obj_file.close()
-            except Exception:
-                return False
-
-        return True
 
     def download_object(self, obj, destination_path, overwrite_existing=False, delete_on_failure=True):
         """
@@ -356,88 +455,25 @@ class WebdavStorageDriver(StorageDriver):
         otherwise.
         :rtype: ``bool``
         """
-
-        obj_path = self.get_object_cdn_url(obj)
-        base_name = os.path.basename(destination_path)
-
-        if not base_name and not os.path.exists(destination_path):
-            raise LibcloudError(value="Path %s does not exist" % (destination_path), driver=self)
-
-        if not base_name:
-            file_path = os.path.join(destination_path, obj.name)
-        else:
-            file_path = destination_path
-
-        if os.path.exists(file_path) and not overwrite_existing:
-            raise LibcloudError(
-                value="File %s already exists, but " % (file_path) + "overwrite_existing=False", driver=self
-            )
-
-        try:
-            shutil.copy(obj_path, file_path)
-        except IOError:
-            if delete_on_failure:
-                try:
-                    os.unlink(file_path)
-                except Exception:
-                    pass
-            return False
-
+        if not overwrite_existing and os.path.exists(destination_path):
+            raise LibcloudError(value=f"{destination_path} already exists, use overwrite_existing=True to replace", driver=self)
+        with open(destination_path, "wb") as f:
+            self.download_as_stream(f)
         return True
 
-    def download_object_as_stream(self, obj, chunk_size=None):
-        """
-        Return a generator which yields object data.
-
-        :param obj: Object instance
-        :type obj: :class:`Object`
-
-        :param chunk_size: Optional chunk size (in bytes).
-        :type chunk_size: ``int``
-
-        :return: A stream of binary chunks of data.
-        :rtype: ``object``
-        """
+    def download_object_as_stream(self, obj: Object, chunk_size=None) -> object:
+        """ Return a generator which yields object's data. """
         full_path = os.path.join(obj.container.name, obj.name)
-        return self.client.download_as_stream(full_path, chunk_size)
+        return self.download_as_stream(full_path, chunk_size)
 
+    def upload_object(
+        self, file_path: str, container: Container, object_name: str, extra=None, verify_hash=True
+    ) -> Object:
+        """ Upload an object currently located on a disk. """
+        with open(file_path, "rb") as f:
+            return self.upload_object_via_stream(f, container, extra)
 
-    def upload_object(self, file_path, container, object_name, extra=None, verify_hash=True):
-        """
-        Upload an object currently located on a disk.
-
-        :param file_path: Path to the object on disk.
-        :type file_path: ``str``
-
-        :param container: Destination container.
-        :type container: :class:`Container`
-
-        :param object_name: Object name.
-        :type object_name: ``str``
-
-        :param verify_hash: Verify hast
-        :type verify_hash: ``bool``
-
-        :param extra: (optional) Extra attributes (driver specific).
-        :type extra: ``dict``
-
-        :rtype: ``object``
-        """
-
-        path = self.get_container_cdn_url(container, check=True)
-        obj_path = os.path.join(path, object_name)
-        base_path = os.path.dirname(obj_path)
-
-        self._make_path(base_path)
-
-        with LockWebdavStorage(obj_path):
-            shutil.copy(file_path, obj_path)
-
-        os.chmod(obj_path, int("664", 8))
-
-        return self._make_object(container, object_name)
-
-    def upload_object_via_stream(self, iterator, container, object_name, extra=None, header=None):
+    def upload_object_via_stream(self, iterator, container: Container, object_name: str, extra=None, header=None) -> Object:
         """
         Upload an object using an iterator.
 
@@ -472,30 +508,20 @@ class WebdavStorageDriver(StorageDriver):
 
         :rtype: ``object``
         """
-
         full_path = os.path.join(container.name, object_name)
         directory = os.path.dirname(full_path)
-
-        self.client.mkdirs(directory)
-        self.client.upload(iterator, full_path)
+        self.mkdirs(directory)
+        self.upload(iterator, full_path)
 
         return self._make_object(container, object_name)
 
-    def delete_object(self, obj):
-        """
-        Delete an object.
-
-        :type obj: :class:`Object`
-        :param obj: Object instance.
-
-        :return: ``bool`` True on success.
-        :rtype: ``bool``
-        """
+    def delete_object(self, obj: Object) -> bool:
+        """ Delete an object. """
         full_path = os.path.join(obj.container.name, obj.name)
-        self.client.delete(full_path)
+        self.delete(full_path)
         return True
 
-    def create_container(self, container_name):
+    def create_container(self, container_name: str) -> Container:
         """
         Create a new container.
 
@@ -505,51 +531,31 @@ class WebdavStorageDriver(StorageDriver):
         :return: :class:`Container` instance on success.
         :rtype: :class:`Container`
         """
+        container_name = self._normalize_container_name(container_name)
+        ls = self.ls(container_name)
+        if len(ls) == 1 and isinstance(ls, Container):
+            msg = f"Container {container_name} already exists."
+            raise ContainerAlreadyExistsError(value=msg, container_name=container_name, driver=self)
+        self.mkdirs(container_name)
+        return self.get_container(container_name)
 
-        self._check_container_name(container_name)
-
-        path = os.path.join(self.base_path, container_name)
-
-        try:
-            self._make_path(path, ignore_existing=False)
-        except OSError:
-            exp = sys.exc_info()[1]
-            if exp.errno == errno.EEXIST:
-                raise ContainerAlreadyExistsError(
-                    value="Container with this name already exists. The name "
-                    "must be unique among all the containers in the "
-                    "system",
-                    container_name=container_name,
-                    driver=self,
-                )
-            else:
-                raise LibcloudError("Error creating container %s" % container_name, driver=self)
-        except Exception:
-            raise LibcloudError("Error creating container %s" % container_name, driver=self)
-
-        return self._make_container(container_name)
-
-    def delete_container(self, container):
-        """
-        Delete a container.
-
-        :type container: :class:`Container`
-        :param container: Container instance
-
-        :return: True on success, False otherwise.
-        :rtype: ``bool``
-        """
-
-        # Check if there are any objects inside this
-        for obj in self._get_objects(container):
-            raise ContainerIsNotEmptyError(value="Container is not empty", container_name=container.name, driver=self)
-
-        path = self.get_container_cdn_url(container, check=True)
-
-        with LockWebdavStorage(path):
-            try:
-                shutil.rmtree(path)
-            except Exception:
-                return False
-
+    def delete_container(self, container: Container) -> bool:
+        """ Delete a container. """
+        self.rmdir(container.name)
         return True
+
+    ##
+    ## CDN methods are not supported
+    ##
+
+    def get_container_cdn_url(self, container, check=False):
+        raise LibcloudError(value="CDN is not supported", driver=self)
+
+    def get_object_cdn_url(self, obj):
+        raise LibcloudError(value="CDN is not supported", driver=self)
+
+    def enable_container_cdn(self, container):
+        raise LibcloudError(value="CDN is not supported", driver=self)
+
+    def enable_object_cdn(self, obj):
+        raise LibcloudError(value="CDN is not supported", driver=self)
