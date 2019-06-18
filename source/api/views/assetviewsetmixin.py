@@ -13,19 +13,59 @@ from django.urls import reverse
 import rest_framework
 import rest_framework.viewsets
 
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, permission_classes
 from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
-from rest_framework import status
+from rest_framework.serializers import Serializer
 
-from analitico import ACTION_PROCESS
+from analitico import ACTION_PROCESS, AnaliticoException
 from analitico.utilities import logger, get_csv_row_count
-from api.models import ItemMixin, Job, ASSETS_CLASS_DATA, Dataset
+from api.models import ItemMixin, Job, ASSETS_CLASS_DATA, Dataset, Workspace
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.factory import ServerFactory
+
+import libcloud
+import api.libcloud
+
+from libcloud.storage.base import Object, Container, StorageDriver
+
+##
+## FilesSerializer
+##
+
+class LibcloudStorageItemsSerializer(Serializer):
+    """ Serialize, deserialize libcloud Object and Container. """
+
+    def to_representation(self, instance):
+        if isinstance(instance, libcloud.storage.base.Object):
+            d = {
+                "type": "analitico/file",
+                "id": instance.name,
+                "attributes": {
+                    "hash": instance.hash,
+                    "size": instance.size,
+                    **instance.extra,
+                }
+            }
+            if instance.meta_data:
+                d["attributes"]["metadata"] = instance.meta_data
+            return d
+
+        if isinstance(instance, libcloud.storage.base.Container):
+            return {
+                "type": "analitico/directory",
+                "id": instance.name,
+                "attributes": {
+                    **instance.extra
+                }
+            }
+        raise NotImplementedError(f"Can't serialize {instance}")
+
+
 
 ##
 ## AssetViewSetMixin - a mixin for uploading and downloading assets
@@ -37,7 +77,6 @@ ASSET_CLASS_RE = r"(?P<asset_class>(assets|data))$"
 ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{1,256}\.[\w]{1,12})$"
 # /assets or /data plus a filename with extension and /info
 ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{1,256}\.[\w]{1,12})/info$"
-
 
 class AssetViewSetMixin:
     """
@@ -213,3 +252,23 @@ class AssetViewSetMixin:
         item = self.get_object()
         asset, _ = item.download_asset_stream(asset_class, asset_id)
         return Response(asset)
+
+    ##
+    ## /files endpoint
+    ##
+    # TODO #210 build /files apis to list, upload, download, update, delete files from storage
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get", "post", "put", "delete"], detail=True, url_name="files", url_path="files/(?P<url>.*)")
+    def files(self, request, pk, url) -> Response:
+        item = self.get_object()
+        workspace = item if isinstance(item, Workspace) else item.workspace
+
+        driver = workspace.storage.driver
+        if not isinstance(driver, api.libcloud.WebdavStorageDriver):
+            raise AnaliticoException("/files is only supported on WebDAV based storage", status=status.HTTP_501_NOT_IMPLEMENTED)
+
+        ls = driver.ls("/" + url)
+
+        serializer = LibcloudStorageItemsSerializer(ls, many=True)
+        return Response(serializer.data, content_type="json")
