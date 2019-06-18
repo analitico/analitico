@@ -5,6 +5,10 @@ metadata:
   namespace: {service_namespace}
 spec:
   template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
     spec:
       containers:
       - image: {docker_image}
