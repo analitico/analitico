@@ -18,6 +18,8 @@
 from __future__ import with_statement
 
 import os
+import re
+import unicodedata
 
 from libcloud.utils.py3 import u
 from libcloud.common.base import Connection
@@ -33,13 +35,20 @@ from libcloud.storage.types import (
 import urllib
 import requests
 import xml.etree.cElementTree as xml
+from xml.sax.saxutils import escape
+import logging
 
 from numbers import Number
 from http.client import responses as HTTP_CODES
 from urllib.parse import urlparse
 
+logger = logging.getLogger("webdav")
+
 DOWNLOAD_CHUNK_SIZE_BYTES = 1 * 1024 * 1024
 
+# tag used in extra for object metadata. 
+# we use meta_data to be compatible with s3.
+METADATA_EXTRA_TAG = "meta_data"
 
 # WebDAV methods based on code from easywebdav updated/fixed for python3/libcloud:
 # Copyright (c) 2012, Amnon Grossman
@@ -55,9 +64,29 @@ def xml_prop(elem, name, default=None):
     return default if child is None else child.text
 
 
+def xml_extra_prop(elem, name, default=None):
+    child = elem.find(".//{analitico}" + name)
+    return default if child is None else child.text
+
+
 def prop(elem, name, default=None):
     child = elem.find(".//{DAV:}" + name)
     return default if child is None else child.text
+
+
+def slugify(value, allow_unicode=False):
+    """
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces to hyphens.
+    Remove characters that aren't alphanumerics, underscores, or hyphens.
+    Convert to lowercase. Also strip leading and trailing whitespace.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize("NFKC", value)
+    else:
+        value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    value = re.sub(r"[^\w\s-]", "", value).strip().lower()
+    return re.sub(r"[-\s]+", "-", value)
 
 
 class WebdavException(LibcloudError):
@@ -151,12 +180,11 @@ class WebdavStorageDriver(StorageDriver):
             name = xml_prop(element, "href")
             name = urllib.parse.unquote_plus(name)
 
-            extra = {
-                "content_type": xml_prop(element, "getcontenttype", None),
-                "creation_time": xml_prop(element, "creationdate", ""),
-                "last_modified": xml_prop(element, "getlastmodified", None),
-                "etag": xml_prop(element, "getetag"),
-            }
+            extra = {}
+            extra["content_type"] = xml_prop(element, "getcontenttype", None)
+            extra["creation_time"] = xml_prop(element, "creationdate", "")
+            extra["last_modified"] = xml_prop(element, "getlastmodified", None)
+            extra["etag"] = xml_prop(element, "getetag")
 
             if extra["etag"]:
                 data_hash = "".join(e for e in extra["etag"] if e.isalnum())
@@ -172,6 +200,14 @@ class WebdavStorageDriver(StorageDriver):
             if extra["content_type"] == "httpd/unix-directory":
                 return Container(name=name, extra=extra, driver=self)
 
+            # extract custom metadata
+            metadata = {}
+            metadata_elem = element.find(".//{https://analitico.ai}metadata")
+            if metadata_elem:
+                for child in metadata_elem.getchildren():
+                    tag = child.tag.split("}", 1)[1]
+                    metadata[tag] = child.text
+
             return Object(
                 name=name,
                 size=int(xml_prop(element, "getcontentlength", 0)),
@@ -179,7 +215,7 @@ class WebdavStorageDriver(StorageDriver):
                 driver=self,
                 container=None,
                 hash=data_hash,
-                meta_data=None,  # to be extracted!!
+                meta_data=metadata,
             )
         except Exception as exc:
             raise exc
@@ -247,13 +283,17 @@ class WebdavStorageDriver(StorageDriver):
         """ Delete specific file. """
         self._send("DELETE", path, 204)
 
-    def upload(self, local_path_or_fileobj, remote_path):
+    def upload(self, local_path_or_fileobj, remote_path, extra=None):
         """ Upload a single file from filename or file-like object. """
         if isinstance(local_path_or_fileobj, str):
             with open(local_path_or_fileobj, "rb") as f:
                 self._send("PUT", remote_path, (200, 201, 204), data=f)
         else:
             self._send("PUT", remote_path, (200, 201, 204), data=local_path_or_fileobj)
+
+        if extra:
+            # store custom properties with object
+            self.set_properties(remote_path, extra)
 
     def download(self, remote_path, local_path_or_fileobj):
         response = self._send("GET", remote_path, 200, stream=True)
@@ -300,10 +340,32 @@ class WebdavStorageDriver(StorageDriver):
                     item.container = parent
         return items
 
-    def exists(self, remote_path):
+    def exists(self, remote_path: str) -> bool:
         """ Returns True if given path exists on remote server. """
         response = self._send("HEAD", remote_path, (200, 301, 404))
         return True if response.status_code != 404 else False
+
+    def set_properties(self, remote_path, extra=None) -> bool:
+        """ 
+        Apply extra properties to remote_path item (can also be used to clear properties). 
+        At the moment the only properties that are applied are the ones in the "meta_data"
+        field which are applied as custom properties and then returned in Object.meta_data.
+        You can remove metadata by removing the "meta_data" field.
+        """
+        patch_xml = '<?xml version="1.0" encoding="utf-8" ?>'
+        patch_xml += '<dav:propertyupdate xmlns:dav="DAV:" xmlns:analitico="https://analitico.ai">'
+        patch_xml += "<dav:set><dav:prop><analitico:metadata>"
+        if extra and METADATA_EXTRA_TAG in extra:
+            metadata = extra.get(METADATA_EXTRA_TAG, None)
+            for key, value in metadata.items():
+                key = escape(slugify(key))
+                patch_xml += f"<analitico:{key}>{escape(str(value))}</analitico:{key}>"
+        patch_xml += "</analitico:metadata></dav:prop></dav:set>"
+        patch_xml += "</dav:propertyupdate>"
+
+        # should apply and reply with 207
+        self._send("PROPPATCH", remote_path, (200, 207), data=patch_xml)
+        return True
 
     ##
     ## StorageDriver utility methods
@@ -451,7 +513,7 @@ class WebdavStorageDriver(StorageDriver):
         full_path = os.path.join(container.name, object_name)
         directory = os.path.dirname(full_path)
         self.mkdirs(directory)
-        self.upload(iterator, full_path)
+        self.upload(iterator, full_path, extra=extra)
         return self._make_object(container, object_name)
 
     def delete_object(self, obj: Object) -> bool:
