@@ -668,7 +668,6 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             driver.rmdir(container_name)
 
-
     def test_webdav_driver_upload_get_download_object(self):
         driver = self.get_driver()
         try:
@@ -699,10 +698,47 @@ class WebdavTests(AnaliticoApiTestCase):
                 driver.download_object(obj, f.name, overwrite_existing=True)
                 downloaded_data = f.file.read()
                 self.assertEqual(obj_data, downloaded_data)
-            
+
             # streaming download
             downloaded_data = next(iter(driver.download_object_as_stream(obj)))
             self.assertEqual(obj_data, downloaded_data)
 
         finally:
             driver.rmdir(container_name)
+
+    def test_webdav_driver_upload_with_extra(self):
+        driver = self.get_driver()
+        try:
+            obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
+            obj_data = b"This is it "
+            obj_extra = {
+                "meta_data": {
+                    "property1": "value1",
+                    "property2": 2,
+                    "raN-Dom_STuff": django.utils.crypto.get_random_string(),
+                    "    extra-spaces": "No!",
+                }
+            }
+
+            # upload with "extra" metadata
+            container = driver.create_container("/")
+            obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name, extra=obj_extra)
+            self.assertIsInstance(obj, Object)
+            self.assertEqual(obj.meta_data["property1"], "value1")
+            self.assertEqual(obj.meta_data["property2"], "2")
+            self.assertEqual(obj.meta_data["ran-dom_stuff"], obj_extra["meta_data"]["raN-Dom_STuff"])
+            self.assertEqual(obj.meta_data["extra-spaces"], "No!")
+
+            # change/replace extra
+            driver.set_properties("/" + obj_name, extra={"meta_data": {"extra1": "value1"}})
+            obj = driver.get_object(container.name, obj_name)
+            self.assertEqual(len(obj.meta_data), 1)
+            self.assertEqual(obj.meta_data["extra1"], "value1")
+
+            # remove all
+            driver.set_properties("/" + obj_name, extra=None)
+            obj = driver.get_object(container.name, obj_name)
+            self.assertFalse(obj.meta_data)
+
+        finally:
+            driver.delete("/" + obj_name)

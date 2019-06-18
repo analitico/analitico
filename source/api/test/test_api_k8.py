@@ -208,7 +208,9 @@ class K8Tests(AnaliticoApiTestCase):
 
         # user can provide a query string
         self.auth_token(self.token1)
-        response = self.client.get(url, data={"query": '"this-is-a-string-that-will-never-be-present-in-a-log"'}, format="json")
+        response = self.client.get(
+            url, data={"query": '"this-is-a-string-that-will-never-be-present-in-a-log"'}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
         self.assertEqual(len(data["hits"]["hits"]), 0)
