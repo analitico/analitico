@@ -7,7 +7,7 @@ PARENT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cp $PARENT_PATH"/../../../requirements.txt" .
 
 # build image
-docker build -t eu.gcr.io/analitico-api/analitico-baseline .
+docker build -t eu.gcr.io/analitico-api/analitico-baseline:base .
 
 # remove copy of requirements.txt
 rm requirements.txt

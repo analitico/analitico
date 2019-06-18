@@ -1,5 +1,5 @@
 # Use the Analitico baseline
-FROM eu.gcr.io/analitico-api/analitico-baseline
+FROM eu.gcr.io/analitico-api/analitico-baseline:base
 # Run as root
 USER root
 # Install nginx and remove configuration
