@@ -5,9 +5,8 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
-  BUILD_IMAGE_URL: eu.gcr.io/analitico-api/website:$CI_COMMIT_SHA # ${BUILD_IMAGE_URL}
-  BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/website:$CI_COMMIT_SHA-jupyter # ${BUILD_JUPYTER_IMAGE_URL}
-
+  BUILD_IMAGE_URL: eu.gcr.io/analitico-api/analitico-website:$CI_COMMIT_SHA # ${BUILD_IMAGE_URL}
+  BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-website:$CI_COMMIT_SHA-jupyter # ${BUILD_JUPYTER_IMAGE_URL}
 services:
 - docker:dind
 

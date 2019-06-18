@@ -1,4 +1,4 @@
-FROM eu.gcr.io/analitico-api/analitico-website
+FROM eu.gcr.io/analitico-api/analitico-website:base
 # we want to copy only requirements and ssl certificates
 # execute everything as a new users with restricted access
 # create user and change ownership of analitico venv
@@ -8,8 +8,6 @@ COPY ./requirements.txt /home/www/analitico
 # copy libraries
 COPY ./source/analitico /home/www/analitico/libs/analitico
 COPY ./source/s24 /home/www/analitico/libs/s24
-# copy nginx configuration as reverse proxy for jupyter host
-# COPY ./conf/nginx-jupyter.conf /etc/nginx/nginx.conf
 # copy script to launch jupyter
 COPY ./scripts/docker-jupyter.sh /home/www/analitico
 # use self signed certificates
