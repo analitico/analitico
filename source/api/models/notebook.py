@@ -89,15 +89,7 @@ class Notebook(ItemMixin, ItemAssetsMixin, models.Model):
 
 
 def nb_run(
-    notebook_item,
-    notebook_name=None,
-    parameters=None,
-    tags=None,
-    factory=None,
-    upload=False,
-    save=True,
-    quick=False,
-    job=None,
+    notebook_item, notebook_name=None, parameters=None, tags=None, factory=None, upload=False, save=True, job=None
 ):
     """ 
     Runs a Jupyter notebook with given parameters, factory, notebook and optional item to upload assets to 
@@ -109,7 +101,6 @@ def nb_run(
     factory (Factory): Factory to be using for resources, loggins, disk, etc.
     upload: True if artifacts produced while processing the notebook should be updated to the notebook_item (optional)
     save: True if the executed notebook should be saved back into the model (default: false)
-    quick: True if we should run the code inline which is faster but generates no outputs (default: false)
     job: If a Job is passed than the output will be captured and added to the job itself. 
 
     Returns:
@@ -134,50 +125,46 @@ def nb_run(
     save_json(notebook, notebook_path)
     assert os.path.isfile(notebook_path)
 
+    # extract scripts used to install dependencies, etc.
+    notebook_setup_path = os.path.join(artifacts_path, "notebook.setup.sh")
+    nb_extract_setup_script(notebook, notebook_setup_path)
+
     parameters = parameters if parameters else {}
     parameters["action"] = factory.job.action if factory.job else "process"
 
     try:
-        if quick:
-            notebook = nb_execute_inline(
+        # use containerized papermill
+        use_papermill_docker = True
+
+        if use_papermill_docker:
+            cmd = os.environ.get("ANALITICO_PAPERMILL_DOCKER_SCRIPT", None)
+            if not cmd:
+                logger.warning("ANALITICO_PAPERMILL_DOCKER_SCRIPT is not configured is a SECURITY RISK!!!")
+                cmd = "papermill"
+
+            # run papermill via command line. this allows us to run a script which will create
+            # a docker where we can run the notebook via papermill with untrusted content without
+            # having the security issues we would otherwise have in our main environment (eg. env variables, etc)
+            args = [cmd, notebook_path, notebook_out_path, "--cwd", artifacts_path, "--log-output"]
+            for key, value in parameters.items():
+                args.append("-p")
+                args.append(key)
+                args.append(value)
+
+            subprocess_run(args, cwd=artifacts_path, job=job)
+            notebook = read_json(notebook_out_path)
+
+        else:
+            # SECURITY WARNING: if we run papermill here via its direct api it will run in our
+            # same environment. this means that the code in our notebooks can have access to environment
+            # variables potentially containing sensitive keys, etc. if the notebooks are not trusted,
+            # papermill should run inside a docker which will provide insulation
+            notebook = papermill.execute_notebook(
                 notebook_path,
                 notebook_out_path,
                 parameters=parameters,
                 cwd=artifacts_path,  # any artifacts will be created in cwd
             )
-        else:
-            # use containerized papermill
-            use_papermill_docker = True
-
-            if use_papermill_docker:
-                cmd = os.environ.get("ANALITICO_PAPERMILL_DOCKER_SCRIPT", None)
-                if not cmd:
-                    logger.warning("ANALITICO_PAPERMILL_DOCKER_SCRIPT is not configured is a SECURITY RISK!!!")
-                    cmd = "papermill"
-
-                # run papermill via command line. this allows us to run a script which will create
-                # a docker where we can run the notebook via papermill with untrusted content without
-                # having the security issues we would otherwise have in our main environment (eg. env variables, etc)
-                args = [cmd, notebook_path, notebook_out_path, "--cwd", artifacts_path, "--log-output"]
-                for key, value in parameters.items():
-                    args.append("-p")
-                    args.append(key)
-                    args.append(value)
-
-                subprocess_run(args, cwd=artifacts_path, job=job)
-                notebook = read_json(notebook_out_path)
-
-            else:
-                # SECURITY WARNING: if we run papermill here via its direct api it will run in our
-                # same environment. this means that the code in our notebooks can have access to environment
-                # variables potentially containing sensitive keys, etc. if the notebooks are not trusted,
-                # papermill should run inside a docker which will provide insulation
-                notebook = papermill.execute_notebook(
-                    notebook_path,
-                    notebook_out_path,
-                    parameters=parameters,
-                    cwd=artifacts_path,  # any artifacts will be created in cwd
-                )
 
     except Exception as exc:
         evalue = str(exc)
@@ -292,64 +279,6 @@ def nb_extract_source(nb, disable_scripts=True):
     return source
 
 
-def nb_execute_inline(input_path, output_path, parameters=None, cwd=None):
-    """
-    Executes a single notebook locally. This method is similar to papermill.execute_notebook
-    with the main difference that code is run inline, not via a separate execution engine.
-    This makes the code quite a bit faster making this mechanism good for time sensitive
-    inferences. This method DOES NOT save cells output.
-
-    Parameters
-    input_path : str
-        Path to input notebook
-    output_path : str
-        Path to save executed notebook
-    parameters : dict, optional
-        Arbitrary keyword arguments to pass to the notebook parameters
-    cwd : str, optional
-        Working directory to use when executing the notebook
-
-    Returns
-    nb : Executed notebook object
-    """
-    started_on = time_ms()
-    with local_file_io_cwd():
-        # parameterize the Notebook
-        nb = load_notebook_node(input_path)
-        if parameters:
-            nb = parameterize_notebook(nb, parameters)
-
-        nb = prepare_notebook_metadata(nb, input_path, output_path)
-
-        # check the kernel name, we only run python
-        language = nb.metadata.kernelspec.language
-        if language != "python":
-            raise Exception("nb_execute_inline: " + language + " is not supported")
-
-        # extract source code from cells
-        source = nb_extract_source(nb, disable_scripts=True)
-
-        # execute t in `cwd` if it is set
-        with chdir(cwd):
-            try:
-                exec(source)
-            except Exception as exc:
-                raise AnaliticoException(
-                    "nb_execute_inline: an error occoured while executing notebook",
-                    code="notebook_execute_error",
-                    source=source,
-                ) from exc
-
-        metadata = nb["metadata"]["papermill"]
-        metadata["duration"] = time_ms(started_on) / 1000.0
-        metadata["end_time"] = str(datetime.datetime.utcnow().isoformat())
-
-        if output_path:
-            write_ipynb(nb, output_path)
-
-        return nb
-
-
 def nb_replace(notebook: dict, find: str, replace: str, source=True) -> dict:
     """ Replace given strings in notebook's source code """
 
@@ -434,8 +363,29 @@ def nb_extract_serverless(nb: dict) -> (str, str):
                 for j, line in enumerate(lines):
                     if len(line) > 0 and line[0] in ("!", "%"):
                         # command that should be passed to setup script?
-                        script += f"# cell: {1+1}, line: {j+1}\n{line[1:]}\n\n"
+                        script += f"# cell: {i+1}, line: {j+1}\n{line[1:]}\n\n"
                     else:
                         source += line + "\n"
 
     return source, script
+
+
+def nb_extract_setup_script(nb: dict, setup_path):
+    """ Extract setup scripts from notebook for docker packaging. Takes all ! and % source lines and writes them out to setup_path. """
+    with open(setup_path, "w") as f:
+        f.write("# notebook setup script\n\n")
+
+        # scan all cells in the notebook but consider only code cells
+        for i, cell in enumerate(nb["cells"]):
+            if cell["cell_type"] == "code":
+                # make sure lines contains individual lines, notebooks sometimes
+                # have a single string of multiple lines and sometimes have an array of lines
+                lines = cell["source"]
+                if isinstance(lines, list):
+                    lines = "".join(lines)
+                lines = lines.splitlines()
+
+                for j, line in enumerate(lines):
+                    if len(line) > 0 and line[0] in ("!", "%"):
+                        # command that should be passed to setup script
+                        f.write(f"# cell: {i+1}, line: {j+1}\n{line[1:]}\n\n")
