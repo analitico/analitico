@@ -183,10 +183,11 @@ class WebDavProxyMiddleware:
         the regular Django routes.
         """
         # if we sit behind a reverse proxy or load balancer than the original
-        # host name will be in the X-Forwarded-For header, if we received a direct
+        # host name will be in the X-Forwarded-Host header, if we received a direct
         # connection than it's the regular Host header. we intercept for webdav
         # only specific ws_*.cloud.analitico.ai connections
-        host = None #request.headers.get("X-Forwarded-For", None)
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
+        host = request.headers.get("X-Forwarded-Host", None)
         if not host:
             host = request.headers.get("Host")
 
