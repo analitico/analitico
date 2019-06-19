@@ -82,7 +82,7 @@ def get_webdav_credentials_or_exception(workspace_id: str, user: User, method: s
 
 
 class WebDavProxyMiddleware:
-    """ Intercept calls to webdav volumes and proxy then through to our storage boxes. """
+    """ Intercept calls to webdav volumes and proxy them through to our storage boxes. """
 
     def __init__(self, get_response):
         """ One-time configuration and initialization. """

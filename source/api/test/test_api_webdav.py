@@ -38,6 +38,7 @@ import tempfile
 # pylint: disable=no-member
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
+UNICORN_FILENAME = "unicorns-do-it-better.png"
 
 WEBDAV_URL = "https://u206378-sub4.your-storagebox.de"
 WEBDAV_USERNAME = "u206378-sub4"
@@ -52,9 +53,9 @@ class WebdavTests(AnaliticoApiTestCase):
 
     def upload_unicorn(self):
         """ The same image is used in a number of tests """
-        url = reverse("api:workspace-asset-detail", args=("ws_storage_webdav", "assets", "unicorns-do-it-better.png"))
-        response = self.upload_file(url, "unicorns-do-it-better.png", "image/png", token=self.token1)
-        self.assertEqual(response.data[0]["id"], "unicorns-do-it-better.png")
+        url = reverse("api:workspace-asset-detail", args=("ws_storage_webdav", "assets", UNICORN_FILENAME))
+        response = self.upload_file(url, UNICORN_FILENAME, "image/png", token=self.token1)
+        self.assertEqual(response.data[0]["id"], UNICORN_FILENAME)
         self.assertEqual(response.data[0]["path"], "/workspaces/ws_storage_webdav/assets/unicorns-do-it-better.png")
 
         # TODO fix has so it's based on md5 and not modification date
@@ -91,7 +92,7 @@ class WebdavTests(AnaliticoApiTestCase):
             attributes = response.data["attributes"]
 
             self.assertEqual(len(attributes["assets"]), 1)
-            self.assertEqual(attributes["assets"][0]["id"], "unicorns-do-it-better.png")
+            self.assertEqual(attributes["assets"][0]["id"], UNICORN_FILENAME)
         except Exception as exc:
             raise exc
 
@@ -100,7 +101,7 @@ class WebdavTests(AnaliticoApiTestCase):
         try:
             url = reverse("api:workspace-asset-list", args=("ws_storage_webdav", "assets"))
 
-            path1 = os.path.join(ASSETS_PATH, "unicorns-do-it-better.png")
+            path1 = os.path.join(ASSETS_PATH, UNICORN_FILENAME)
             path2 = os.path.join(ASSETS_PATH, "image_dog2.png")
             path3 = os.path.join(ASSETS_PATH, "image_dog3.webp")
 
@@ -109,7 +110,7 @@ class WebdavTests(AnaliticoApiTestCase):
             file3 = open(path3, "rb")
 
             data = {
-                "file1": SimpleUploadedFile("unicorns-do-it-better.png", file1.read(), "image/png"),
+                "file1": SimpleUploadedFile(UNICORN_FILENAME, file1.read(), "image/png"),
                 "file2": SimpleUploadedFile("image_dog2.png", file2.read(), "image/png"),
                 "file3": SimpleUploadedFile("image_dog3.webp", file3.read(), "image/webp"),
             }
@@ -119,7 +120,7 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             self.assertEqual(len(response.data), 3)
 
-            self.assertEqual(response.data[0]["id"], "unicorns-do-it-better.png")
+            self.assertEqual(response.data[0]["id"], UNICORN_FILENAME)
             self.assertEqual(response.data[1]["id"], "image_dog2.png")
             self.assertEqual(response.data[2]["id"], "image_dog3.webp")
 
@@ -147,7 +148,7 @@ class WebdavTests(AnaliticoApiTestCase):
 
             # thou shall only have one dog!
             self.assertEqual(len(attributes["assets"]), 1)
-            self.assertEqual(attributes["assets"][0]["id"], "unicorns-do-it-better.png")
+            self.assertEqual(attributes["assets"][0]["id"], UNICORN_FILENAME)
         except Exception as exc:
             raise exc
 
@@ -155,11 +156,9 @@ class WebdavTests(AnaliticoApiTestCase):
         """ Test simple upload of image asset using the wrong token """
         try:
             # asset_id matches filename
-            url = reverse(
-                "api:workspace-asset-detail", args=("ws_storage_webdav", "assets", "unicorns-do-it-better.png")
-            )
+            url = reverse("api:workspace-asset-detail", args=("ws_storage_webdav", "assets", UNICORN_FILENAME))
             response = self.upload_file(
-                url, "unicorns-do-it-better.png", "image/png", self.token2, status_code=status.HTTP_404_NOT_FOUND
+                url, UNICORN_FILENAME, "image/png", self.token2, status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as exc:
             raise exc
@@ -168,11 +167,9 @@ class WebdavTests(AnaliticoApiTestCase):
         """ Test simple upload of image asset using no token """
         try:
             # asset_id matches filename
-            url = reverse(
-                "api:workspace-asset-detail", args=("ws_storage_webdav", "assets", "unicorns-do-it-better.png")
-            )
+            url = reverse("api:workspace-asset-detail", args=("ws_storage_webdav", "assets", UNICORN_FILENAME))
             response = self.upload_file(
-                url, "unicorns-do-it-better.png", "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED
+                url, UNICORN_FILENAME, "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED
             )
         except Exception as exc:
             raise exc
@@ -182,7 +179,7 @@ class WebdavTests(AnaliticoApiTestCase):
         try:
             # upload an image to storage
             url = reverse("api:workspace-asset-detail", args=("ws_storage_webdav", "assets", "download1.jpg"))
-            response1 = self.upload_file(url, "unicorns-do-it-better.png", "image/jpeg", token=self.token1)
+            response1 = self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=self.token1)
             self.assertEqual(response1.data[0]["id"], "download1.jpg")
             self.assertIn("hash", response1.data[0])
 
@@ -239,7 +236,7 @@ class WebdavTests(AnaliticoApiTestCase):
     def test_asset_download_check_contents(self):
         """ Test upload and download with contents verification """
         try:
-            unicorn_path = os.path.join(ASSETS_PATH, "unicorns-do-it-better.png")
+            unicorn_path = os.path.join(ASSETS_PATH, UNICORN_FILENAME)
             unicorn_content = open(unicorn_path, "rb").read()
             url, _ = self.upload_unicorn()
 
@@ -367,7 +364,7 @@ class WebdavTests(AnaliticoApiTestCase):
             # upload then download json details
             url, _ = self.upload_unicorn()
             url_info = reverse(
-                "api:workspace-asset-detail-info", args=("ws_storage_webdav", "assets", "unicorns-do-it-better.png")
+                "api:workspace-asset-detail-info", args=("ws_storage_webdav", "assets", UNICORN_FILENAME)
             )
             self.assertEqual(url + "/info", url_info)
 
@@ -379,8 +376,8 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(data["content_type"], "image/png")
             # self.assertEqual(data["etag"], '"730d-58b845739f93b"') # TODO why does etag vary?
             # self.assertEqual(data["hash"], "730d58b8414a9f230")
-            self.assertEqual(data["filename"], "unicorns-do-it-better.png")
-            self.assertEqual(data["id"], "unicorns-do-it-better.png")
+            self.assertEqual(data["filename"], UNICORN_FILENAME)
+            self.assertEqual(data["id"], UNICORN_FILENAME)
             self.assertEqual(data["path"], "/workspaces/ws_storage_webdav/assets/unicorns-do-it-better.png")
             self.assertEqual(data["url"], "analitico://workspaces/ws_storage_webdav/assets/unicorns-do-it-better.png")
             self.assertEqual(int(data["size"]), 29453)
@@ -739,6 +736,44 @@ class WebdavTests(AnaliticoApiTestCase):
             driver.set_properties("/" + obj_name, extra=None)
             obj = driver.get_object(container.name, obj_name)
             self.assertFalse(obj.meta_data)
+
+        finally:
+            driver.delete("/" + obj_name)
+
+    ##
+    ## /api/workspaces/ws_xxx/files/ methods
+    ##
+
+    def test_webdav_files_api_list_file(self):
+        driver = self.get_driver()
+        try:
+            obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
+            obj_data = b"This is it "
+            obj_extra = {"meta_data": {"property1": "value1", "property2": 2}}
+
+            # upload with metadata
+            container = driver.create_container("/")
+            obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name, extra=obj_extra)
+
+            # retrieve file via /files/url api
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", obj.name[1:]))
+            response = self.client.get(url)
+            data = response.data
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0]["type"], "analitico/file")
+            self.assertEqual(data[0]["id"], obj.name)
+            self.assertEqual(data[0]["attributes"]["content_type"], "text/plain")
+            self.assertEqual(data[0]["attributes"]["size"], 11)
+            self.assertEqual(data[0]["attributes"]["metadata"]["property1"], "value1")
+            self.assertEqual(data[0]["attributes"]["metadata"]["property2"], "2")
+
+            # retrieve entire directory via /files api
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", ""))
+            response = self.client.get(url)
+            data = response.data
+            self.assertGreater(len(data), 1)
+            self.assertEqual(data[0]["type"], "analitico/directory")
+            self.assertEqual(data[0]["id"], "/")
 
         finally:
             driver.delete("/" + obj_name)

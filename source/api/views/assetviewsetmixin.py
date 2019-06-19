@@ -288,6 +288,7 @@ class AssetViewSetMixin:
                 "/files is only supported on WebDAV based storage", status=status.HTTP_501_NOT_IMPLEMENTED
             )
 
+        url = base_path + url
         items = driver.ls(os.path.join(base_path, url))
         serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
         return Response(serializer.data, content_type="json")
