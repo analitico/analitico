@@ -272,12 +272,15 @@ class AssetViewSetMixin:
         item = self.get_object()
         workspace = item if isinstance(item, Workspace) else item.workspace
 
+        # when using the workspace as ws_xxx.cloud... we need to replace with ws-xxx.cloud...
+        workspace_id = workspace.id.replace("_", "-")
+
         if isinstance(item, Workspace):
             base_path = "/"
-            base_url = f"https://{workspace.id}.cloud.analitico.ai/{item.type}s/{item.id}"
+            base_url = f"https://{workspace_id}.cloud.analitico.ai/{item.type}s/{item.id}"
         else:
             base_path = f"/{item.id}"
-            base_url = f"https://{workspace.id}.cloud.analitico.ai"
+            base_url = f"https://{workspace_id}.cloud.analitico.ai"
 
         driver = workspace.storage.driver
         if not isinstance(driver, api.libcloud.WebdavStorageDriver):
