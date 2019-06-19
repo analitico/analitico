@@ -3,6 +3,7 @@
 
 import os
 import pandas as pd
+import urllib
 
 from django.utils.text import slugify
 from django.http.response import StreamingHttpResponse
@@ -37,19 +38,21 @@ from libcloud.storage.base import Object, Container, StorageDriver
 ## FilesSerializer
 ##
 
+
 class LibcloudStorageItemsSerializer(Serializer):
     """ Serialize, deserialize libcloud Object and Container. """
+
+    def __init__(self, *args, base_url=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.base_url = base_url
 
     def to_representation(self, instance):
         if isinstance(instance, libcloud.storage.base.Object):
             d = {
                 "type": "analitico/file",
                 "id": instance.name,
-                "attributes": {
-                    "hash": instance.hash,
-                    "size": instance.size,
-                    **instance.extra,
-                }
+                "attributes": {"hash": instance.hash, "size": instance.size, **instance.extra},
+                "links": {"self": urllib.parse.urljoin(self.base_url, instance.name)},
             }
             if instance.meta_data:
                 d["attributes"]["metadata"] = instance.meta_data
@@ -59,12 +62,11 @@ class LibcloudStorageItemsSerializer(Serializer):
             return {
                 "type": "analitico/directory",
                 "id": instance.name,
-                "attributes": {
-                    **instance.extra
-                }
+                "attributes": {**instance.extra},
+                "links": {"self": urllib.parse.urljoin(self.base_url, instance.name)},
             }
-        raise NotImplementedError(f"Can't serialize {instance}")
 
+        raise NotImplementedError(f"Can't serialize {instance}")
 
 
 ##
@@ -77,6 +79,7 @@ ASSET_CLASS_RE = r"(?P<asset_class>(assets|data))$"
 ASSET_ID_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{1,256}\.[\w]{1,12})$"
 # /assets or /data plus a filename with extension and /info
 ASSET_INFO_RE = r"(?P<asset_class>(assets|data))/(?P<asset_id>[-\w.]{1,256}\.[\w]{1,12})/info$"
+
 
 class AssetViewSetMixin:
     """
@@ -254,21 +257,34 @@ class AssetViewSetMixin:
         return Response(asset)
 
     ##
-    ## /files endpoint
+    ## /files endpoint lists files on remote endpoint
     ##
-    # TODO #210 build /files apis to list, upload, download, update, delete files from storage
 
     @permission_classes((IsAuthenticated,))
     @action(methods=["get", "post", "put", "delete"], detail=True, url_name="files", url_path="files/(?P<url>.*)")
     def files(self, request, pk, url) -> Response:
+        """
+        List properties of files and directory in storage associated with a given workspace, recipe or dataset.
+        The url parameter can be omitted to obtain files in the root directory of the given item or it can be used
+        to navigate subdirectories, etc. Each item reported in data represents a single directory or file. The related
+        link points to the webdav url where the item can be downloaded from, uploaded to or deleted.
+        """
         item = self.get_object()
         workspace = item if isinstance(item, Workspace) else item.workspace
 
+        if isinstance(item, Workspace):
+            base_path = "/"
+            base_url = f"https://{workspace.id}.cloud.analitico.ai/{item.type}s/{item.id}"
+        else:
+            base_path = f"/{item.id}"
+            base_url = f"https://{workspace.id}.cloud.analitico.ai"
+
         driver = workspace.storage.driver
         if not isinstance(driver, api.libcloud.WebdavStorageDriver):
-            raise AnaliticoException("/files is only supported on WebDAV based storage", status=status.HTTP_501_NOT_IMPLEMENTED)
+            raise AnaliticoException(
+                "/files is only supported on WebDAV based storage", status=status.HTTP_501_NOT_IMPLEMENTED
+            )
 
-        ls = driver.ls("/" + url)
-
-        serializer = LibcloudStorageItemsSerializer(ls, many=True)
+        items = driver.ls(os.path.join(base_path, url))
+        serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
         return Response(serializer.data, content_type="json")
