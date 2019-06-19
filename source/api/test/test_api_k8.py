@@ -140,26 +140,35 @@ class K8Tests(AnaliticoApiTestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # request fails if query parameters does not specify any filter in braces
+        # request fails empty metric
         self.auth_token(self.token1)
-        response = self.client.get(url, data={"query": "flask_http_request_total"}, format="json")
+        response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        # request fails invalid metric
+        self.auth_token(self.token1)
+        response = self.client.get(url, data={"metric": "this-metric-does-not-exist"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        # request fails time range
+        self.auth_token(self.token1)
+        response = self.client.get(url, data={"metric": "flask_http_request_total", "time_range": "this-is-not-a-time-range"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         # admin user CAN get metrics
         self.auth_token(self.token1)
-        response = self.client.get(url, format="json")
+        response = self.client.get(url, data={"metric": "flask_http_request_total"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
 
-        # expect array of metrics from specific service
+        # expect requested metric from specific service
         self.assertEqual(data["status"], "success")
-        self.assertGreater(len(data["data"]["result"]), 20)
+        self.assertGreaterEqual(len(data["data"]["result"]), 1) # one per revision (if any)
         for metric in data["data"]["result"]:
             self.assertEqual(metric["metric"]["serving_knative_dev_service"], self.endpoint_id_normalized)
 
-        # filter a specific type of event over a specific time range
-        query = 'flask_http_request_total{kubernetes_namespace="cloud",serving_knative_dev_service="ep-test-001"}[30m]'
-        response = self.client.get(url, data={"query": query}, format="json")
+        # filter a specific metric over a specific time range
+        response = self.client.get(url, data={"metric": "flask_http_request_total", "time_range": "30m"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
         self.assertEqual(response.data["status"], "success")
@@ -167,17 +176,6 @@ class K8Tests(AnaliticoApiTestCase):
         for metric in data["data"]["result"]:
             self.assertEqual(metric["metric"]["serving_knative_dev_service"], self.endpoint_id_normalized)
             self.assertEqual(metric["metric"]["__name__"], "flask_http_request_total")
-            self.assertGreater(len(metric["values"]), 30)  # 59 samples for 30 minutes?
-
-        # filter a specific type of event for some other service which I don't have rights to
-        # api should filter for my service AND this other service and I should get no results
-        query = 'flask_http_request_total{kubernetes_namespace="cloud",serving_knative_dev_service="ep-test-002"}[30m]'
-        response = self.client.get(url, data={"query": query}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.data
-        self.assertEqual(response.data["status"], "success")
-        self.assertEqual(data["status"], "success")
-        self.assertEqual(len(data["data"]["result"]), 0)  # no results
 
     @tag("slow", "docker", "k8s")
     def test_k8s_get_logs(self):

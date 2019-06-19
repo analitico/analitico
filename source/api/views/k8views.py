@@ -121,22 +121,29 @@ class K8ViewSet(GenericViewSet):
         """
         service_name, service_namespace = self.get_service_name(request, pk)
 
-        # when the query is not specified are retrieved all metrics
-        query = api.utilities.get_query_parameter(request, "query", "{}")
+        metric = api.utilities.get_query_parameter(request, "metric", "")
+        time_range = api.utilities.get_query_parameter(request, "time_range")
 
-        # metrics requires filters in braces
-        braces = "\{(.*?)\}"
-        if not search(braces, query):
+        # metric converted in Prometheus query fixed to the given service
+        metrics = {
+            "flask_http_request_total": 'flask_http_request_total{kubernetes_namespace="%s", serving_knative_dev_service="%s"}' % (service_namespace, service_name),
+            "flask_http_request_duration_seconds_count": 'flask_http_request_duration_seconds_count{kubernetes_namespace="%s", serving_knative_dev_service="%s"}' % (service_namespace, service_name),
+            "flask_http_request_duration_seconds_sum": 'flask_http_request_duration_seconds_sum{kubernetes_namespace="%s", serving_knative_dev_service="%s"}' % (service_namespace, service_name),
+            "container_memory_usage_bytes": 'container_memory_usage_bytes{container_name="user-container", namespace="%s", pod_name=~"%s.*"}' % (service_namespace, service_name),
+            "container_cpu_load_average_10s": 'container_cpu_load_average_10s{container_name="user-container", namespace="%s", pod_name=~"%s.*"}' % (service_namespace, service_name)
+        }
+
+        query = metrics.get(metric)
+    
+        if not query:
             raise AnaliticoException(
-                "Metrics must be filtered by service", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+                f"Metric `{metric}` not found", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
-        query = query.replace(
-            # if the user adds a namespace other than his own the query would not return data
-            # from the other service because filters are joined with AND clauses
-            "{",
-            '{kubernetes_namespace="%s",serving_knative_dev_service="%s",' % (service_namespace, service_name),
-        )
+        # eg, [5m] last five minutes
+        if time_range:
+            query += f"[{time_range}]"
+
         prometheus_response = requests.post(
             django.conf.settings.PROMETHEUS_SERVICE_URL,
             data={"query": query},
