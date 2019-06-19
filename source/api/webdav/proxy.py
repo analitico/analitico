@@ -186,7 +186,7 @@ class WebDavProxyMiddleware:
         # host name will be in the X-Forwarded-For header, if we received a direct
         # connection than it's the regular Host header. we intercept for webdav
         # only specific ws_*.cloud.analitico.ai connections
-        host = request.headers.get("X-Forwarded-For", None)
+        host = None #request.headers.get("X-Forwarded-For", None)
         if not host:
             host = request.headers.get("Host")
 
