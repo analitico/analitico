@@ -26,7 +26,7 @@ DOCKERIMAGENAME='image-'$DOCKERNAME
 # use the jupyter image which is a safe env for untrusted code
 # it is the same image that is used for "interactive mode" using Jupyter hosts
 # it uses the same version (COMMIT_SHA) of the worker
-docker run --name=$DOCKERNAME -d --init --runtime=nvidia s6.analitico.ai:5000/analitico:$ANALITICO_COMMIT_SHA-jupyter 
+docker run --name=$DOCKERNAME -d --init --runtime=nvidia eu.gcr.io/analitico-api/analitico-website:$ANALITICO_COMMIT_SHA-jupyter 
 # copy working dir
 docker cp $4/. $DOCKERNAME:/home/www/analitico/notebooks/
 # copy script to execute notebook using papermill
