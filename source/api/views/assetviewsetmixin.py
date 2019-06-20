@@ -4,12 +4,10 @@
 import os
 import pandas as pd
 import urllib
+import io
 
-from django.utils.text import slugify
 from django.http.response import StreamingHttpResponse
 from django.utils.http import parse_http_date_safe, http_date
-from django.utils.timezone import now
-from django.urls import reverse
 
 import rest_framework
 import rest_framework.viewsets
@@ -18,13 +16,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, permission_classes
-from rest_framework.exceptions import NotFound, MethodNotAllowed, APIException
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework.serializers import Serializer
 
 from analitico import ACTION_PROCESS, AnaliticoException
-from analitico.utilities import logger, get_csv_row_count
-from api.models import ItemMixin, Job, ASSETS_CLASS_DATA, Dataset, Workspace
+from analitico.utilities import get_csv_row_count
+from api.models import Dataset, Workspace
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.factory import ServerFactory
@@ -32,7 +30,7 @@ from api.factory import ServerFactory
 import libcloud
 import api.libcloud
 
-from libcloud.storage.base import Object, Container, StorageDriver
+from libcloud.storage.base import StorageDriver
 
 ##
 ## FilesSerializer
@@ -285,10 +283,53 @@ class AssetViewSetMixin:
         driver = workspace.storage.driver
         if not isinstance(driver, api.libcloud.WebdavStorageDriver):
             raise AnaliticoException(
-                "/files is only supported on WebDAV based storage", status=status.HTTP_501_NOT_IMPLEMENTED
+                "/files is only supported on WebDAV based storage", status_code=status.HTTP_501_NOT_IMPLEMENTED
             )
 
+        # TODO check permissions
+
         url = base_path + url
-        items = driver.ls(os.path.join(base_path, url))
-        serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
-        return Response(serializer.data, content_type="json")
+        metadata = get_query_parameter_as_bool(request, "metadata")
+
+        if metadata:
+            # return metadata for files and directories
+            items = driver.ls(os.path.join(base_path, url))
+            serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
+            return Response(serializer.data, content_type="json")
+
+        if request.method in ["GET"]:
+            # streaming download of a single file from storage
+            try:
+                ls = driver.ls(url)
+            except api.libcloud.WebdavException as exc:
+                raise AnaliticoException(f"Can't get information on {url}", status_code=exc.actual_code) from exc
+
+            if len(ls) > 1:
+                metadata_url = request.build_absolute_uri()
+                metadata_msg = f"Can only download a file at a time, get information on a directory with {metadata_url}"
+                raise AnaliticoException(metadata_msg, status_code=status.HTTP_400_BAD_REQUEST)
+
+            obj_ls = ls[0]
+            obj_stream = driver.download_as_stream(url)
+            response = StreamingHttpResponse(obj_stream, content_type=obj_ls.extra["content_type"])
+            response["Last-Modified"] = obj_ls.extra["last_modified"]
+            response["ETag"] = obj_ls.extra["etag"]
+            if obj_ls.size > 0:
+                response["Content-Length"] = str(obj_ls.size)
+            return response
+
+        if request.method in ["PUT", "POST"]:
+            # upload or replace existing files in storage
+            # TODO extract metadata from custom headers, if any
+            # TODO stream content
+            data = io.StringIO(request.data)
+            driver.upload(data, url, extra=None)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if request.method == "DELETE":
+            driver.delete(url)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # TODO MOVE method to rename files
+
+        raise NotImplementedError(f"Method {request.method} on {request.path} is not implemented")

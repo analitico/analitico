@@ -756,7 +756,7 @@ class WebdavTests(AnaliticoApiTestCase):
             obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name, extra=obj_extra)
 
             # retrieve file via /files/url api
-            url = reverse("api:workspace-files", args=("ws_storage_webdav", obj.name[1:]))
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", obj.name[1:])) + "?metadata=true"
             response = self.client.get(url)
             data = response.data
             self.assertEqual(len(data), 1)
@@ -768,7 +768,7 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(data[0]["attributes"]["metadata"]["property2"], "2")
 
             # retrieve entire directory via /files api
-            url = reverse("api:workspace-files", args=("ws_storage_webdav", ""))
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", "")) + "?metadata=true"
             response = self.client.get(url)
             data = response.data
             self.assertGreater(len(data), 1)
@@ -777,3 +777,46 @@ class WebdavTests(AnaliticoApiTestCase):
 
         finally:
             driver.delete("/" + obj_name)
+
+    def test_webdav_files_api_put_get_file_contents(self):
+        """ Upload raw files directly via /files api """
+        driver = self.get_driver()
+        try:
+            obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
+            obj_data = b"This is it"
+
+            # TODO save extras as well
+            obj_extra = {"meta_data": {"property1": "value1", "property2": 2}}
+
+            # upload file contents via /webdav api
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", obj_name))  # raw file url
+            response = self.client.put(url, data=obj_data)
+            self.assertEqual(response.status_code, 204)
+
+            # retrieve info directly from driver
+            ls0 = driver.ls(obj_name)[0]
+
+            # retrieve contents from raw file api
+            # make sure we do streaming downloads
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.streaming)
+            data = b"".join(response.streaming_content)
+            self.assertEqual(data, obj_data)
+            self.assertEqual(response["ETag"], ls0.extra["etag"])
+            self.assertEqual(response["Last-Modified"], ls0.extra["last_modified"])
+            self.assertEqual(int(response["Content-Length"]), ls0.size)
+            self.assertEqual(int(response["Content-Length"]), len(data))
+
+            # delete item
+            response = self.client.delete(url)
+            self.assertEqual(response.status_code, 204)
+            obj_name = None
+
+            # retrieve item which no longer exists
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 404)
+
+        finally:
+            if obj_name:
+                driver.delete("/" + obj_name)
