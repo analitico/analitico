@@ -22,7 +22,16 @@ class AnaliticoException(Exception):
             self.message = message if message else self.default_message
 
         self.code = code if code else self.default_code
-        self.status_code = status_code if status_code else self.default_status_code
+
+        # we should pass the http status code by using status_code
+        # however there are other classes that use status so this is
+        # easy to confuse. use whatever parameter was passed.
+        if status_code:
+            self.status_code = status_code
+        elif kwargs.get("status"):
+            self.status_code = kwargs["status"]
+        else:
+            self.status_code = self.default_status_code
 
         self.extra = extra if extra else {}
         for key, value in kwargs.items():
