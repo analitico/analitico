@@ -163,6 +163,9 @@ try:
         "192.168.1.*",
     ]
 
+    # X-Forwarded-Host header used in preference to the Host header #205
+    USE_X_FORWARDED_HOST = True
+
     # Disable maximum upload size
     DATA_UPLOAD_MAX_MEMORY_SIZE = None
 
