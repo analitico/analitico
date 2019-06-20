@@ -258,8 +258,74 @@ class AssetViewSetMixin:
     ## /files endpoint lists files on remote endpoint
     ##
 
+    def files_metadata(self, request, pk, url, driver, base_path, base_url):
+        # return metadata for files and directories
+        if request.method in ["GET"]:
+            items = driver.ls(os.path.join(base_path, url))
+            serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
+            return Response(serializer.data, content_type="json")
+
+        # modify metadata, rename, add custom metadata
+        if request.method in ["PUT", "POST"]:
+            data = request.data["data"]
+
+            # is this a rename request? id/path is being updated
+            if url != data["id"]:
+                driver.move(url, data["id"])
+                return Response(status=status.HTTP_201_CREATED)
+
+            # TODO update extras if changed
+
+        msg = f"Method {request.method} on {request.path} is not implemented"
+        raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
+
+    def files_raw(self, request, pk, url, driver, base_path, base_url):
+        if request.method in ["GET"]:
+            # streaming download of a single file from storage
+            try:
+                ls = driver.ls(url)
+            except api.libcloud.WebdavException as exc:
+                raise AnaliticoException(f"Can't get information on {url}", status_code=exc.actual_code) from exc
+
+            if len(ls) > 1:
+                metadata_url = request.build_absolute_uri()
+                metadata_msg = f"Can only download a file at a time, get information on a directory with {metadata_url}"
+                raise AnaliticoException(metadata_msg, status_code=status.HTTP_400_BAD_REQUEST)
+
+            obj_ls = ls[0]
+            obj_stream = driver.download_as_stream(url)
+            response = StreamingHttpResponse(obj_stream, content_type=obj_ls.extra["content_type"])
+            response["Last-Modified"] = obj_ls.extra["last_modified"]
+            response["ETag"] = obj_ls.extra["etag"]
+            if obj_ls.size > 0:
+                response["Content-Length"] = str(obj_ls.size)
+            return response
+
+        if request.method in ["PUT", "POST"]:
+            # upload or replace existing files in storage
+            # TODO extract metadata from custom headers, if any
+            # TODO stream content
+            data = io.StringIO(request.data)
+            driver.upload(data, url, extra=None)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if request.method == "MOVE":
+            move_to_path = request["Destination"]
+            driver.move(url, move_to_path)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if request.method == "DELETE":
+            driver.delete(url)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # some combinations of methods and urls are not supported
+        msg = f"Method {request.method} on {request.path} is not implemented"
+        raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
+
     @permission_classes((IsAuthenticated,))
-    @action(methods=["get", "post", "put", "delete"], detail=True, url_name="files", url_path="files/(?P<url>.*)")
+    @action(
+        methods=["get", "post", "put", "move", "delete"], detail=True, url_name="files", url_path="files/(?P<url>.*)"
+    )
     def files(self, request, pk, url) -> Response:
         """
         List properties of files and directory in storage associated with a given workspace, recipe or dataset.
@@ -292,44 +358,8 @@ class AssetViewSetMixin:
         metadata = get_query_parameter_as_bool(request, "metadata")
 
         if metadata:
-            # return metadata for files and directories
-            items = driver.ls(os.path.join(base_path, url))
-            serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
-            return Response(serializer.data, content_type="json")
+            # operate on files metadata
+            return self.files_metadata(request, pk, url, driver, base_path, base_url)
 
-        if request.method in ["GET"]:
-            # streaming download of a single file from storage
-            try:
-                ls = driver.ls(url)
-            except api.libcloud.WebdavException as exc:
-                raise AnaliticoException(f"Can't get information on {url}", status_code=exc.actual_code) from exc
-
-            if len(ls) > 1:
-                metadata_url = request.build_absolute_uri()
-                metadata_msg = f"Can only download a file at a time, get information on a directory with {metadata_url}"
-                raise AnaliticoException(metadata_msg, status_code=status.HTTP_400_BAD_REQUEST)
-
-            obj_ls = ls[0]
-            obj_stream = driver.download_as_stream(url)
-            response = StreamingHttpResponse(obj_stream, content_type=obj_ls.extra["content_type"])
-            response["Last-Modified"] = obj_ls.extra["last_modified"]
-            response["ETag"] = obj_ls.extra["etag"]
-            if obj_ls.size > 0:
-                response["Content-Length"] = str(obj_ls.size)
-            return response
-
-        if request.method in ["PUT", "POST"]:
-            # upload or replace existing files in storage
-            # TODO extract metadata from custom headers, if any
-            # TODO stream content
-            data = io.StringIO(request.data)
-            driver.upload(data, url, extra=None)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        if request.method == "DELETE":
-            driver.delete(url)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        # TODO MOVE method to rename files
-
-        raise NotImplementedError(f"Method {request.method} on {request.path} is not implemented")
+        # operations on raw files (uploading, downloading, deleting, etc)
+        return self.files_raw(request, pk, url, driver, base_path, base_url)

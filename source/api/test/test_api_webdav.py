@@ -416,6 +416,9 @@ class WebdavTests(AnaliticoApiTestCase):
     ## WebDAV driver direct webdav methods
     ##
 
+    def get_random_path(self):
+        return "/tst_" + django.utils.crypto.get_random_string().lower()
+
     def test_webdav_driver_parent_path(self):
         """ Calculating parent of WebDAV path. """
         driver = self.get_driver()
@@ -546,6 +549,30 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(file_data, remote_data)
 
         driver.rmdir(dir_name)
+
+    def test_webdav_driver_move(self):
+        """ Upload a file then change its name. """
+        driver = self.get_driver()
+
+        path1 = self.get_random_path() + ".txt"
+        path2 = self.get_random_path() + ".txt"
+
+        # create file in first location
+        driver.upload(io.BytesIO(b"Tell me something new"), path1)
+        self.assertTrue(driver.exists(path1))
+        self.assertFalse(driver.exists(path2))
+
+        # rename path1 to path2
+        driver.move(path1, path2)
+        self.assertFalse(driver.exists(path1))
+        self.assertTrue(driver.exists(path2))
+
+        # put original name back
+        driver.move(path2, path1)
+        self.assertTrue(driver.exists(path1))
+        self.assertFalse(driver.exists(path2))
+
+        driver.delete(path1)
 
     ##
     ## StorageDriver methods
@@ -820,3 +847,37 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             if obj_name:
                 driver.delete("/" + obj_name)
+
+    def test_webdav_files_api_move(self):
+        """ Move a file via /files api """
+        driver = self.get_driver()
+        try:
+            path1 = self.get_random_path() + ".txt"
+            path2 = self.get_random_path() + ".txt"
+
+            url1 = reverse("api:workspace-files", args=("ws_storage_webdav", path1[1:])) + "?metadata=true"
+            url2 = reverse("api:workspace-files", args=("ws_storage_webdav", path2[1:])) + "?metadata=true"
+
+            # create file in first location
+            driver.upload(io.BytesIO(b"Tell me something new"), path1)
+            self.assertTrue(driver.exists(path1))
+            self.assertFalse(driver.exists(path2))
+
+            # retrieve item information
+            response1 = self.client.get(url1)
+            self.assertEqual(response1.status_code, status.HTTP_200_OK)
+            data1 = response1.data[0]
+
+            # change name and update (rename)
+            data1["id"] = path2
+            response2 = self.client.put(url1, data=data1)
+            self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+
+            # check if file actually moved
+            self.assertFalse(driver.exists(path1))
+            self.assertTrue(driver.exists(path2))
+
+            # TODO get in new location
+
+        finally:
+            driver.delete(path2)
