@@ -8,7 +8,7 @@ spec:
     metadata:
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
+        prometheus.io/port: "49090"
     spec:
       containers:
       - image: {docker_image}

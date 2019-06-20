@@ -5,7 +5,7 @@ from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 
 
 def when_ready(server):
-    GunicornPrometheusMetrics.start_http_server_when_ready(9090)
+    GunicornPrometheusMetrics.start_http_server_when_ready(49090)
 
 
 def child_exit(server, worker):
