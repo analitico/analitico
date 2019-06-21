@@ -36,6 +36,7 @@ import urllib
 import requests
 import xml.etree.cElementTree as xml
 from xml.sax.saxutils import escape
+from collections import OrderedDict
 import logging
 
 from numbers import Number
@@ -46,7 +47,7 @@ logger = logging.getLogger("webdav")
 
 DOWNLOAD_CHUNK_SIZE_BYTES = 1 * 1024 * 1024
 
-# tag used in extra for object metadata. 
+# tag used in extra for object metadata.
 # we use meta_data to be compatible with s3.
 METADATA_EXTRA_TAG = "meta_data"
 
@@ -88,6 +89,19 @@ def slugify(value, allow_unicode=False):
     value = re.sub(r"[^\w\s-]", "", value).strip().lower()
     return re.sub(r"[-\s]+", "-", value)
 
+def metadata_to_amz_meta_headers(metadata: dict) -> dict:
+    """ 
+    Returns obj.meta_data converted to a dictionary of key/value headers that
+    we can use to return the object's metadata as http headers in a way that 
+    is compatible with how it's done on Amazon S3.
+    https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
+    """
+    headers = OrderedDict()
+    if metadata:
+        for key, value in metadata:
+            # TODO implement x-amz-missing-meta for unencodable headers #223
+            headers["x-amz-meta-" + slugify(key)] = value
+    return headers
 
 class WebdavException(LibcloudError):
     """ WebdavException shows method, expected status codes and actual status code reported by server. """
@@ -99,6 +113,7 @@ class WebdavException(LibcloudError):
         DELETE="delete",
         MKCOL="create directory",
         PROPFIND="list directory",
+        MOVE="rename",
     )
 
     def __init__(self, method, path, expected_code, actual_code):
@@ -250,6 +265,12 @@ class WebdavStorageDriver(StorageDriver):
         else:
             self.cwd += stripped_path
 
+    def move(self, path, move_to_path):
+        """ Move a file or group of files from their current location to the newly specified path (rename). """
+        move_to_path = urllib.parse.urljoin(self.url, move_to_path)
+        self._send("MOVE", path, (200, 201, 204), headers={"destination": move_to_path})
+        return True
+
     def mkdir(self, path, safe=False):
         expected_codes = 201 if not safe else (201, 301, 405)
         self._send("MKCOL", path, expected_codes)
@@ -282,6 +303,7 @@ class WebdavStorageDriver(StorageDriver):
     def delete(self, path):
         """ Delete specific file. """
         self._send("DELETE", path, 204)
+        return True
 
     def upload(self, local_path_or_fileobj, remote_path, extra=None):
         """ Upload a single file from filename or file-like object. """
