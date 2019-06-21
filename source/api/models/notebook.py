@@ -386,6 +386,7 @@ def nb_extract_setup_script(nb: dict, setup_path):
                 lines = lines.splitlines()
 
                 for j, line in enumerate(lines):
-                    if len(line) > 0 and line[0] in ("!", "%"):
+                    # extract ! lines for scripts, no % magic lines
+                    if len(line) > 0 and line[0] == "!": 
                         # command that should be passed to setup script
                         f.write(f"# cell: {i+1}, line: {j+1}\n{line[1:]}\n\n")
