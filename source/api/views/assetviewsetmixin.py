@@ -258,10 +258,14 @@ class AssetViewSetMixin:
     ## /files endpoint lists files on remote endpoint
     ##
 
-    def files_metadata(self, request, pk, url, driver, base_path, base_url):
+    def files_metadata(self, request, pk, url, driver, base_path):
         # return metadata for files and directories
+        assert base_path and base_path.endswith("/")
         if request.method in ["GET"]:
             items = driver.ls(os.path.join(base_path, url))
+            for item in items:
+                item.name = item.name.replace(base_path[:-1], "")
+            base_url = request.build_absolute_uri()
             serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
             return Response(serializer.data, content_type="json")
 
@@ -279,13 +283,17 @@ class AssetViewSetMixin:
         msg = f"Method {request.method} on {request.path} is not implemented"
         raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
 
-    def files_raw(self, request, pk, url, driver, base_path, base_url):
+    def files_raw(self, request, pk, driver, path):
+        folder_path = path[: path.rfind("/") + 1]
+        is_folder = folder_path != path
+        is_root = folder_path == "/"
+
         if request.method in ["GET"]:
             # streaming download of a single file from storage
             try:
-                ls = driver.ls(url)
+                ls = driver.ls(path)
             except api.libcloud.WebdavException as exc:
-                raise AnaliticoException(f"Can't get information on {url}", status_code=exc.actual_code) from exc
+                raise AnaliticoException(f"Can't get information on {path}", status_code=exc.actual_code) from exc
 
             if len(ls) > 1:
                 metadata_url = request.build_absolute_uri()
@@ -293,7 +301,7 @@ class AssetViewSetMixin:
                 raise AnaliticoException(metadata_msg, status_code=status.HTTP_400_BAD_REQUEST)
 
             obj_ls = ls[0]
-            obj_stream = driver.download_as_stream(url)
+            obj_stream = driver.download_as_stream(path)
             response = StreamingHttpResponse(obj_stream, content_type=obj_ls.extra["content_type"])
             response["Last-Modified"] = obj_ls.extra["last_modified"]
             response["ETag"] = obj_ls.extra["etag"]
@@ -308,20 +316,25 @@ class AssetViewSetMixin:
             return response
 
         if request.method in ["PUT", "POST"]:
+            # create directory if it doesn't exist (similar to cloud storage)
+            driver.mkdirs(folder_path)
+
             # upload or replace existing files in storage
             # TODO extract metadata from custom headers, if any
             # TODO stream content
             data = io.StringIO(request.data)
-            driver.upload(data, url, extra=None)
+            driver.upload(data, path, extra=None)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         if request.method == "MOVE":
+            # TODO move directories?
             move_to_path = request["Destination"]
-            driver.move(url, move_to_path)
+            driver.move(path, move_to_path)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         if request.method == "DELETE":
-            driver.delete(url)
+            # TODO delete directories
+            driver.delete(path)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         # some combinations of methods and urls are not supported
@@ -340,30 +353,21 @@ class AssetViewSetMixin:
         item = self.get_object()
         workspace = item if isinstance(item, Workspace) else item.workspace
 
-        # when using the workspace as ws_xxx.cloud... we need to replace with ws-xxx.cloud...
-        workspace_id = workspace.id.replace("_", "-")
-
-        if isinstance(item, Workspace):
-            base_path = "/"
-            base_url = f"https://{workspace_id}.cloud.analitico.ai/{item.type}s/{item.id}"
-        else:
-            base_path = f"/{item.id}"
-            base_url = f"https://{workspace_id}.cloud.analitico.ai"
-
         driver = workspace.storage.driver
         if not isinstance(driver, api.libcloud.WebdavStorageDriver):
             raise AnaliticoException(
                 "/files is only supported on WebDAV based storage", status_code=status.HTTP_501_NOT_IMPLEMENTED
             )
 
-        # TODO check permissions
+        # TODO check specific webdav permissions?
 
+        base_path = "/" if isinstance(item, Workspace) else f"/{item.type}s/{item.id}/"
         url = base_path + url
         metadata = get_query_parameter_as_bool(request, "metadata")
 
         if metadata:
             # operate on files metadata
-            return self.files_metadata(request, pk, url, driver, base_path, base_url)
+            return self.files_metadata(request, pk, url, driver, base_path)
 
         # operations on raw files (uploading, downloading, deleting, etc)
-        return self.files_raw(request, pk, url, driver, base_path, base_url)
+        return self.files_raw(request, pk, driver, url)

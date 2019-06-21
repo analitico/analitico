@@ -75,6 +75,9 @@ class WebdavTests(AnaliticoApiTestCase):
             url = reverse("api:dataset-list")
             self.upload_items(url, analitico.DATASET_PREFIX)
 
+            # specific workspace that has webdav storage backing
+            self.ws_storage_webdav = api.models.Workspace.objects.get(pk="ws_storage_webdav")
+
         except Exception as exc:
             print(exc)
             raise exc
@@ -783,11 +786,12 @@ class WebdavTests(AnaliticoApiTestCase):
             obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name, extra=obj_extra)
 
             # retrieve file via /files/url api
-            url = reverse("api:workspace-files", args=("ws_storage_webdav", obj.name[1:])) + "?metadata=true"
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", obj_name)) + "?metadata=true"
             response = self.client.get(url)
             data = response.data
             self.assertEqual(len(data), 1)
             self.assertEqual(data[0]["type"], "analitico/file")
+            self.assertEqual(data[0]["id"], "/" + obj_name)
             self.assertEqual(data[0]["id"], obj.name)
             self.assertEqual(data[0]["attributes"]["content_type"], "text/plain")
             self.assertEqual(data[0]["attributes"]["size"], 11)
@@ -912,3 +916,80 @@ class WebdavTests(AnaliticoApiTestCase):
 
         finally:
             driver.delete(path)
+
+    def do_webdav_files_api_put_get_file_contents_on_custom_route(self, base_url):
+        """ Upload raw files directly via /recipes/rx_xxx/files api """
+        try:
+            # try item in main dir, sub and sub sub
+            for prefix in ("", "sub/", "sub1/sub2/"):
+                obj_name = prefix + "tst_" + django.utils.crypto.get_random_string() + ".txt"
+                obj_data = b"This is it"
+
+                # upload file contents via /webdav api
+                url = base_url + obj_name
+                response = self.client.put(url, data=obj_data)
+                self.assertEqual(response.status_code, 204)
+
+                # retrieve metadata contents from file api
+                response = self.client.get(url + "?metadata=true")
+                self.assertEqual(response.status_code, 200)
+                item = response.data[0]
+                self.assertEqual(item["id"], "/" + obj_name)
+
+                # retrieve contents from raw file api
+                # make sure we do streaming downloads
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.streaming)
+                data = b"".join(response.streaming_content)
+                self.assertEqual(data, obj_data)
+                self.assertEqual(response["ETag"], item["attributes"]["etag"])
+                self.assertEqual(response["Last-Modified"], item["attributes"]["last_modified"])
+                self.assertEqual(int(response["Content-Length"]), int(item["attributes"]["size"]))
+                self.assertEqual(int(response["Content-Length"]), len(data))
+
+                # delete item
+                response = self.client.delete(url)
+                self.assertEqual(response.status_code, 204)
+                obj_name = None
+
+                # retrieve item which no longer exists
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 404)
+
+        finally:
+            if obj_name:
+                response = self.client.delete(url)
+
+    def test_webdav_files_api_put_get_file_contents_recipes_route(self):
+        """ Test /files route on Recipe models """
+        try:
+            item = api.models.Recipe(workspace=self.ws_storage_webdav)
+            item.save()
+            base_url = reverse("api:recipe-files", args=(item.id, ""))
+            self.do_webdav_files_api_put_get_file_contents_on_custom_route(base_url)
+        finally:
+            item.delete()
+            item.save()
+
+    def test_webdav_files_api_put_get_file_contents_datasets_route(self):
+        """ Test /files route on Dataset models """
+        try:
+            item = api.models.Dataset(workspace=self.ws_storage_webdav)
+            item.save()
+            base_url = reverse("api:dataset-files", args=(item.id, ""))
+            self.do_webdav_files_api_put_get_file_contents_on_custom_route(base_url)
+        finally:
+            item.delete()
+            item.save()
+
+    def test_webdav_files_api_put_get_file_contents_notebooks_route(self):
+        """ Test /files route on Notebooks models """
+        try:
+            item = api.models.Notebook(workspace=self.ws_storage_webdav)
+            item.save()
+            base_url = reverse("api:notebook-files", args=(item.id, ""))
+            self.do_webdav_files_api_put_get_file_contents_on_custom_route(base_url)
+        finally:
+            item.delete()
+            item.save()
