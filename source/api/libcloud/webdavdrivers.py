@@ -89,6 +89,7 @@ def slugify(value, allow_unicode=False):
     value = re.sub(r"[^\w\s-]", "", value).strip().lower()
     return re.sub(r"[-\s]+", "-", value)
 
+
 def metadata_to_amz_meta_headers(metadata: dict) -> dict:
     """ 
     Returns obj.meta_data converted to a dictionary of key/value headers that
@@ -98,10 +99,12 @@ def metadata_to_amz_meta_headers(metadata: dict) -> dict:
     """
     headers = OrderedDict()
     if metadata:
-        for key, value in metadata:
+        for key, value in metadata.items():
             # TODO implement x-amz-missing-meta for unencodable headers #223
-            headers["x-amz-meta-" + slugify(key)] = value
+            ascii_value = value.decode().encode("ascii", "replace")
+            headers["x-amz-meta-" + slugify(key)] = ascii_value
     return headers
+
 
 class WebdavException(LibcloudError):
     """ WebdavException shows method, expected status codes and actual status code reported by server. """

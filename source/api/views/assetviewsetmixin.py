@@ -297,6 +297,12 @@ class AssetViewSetMixin:
             response = StreamingHttpResponse(obj_stream, content_type=obj_ls.extra["content_type"])
             response["Last-Modified"] = obj_ls.extra["last_modified"]
             response["ETag"] = obj_ls.extra["etag"]
+
+            # add amazon compatible metadata headers if any
+            metaheaders = api.libcloud.metadata_to_amz_meta_headers(obj_ls.meta_data)
+            for key, value in metaheaders.items():
+                response[key] = value
+
             if obj_ls.size > 0:
                 response["Content-Length"] = str(obj_ls.size)
             return response
@@ -323,9 +329,7 @@ class AssetViewSetMixin:
         raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
 
     @permission_classes((IsAuthenticated,))
-    @action(
-        methods=["get", "post", "put", "move", "delete"], detail=True, url_name="files", url_path="files/(?P<url>.*)"
-    )
+    @action(methods=["get", "post", "put", "delete"], detail=True, url_name="files", url_path="files/(?P<url>.*)")
     def files(self, request, pk, url) -> Response:
         """
         List properties of files and directory in storage associated with a given workspace, recipe or dataset.

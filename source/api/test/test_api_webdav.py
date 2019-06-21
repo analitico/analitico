@@ -855,8 +855,8 @@ class WebdavTests(AnaliticoApiTestCase):
             path1 = self.get_random_path() + ".txt"
             path2 = self.get_random_path() + ".txt"
 
-            url1 = reverse("api:workspace-files", args=("ws_storage_webdav", path1[1:])) + "?metadata=true"
-            url2 = reverse("api:workspace-files", args=("ws_storage_webdav", path2[1:])) + "?metadata=true"
+            url1 = reverse("api:workspace-files", args=("ws_storage_webdav", path1[1:]))
+            url2 = reverse("api:workspace-files", args=("ws_storage_webdav", path2[1:]))
 
             # create file in first location
             driver.upload(io.BytesIO(b"Tell me something new"), path1)
@@ -864,20 +864,51 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertFalse(driver.exists(path2))
 
             # retrieve item information
-            response1 = self.client.get(url1)
+            response1 = self.client.get(url1 + "?metadata=true")
             self.assertEqual(response1.status_code, status.HTTP_200_OK)
             data1 = response1.data[0]
 
             # change name and update (rename)
             data1["id"] = path2
-            response2 = self.client.put(url1, data=data1)
+            response2 = self.client.put(url1 + "?metadata=true", data=data1)
             self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
 
             # check if file actually moved
             self.assertFalse(driver.exists(path1))
             self.assertTrue(driver.exists(path2))
 
-            # TODO get in new location
+            # download item data (not the metadata)
+            response3 = self.client.get(url2)
+            self.assertEqual(response3.status_code, status.HTTP_200_OK)
+            data3 = b"".join(response3.streaming_content)
+            self.assertEqual(data3, b"Tell me something new")
 
         finally:
             driver.delete(path2)
+
+    def test_webdav_files_api_get_metadataheaders(self):
+        """ Move a file via /files api """
+        driver = self.get_driver()
+        try:
+            # create file with metadata
+            extra = {"meta_data": {"key1": "value1", "key2": "value2", "key with space": 8, "dash-me": "yeah"}}
+            path = self.get_random_path() + ".txt"
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", path[1:]))
+
+            # TODO add support for unicode chars #223
+            # extra = {"meta_data": {"key1": "value1", "key2": "value2", "key with space": 8, "dash-me": "yeah", "unicode chars": "ÿëéàaa" }}
+
+            # create file with metadata
+            driver.upload(io.BytesIO(b"Tell me something new"), path, extra=extra)
+
+            # retrieve item, check metadata headers
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            self.assertEqual(response["x-amz-meta-key1"], "value1")
+            self.assertEqual(response["x-amz-meta-key2"], "value2")
+            self.assertEqual(response["x-amz-meta-key-with-space"], "8")
+            self.assertEqual(response["x-amz-meta-dash-me"], "yeah")
+
+        finally:
+            driver.delete(path)
