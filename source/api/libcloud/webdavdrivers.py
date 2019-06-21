@@ -99,10 +99,16 @@ def metadata_to_amz_meta_headers(metadata: dict) -> dict:
     """
     headers = OrderedDict()
     if metadata:
+        skipped = 0
         for key, value in metadata.items():
-            # TODO implement x-amz-missing-meta for unencodable headers #223
-            ascii_value = value.decode().encode("ascii", "replace")
+            try:
+                ascii_value = value.encode("ascii", "replace")
+            except Exception:
+                skipped += 1
             headers["x-amz-meta-" + slugify(key)] = ascii_value
+            if skipped > 0:
+                # implement x-amz-missing-meta for unencodable headers #223
+                headers["x-amz-missing-meta"] = str(skipped)
     return headers
 
 
