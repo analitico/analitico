@@ -142,7 +142,7 @@ function getCronFunction(taskConfig, options) {
                         triggerError(`${name}: empty body!`, taskConfig, isStaging);
                     }
 
-                    if (response.elapsedTime > requestMaxTime) {
+                    if (response.timingPhases.total > requestMaxTime) {
                         // only notify, not error
                         notifyOnSlack(`${name}: exceeded max time ${response.elapsedTime}ms (max time: ${requestMaxTime}ms)`);
                     }
@@ -236,9 +236,8 @@ function triggerError(message, taskConfig, onlyNotify) {
  * Send a slack notification
  * @param {*} message 
  */
-function notifyOnSlack(message) {
+function notifyOnSlack(message) { 
     slack.webhook({
-        //channel: "#pingdom",
         username: "monitor",
         text: message
     }, function (err, response) {
