@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^4.17.1",
+    "jsonschema": "^1.2.4",
     "node-cron": "^2.0.3",
     "request": "^2.88.0",
     "slack-node": "^0.1.8"
