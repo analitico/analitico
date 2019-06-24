@@ -23,7 +23,7 @@ let monitoringTasksDict = {};
 let status = {
     status: "ok",
     errors: [],
-    lastCheckAt: null
+    lastCheckAt: {}
 };
 // App
 const app = express();
@@ -131,6 +131,8 @@ function getCronFunction(taskConfig, options) {
                     if (error) {
                         throw error;
                     }
+                    status.lastCheckAt[name] = moment().format("YYYY-MM-DDTHH:mm:ssZZ");
+
                     // check status code
                     if(response.statusCode !== 200){
                         triggerError(`${name}: status code ${response.statusCode}, body ${body}`, taskConfig, isStaging);
@@ -153,7 +155,7 @@ function getCronFunction(taskConfig, options) {
                     }
                     else {
                         //console.log(`${name}: ok`)
-                        status.lastCheckAt = moment().format("YYYY-MM-DDTHH:mm:ssZZ");
+
                     }
                 }
                 catch (error) {
@@ -229,7 +231,6 @@ function triggerError(message, taskConfig, onlyNotify) {
         setErrorStatus(message);
     }
     notifyOnSlack(message);
-    status.lastCheckAt = date;
 }
 /**
  * Send a slack notification
