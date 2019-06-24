@@ -29,12 +29,12 @@ const app = express();
 
 /**
  * Health check: if we have collected some error, the status is 500
- */ 
-app.get("/health", (req, res) => {
+ */
+app.get("/", (req, res) => {
     if (status.status !== "ok") {
         res.status(500).send(status);
     }
-    else{
+    else {
         res.send(status);
     }
 });
@@ -75,6 +75,9 @@ function getConfiguration() {
     })
 }
 
+/**
+ * Stop all monitoring
+ */
 function destroyAllTasks() {
     monitoringTasks.forEach(task => {
         task.destroy();
@@ -83,6 +86,12 @@ function destroyAllTasks() {
     monitoringTasksDict = {};
 }
 
+/**
+ * Returns a function that will execute the task
+ * It makes the HTTP request and validates the response with the provided schema
+ * If errors occur it notifies using slack.
+ * @param {*} taskConfig 
+ */
 function getCronFunction(taskConfig) {
     return () => {
         const name = taskConfig.name;
@@ -95,7 +104,8 @@ function getCronFunction(taskConfig) {
         const payload = {
             method: method,
             uri: url,
-            time: true
+            time: true,
+            json: true
         };
         if (method === "POST") {
             payload.json = data;
@@ -119,14 +129,14 @@ function getCronFunction(taskConfig) {
                     const result = validator.validate(body, schema);
                     if (!result.valid) {
                         const errors = result.errors;
-                        triggerError(`${name}: ${errors}`);
+                        triggerError(`${name}: ${errors}`, taskConfig);
                     }
                     else {
                         //console.log(`${name}: ok`)
                     }
                 }
                 catch (error) {
-                    triggerError(`${name}: ${error}`);
+                    triggerError(`${name}: ${error}`, taskConfig);
                 }
             })
         }
@@ -136,6 +146,9 @@ function getCronFunction(taskConfig) {
     }
 }
 
+/**
+ * Schedule all the tasks
+ */
 function setupMonitoring() {
     getConfiguration()
         .then((configuration) => {
@@ -143,7 +156,7 @@ function setupMonitoring() {
             destroyAllTasks();
             // for each configuration, create a cron
             const tasks = configuration.tasks;
-            notifyOnSlack(`Configuring ${tasks.length} tasks...`);
+            notifyOnSlack(`Configuring ${tasks.length} monitoring tasks...`);
             tasks.forEach(taskConfig => {
                 const name = taskConfig.name;
                 const schedule = taskConfig.schedule;
@@ -157,6 +170,7 @@ function setupMonitoring() {
                     return true;
                 }
                 const cronFunction = getCronFunction(taskConfig);
+                // execute immediately
                 cronFunction();
                 const task = cron.schedule(schedule, cronFunction, { scheduled: true });
                 monitoringTasks.push(task);
@@ -168,10 +182,16 @@ function setupMonitoring() {
         })
 }
 
-function triggerError(message) {
+/**
+ * Log errors on console and on slack
+ * Set error status for pingdom
+ * @param {*} message 
+ * @param {*} taskConfig 
+ */
+function triggerError(message, taskConfig) {
     // add current timestamp
     const date = moment().format("YYYY-MM-DDTHH:mm:ssZZ");
-    message = `${date}: ${message}`;
+    message = `${date}: ${message} ${taskConfig ? taskConfig.url : ""}`;
     console.error(message);
     setErrorStatus(message);
     notifyOnSlack(message);
@@ -196,9 +216,10 @@ function notifyOnSlack(message) {
  * Set the error status
  * @param {*} error 
  */
-function setErrorStatus(error){
+function setErrorStatus(error) {
     status.status = "error";
     status.errors = status.errors.concat(error);
 }
+
 // setup monitors
 setupMonitoring();
