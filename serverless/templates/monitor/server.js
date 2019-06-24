@@ -22,7 +22,8 @@ let monitoringTasks = [];
 let monitoringTasksDict = {};
 let status = {
     status: "ok",
-    errors: []
+    errors: [],
+    lastCheckAt: null
 };
 // App
 const app = express();
@@ -92,10 +93,19 @@ function destroyAllTasks() {
  * If errors occur it notifies using slack.
  * @param {*} taskConfig 
  */
-function getCronFunction(taskConfig) {
+function getCronFunction(taskConfig, options) {
     return () => {
-        const name = taskConfig.name;
-        const url = taskConfig.url;
+        let name = taskConfig.name;
+        const isStaging = options && options.staging;
+        if (isStaging) {
+            // add suffix
+            name = `${name}-staging`;
+        }
+        let url = taskConfig.url;
+        if (isStaging) {
+            // use staging url
+            url = taskConfig.stagingUrl;
+        }
         const method = taskConfig.method || "GET";
         const data = taskConfig.data;
         const authorization = taskConfig.authorization;
@@ -121,22 +131,33 @@ function getCronFunction(taskConfig) {
                     if (error) {
                         throw error;
                     }
+                    // check status code
+                    if(response.statusCode !== 200){
+                        triggerError(`${name}: status code ${response.statusCode}, body ${body}`, taskConfig, isStaging);
+                    }
+                    // check if body is present
+                    if(!body){
+                        triggerError(`${name}: empty body!`, taskConfig, isStaging);
+                    }
 
                     if (response.elapsedTime > requestMaxTime) {
-                        triggerError(`${name}: exceeded max time ${response.elapsedTime}ms (max time: ${requestMaxTime}ms)`);
+                        // only notify, not error
+                        notifyOnSlack(`${name}: exceeded max time ${response.elapsedTime}ms (max time: ${requestMaxTime}ms)`);
                     }
 
                     const result = validator.validate(body, schema);
                     if (!result.valid) {
                         const errors = result.errors;
-                        triggerError(`${name}: ${errors}`, taskConfig);
+                        // if it is staging, only notify without setting error
+                        triggerError(`${name}: ${errors}`, taskConfig, isStaging);
                     }
                     else {
                         //console.log(`${name}: ok`)
+                        status.lastCheckAt = moment().format("YYYY-MM-DDTHH:mm:ssZZ");
                     }
                 }
                 catch (error) {
-                    triggerError(`${name}: ${error}`, taskConfig);
+                    triggerError(`${name}: ${error}`, taskConfig, isStaging);
                 }
             })
         }
@@ -173,8 +194,19 @@ function setupMonitoring() {
                 // execute immediately
                 cronFunction();
                 const task = cron.schedule(schedule, cronFunction, { scheduled: true });
+
                 monitoringTasks.push(task);
                 monitoringTasksDict[name] = task;
+
+                if (taskConfig.stagingUrl) {
+                    // if it has a staging url, configure the staging check
+                    const cronStagingFunction = getCronFunction(taskConfig, { staging: true });
+                    // execute immediately
+                    cronStagingFunction();
+                    const taskStaging = cron.schedule(schedule, cronStagingFunction, { scheduled: true });
+                    monitoringTasks.push(taskStaging);
+                    monitoringTasksDict[`${name}-staging`] = taskStaging;
+                }
             });
         })
         .catch((e) => {
@@ -188,19 +220,23 @@ function setupMonitoring() {
  * @param {*} message 
  * @param {*} taskConfig 
  */
-function triggerError(message, taskConfig) {
+function triggerError(message, taskConfig, onlyNotify) {
     // add current timestamp
     const date = moment().format("YYYY-MM-DDTHH:mm:ssZZ");
     message = `${date}: ${message} ${taskConfig ? taskConfig.url : ""}`;
     console.error(message);
-    setErrorStatus(message);
+    if (!onlyNotify) {
+        setErrorStatus(message);
+    }
     notifyOnSlack(message);
+    status.lastCheckAt = date;
 }
 /**
  * Send a slack notification
  * @param {*} message 
  */
 function notifyOnSlack(message) {
+    return;
     slack.webhook({
         //channel: "#pingdom",
         username: "monitor",
