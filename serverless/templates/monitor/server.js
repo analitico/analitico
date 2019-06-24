@@ -236,7 +236,6 @@ function triggerError(message, taskConfig, onlyNotify) {
  * @param {*} message 
  */
 function notifyOnSlack(message) {
-    return;
     slack.webhook({
         //channel: "#pingdom",
         username: "monitor",
