@@ -4,10 +4,11 @@
 const PORT = 8080;
 const HOST = "0.0.0.0";
 const configurationUrl = "./config.json";
-const slacWebhookUri = "";
+const slacWebhookUri = "https://hooks.slack.com/services/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";
 
 const express = require("express");
 const cron = require("node-cron");
+const moment = require("moment");
 const fs = require("fs");
 const request = require("request");
 const Validator = require("jsonschema").Validator;
@@ -19,11 +20,34 @@ slack.setWebhook(slacWebhookUri);
 
 let monitoringTasks = [];
 let monitoringTasksDict = {};
+let status = {
+    status: "ok",
+    errors: []
+};
 // App
 const app = express();
-// Health check
-app.get("/", (req, res) => {
-    res.send("Up and running");
+
+/**
+ * Health check: if we have collected some error, the status is 500
+ */ 
+app.get("/health", (req, res) => {
+    if (status.status !== "ok") {
+        res.status(500).send(status);
+    }
+    else{
+        res.send(status);
+    }
+});
+
+/**
+ * Allows to reset the status
+ */
+app.get("/reset", (req, res) => {
+    status = {
+        status: "ok",
+        errors: []
+    }
+    res.send(status);
 });
 
 app.listen(PORT, HOST);
@@ -89,74 +113,92 @@ function getCronFunction(taskConfig) {
                     }
 
                     if (response.elapsedTime > requestMaxTime) {
-                        notifyOnSlack(`${name}: exceeded max time ${response.elapsedTime}ms (max time: ${requestMaxTime}ms)`);
+                        triggerError(`${name}: exceeded max time ${response.elapsedTime}ms (max time: ${requestMaxTime}ms)`);
                     }
 
                     const result = validator.validate(body, schema);
                     if (!result.valid) {
                         const errors = result.errors;
-                        notifyOnSlack(`${name}: ${errors}`);
+                        triggerError(`${name}: ${errors}`);
                     }
                     else {
-                        console.log(`${name}: ok`)
+                        //console.log(`${name}: ok`)
                     }
                 }
                 catch (error) {
-                    notifyOnSlack(`${name}: ${error}`);
+                    triggerError(`${name}: ${error}`);
                 }
             })
         }
         catch (error) {
-                notifyOnSlack(`${name}: request errror ${error}`);
-            }
+            triggerError(`${name}: request errror ${error}`);
         }
+    }
 }
 
-    function setupMonitoring() {
-        getConfiguration()
-            .then((configuration) => {
-                // destroy all current tasks
-                destroyAllTasks();
-                // for each configuration, create a cron
-                const tasks = configuration.tasks;
-                console.log(`Configuring ${tasks.length} tasks...`);
-                tasks.forEach(taskConfig => {
-                    const name = taskConfig.name;
-                    const schedule = taskConfig.schedule;
+function setupMonitoring() {
+    getConfiguration()
+        .then((configuration) => {
+            // destroy all current tasks
+            destroyAllTasks();
+            // for each configuration, create a cron
+            const tasks = configuration.tasks;
+            notifyOnSlack(`Configuring ${tasks.length} tasks...`);
+            tasks.forEach(taskConfig => {
+                const name = taskConfig.name;
+                const schedule = taskConfig.schedule;
 
+                if (monitoringTasksDict[name]) {
+                    triggerError(`Duplicate name: ${name}, skipped`);
+                    return true;
+                }
+                if (!cron.validate(schedule)) {
+                    triggerError(`Invalid schedule ${schedule} for ${name}, skipped`);
+                    return true;
+                }
+                const cronFunction = getCronFunction(taskConfig);
+                cronFunction();
+                const task = cron.schedule(schedule, cronFunction, { scheduled: true });
+                monitoringTasks.push(task);
+                monitoringTasksDict[name] = task;
+            });
+        })
+        .catch((e) => {
+            triggerError(e);
+        })
+}
 
-                    if (monitoringTasksDict[name]) {
-                        console.error("Duplicate name");
-                        return true;
-                    }
-                    if (!cron.validate(schedule)) {
-                        console.error(`Invalid schedule ${schedule}`);
-                        return true;
-                    }
-                    const cronFunction = getCronFunction(taskConfig);
-                    cronFunction();
-                    const task = cron.schedule(schedule, cronFunction, { scheduled: true });
-                    monitoringTasks.push(task);
-                    monitoringTasksDict[name] = task;
-                });
-            })
-            .catch((e) => {
-                return console.error(e);
-            })
-    }
+function triggerError(message) {
+    // add current timestamp
+    const date = moment().format("YYYY-MM-DDTHH:mm:ssZZ");
+    message = `${date}: ${message}`;
+    console.error(message);
+    setErrorStatus(message);
+    notifyOnSlack(message);
+}
+/**
+ * Send a slack notification
+ * @param {*} message 
+ */
+function notifyOnSlack(message) {
+    slack.webhook({
+        //channel: "#pingdom",
+        username: "monitor",
+        text: message
+    }, function (err, response) {
+        if (err) {
+            setErrorStatus(err);
+        }
+    });
+}
 
-    /**
-     * Send a slack notification
-     * @param {*} message 
-     */
-    function notifyOnSlack(message) {
-        return console.error(message);
-        slack.webhook({
-            channel: "#pingdom",
-            username: "monitor",
-            text: message
-        });
-    }
-
-    // setup monitors
-    setupMonitoring();
+/**
+ * Set the error status
+ * @param {*} error 
+ */
+function setErrorStatus(error){
+    status.status = "error";
+    status.errors = status.errors.concat(error);
+}
+// setup monitors
+setupMonitoring();
