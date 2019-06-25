@@ -116,6 +116,19 @@ staging:
       docker run --name=aj-generic --init --runtime=nvidia --restart always -d -p 8811:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
       docker image prune -f -a;" 
 
+website-staging-k8:
+  stage: deploy
+  image: google/cloud-sdk:latest
+  only:
+    - master
+  script:
+    - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
+    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
+    - export KUBECONFIG="./analitico-ci/k8/admin.conf"
+    - yaml=`cat ./analitico-ci/k8/service-staging.yaml`
+    - echo "${yaml/"{docker_image}"/$BUILD_IMAGE_URL}" > service-staging.yaml
+    - cat service-staging.yaml
+    - kubectl apply --filename ./service-staging.yaml
 
 website-k8:
   stage: deploy
