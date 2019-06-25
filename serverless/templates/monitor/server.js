@@ -46,7 +46,8 @@ app.get("/", (req, res) => {
 app.get("/reset", (req, res) => {
     status = {
         status: "ok",
-        errors: []
+        errors: [],
+        lastCheckAt: {}
     }
     res.send(status);
 });
@@ -134,11 +135,11 @@ function getCronFunction(taskConfig, options) {
                     status.lastCheckAt[name] = moment().format("YYYY-MM-DDTHH:mm:ssZZ");
 
                     // check status code
-                    if(response.statusCode !== 200){
+                    if (response.statusCode !== 200) {
                         triggerError(`${name}: status code ${response.statusCode}, body ${body}`, taskConfig, isStaging);
                     }
                     // check if body is present
-                    if(!body){
+                    if (!body) {
                         triggerError(`${name}: empty body!`, taskConfig, isStaging);
                     }
 
@@ -154,8 +155,9 @@ function getCronFunction(taskConfig, options) {
                         triggerError(`${name}: ${errors}`, taskConfig, isStaging);
                     }
                     else {
-                        //console.log(`${name}: ok`)
-
+                        if (process.env.DEBUG) {
+                            console.log(`${name}: ok`)
+                        }
                     }
                 }
                 catch (error) {
@@ -236,7 +238,10 @@ function triggerError(message, taskConfig, onlyNotify) {
  * Send a slack notification
  * @param {*} message 
  */
-function notifyOnSlack(message) { 
+function notifyOnSlack(message) {
+    if (process.env.DEBUG) {
+        return;
+    }
     slack.webhook({
         username: "monitor",
         text: message
