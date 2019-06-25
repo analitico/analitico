@@ -117,7 +117,7 @@ staging:
       docker image prune -f -a;" 
 
 website-staging-k8:
-  stage: deploy
+  stage: deploy-staging
   image: google/cloud-sdk:latest
   only:
     - master
