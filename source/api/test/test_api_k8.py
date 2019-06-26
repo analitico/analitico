@@ -152,12 +152,12 @@ class K8Tests(AnaliticoApiTestCase):
 
         # request fails time range
         self.auth_token(self.token1)
-        response = self.client.get(url, data={"metric": "flask_http_request_total", "time_range": "this-is-not-a-time-range"}, format="json")
+        response = self.client.get(url, data={"metric": "istio_requests_total", "time_range": "this-is-not-a-time-range"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         # admin user CAN get metrics
         self.auth_token(self.token1)
-        response = self.client.get(url, data={"metric": "flask_http_request_total"}, format="json")
+        response = self.client.get(url, data={"metric": "istio_requests_total"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
 
@@ -165,17 +165,17 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(data["status"], "success")
         self.assertGreaterEqual(len(data["data"]["result"]), 1) # one per revision (if any)
         for metric in data["data"]["result"]:
-            self.assertEqual(metric["metric"]["serving_knative_dev_service"], self.endpoint_id_normalized)
+            self.assertIn(self.endpoint_id_normalized, metric["metric"]["destination_service_name"])
 
         # filter a specific metric over a specific time range
-        response = self.client.get(url, data={"metric": "flask_http_request_total", "time_range": "30m"}, format="json")
+        response = self.client.get(url, data={"metric": "istio_requests_total", "time_range": "30m"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
         self.assertEqual(response.data["status"], "success")
         self.assertEqual(data["status"], "success")
         for metric in data["data"]["result"]:
-            self.assertEqual(metric["metric"]["serving_knative_dev_service"], self.endpoint_id_normalized)
-            self.assertEqual(metric["metric"]["__name__"], "flask_http_request_total")
+            self.assertIn(self.endpoint_id_normalized, metric["metric"]["destination_service_name"])
+            self.assertEqual(metric["metric"]["__name__"], "istio_requests_total")
 
     @tag("slow", "docker", "k8s")
     def test_k8s_get_logs(self):

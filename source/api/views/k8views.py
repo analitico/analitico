@@ -126,9 +126,9 @@ class K8ViewSet(GenericViewSet):
 
         # metric converted in Prometheus query fixed to the given service
         metrics = {
-            "flask_http_request_total": 'flask_http_request_total{kubernetes_namespace="%s", serving_knative_dev_service="%s"}' % (service_namespace, service_name),
-            "flask_http_request_duration_seconds_count": 'flask_http_request_duration_seconds_count{kubernetes_namespace="%s", serving_knative_dev_service="%s"}' % (service_namespace, service_name),
-            "flask_http_request_duration_seconds_sum": 'flask_http_request_duration_seconds_sum{kubernetes_namespace="%s", serving_knative_dev_service="%s"}' % (service_namespace, service_name),
+            "istio_requests_total": 'istio_requests_total{destination_workload="activator", destination_service_namespace="%s", destination_service_name=~"%s.*"}' % (service_namespace, service_name),
+            "istio_request_duration_seconds_count": 'istio_request_duration_seconds_count{destination_workload="activator", destination_service_namespace="%s", destination_service_name=~"%s.*"}' % (service_namespace, service_name),
+            "istio_request_duration_seconds_sum": 'istio_request_duration_seconds_sum{destination_workload="activator", destination_service_namespace="%s", destination_service_name=~"%s.*"}' % (service_namespace, service_name),
             "container_memory_usage_bytes": 'container_memory_usage_bytes{container_name="user-container", namespace="%s", pod_name=~"%s.*"}' % (service_namespace, service_name),
             "container_cpu_load_average_10s": 'container_cpu_load_average_10s{container_name="user-container", namespace="%s", pod_name=~"%s.*"}' % (service_namespace, service_name)
         }
