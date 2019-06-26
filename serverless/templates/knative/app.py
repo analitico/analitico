@@ -10,7 +10,6 @@ from analitico import AnaliticoException, logger
 import flask
 from flask import Flask
 from flask import request, Response
-from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 
 try:
     # This module is dinamically generated from the customer's
@@ -40,11 +39,14 @@ except Exception as exc:
 # pylint: disable=no-value-for-parameter
 
 app = Flask(__name__)
+if __name__ != "__main__":
+   # Attaching gunicorn error logging handler to Flask
+   # https://medium.com/@trstringer/logging-flask-and-gunicorn-the-manageable-way-2e6f0b8beb2f
+   gunicorn_logger = logging.getLogger("gunicorn.error")
+   app.logger.handlers = gunicorn_logger.handlers
+   app.logger.setLevel(gunicorn_logger.level)
+
 app.logger.info("Starting Flask")
-
-metrics = GunicornPrometheusMetrics(app)
-app.logger.info("Starting Prometheus")
-
 
 def is_json(presumed_json: str):
     try:

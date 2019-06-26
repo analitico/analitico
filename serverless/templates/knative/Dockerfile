@@ -4,13 +4,8 @@ FROM eu.gcr.io/analitico-api/knative-baseline
 # Copy local code to the container image.
 ENV APP_HOME /app
 
-
 WORKDIR $APP_HOME
 COPY . .
-
-# Prometheus will place metrics here
-RUN mkdir /metrics
-ENV prometheus_multiproc_dir /metrics
 
 # Add libraries in base directory
 ENV PYTHONPATH=$APP_HOME
@@ -27,4 +22,4 @@ RUN ./notebook.sh
 # webserver, with one worker process and 8 threads.
 # For environments with multiple CPU cores, increase the number of workers
 # to be equal to the cores available.
-CMD exec gunicorn --config gunicorn-settings.py --bind :$PORT --workers 1 --threads 8 app:app
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --access-logfile - app:app

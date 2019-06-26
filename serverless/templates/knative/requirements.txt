@@ -6,7 +6,6 @@ numpy
 psutil
 simplejson
 scikit-learn
-prometheus-flask-exporter
 gunicorn
 
 ortools==6.9.5824
