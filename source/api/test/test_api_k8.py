@@ -150,14 +150,16 @@ class K8Tests(AnaliticoApiTestCase):
         response = self.client.get(url, data={"metric": "this-metric-does-not-exist"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        # request fails time range
+        # without end time the request returns a single point of time
         self.auth_token(self.token1)
-        response = self.client.get(url, data={"metric": "istio_requests_total", "time_range": "this-is-not-a-time-range"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.get(url, data={"metric": "container_cpu_load", "start": int(time.time())}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "success")
+        self.assertEqual(response.data["data"]["resultType"], "vector")
 
         # admin user CAN get metrics
         self.auth_token(self.token1)
-        response = self.client.get(url, data={"metric": "istio_requests_total"}, format="json")
+        response = self.client.get(url, data={"metric": "container_cpu_load"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
 
@@ -165,17 +167,18 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(data["status"], "success")
         self.assertGreaterEqual(len(data["data"]["result"]), 1) # one per revision (if any)
         for metric in data["data"]["result"]:
-            self.assertIn(self.endpoint_id_normalized, metric["metric"]["destination_service_name"])
+            self.assertIn(self.endpoint_id_normalized, metric["metric"]["pod_name"])
 
         # filter a specific metric over a specific time range
-        response = self.client.get(url, data={"metric": "istio_requests_total", "time_range": "30m"}, format="json")
+        now = int(time.time())
+        thirtyMinutesAgo = now - (30 * 60)
+        response = self.client.get(url, data={"metric": "container_cpu_load", "start": thirtyMinutesAgo, "end": now, "step": "1m"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
-        self.assertEqual(response.data["status"], "success")
         self.assertEqual(data["status"], "success")
+        self.assertEqual(data["data"]["resultType"], "matrix")
         for metric in data["data"]["result"]:
-            self.assertIn(self.endpoint_id_normalized, metric["metric"]["destination_service_name"])
-            self.assertEqual(metric["metric"]["__name__"], "istio_requests_total")
+            self.assertIn(self.endpoint_id_normalized, metric["metric"]["pod_name"])
 
     @tag("slow", "docker", "k8s")
     def test_k8s_get_logs(self):

@@ -415,7 +415,7 @@ try:
     ## Prometheus service used for metrics on kubernetes cluster
     ##
 
-    PROMETHEUS_SERVICE_URL = "https://prometheus.cloud.analitico.ai/api/v1/query"
+    PROMETHEUS_SERVICE_URL = "https://prometheus.cloud.analitico.ai/api/v1"
 
     ##
     ##  Elastic search used for cluster logs

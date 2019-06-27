@@ -1,7 +1,8 @@
 import rest_framework
+import json
+import requests
 
 # regex library
-import requests
 from re import search
 import django.conf
 
@@ -122,15 +123,23 @@ class K8ViewSet(GenericViewSet):
         service_name, service_namespace = self.get_service_name(request, pk)
 
         metric = api.utilities.get_query_parameter(request, "metric", "")
-        time_range = api.utilities.get_query_parameter(request, "time_range")
+        start_time = api.utilities.get_query_parameter(request, "start")
+        end_time = api.utilities.get_query_parameter(request, "end")
+        # query resolution step width, eg: 10s, 1m, 2h, 1d, 2w, 1y
+        step = api.utilities.get_query_parameter(request, "step") 
 
         # metric converted in Prometheus query fixed to the given service
         metrics = {
-            "istio_requests_total": 'istio_requests_total{destination_workload="activator", destination_service_namespace="%s", destination_service_name=~"%s.*"}' % (service_namespace, service_name),
-            "istio_request_duration_seconds_count": 'istio_request_duration_seconds_count{destination_workload="activator", destination_service_namespace="%s", destination_service_name=~"%s.*"}' % (service_namespace, service_name),
-            "istio_request_duration_seconds_sum": 'istio_request_duration_seconds_sum{destination_workload="activator", destination_service_namespace="%s", destination_service_name=~"%s.*"}' % (service_namespace, service_name),
-            "container_memory_usage_bytes": 'container_memory_usage_bytes{container_name="user-container", namespace="%s", pod_name=~"%s.*"}' % (service_namespace, service_name),
-            "container_cpu_load_average_10s": 'container_cpu_load_average_10s{container_name="user-container", namespace="%s", pod_name=~"%s.*"}' % (service_namespace, service_name)
+            "istio_requests_total": f'istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
+            "istio_request_duration_seconds_count": f'istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
+            "istio_request_duration_seconds_sum": f'istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
+            "istio_requests_rate": f'rate(istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m])',
+            "istio_request_latency": (
+                f'rate(istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m]) / '
+                f'rate(istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m])'
+            ),
+            "container_memory_usage_bytes": f'container_memory_usage_bytes{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}',
+            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}[1m])'
         }
 
         query = metrics.get(metric)
@@ -140,14 +149,24 @@ class K8ViewSet(GenericViewSet):
                 f"Metric `{metric}` not found", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
-        # eg, [5m] last five minutes
-        if time_range:
-            query += f"[{time_range}]"
+        # basic query
+        path = "/query"
+        data = {
+            "query": query
+        }
+        # all parameters must be given to query a time range
+        if (start_time and end_time and step):
+            path = "/query_range"
+            data = {
+                "query": query,
+                "start": start_time,
+                "end": end_time,
+                "step": step
+            }
 
-        prometheus_response = requests.post(
-            django.conf.settings.PROMETHEUS_SERVICE_URL,
-            data={"query": query},
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        prometheus_response = requests.get(
+            django.conf.settings.PROMETHEUS_SERVICE_URL + path,
+            params=data,
         )
         return Response(prometheus_response.json(), content_type="json", status=prometheus_response.status_code)
 
