@@ -10,6 +10,7 @@ from analitico.constants import WORKER_PREFIX
 from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
 from analitico.utilities import time_ms, get_runtime, comma_separated_to_array
 
+import api.slack
 from api.models import Job
 from api.factory import factory
 
@@ -61,6 +62,14 @@ class Command(BaseCommand):
             logger.error(f"Worker failed job: {job.id}, item: {job.item_id}, action: {job.action}, exception: {exc}")
             job.set_status(STATUS_FAILED)
             raise exc
+
+        finally:
+            try:
+                # check if user who posted the job or owns the workspace has configured a slack integration
+                # in which case we can notify the workspace of the success or failure of this job's execution
+                api.slack.slack_notify_job(job)
+            except Exception as exc:
+                logger.error(f"Worker failed to send Slack notification for job: {job.id}, exception: {exc}")
 
     def get_pending_job(self, **options):
         """ Returns a job if there's one pending and we have all the required tags to run it (if any) """
