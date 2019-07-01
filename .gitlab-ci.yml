@@ -148,6 +148,7 @@ website-k8:
 worker-staging:
   stage: deploy-staging
   image: ubuntu:18.04
+  when: manual
   only:
     - master
   before_script:
