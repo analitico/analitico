@@ -11,8 +11,9 @@ from rest_framework.response import Response
 
 import api.models
 import api.utilities
+import api.slack
 
-from analitico.utilities import logger, get_dict_dot, comma_separated_to_array, array_to_comma_separated
+from analitico.utilities import logger, get_dict_dot, comma_separated_to_array, array_to_comma_separated, set_dict_dot
 from api.models import Workspace, Dataset, Role, User
 from api.permissions import has_item_permission, has_item_permission_or_exception
 
@@ -58,6 +59,11 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
                 "roles": comma_separated_to_array(role.roles),
                 "permissions": comma_separated_to_array(role.permissions),
             }
+
+        # add url and html that can be used to enable slack configuration on this workspace
+        btn_url, btn_html = api.slack.slack_get_install_button_url(item.id)
+        set_dict_dot(data, "attributes.slack.button.url", btn_url)
+        set_dict_dot(data, "attributes.slack.button.html", btn_html)
 
         return data
 

@@ -1,10 +1,18 @@
 import io
 
 from django.http.response import HttpResponse
-from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import redirect
+
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
+from rest_framework.request import Request
 
+import api
+
+from analitico import logger
+from api.slack import slack_oauth_exchange_code_for_token, slack_get_install_button_url
 from api.permissions import HasApiPermission, get_permitted_queryset
 from api.utilities import get_query_parameter, get_query_parameter_as_int, image_open, image_resize
 
@@ -95,3 +103,14 @@ class ItemViewSetMixin:
         imagedata = imagefile.getvalue()
 
         return HttpResponse(imagedata, content_type="image/jpeg")
+
+    ##
+    ## Slack integration (oauth redirect url)
+    ##
+
+    @action(methods=["get"], detail=True, url_name="slack-oauth", url_path="slack/oauth", permission_classes=[AllowAny])
+    def slack_oauth(self, request, pk):
+        """ Handles oauth redirects to establish Slack integration with item. """
+        has_token = slack_oauth_exchange_code_for_token(request, pk)
+        logger.info(f"{request.build_absolute_uri()}, has_token? {has_token}")
+        return redirect(f"/app/workspaces/{pk}/settings")
