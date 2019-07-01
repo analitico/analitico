@@ -383,7 +383,7 @@ def set_dict_dot(d: dict, key: str, value=None):
             d[subkey] = value
             return
         if not (subkey in d):
-            d[subkey] = None
+            d[subkey] = OrderedDict()
         set_dict_dot(d[subkey], key[len(subkey) + 1 :], value)
 
 
