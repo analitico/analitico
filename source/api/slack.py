@@ -1,16 +1,13 @@
 import requests
 import urllib
 import os
-import datetime
 
 from django.urls import reverse
-from django.core.exceptions import PermissionDenied
 from django.core.signing import Signer
 from rest_framework.request import Request
+from rest_framework import status
 
 import analitico
-import api
-
 from analitico import logger, AnaliticoException
 from analitico.utilities import get_dict_dot
 
@@ -35,7 +32,12 @@ SLACK_BUTTON_URL = (
 )
 
 # html used to display a button that starts a request
-SLACK_BUTTON_HTML = '<a href="$URL$"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x"></a>'
+SLACK_BUTTON_HTML = (
+    '<a href="$URL$"><img alt="Add to Slack" height="40" width="139" '
+    'src="https://platform.slack-edge.com/img/add_to_slack.png" '
+    'srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, '
+    'https://platform.slack-edge.com/img/add_to_slack@2x.png 2x"></a>'
+)
 
 # url to exchange code with token
 SLACK_OAUTH_ACCESS_URL = "https://slack.com/api/oauth.access"
@@ -71,47 +73,41 @@ def slack_get_install_button_url(request: Request, item_id: str) -> str:
 
 def slack_oauth_exchange_code_for_token(request: Request, item_id: str) -> bool:
     """ Handle callback from Slack to complete integrations of incoming webhooks. """
-    try:
-        # Using OAuth 2.0
-        # https://api.slack.com/docs/oauth
+    # Using OAuth 2.0
+    # https://api.slack.com/docs/oauth
 
-        # oauth temporary code and state that we passed
-        code = get_query_parameter(request, "code", None)
-        state = get_query_parameter(request, "state", None)
+    # oauth temporary code and state that we passed
+    code = get_query_parameter(request, "code", None)
+    state = get_query_parameter(request, "state", None)
 
-        # remove query string
-        redirect_uri = request.build_absolute_uri()
+    # remove query string
+    redirect_uri = request.build_absolute_uri()
+    if redirect_uri.find("?") != -1:
         redirect_uri = redirect_uri[: redirect_uri.index("?")]
-        redirect_uri = redirect_uri.replace("http://", "https://")
+    redirect_uri = redirect_uri.replace("http://", "https://")
 
-        # validate state to make sure user is authorized to connect workspace
-        if state != slack_get_state(item_id):
-            raise PermissionDenied("?state= parameter was not signed properly.")
+    # validate state to make sure user is authorized to connect workspace
+    if state != slack_get_state(item_id):
+        raise AnaliticoException("?state= parameter was not signed properly.", status_code=status.HTTP_403_FORBIDDEN)
 
-        # https://api.slack.com/methods/oauth.access
-        params = {
-            "client_id": SLACK_CLIENT_ID,
-            "client_secret": SLACK_SECRET,
-            "code": code,
-            "redirect_uri": redirect_uri,
-        }
+    # https://api.slack.com/methods/oauth.access
+    params = {"client_id": SLACK_CLIENT_ID, "client_secret": SLACK_SECRET, "code": code, "redirect_uri": redirect_uri}
 
-        response = requests.post(SLACK_OAUTH_ACCESS_URL, params=params)
-        if response.status_code != 200:
-            raise AnaliticoException(
-                f"slack_oauth_exchange_code_for_token - call to {SLACK_OAUTH_ACCESS_URL} returned status_code: {response.status_code}"
-            )
-        response_json = response.json()
+    # send slack the codes, retrieve valid access token and endpoint url
+    response = requests.post(SLACK_OAUTH_ACCESS_URL, params=params)
+    if response.status_code != status.HTTP_200_OK:
+        message = f"slack_oauth_exchange_code_for_token - call to {SLACK_OAUTH_ACCESS_URL} returned status_code: {response.status_code}"
+        raise AnaliticoException(message, status_code=response.status_code)
+    response_json = response.json()
+    if not response_json["ok"]:
+        raise AnaliticoException(f"Slack returned error: {response_json['error']}", status_code=400)
 
-        # store access credentials in workspace
-        item = factory.get_item(item_id)
-        item.set_attribute("slack", {"oauth": response_json})
-        item.save()
+    # store access credentials in workspace
+    item = factory.get_item(item_id)
+    item.set_attribute("slack", {"oauth": response_json})
+    item.save()
 
-        return True
-
-    except Exception as exc:
-        raise AnaliticoException(f"slack_oauth_exchange_code_for_token - {redirect_uri} raised {exc}") from exc
+    return True
 
 
 def slack_notify_job(job: Job) -> bool:
@@ -150,10 +146,12 @@ def slack_notify_job(job: Job) -> bool:
         if weebhook_url:
             response = requests.post(weebhook_url, json=message)
             if response.status_code != 200:
-                logger.warning(f"slack_notify_job - {weebhook_url} returned status_code: {response.status_code}")
+                msg = f"slack_notify_job - {weebhook_url} returned status_code: {response.status_code}"
+                logger.warning(msg)
                 if response.status_code == 404:
                     # user has removed this application from his workspace
-                    logger.warning(f"slack_notify_job - removing slack configuration from {slack_conf_item.id}")
+                    msg = f"slack_notify_job - removing slack configuration from {slack_conf_item.id}"
+                    logger.warning(msg)
                     slack_conf_item.set_attribute("slack.oauth", None)
                     slack_conf_item.save()
         else:
@@ -164,6 +162,7 @@ def slack_notify_job(job: Job) -> bool:
         message["text"] += " (internal notification)"
         response = requests.post(SLACK_INTERNAL_WEBHOOK, json=message)
         if response.status_code != 200:
-            logger.warning(f"slack_notify_job - analitico webhook returned status_code: {response.status_code}")
+            msg = f"slack_notify_job - analitico webhook returned status_code: {response.status_code}"
+            logger.warning(msg)
 
     return True
