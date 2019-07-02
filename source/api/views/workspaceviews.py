@@ -61,7 +61,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
             }
 
         # add url and html that can be used to enable slack configuration on this workspace
-        btn_url, btn_html = api.slack.slack_get_install_button_url(item.id)
+        btn_url, btn_html = api.slack.slack_get_install_button_url(self.context["request"], item.id)
         set_dict_dot(data, "attributes.slack.button.url", btn_url)
         set_dict_dot(data, "attributes.slack.button.html", btn_html)
 
