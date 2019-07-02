@@ -2,6 +2,7 @@ import requests
 import urllib
 import os
 
+from django.urls import reverse
 from django.core.exceptions import PermissionDenied
 from django.core.signing import Signer
 from rest_framework.request import Request
@@ -20,12 +21,17 @@ from api.utilities import get_query_parameter
 SLACK_CLIENT_ID = os.environ["ANALITICO_SLACK_CLIENT_ID"]
 SLACK_SECRET = os.environ["ANALITICO_SLACK_SECRET"]
 SLACK_INTERNAL_WEBHOOK = os.environ["ANALITICO_SLACK_INTERNAL_WEBHOOK"]
+
 assert SLACK_CLIENT_ID
 assert SLACK_SECRET
 assert SLACK_INTERNAL_WEBHOOK
 
 # url to start an integration request
-SLACK_BUTTON_URL = "https://slack.com/oauth/authorize?client_id="+ SLACK_CLIENT_ID + "&scope=incoming-webhook&state=$STATE$"
+SLACK_BUTTON_URL = (
+    "https://slack.com/oauth/authorize?client_id="
+    + SLACK_CLIENT_ID
+    + "&scope=incoming-webhook&state=$STATE$&redirect_uri=$REDIRECT$"
+)
 
 # html used to display a button that starts a request
 SLACK_BUTTON_HTML = '<a href="$URL$"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x"></a>'
@@ -47,9 +53,15 @@ def slack_get_state(item_id: str) -> str:
     return value
 
 
-def slack_get_install_button_url(item_id: str) -> str:
+def slack_get_install_button_url(request: Request, item_id: str) -> str:
     """ Returns the url that can be used to display a button that can install the Slack app. """
+    # oauth flow should redirect back to the same server that generates the link
+    redirect_uri = reverse("api:" + factory.get_item_type(item_id) + "-slack-oauth", args=(item_id,))
+    redirect_uri = request.build_absolute_uri(redirect_uri)
+
     url = SLACK_BUTTON_URL.replace("$STATE$", urllib.parse.quote(slack_get_state(item_id)))
+    url = url.replace("$REDIRECT$", urllib.parse.quote(redirect_uri))
+
     html = SLACK_BUTTON_HTML.replace("$URL$", url)
     return url, html
 
@@ -82,7 +94,9 @@ def slack_oauth_exchange_code_for_token(request: Request, item_id: str) -> bool:
 
         response = requests.post(SLACK_OAUTH_ACCESS_URL, params=params)
         if response.status_code != 200:
-            raise AnaliticoException(f"slack_oauth_exchange_code_for_token - call to {SLACK_OAUTH_ACCESS_URL} returned status_code: {response.status_code}")
+            raise AnaliticoException(
+                f"slack_oauth_exchange_code_for_token - call to {SLACK_OAUTH_ACCESS_URL} returned status_code: {response.status_code}"
+            )
         response_json = response.json()
 
         # store access credentials in workspace
