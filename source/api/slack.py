@@ -1,6 +1,7 @@
 import requests
 import urllib
 import os
+import datetime
 
 from django.urls import reverse
 from django.core.exceptions import PermissionDenied
@@ -119,12 +120,19 @@ def slack_notify_job(job: Job) -> bool:
     item_url = f"https://analitico.ai/app/{item.type}s/{item_id}"
     job_url = f"{item_url}/jobs#{job.id}"
 
+    # elapsed time
+    elapsed_sec = int((job.updated_at - job.created_at).total_seconds())
+
+    # message shows item name (if named)
+    message = f"{item.title} _({item.id})_" if item.title else item_id
+    message += "\n" + job_url
+
     # https://api.slack.com/incoming-webhooks
     # https://api.slack.com/docs/message-attachments
     message = {
-        "text": f"Job {job.status}",
+        "text": f"Job {job.status} in {int(elapsed_sec/60):02d}:{elapsed_sec%60:02d}",
         "attachments": [
-            {"text": f"{job_url}", "color": "good" if job.status == analitico.status.STATUS_COMPLETED else "danger"}
+            {"text": message, "color": "good" if job.status == analitico.status.STATUS_COMPLETED else "danger"}
         ],
     }
 
