@@ -57,8 +57,10 @@ def slack_get_state(item_id: str) -> str:
 def slack_get_install_button_url(request: Request, item_id: str) -> str:
     """ Returns the url that can be used to display a button that can install the Slack app. """
     # oauth flow should redirect back to the same server that generates the link
+    # django/gunicorn run behind nginx as a reverse proxy so we need to upgrade http to https
     redirect_uri = reverse("api:" + factory.get_item_type(item_id) + "-slack-oauth", args=(item_id,))
     redirect_uri = request.build_absolute_uri(redirect_uri)
+    redirect_uri = redirect_uri.replace("http://", "https://")
 
     url = SLACK_BUTTON_URL.replace("$STATE$", urllib.parse.quote(slack_get_state(item_id)))
     url = url.replace("$REDIRECT$", urllib.parse.quote(redirect_uri))
@@ -80,6 +82,7 @@ def slack_oauth_exchange_code_for_token(request: Request, item_id: str) -> bool:
         # remove query string
         redirect_uri = request.build_absolute_uri()
         redirect_uri = redirect_uri[: redirect_uri.index("?")]
+        redirect_uri = redirect_uri.replace("http://", "https://")
 
         # validate state to make sure user is authorized to connect workspace
         if state != slack_get_state(item_id):
@@ -136,8 +139,10 @@ def slack_notify_job(job: Job) -> bool:
         ],
     }
 
+    slack_conf_item = item
     slack_conf = item.get_attribute("slack")
     if not slack_conf and item.workspace:
+        slack_conf_item = item.workspace
         slack_conf = item.workspace.get_attribute("slack")
 
     if slack_conf:
@@ -146,6 +151,11 @@ def slack_notify_job(job: Job) -> bool:
             response = requests.post(weebhook_url, json=message)
             if response.status_code != 200:
                 logger.warning(f"slack_notify_job - {weebhook_url} returned status_code: {response.status_code}")
+                if response.status_code == 404:
+                    # user has removed this application from his workspace
+                    logger.warning(f"slack_notify_job - removing slack configuration from {slack_conf_item.id}")
+                    slack_conf_item.set_attribute("slack.oauth", None)
+                    slack_conf_item.save()
         else:
             logger.warning(f"slack_notify_job - {item_id} has 'slack' config but no webhook_url")
 
