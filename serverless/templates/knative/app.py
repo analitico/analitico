@@ -2,9 +2,12 @@ import os
 import simplejson as json
 import pandas as pd
 import logging
+
 from io import StringIO
 
+import analitico
 import analitico.utilities
+
 from analitico import AnaliticoException, logger
 
 import flask
@@ -38,14 +41,36 @@ except Exception as exc:
 # pylint: disable=no-member
 # pylint: disable=no-value-for-parameter
 
-app = Flask(__name__)
-if __name__ != "__main__":
-   # Attaching gunicorn error logging handler to Flask
-   # https://medium.com/@trstringer/logging-flask-and-gunicorn-the-manageable-way-2e6f0b8beb2f
-   gunicorn_logger = logging.getLogger("gunicorn.error")
-   app.logger.handlers = gunicorn_logger.handlers
-   app.logger.setLevel(gunicorn_logger.level)
+# setup logging so that we replace python's root logger with a new handler that 
+# can format messages as json in a way that is easily readable by our fluentd
+# while preserving the log messages' metadata (eg. level, function, line, logger, etc)
 
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            '()': analitico.logging.FluentdFormatter,
+            'format': '%(asctime)s %(message)s',
+        }
+    },
+    'handlers': {
+        'default': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
+            'stream': 'ext://sys.stderr',
+        }
+    },
+    'root': {
+        'handlers': ['default'],
+   }
+}
+logging.config.dictConfig(LOGGING_CONFIG)
+logging.getLogger().setLevel(logging.DEBUG)
+
+# startup flask web server
+app = Flask(__name__)
 app.logger.info("Starting Flask")
 
 def is_json(presumed_json: str):
@@ -143,9 +168,10 @@ def hello_world():
 
 @app.route("/echo")
 def handle_echo():
-    message = request.args.get("message", "Hello")
+    """ Log message parameter to standard logging at given level. """
     level = int(request.args.get("level", 20))
-    app.logger.log(level, message)
+    message = request.args.get("message", f"Hello from level {level}")
+    logging.log(level, message)
     return json.dumps({"message": message, "level": level})
 
 

@@ -13,7 +13,7 @@ import analitico.mixin
 import analitico.plugin
 import analitico.dataset
 import analitico.status
-
+import analitico.logging
 
 def authorize(token=None, endpoint=ANALITICO_API_ENDPOINT) -> analitico.factory.Factory:
     """ 
