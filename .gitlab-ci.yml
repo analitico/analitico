@@ -35,6 +35,7 @@ build_dev:
     # clone with submodule 
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
+    - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-sdk.git " >> /.git-credentials
     # save credentials to bypass login when fetching submodules
     - git config --global credential.helper 'store --file=/.git-credentials'
     # clone the repo
