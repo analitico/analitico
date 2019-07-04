@@ -41,30 +41,23 @@ except Exception as exc:
 # pylint: disable=no-member
 # pylint: disable=no-value-for-parameter
 
-# setup logging so that we replace python's root logger with a new handler that 
+# setup logging so that we replace python's root logger with a new handler that
 # can format messages as json in a way that is easily readable by our fluentd
 # while preserving the log messages' metadata (eg. level, function, line, logger, etc)
 
 LOGGING_CONFIG = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'json': {
-            '()': analitico.logging.FluentdFormatter,
-            'format': '%(asctime)s %(message)s',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"json": {"()": analitico.logging.FluentdFormatter, "format": "%(asctime)s %(message)s"}},
+    "handlers": {
+        "default": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+            "stream": "ext://sys.stderr",
         }
     },
-    'handlers': {
-        'default': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'json',
-            'stream': 'ext://sys.stderr',
-        }
-    },
-    'root': {
-        'handlers': ['default'],
-   }
+    "root": {"handlers": ["default"]},
 }
 logging.config.dictConfig(LOGGING_CONFIG)
 logging.getLogger().setLevel(logging.DEBUG)
@@ -72,6 +65,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 # startup flask web server
 app = Flask(__name__)
 app.logger.info("Starting Flask")
+
 
 def is_json(presumed_json: str):
     try:
