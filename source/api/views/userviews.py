@@ -11,7 +11,6 @@ from api.models import User, USER_THUMBNAIL_SIZE
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .jobviews import JobViewSetMixin
-from .logviews import LogViewSetMixin
 
 from libgravatar import Gravatar
 
@@ -55,7 +54,7 @@ class UserSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 ##
 
 
-class UserViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class UserViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A user profile """
 
     item_class = api.models.User

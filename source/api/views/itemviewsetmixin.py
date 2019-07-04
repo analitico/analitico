@@ -28,7 +28,7 @@ class filterset:
 
 
 # Default search fields
-ITEM_SEARCH_FIELDS = ("item_id", "title", "attributes")
+ITEM_SEARCH_FIELDS = ("id", "title", "attributes")
 
 # Default query filters
 ITEM_FILTERSET_FIELDS = {

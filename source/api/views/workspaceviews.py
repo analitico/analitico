@@ -20,7 +20,6 @@ from api.permissions import has_item_permission, has_item_permission_or_exceptio
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .assetviewsetmixin import AssetViewSetMixin
-from .logviews import LogViewSetMixin
 
 ##
 ## WorkspaceSerializer
@@ -131,7 +130,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 ##
 
 
-class WorkspaceViewSet(ItemViewSetMixin, AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class WorkspaceViewSet(ItemViewSetMixin, AssetViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ Views for workspaces and their access permissions. """
 
     item_class = api.models.Workspace

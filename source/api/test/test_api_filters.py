@@ -36,23 +36,20 @@ CHARACTERS = (
 class FiltersTests(AnaliticoApiTestCase):
     """ 
     Test APIs filters like paging, sorting, ordering, searching, etc... 
-    Most tests run on logs because they are easy to create but these filters
-    are applied to all models.
+    Most tests run on notebook but these filters are applied to all models.
     """
 
     logger = factory.logger
 
-    def get_random_filtered_logs(self, filter, n=100, asserts=True):
-        """ Create some random log entries to be used for sorting, search, etc """
+    def get_random_filtered_items(self, filter, n=100, asserts=True):
+        """ Create some random items to be used for sorting, search, etc """
         for i in range(0, n):
-            level = logging.INFO + random.randint(0, 5)
             title = random.choice(CHARACTERS) + " " + "".join([random.choice(string.ascii_letters) for i in range(8)])
-            item_id = "pl_" + random.choice(
-                string.digits
-            )  # fake plugin id (fewer choices so we have multiple logs per item_id)
-            self.logger.log(level, title, item_id=item_id)
+            nb = Notebook(workspace=self.ws1, title=title)
+            nb.save()
+
         assert filter[0] == "?"
-        url = reverse("api:log-list") + filter
+        url = reverse("api:notebook-list") + filter
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
         if asserts:
@@ -73,14 +70,17 @@ class FiltersTests(AnaliticoApiTestCase):
             print(exc)
             raise exc
 
+    def create_items(self, number_of_items):
+        for i in range(0, number_of_items):
+            item = Notebook(workspace=self.ws1, title=f"item {i}")
+            item.save()
+
     def test_filters_paging_auto_off(self):
         """ Small sets are not paged by default """
         num_items = DEFAULT_PAGE_SIZE - 3
+        self.create_items(num_items)
 
-        for i in range(0, num_items):
-            self.logger.info("log %d", i)
-
-        url = reverse("api:log-list")
+        url = reverse("api:notebook-list")
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -93,10 +93,9 @@ class FiltersTests(AnaliticoApiTestCase):
     def test_filters_paging_auto_off_largest(self):
         """ Small sets are not paged by default (just one record less than max) """
         num_items = MAX_PAGE_SIZE
-        for i in range(0, num_items):
-            self.logger.info("log %d", i)
+        self.create_items(num_items)
 
-        url = reverse("api:log-list")
+        url = reverse("api:notebook-list")
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -109,11 +108,9 @@ class FiltersTests(AnaliticoApiTestCase):
     def test_filters_paging_auto_on_smallest(self):
         """ Large sets are paged by default """
         num_items = MAX_PAGE_SIZE + 1
+        self.create_items(num_items)
 
-        for i in range(0, num_items):
-            self.logger.info("log %d", i)
-
-        url = reverse("api:log-list")
+        url = reverse("api:notebook-list")
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -133,11 +130,9 @@ class FiltersTests(AnaliticoApiTestCase):
         num_pages = 12
         page_size = DEFAULT_PAGE_SIZE
         num_items = (page_size * num_pages) - 3
+        self.create_items(num_items)
 
-        for i in range(0, num_items):
-            self.logger.info("log %d", i)
-
-        url = reverse("api:log-list")
+        url = reverse("api:notebook-list")
         for page in range(1, num_pages):
             page_url = "{}?{}={}".format(url, PAGE_PARAM, page)
 
@@ -157,72 +152,47 @@ class FiltersTests(AnaliticoApiTestCase):
             self.assertEqual(data["meta"]["pagination"]["page"], page)
             self.assertEqual(data["meta"]["pagination"]["pages"], num_pages)
 
-            for i, log in enumerate(data["data"]):
+            for i, item in enumerate(data["data"]):
                 # logs are sorted newest to oldest
-                log_index = num_items - (((page - 1) * page_size) + i) - 1
-                self.assertEqual(log["attributes"]["title"], "log {}".format(log_index))
+                item_index = num_items - (((page - 1) * page_size) + i) - 1
+                self.assertEqual(item["attributes"]["title"], "item {}".format(item_index))
 
     def test_filters_sorting_by_title(self):
-        data = self.get_random_filtered_logs("?sort=title")
+        data = self.get_random_filtered_items("?sort=title")
         for i in range(1, len(data)):
             self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_by_title_inverse(self):
-        data = self.get_random_filtered_logs("?sort=-title")
+        data = self.get_random_filtered_items("?sort=-title")
         for i in range(1, len(data)):
             self.assertGreaterEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
-    def test_filters_sorting_item_then_title(self):
-        data = self.get_random_filtered_logs("?sort=item_id,title")
-        for i in range(1, len(data)):
-            self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-            if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
-
-    def test_filters_sorting_title_then_item(self):
-        data = self.get_random_filtered_logs("?sort=title,item_id")
-        for i in range(1, len(data)):
-            self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
-            if data[i - 1]["attributes"]["title"] == data[i]["attributes"]["title"]:
-                self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-
     def test_filters_sorting_item_then_inverse_title(self):
-        data = self.get_random_filtered_logs("?sort=item_id,-title")
+        data = self.get_random_filtered_items("?sort=id,-title")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-            if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                self.assertGreaterEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
-
-    def test_filters_sorting_item_inverse_then_inverse_title(self):
-        data = self.get_random_filtered_logs("?sort=-item_id,-title")
-        for i in range(1, len(data)):
-            self.assertGreaterEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-            if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                self.assertGreaterEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertLessEqual(data[i - 1]["id"], data[i]["id"])
 
     def test_filters_sorting_level_item_title(self):
-        data = self.get_random_filtered_logs("?sort=level,item_id,title")
+        data = self.get_random_filtered_items("?sort=id,title")
         for i in range(1, len(data)):
-            self.assertLessEqual(data[i - 1]["attributes"]["level"], data[i]["attributes"]["level"])
-            if data[i - 1]["attributes"]["level"] == data[i]["attributes"]["level"]:
-                self.assertLessEqual(data[i - 1]["attributes"]["item_id"], data[i]["attributes"]["item_id"])
-                if data[i - 1]["attributes"]["item_id"] == data[i]["attributes"]["item_id"]:
-                    self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
+            self.assertLessEqual(data[i - 1]["id"], data[i]["id"])
+            if data[i - 1]["id"] == data[i]["id"]:
+                self.assertLessEqual(data[i - 1]["attributes"]["title"], data[i]["attributes"]["title"])
 
     def test_filters_sorting_created_at(self):
-        data = self.get_random_filtered_logs("?sort=created_at")
+        data = self.get_random_filtered_items("?sort=created_at")
         for i in range(1, len(data)):
             self.assertLessEqual(data[i - 1]["attributes"]["created_at"], data[i]["attributes"]["created_at"])
 
     def test_filters_sorting_created_at_inverse(self):
-        data = self.get_random_filtered_logs("?sort=-created_at")
+        data = self.get_random_filtered_items("?sort=-created_at")
         for i in range(1, len(data)):
             self.assertGreaterEqual(data[i - 1]["attributes"]["created_at"], data[i]["attributes"]["created_at"])
 
     def test_filters_sorting_invalid_field(self):
         for i in range(5):
             self.logger.info("test invalid sort %d", 1)
-        url = reverse("api:log-list") + "?sort=bad"
+        url = reverse("api:notebook-list") + "?sort=bad"
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
 
@@ -233,70 +203,70 @@ class FiltersTests(AnaliticoApiTestCase):
 
     def test_filters_title(self):
         character = random.choice(CHARACTERS)
-        data = self.get_random_filtered_logs("?filter[search]=" + character, asserts=False)
+        data = self.get_random_filtered_items("?filter[search]=" + character, asserts=False)
 
         # search models directly, compare numbers
-        logs = Log.objects.filter(title__contains=character).all()
-        self.assertEqual(len(logs), len(data))
+        items = Notebook.objects.filter(title__contains=character).all()
+        self.assertEqual(len(items), len(data))
         for item in data:
             self.assertIn(character, item["attributes"]["title"])
 
     def test_filters_search_case_insensitive(self):
         character = random.choice(CHARACTERS)
         url = "?filter[search]=" + character.upper()
-        data = self.get_random_filtered_logs(url, asserts=False)
+        data = self.get_random_filtered_items(url, asserts=False)
 
         # search models directly, compare numbers
-        logs = Log.objects.filter(title__icontains=character).all()
-        self.assertEqual(len(logs), len(data))
+        items = Notebook.objects.filter(title__icontains=character).all()
+        self.assertEqual(len(items), len(data))
         for item in data:
             self.assertIn(character, item["attributes"]["title"])
 
     def test_filters_search_noresults(self):
         url = "?filter[search]=MISSING"
-        data = self.get_random_filtered_logs(url, asserts=False)
+        data = self.get_random_filtered_items(url, asserts=False)
         self.assertEqual(len(data), 0)
 
     def test_filters_filter_title_exact(self):
         # search wuithout finding
         character = random.choice(CHARACTERS)
         url = "?filter[title]=" + character
-        data = self.get_random_filtered_logs(url, asserts=False)
+        data = self.get_random_filtered_items(url, asserts=False)
         self.assertEqual(len(data), 0)
 
         # search and find exact
-        log = Log.objects.filter(title__icontains=character).first()
-        url = reverse("api:log-list") + "?filter[title]=" + log.title
+        item = Notebook.objects.filter(title__icontains=character).first()
+        url = reverse("api:notebook-list") + "?filter[title]=" + item.title
         response = self.client.get(url, format="json")
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["attributes"]["title"], log.title)
+        self.assertEqual(response.data[0]["attributes"]["title"], item.title)
 
         # ?filter[title.contains] just character
-        log = Log.objects.filter(title__icontains=character).first()
-        url = reverse("api:log-list") + "?filter[title.contains]=" + character
+        item = Notebook.objects.filter(title__icontains=character).first()
+        url = reverse("api:notebook-list") + "?filter[title.contains]=" + character
         response = self.client.get(url, format="json")
         self.assertGreaterEqual(len(response.data), 1)
         self.assertIn(character, response.data[0]["attributes"]["title"])
 
         # ?filter[title.contains] full title
-        log = Log.objects.filter(title__icontains=character).first()
-        url = reverse("api:log-list") + "?filter[title.contains]=" + log.title
+        item = Notebook.objects.filter(title__icontains=character).first()
+        url = reverse("api:notebook-list") + "?filter[title.contains]=" + item.title
         response = self.client.get(url, format="json")
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["attributes"]["title"], log.title)
+        self.assertEqual(response.data[0]["attributes"]["title"], item.title)
 
         # ?filter[title.contains] wrong case
-        log = Log.objects.filter(title__icontains=character).first()
-        url = reverse("api:log-list") + "?filter[title.contains]=" + log.title.upper()
+        item = Notebook.objects.filter(title__icontains=character).first()
+        url = reverse("api:notebook-list") + "?filter[title.contains]=" + item.title.upper()
         response = self.client.get(url, format="json")
         self.assertEqual(len(response.data), 1)  # mysql finds it anyway
 
         # ?filter[title.contains] wrong case with case insensitive search
-        log = Log.objects.filter(title__icontains=character).first()
-        url = reverse("api:log-list") + "?filter[title.icontains]=" + log.title.upper()
+        item = Notebook.objects.filter(title__icontains=character).first()
+        url = reverse("api:notebook-list") + "?filter[title.icontains]=" + item.title.upper()
         response = self.client.get(url, format="json")
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["attributes"]["title"], log.title)
+        self.assertEqual(response.data[0]["attributes"]["title"], item.title)
 
     ##
     ## Filters

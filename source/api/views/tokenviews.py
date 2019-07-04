@@ -13,9 +13,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from api.models import Token
-
+from .itemviewsetmixin import ItemViewSetMixin
 import api.pagination
-from .logviews import LogViewSetMixin
 
 # Django ViewSet
 # https://www.django-rest-framework.org/api-guide/viewsets/
@@ -53,7 +52,7 @@ class TokenSerializer(serializers.ModelSerializer):
         return Token.objects.create(**validated_data)
 
 
-class TokenViewSet(LogViewSetMixin, viewsets.ModelViewSet):
+class TokenViewSet(ItemViewSetMixin, viewsets.ModelViewSet):
     """ 
     List, detail, create, update and delete API auth tokens. 
     

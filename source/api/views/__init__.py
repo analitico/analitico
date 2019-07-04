@@ -9,6 +9,5 @@ from .modelviews import ModelViewSet
 from .endpointviews import EndpointViewSet
 from .userviews import UserViewSet
 from .pluginviews import PluginViewSet
-from .logviews import LogViewSet
 from .notebookviews import NotebookViewSet
 from .k8views import K8ViewSet

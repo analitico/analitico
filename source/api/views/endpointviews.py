@@ -15,7 +15,6 @@ from api.factory import ServerFactory
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .jobviews import JobViewSetMixin
-from .logviews import LogViewSetMixin
 
 ##
 ## EndpointSerializer
@@ -35,7 +34,7 @@ class EndpointSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 ##
 
 
-class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class EndpointViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ An endpoint can be listed, added, removed or used to run inferences on a trained machine learning model. """
 
     item_class = api.models.Endpoint

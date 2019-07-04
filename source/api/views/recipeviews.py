@@ -14,7 +14,6 @@ from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .jobviews import JobViewSetMixin, JobSerializer
-from .logviews import LogViewSetMixin
 from .notebookviews import NotebookViewSetMixin
 
 ##
@@ -38,12 +37,7 @@ class RecipeSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class RecipeViewSet(
-    ItemViewSetMixin,
-    AssetViewSetMixin,
-    JobViewSetMixin,
-    LogViewSetMixin,
-    NotebookViewSetMixin,
-    rest_framework.viewsets.ModelViewSet,
+    ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, rest_framework.viewsets.ModelViewSet
 ):
     """
     A recipe contains a pipeline of plugins that can take some training data

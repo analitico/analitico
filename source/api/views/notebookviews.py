@@ -24,7 +24,6 @@ from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, I
 from .attributeserializermixin import AttributeSerializerMixin
 from .assetviewsetmixin import AssetViewSetMixin
 from .jobviews import JobViewSetMixin
-from .logviews import LogViewSetMixin
 
 ##
 ## NotebookSerializer
@@ -97,12 +96,7 @@ class NotebookViewSetMixin:
 
 
 class NotebookViewSet(
-    ItemViewSetMixin,
-    AssetViewSetMixin,
-    JobViewSetMixin,
-    LogViewSetMixin,
-    NotebookViewSetMixin,
-    rest_framework.viewsets.ModelViewSet,
+    ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, rest_framework.viewsets.ModelViewSet
 ):
     """ An editable and runnable Jupyter notebook and its artifacts """
 

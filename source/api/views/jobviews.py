@@ -41,7 +41,6 @@ from api.models import ItemMixin
 from api.models.job import Job, timeout_jobs
 from api.factory import factory
 
-from .logviews import LogViewSetMixin
 from .itemviewsetmixin import filterset, ItemViewSetMixin
 
 ##
@@ -134,7 +133,7 @@ class JobViewSetMixin:
 ##
 
 
-class JobViewSet(ItemViewSetMixin, AssetViewSetMixin, LogViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class JobViewSet(ItemViewSetMixin, AssetViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A job can be created, listed, updated, cancelled, etc. """
 
     item_class = api.models.Job
