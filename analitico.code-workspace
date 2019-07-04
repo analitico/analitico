@@ -7,13 +7,13 @@
 			"path": "../analitico-ops"
 		},
 		{
-			"path": "/home/gionata/github/analitico-ci"
+			"path": "../analitico-ci"
 		},
 		{
-			"path": "/home/gionata/github/analitico-scrapbook"
+			"path": "../analitico-site"
 		},
 		{
-			"path": "/Users/gionata/github/analitico-design"
+			"path": "../analitico-gallery"
 		}
 	],
 	"settings": {
