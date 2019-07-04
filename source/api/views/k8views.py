@@ -126,7 +126,7 @@ class K8ViewSet(GenericViewSet):
         start_time = api.utilities.get_query_parameter(request, "start")
         end_time = api.utilities.get_query_parameter(request, "end")
         # query resolution step width, eg: 10s, 1m, 2h, 1d, 2w, 1y
-        step = api.utilities.get_query_parameter(request, "step") 
+        step = api.utilities.get_query_parameter(request, "step")
 
         # metric converted in Prometheus query fixed to the given service
         metrics = {
@@ -139,35 +139,23 @@ class K8ViewSet(GenericViewSet):
                 f'rate(istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m])'
             ),
             "container_memory_usage_bytes": f'container_memory_usage_bytes{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}',
-            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}[1m])'
+            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}[1m])',
         }
 
         query = metrics.get(metric)
-    
+
         if not query:
-            raise AnaliticoException(
-                f"Metric `{metric}` not found", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+            raise AnaliticoException(f"Metric `{metric}` not found", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         # basic query
         path = "/query"
-        data = {
-            "query": query
-        }
+        data = {"query": query}
         # all parameters must be given to query a time range
-        if (start_time and end_time and step):
+        if start_time and end_time and step:
             path = "/query_range"
-            data = {
-                "query": query,
-                "start": start_time,
-                "end": end_time,
-                "step": step
-            }
+            data = {"query": query, "start": start_time, "end": end_time, "step": step}
 
-        prometheus_response = requests.get(
-            django.conf.settings.PROMETHEUS_SERVICE_URL + path,
-            params=data,
-        )
+        prometheus_response = requests.get(django.conf.settings.PROMETHEUS_SERVICE_URL + path, params=data)
         return Response(prometheus_response.json(), content_type="json", status=prometheus_response.status_code)
 
     @action(methods=["get"], detail=True, url_name="logs", url_path="logs")

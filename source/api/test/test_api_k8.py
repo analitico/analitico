@@ -165,14 +165,18 @@ class K8Tests(AnaliticoApiTestCase):
 
         # expect requested metric from specific service
         self.assertEqual(data["status"], "success")
-        self.assertGreaterEqual(len(data["data"]["result"]), 1) # one per revision (if any)
+        self.assertGreaterEqual(len(data["data"]["result"]), 1)  # one per revision (if any)
         for metric in data["data"]["result"]:
             self.assertIn(self.endpoint_id_normalized, metric["metric"]["pod_name"])
 
         # filter a specific metric over a specific time range
         now = int(time.time())
         thirtyMinutesAgo = now - (30 * 60)
-        response = self.client.get(url, data={"metric": "container_cpu_load", "start": thirtyMinutesAgo, "end": now, "step": "1m"}, format="json")
+        response = self.client.get(
+            url,
+            data={"metric": "container_cpu_load", "start": thirtyMinutesAgo, "end": now, "step": "1m"},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
         self.assertEqual(data["status"], "success")
