@@ -2,6 +2,7 @@ import os
 import os.path
 import json
 import time
+import requests
 
 from django.test import tag
 from django.urls import reverse
@@ -127,7 +128,7 @@ class K8Tests(AnaliticoApiTestCase):
 
         docker = api.k8.k8_build(notebook)
         service = api.k8.k8_deploy(notebook, endpoint)
-        time.sleep(10)
+        time.sleep(15)
         return service
 
     @tag("slow", "docker", "k8s")
@@ -184,7 +185,7 @@ class K8Tests(AnaliticoApiTestCase):
         for metric in data["data"]["result"]:
             self.assertIn(self.endpoint_id_normalized, metric["metric"]["pod_name"])
 
-    @tag("slow", "docker", "k8s")
+    @tag("slow", "docker", "k8s", "live")
     def test_k8s_get_logs(self):
         self.deploy_service()
         url = reverse("api:k8-logs", args=(self.endpoint_id,))
@@ -194,7 +195,7 @@ class K8Tests(AnaliticoApiTestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # admin user CAN get metrics
+        # admin user CAN get logs
         self.auth_token(self.token1)
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -228,3 +229,36 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertGreater(len(data["hits"]["hits"]), 20)
         for d in data["hits"]["hits"]:
             self.assertEqual("info", d["_source"]["level"])
+
+        # call the endpoint on k8 to generate each level log message and
+        # track the time between logging and indexing in Elastic Search
+        start_time = time.time()
+        levels = {"debug": logging.DEBUG, "info": logging.INFO, "warning": logging.WARNING, "error": logging.ERROR, "critical": logging.CRITICAL}
+        message = f"test-{start_time}"
+        for level,level_number in levels.items():
+            # /echo endpoint will generate a log message at the given level
+            endpoint = f"https://{self.endpoint_id_normalized}.cloud.analitico.ai/echo"
+            response = requests.get(endpoint, params={"message": f"{message}-{level}", "level": level_number}, verify=False)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # wait for all logs to be indexed
+        expected_results = len(levels)
+        insist = True
+        while (insist):
+            response = self.client.get(url, data={"query": f'msg:"{message}"', "size": expected_results})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            elapsed = round(time.time() - start_time, 2)
+            if (response.data["hits"]["total"] == expected_results):
+                insist = False
+                logging.log(logging.INFO, msg=f"Logs indexed in {elapsed} secs")
+            else:
+                time.sleep(2)
+                insist = elapsed <= 60
+
+        # check results from Elastic Search
+        self.assertEqual(response.data["hits"]["total"], expected_results)
+        for result in response.data["hits"]["hits"]:
+            self.assertIn(result["_source"]["level"], levels.keys())
+            del levels[result["_source"]["level"]]
+            self.assertIn(message, result["_source"]["msg"])
