@@ -13,6 +13,7 @@ services:
 stages:
   - build
   - deploy-staging
+  - live-tests
   - deploy-workers
   - deploy
 
@@ -241,7 +242,7 @@ worker-production:
 
 
 live-tests:
-  stage: deploy-staging
+  stage: live-tests
   image: ubuntu:18.04
   only:
     - master
