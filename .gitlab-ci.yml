@@ -278,5 +278,5 @@ live-tests:
       docker pull ${BUILD_IMAGE_URL}; 
       docker stop analitico-live-tests; 
       docker rm  analitico-live-tests; 
-      docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/live-tests.sh; 
+      docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/live-tests.sh;"
     
