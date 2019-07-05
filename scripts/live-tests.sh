@@ -13,7 +13,8 @@ cd $BASEDIR/../source
 echo "Starting worker..."
 while true
 do
-    echo "Running tests..."
+    echo "$(date -u) - Running tests..."
+    STARTTIME="$(date -u +%s)"
 
     # exec the command and intercept the error message
     # the `true` is required to let the loop continue on error
@@ -40,13 +41,17 @@ do
              -X POST \
              -H "Accept: application/json" \
              -H "Content-Type:application/json" \
-             --data "${CONTENT}" ${ANALITICO_SLACK_INTERNAL_WEBHOOK}
+             --data "${CONTENT}" ${ANALITICO_SLACK_INTERNAL_WEBHOOK} || true
     else 
         echo "Tests completed with success."
     fi
     
+    COMPLETEDTIME="$(date -u +%s)"
+    echo "Run completd in $(($COMPLETEDTIME - STARTTIME)) seconds."
+
     # 5 min between tests
     echo "Next run in 5 minutes"
+    
     wait
     sleep 300
 done
