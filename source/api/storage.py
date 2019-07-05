@@ -88,7 +88,7 @@ class Storage:
                         "Storage.factory - could not login to Google Cloud Storage, please check your keys", exc
                     )
 
-            if driver == "webdav":
+            if driver == "webdav" or driver == "hetzner-webdav":
                 driver = api.libcloud.WebdavStorageDriver(
                     url=settings["url"],
                     username=settings["credentials"]["username"],
