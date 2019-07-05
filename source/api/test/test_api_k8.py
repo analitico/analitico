@@ -200,17 +200,17 @@ class K8Tests(AnaliticoApiTestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
-        self.assertGreater(len(data["hits"]["hits"]), 20)
+        self.assertGreater(len(data["hits"]["hits"]), 10)
         self.assertEqual(data["timed_out"], False)
-        self.assertGreater(data["hits"]["total"], 20)
+        self.assertGreater(data["hits"]["total"], 10)
 
         # limit the number of results with ?size= parameter
-        response = self.client.get(url, data={"size": 20}, format="json")
+        response = self.client.get(url, data={"size": 10}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
-        self.assertEqual(len(data["hits"]["hits"]), 20)
+        self.assertEqual(len(data["hits"]["hits"]), 10)
         self.assertEqual(data["timed_out"], False)
-        self.assertGreater(data["hits"]["total"], 50)
+        self.assertGreater(data["hits"]["total"], 20)
 
         # user can provide a query string
         self.auth_token(self.token1)
@@ -226,14 +226,14 @@ class K8Tests(AnaliticoApiTestCase):
         response = self.client.get(url, data={"query": "level:info"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
-        self.assertGreater(len(data["hits"]["hits"]), 20)
+        self.assertGreater(len(data["hits"]["hits"]), 10)
         for d in data["hits"]["hits"]:
             self.assertEqual("info", d["_source"]["level"])
 
         # call the endpoint on k8 to generate each level log message and
         # track the time between logging and indexing in Elastic Search
         start_time = time.time()
-        levels = {"debug": logging.DEBUG, "info": logging.INFO, "warning": logging.WARNING, "error": logging.ERROR, "critical": logging.CRITICAL}
+        levels = {"info": logging.INFO, "warning": logging.WARNING, "error": logging.ERROR, "critical": logging.CRITICAL}
         message = f"test-{start_time}"
         for level,level_number in levels.items():
             # /echo endpoint will generate a log message at the given level
