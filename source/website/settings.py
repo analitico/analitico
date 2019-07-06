@@ -55,7 +55,7 @@ try:
                 "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "console"}},
                 "loggers": {
                     # root logger
-                    "": {"level": "DEBUG", "handlers": ["console"]}
+                    "": {"level": "INFO", "handlers": ["console"]}
                 },
             }
         )
