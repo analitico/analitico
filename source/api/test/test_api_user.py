@@ -1,10 +1,25 @@
+import copy
+from base64 import b64encode
+
 from analitico import TYPE_PREFIX, USER_TYPE
 from django.urls import reverse
 from rest_framework import status
 from .utils import AnaliticoApiTestCase
 
+from api.models import User
+
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
+
+TEST_USER_EMAIL = "paperino@disney.com"
+TEST_USER_PASSWORD = "testingIsFun"
+TEST_USER = {
+    "type": "analitico/user",
+    "id": TEST_USER_EMAIL,
+    "attributes": {"first_name": "Paolino", "last_name": "Paperino", "shoe_size": 14},
+}
+TEST_USER_WITH_PASSWORD = copy.deepcopy(TEST_USER)
+TEST_USER_WITH_PASSWORD["attributes"]["password"] = TEST_USER_PASSWORD
 
 
 class UserTests(AnaliticoApiTestCase):
@@ -67,20 +82,7 @@ class UserTests(AnaliticoApiTestCase):
     def test_user_create(self):
         url = reverse("api:user-list")
         self.auth_token(self.token1)
-        response = self.client.post(
-            url,
-            {
-                "type": "analitico/user",
-                "id": "paperino@disney.com",
-                "attributes": {
-                    "email": "paperino@disney.com",
-                    "first_name": "Paolino",
-                    "last_name": "Paperino",
-                    "shoe_size": 14,
-                },
-            },
-            format="json",
-        )
+        response = self.client.post(url, TEST_USER, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = response.data
         self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
@@ -107,15 +109,7 @@ class UserTests(AnaliticoApiTestCase):
     def test_user_create_then_retrieve(self):
         url = reverse("api:user-list")
         self.auth_token(self.token1)
-        response = self.client.post(
-            url,
-            {
-                "type": "analitico/user",
-                "id": "paperino@disney.com",
-                "attributes": {"first_name": "Paolino", "last_name": "Paperino", "shoe_size": 14},  # extra attribute
-            },
-            format="json",
-        )
+        response = self.client.post(url, TEST_USER, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         url = reverse("api:user-detail", args=("paperino@disney.com",))
@@ -202,3 +196,67 @@ class UserTests(AnaliticoApiTestCase):
         # now retrieve deleted user
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    ##
+    ## Sign in, Sign up, Sign out
+    ##
+
+    def test_user_signup(self):
+        url = reverse("api:user-signup")
+        response = self.client.post(url, TEST_USER_WITH_PASSWORD, format="json")  # NO AUTH TOKEN
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        user = response.data
+        self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertTrue("attributes" in user)
+        attributes = user["attributes"]
+        self.assertEqual(attributes["first_name"], "Paolino")
+        self.assertEqual(attributes["last_name"], "Paperino")
+        self.assertEqual(attributes["shoe_size"], 14)
+
+    def test_user_signup_existing(self):
+        # create test user
+        url = reverse("api:user-signup")
+        response = self.client.post(url, TEST_USER_WITH_PASSWORD, format="json")  # NO AUTH TOKEN
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # post again but this time the user already exists
+        response = self.client.post(url, TEST_USER, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_user_signin_use_session_signout(self):
+        # create test user first
+        url = reverse("api:user-signup")
+        response = self.client.post(url, TEST_USER_WITH_PASSWORD, format="json")  # NO AUTH TOKEN
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # then try logging in
+        url = reverse("api:user-signin")
+        self.client.login(username=TEST_USER_EMAIL, password=TEST_USER_PASSWORD)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user = response.data
+        self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
+        self.assertEqual(user["id"], TEST_USER_EMAIL)
+        attributes = user["attributes"]
+        self.assertTrue("password" not in attributes)
+        self.assertEqual(attributes["first_name"], "Paolino")
+        self.assertEqual(attributes["last_name"], "Paperino")
+        self.assertEqual(attributes["is_staff"], False)
+        self.assertEqual(attributes["is_superuser"], False)
+
+        # retrieve again using session credentials
+        url = reverse("api:user-me")
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # sign out of current session
+        url = reverse("api:user-signout")
+        response = self.client.post(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # retrieve again with missing session credentials
+        url = reverse("api:user-me")
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

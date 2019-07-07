@@ -1,10 +1,14 @@
 import collections
 import jsonfield
 
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.db import models
 from django.utils.crypto import get_random_string
 
 import analitico
+from analitico import logger
 
 from .user import User
 
@@ -57,6 +61,7 @@ class Token(models.Model):
 def get_workspace_token(workspace, create_if_needed=True):
     """ Returns the default authorization token for a specific workspace """
     user = workspace.user
+    # pylint: disable=no-member
     token = Token.objects.filter(user=user).first()
     if token is None:
         if not create_if_needed:
@@ -67,3 +72,13 @@ def get_workspace_token(workspace, create_if_needed=True):
         token = Token(user=user, id=generate_token_id(), name="api")
         token.save()
     return token.id
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    """ Create an API token automatically when a user is created. """
+    if created:
+        token = Token(user=instance, id=generate_token_id(), name="api")
+        token.save()
+        logger.debug(f"Created bearer token {token.id} for {instance.email}")
+        # https://www.django-rest-framework.org/api-guide/authentication/#generating-tokens
