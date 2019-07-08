@@ -190,6 +190,15 @@ class K8Tests(AnaliticoApiTestCase):
         self.deploy_service()
         url = reverse("api:k8-logs", args=(self.endpoint_id,))
 
+        # /echo endpoint will generate a log message at the given level
+        endpoint_echo = f"https://{self.endpoint_id_normalized}.cloud.analitico.ai/echo" 
+
+        # generate info logs
+        for x in range(20):
+            response = requests.get(endpoint_echo, params={"message": f"INFO log for unit-testing", "level": logging.INFO}, verify=False)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
         # user CANNOT read logs from items he does not have access to
         self.auth_token(self.token3)
         response = self.client.get(url, format="json")
@@ -210,7 +219,7 @@ class K8Tests(AnaliticoApiTestCase):
         data = response.data
         self.assertEqual(len(data["hits"]["hits"]), 10)
         self.assertEqual(data["timed_out"], False)
-        self.assertGreater(data["hits"]["total"], 20)
+        self.assertGreater(data["hits"]["total"], 10)
 
         # user can provide a query string
         self.auth_token(self.token1)
@@ -240,12 +249,8 @@ class K8Tests(AnaliticoApiTestCase):
             "critical": logging.CRITICAL,
         }
         message = f"test-{start_time}"
-        for level, level_number in levels.items():
-            # /echo endpoint will generate a log message at the given level
-            endpoint = f"https://{self.endpoint_id_normalized}.cloud.analitico.ai/echo"
-            response = requests.get(
-                endpoint, params={"message": f"{message}-{level}", "level": level_number}, verify=False
-            )
+        for level,level_number in levels.items():
+            response = requests.get(endpoint_echo, params={"message": f"{message}-{level}", "level": level_number}, verify=False)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # wait for all logs to be indexed
