@@ -1,5 +1,6 @@
 import collections
 import jsonfield
+import string
 
 from django.contrib.auth.models import Group
 from django.db import models
@@ -15,7 +16,7 @@ from .items import ItemMixin, ItemAssetsMixin
 
 
 def generate_workspace_id():
-    return analitico.WORKSPACE_PREFIX + get_random_string()
+    return analitico.WORKSPACE_PREFIX + analitico.utilities.id_generator()
 
 
 class Workspace(ItemMixin, ItemAssetsMixin, models.Model):

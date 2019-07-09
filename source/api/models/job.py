@@ -35,7 +35,7 @@ CRON_EVERY_HOUR = "0 * * * *"
 
 def generate_job_id():
     """ All Job.id have jb_ prefix followed by a random string """
-    return analitico.JOB_PREFIX + django.utils.crypto.get_random_string()
+    return analitico.JOB_PREFIX + analitico.utilities.id_generator()
 
 
 ##

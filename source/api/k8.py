@@ -4,10 +4,16 @@ import tempfile
 import datetime
 import collections
 import json
+import urllib
+import base64
+import string
 
 import subprocess
 from subprocess import PIPE
+
+import django.utils
 from rest_framework import status
+from rest_framework.request import Request
 
 import analitico.utilities
 
@@ -15,6 +21,7 @@ from analitico import AnaliticoException, logger
 from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run
 from api.factory import factory
 from api.models import ItemMixin, Job
+from api.models.job import generate_job_id
 from api.models.notebook import nb_extract_serverless
 
 K8_DEFAULT_NAMESPACE = "cloud"  # service.cloud.analitico.ai
@@ -23,6 +30,10 @@ K8_DEFAULT_CONCURRENCY = 20  # concurrent connection per docker
 # directory where the template used to dockerize notebooks is stored
 K8_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../serverless/templates/knative"))
 assert os.path.isdir(K8_TEMPLATE_DIR)
+
+# directory where the template used to dockerize jobs is stored
+K8_JOB_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../serverless/templates/job"))
+assert os.path.isdir(K8_JOB_TEMPLATE_DIR)
 
 SOURCE_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../source"))
 assert os.path.isdir(SOURCE_TEMPLATE_DIR)
@@ -185,3 +196,83 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
 
     except Exception as exc:
         raise AnaliticoException(f"Could not deploy {item.id} to {endpoint.id} because: {exc}") from exc
+
+##
+## K8s jobs used to process notebooks
+##
+
+def k8_jobs_create(item: ItemMixin, action: str = None, request: Request = None) -> dict:
+
+    # storage will be mounted by kubernetes as an attached drive
+    storage_conf = k8_get_storage_volume_configuration(item)
+    workspace_id = item.workspace.id
+    job_id = generate_job_id()
+
+    configs = {
+        "workspace_id": workspace_id,
+        "item_id": item.id,
+        "job_id": job_id,
+        "workspace_id_slug": k8_normalize_name(workspace_id),
+        "job_id_slug": k8_normalize_name(job_id),
+        "volume_network_path": storage_conf["network_path"],
+        "volume_username": storage_conf["username"],
+        "volume_password": storage_conf["password"]
+    }
+
+    job_secret_template = os.path.join(K8_JOB_TEMPLATE_DIR, "job-secret-template.yaml")
+    job_secret = k8_customize_and_apply(job_secret_template, **configs)
+
+    job_template = os.path.join(K8_JOB_TEMPLATE_DIR, "job-template.yaml")
+    job = k8_customize_and_apply(job_template, **configs)
+    return job
+
+def k8_jobs_get(item: ItemMixin, job_id: str = None, request: Request = None) -> dict:
+    # return specific job filtered by item_id and job_id
+    cmd_args = ["kubectl", "get", "job", job_id, "-n", "cloud", "-o", "json"]
+    job_json, _ = subprocess_run(cmd_args, None)
+    if job_json["metadata"]["labels"]["analitico.ai/item-id"] != item.id:
+        raise AnaliticoException(f"Job {job_id} does not belong to item {item.id}", status=status.HTTP_403_FORBIDDEN)
+    return job_json
+
+def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
+    # return list of jobs filtered by item_id
+    return []
+
+
+##
+## Utilities
+##
+
+def k8_customize_and_apply(template_path: str, **kwargs):
+    # Deploy a k8 resource using kubectl command:
+    # kubectl apply --filename item.yaml -o json
+    # https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#apply
+    # export KUBECONFIG=$HOME/.kube/config/admin.conf
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".yaml") as f:
+        template_yaml = read_text(template_path)
+        template_yaml = template_yaml.format(**kwargs)
+        save_text(template_yaml, f.name)
+        cmd_args = ["kubectl", "apply", "--filename", f.name, "-o", "json"]
+        item_json, _ = subprocess_run(cmd_args, None)
+        return item_json
+
+
+def k8_get_storage_volume_configuration(item: ItemMixin) -> dict:
+    """ Returns credentials used to mount this item's workspace storage to K8 jobs or pods. """
+    workspace = item.workspace
+    storage = workspace.get_attribute("storage")
+
+    assert storage["driver"] == "hetzner-webdav"
+    assert storage["url"]
+    assert storage["credentials"]["username"]
+    assert storage["credentials"]["password"]
+
+    uri = urllib.parse.urlparse(storage["url"])
+    username = storage["credentials"]["username"]
+    password = storage["credentials"]["password"]
+
+    return {
+        "network_path": f"//{uri.netloc}/{username}",
+        "username": base64.b64encode(username.encode("ascii")).decode('ascii'),
+        "password": base64.b64encode(password.encode("ascii")).decode('ascii')
+    }

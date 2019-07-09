@@ -26,6 +26,7 @@ from django.urls import reverse
 import rest_framework
 import rest_framework.viewsets
 
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action, permission_classes
@@ -40,6 +41,7 @@ from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.models import ItemMixin
 from api.models.job import Job, timeout_jobs
 from api.factory import factory
+from api.k8 import k8_jobs_create, k8_jobs_get, k8_jobs_list
 
 from .itemviewsetmixin import filterset, ItemViewSetMixin
 
@@ -126,6 +128,31 @@ class JobViewSetMixin:
 
         serializer = JobSerializer(job)
         return Response(serializer.data)
+
+    ##
+    ## Kubernetes jobs APIs
+    ##
+
+    @action(methods=["post"], detail=True, url_name="k8-jobs-create", url_path=r"k8s/jobs/(?P<job_action>[-\w.]{4,256})$")
+    def k8jobs_create(self, request, pk, job_action) -> Response:
+        """ Create a kubernetes job to process a specific item, return job to caller. """
+        job_item = self.get_object()
+        job = k8_jobs_create(job_item, job_action, request)
+        return Response(job)
+
+    @action(methods=["get"], detail=True, url_name="k8-jobs-detail", url_path=r"k8s/jobs/(?P<job_id>[-\w.]{4,256})$")
+    def k8jobs_get(self, request, pk, job_id) -> Response:
+        """ Retrieve status for a specific job that was previously created using k8jobs_create. """
+        job_item = self.get_object()
+        job = k8_jobs_get(job_item, job_id, request)
+        return Response(job)
+
+    @action(methods=["post"], detail=True, url_name="k8-job-list", url_path="k8s/jobs")
+    def k8jobs_list(self, request, pk) -> Response:
+        """ Retrieve list of jobs for specific item. """
+        job_item = self.get_object()
+        jobs = k8_jobs_list(job_item, request)
+        return Response(jobs)
 
 
 ##
