@@ -233,23 +233,30 @@ class K8Tests(AnaliticoApiTestCase):
         # call the endpoint on k8 to generate each level log message and
         # track the time between logging and indexing in Elastic Search
         start_time = time.time()
-        levels = {"info": logging.INFO, "warning": logging.WARNING, "error": logging.ERROR, "critical": logging.CRITICAL}
+        levels = {
+            "info": logging.INFO,
+            "warning": logging.WARNING,
+            "error": logging.ERROR,
+            "critical": logging.CRITICAL,
+        }
         message = f"test-{start_time}"
-        for level,level_number in levels.items():
+        for level, level_number in levels.items():
             # /echo endpoint will generate a log message at the given level
             endpoint = f"https://{self.endpoint_id_normalized}.cloud.analitico.ai/echo"
-            response = requests.get(endpoint, params={"message": f"{message}-{level}", "level": level_number}, verify=False)
+            response = requests.get(
+                endpoint, params={"message": f"{message}-{level}", "level": level_number}, verify=False
+            )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # wait for all logs to be indexed
         expected_results = len(levels)
         insist = True
-        while (insist):
+        while insist:
             response = self.client.get(url, data={"query": f'msg:"{message}"', "size": expected_results})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
             elapsed = round(time.time() - start_time, 2)
-            if (response.data["hits"]["total"] == expected_results):
+            if response.data["hits"]["total"] == expected_results:
                 insist = False
                 logging.log(logging.INFO, msg=f"Logs indexed in {elapsed} secs")
             else:
