@@ -133,26 +133,24 @@ class JobViewSetMixin:
     ## Kubernetes jobs APIs
     ##
 
-    @action(methods=["post"], detail=True, url_name="k8-jobs-create", url_path=r"k8s/jobs/(?P<job_action>[-\w.]{4,256})$")
-    def k8jobs_create(self, request, pk, job_action) -> Response:
-        """ Create a kubernetes job to process a specific item, return job to caller. """
-        job_item = self.get_object()
-        job = k8_jobs_create(job_item, job_action, request)
-        return Response(job)
-
-    @action(methods=["get"], detail=True, url_name="k8-jobs-detail", url_path=r"k8s/jobs/(?P<job_id>[-\w.]{4,256})$")
+    @action(methods=["get", "post"], detail=True, url_name="k8-jobs", url_path=r"k8s/jobs/(?P<job_id>[-\w.]{0,64})$")
     def k8jobs_get(self, request, pk, job_id) -> Response:
-        """ Retrieve status for a specific job that was previously created using k8jobs_create. """
-        job_item = self.get_object()
-        job = k8_jobs_get(job_item, job_id, request)
-        return Response(job)
+        """ Create a job, retrieve a specific job, retrieve all jobs for item. """
+        item = self.get_object()
 
-    @action(methods=["post"], detail=True, url_name="k8-job-list", url_path="k8s/jobs")
-    def k8jobs_list(self, request, pk) -> Response:
-        """ Retrieve list of jobs for specific item. """
-        job_item = self.get_object()
-        jobs = k8_jobs_list(job_item, request)
-        return Response(jobs)
+        if self.request.method == "POST":
+            data = request.data
+            if data and "data" in data:
+                data = data["data"]
+            action = job_id
+            reply = k8_jobs_create(item, action, request)
+        elif job_id:
+            reply = k8_jobs_get(item, job_id, request)
+            assert reply["metadata"]["labels"]["analitico.ai/item-id"] == item.id
+        else:
+            reply = k8_jobs_list(item, request)
+
+        return Response(reply, content_type="json")
 
 
 ##

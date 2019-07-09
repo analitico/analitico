@@ -14,6 +14,7 @@ from subprocess import PIPE
 import django.utils
 from rest_framework import status
 from rest_framework.request import Request
+from rest_framework.response import Response
 
 import analitico.utilities
 
@@ -197,9 +198,11 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
     except Exception as exc:
         raise AnaliticoException(f"Could not deploy {item.id} to {endpoint.id} because: {exc}") from exc
 
+
 ##
 ## K8s jobs used to process notebooks
 ##
+
 
 def k8_jobs_create(item: ItemMixin, action: str = None, request: Request = None) -> dict:
 
@@ -216,32 +219,51 @@ def k8_jobs_create(item: ItemMixin, action: str = None, request: Request = None)
         "job_id_slug": k8_normalize_name(job_id),
         "volume_network_path": storage_conf["network_path"],
         "volume_username": storage_conf["username"],
-        "volume_password": storage_conf["password"]
+        "volume_password": storage_conf["password"],
     }
 
-    job_secret_template = os.path.join(K8_JOB_TEMPLATE_DIR, "job-secret-template.yaml")
-    job_secret = k8_customize_and_apply(job_secret_template, **configs)
+    # k8s secret containing the credentials for the workspace mount
+    secret_template = os.path.join(K8_JOB_TEMPLATE_DIR, "secret-template.yaml")
+    secret = k8_customize_and_apply(secret_template, **configs)
+    assert secret, "kubectl did not apply the secret"
 
+    # k8s job that will launch
     job_template = os.path.join(K8_JOB_TEMPLATE_DIR, "job-template.yaml")
     job = k8_customize_and_apply(job_template, **configs)
+    assert job, "kubctl did not apply the job"
     return job
+
 
 def k8_jobs_get(item: ItemMixin, job_id: str = None, request: Request = None) -> dict:
     # return specific job filtered by item_id and job_id
-    cmd_args = ["kubectl", "get", "job", job_id, "-n", "cloud", "-o", "json"]
-    job_json, _ = subprocess_run(cmd_args, None)
-    if job_json["metadata"]["labels"]["analitico.ai/item-id"] != item.id:
-        raise AnaliticoException(f"Job {job_id} does not belong to item {item.id}", status=status.HTTP_403_FORBIDDEN)
-    return job_json
+    job, _ = subprocess_run(cmd_args=["kubectl", "get", "job", job_id, "-n", "cloud", "-o", "json"])
+    return job
+
 
 def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
     # return list of jobs filtered by item_id
-    return []
+    jobs, _ = subprocess_run(
+        cmd_args=[
+            "kubectl",
+            "get",
+            "job",
+            "-n",
+            "cloud",
+            "--selector",
+            f"analitico.ai/item-id={item.id}",
+            "--sort-by",
+            ".metadata.creationTimestamp",
+            "-o",
+            "json",
+        ]
+    )
+    return jobs
 
 
 ##
 ## Utilities
 ##
+
 
 def k8_customize_and_apply(template_path: str, **kwargs):
     # Deploy a k8 resource using kubectl command:
@@ -273,6 +295,6 @@ def k8_get_storage_volume_configuration(item: ItemMixin) -> dict:
 
     return {
         "network_path": f"//{uri.netloc}/{username}",
-        "username": base64.b64encode(username.encode("ascii")).decode('ascii'),
-        "password": base64.b64encode(password.encode("ascii")).decode('ascii')
+        "username": base64.b64encode(username.encode("ascii")).decode("ascii"),
+        "password": base64.b64encode(password.encode("ascii")).decode("ascii"),
     }
