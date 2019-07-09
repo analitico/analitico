@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {job_id_slug}
+  namespace: cloud
+  labels:
+    analitico.ai/workspace-id: {workspace_id}
+    analitico.ai/item-id: {item_id}
+    analitico.ai/job-id: {job_id}
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      containers:
+      - name: {job_id_slug}
+        image: eu.gcr.io/analitico-api/job
+        command: ["python3",  "job.py"]
+        env:
+        - name: ANALITICO_WORKSPACE_ID
+          value: {workspace_id}
+        - name: ANALITICO_ITEM_ID
+          value: {item_id}
+        - name: ANALITICO_JOB_ID
+          value: {job_id}
+        volumeMounts:
+        - name: user-storage
+          mountPath: /mnt/user-storage
+          readOnly: false
+      restartPolicy: Never
+      volumes:
+      - name: user-storage
+        flexVolume:
+          driver: fstab/cifs
+          fsType: cifs
+          secretRef:
+            name: analitico-storage-{workspace_id_slug}
+          options:
+            networkPath: {volume_network_path}
+            mountOptions: dir_mode=0755,file_mode=0644,noperm
