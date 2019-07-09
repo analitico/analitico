@@ -33,7 +33,7 @@ assert HETZNER_ENDPOINT.startswith("https://")
 
 
 def generate_drive_id():
-    return analitico.DRIVE_PREFIX + get_random_string(length=6).lower()
+    return analitico.DRIVE_PREFIX + analitico.utilities.id_generator()
 
 
 class Drive(ItemMixin, ItemAssetsMixin, models.Model):
