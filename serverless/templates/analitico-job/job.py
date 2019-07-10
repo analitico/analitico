@@ -1,14 +1,23 @@
+
 import logging
 import os
 import json
 import argparse
 
-from analitico import AnaliticoException
-from analitico.utilities import read_json, subprocess_run
+try:
+    from analitico import AnaliticoException
+    from analitico.utilities import read_json, subprocess_run
+except Exception as exc:
+    raise AnaliticoException(f"Analitico dependencies should be installed.") from exc
+
+try:
+    import papermill
+except Exception as exc:
+    raise AnaliticoException(f"Papermill dependency should be installed.") from exc
 
 # enable logging by default
-logging.getLogger().setLevel(logging.INFO)
-logging.info("job.py running...")
+logging.getLogger("analitico").setLevel(logging.INFO)
+logging.info("Running...")
 
 # provide a basic command line interface to launch jobs
 parser = argparse.ArgumentParser(description="Process a job.")
@@ -18,7 +27,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 # retrieve notebook that should be executed
-notebook_path = args.notebooks[0]
+notebook_path = os.path.expandvars(args.notebooks[0])
 assert os.path.exists(notebook_path), f"Notebook {notebook_path} could not be found."
 notebook = read_json(notebook_path)
 
@@ -47,9 +56,14 @@ for i, cell in enumerate(notebook["cells"]):
 
 # process notebook with papermill
 try:
-    import papermill
-
     notebook_dir = os.path.dirname(notebook_path)
+    os.chdir(notebook_dir)
+    logging.info("Notebook: " + notebook_path)
+    logging.info("Notebook directory: " + os.getcwd())
+    logging.info("Running papermill to process notebook")
+
     papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir)
 except Exception as exc:
     raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
+
+logging.info("Done")

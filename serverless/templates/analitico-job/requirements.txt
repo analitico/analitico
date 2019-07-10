@@ -1,3 +1,4 @@
 analitico
 papermill
 requests
+simplejson

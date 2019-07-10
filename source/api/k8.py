@@ -7,6 +7,7 @@ import json
 import urllib
 import base64
 import string
+import collections
 
 import subprocess
 from subprocess import PIPE
@@ -33,7 +34,7 @@ K8_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../.
 assert os.path.isdir(K8_TEMPLATE_DIR)
 
 # directory where the template used to dockerize jobs is stored
-K8_JOB_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../serverless/templates/job"))
+K8_JOB_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../serverless/templates/analitico-job"))
 assert os.path.isdir(K8_JOB_TEMPLATE_DIR)
 
 SOURCE_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../source"))
@@ -204,23 +205,20 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
 ##
 
 
-def k8_jobs_create(item: ItemMixin, action: str = None, request: Request = None) -> dict:
+def k8_jobs_create(item: ItemMixin, job_cmd: [str] = None, request: Request = None) -> dict:
 
-    # storage will be mounted by kubernetes as an attached drive
-    storage_conf = k8_get_storage_volume_configuration(item)
     workspace_id = item.workspace.id
     job_id = generate_job_id()
 
-    configs = {
-        "workspace_id": workspace_id,
-        "item_id": item.id,
-        "job_id": job_id,
-        "workspace_id_slug": k8_normalize_name(workspace_id),
-        "job_id_slug": k8_normalize_name(job_id),
-        "volume_network_path": storage_conf["network_path"],
-        "volume_username": storage_conf["username"],
-        "volume_password": storage_conf["password"],
-    }
+    # start from storage config and all all the rest
+    configs = k8_get_storage_volume_configuration(item)
+    configs["workspace_id"] = workspace_id
+    configs["item_id"] = item.id
+    configs["item_type"] = item.type
+    configs["job_id"] = job_id
+    configs["job_command"] = str(job_cmd)
+    configs["workspace_id_slug"] = k8_normalize_name(workspace_id)
+    configs["job_id_slug"] = k8_normalize_name(job_id)
 
     # k8s secret containing the credentials for the workspace mount
     secret_template = os.path.join(K8_JOB_TEMPLATE_DIR, "secret-template.yaml")
@@ -293,8 +291,8 @@ def k8_get_storage_volume_configuration(item: ItemMixin) -> dict:
     username = storage["credentials"]["username"]
     password = storage["credentials"]["password"]
 
-    return {
-        "network_path": f"//{uri.netloc}/{username}",
-        "username": base64.b64encode(username.encode("ascii")).decode("ascii"),
-        "password": base64.b64encode(password.encode("ascii")).decode("ascii"),
-    }
+    configs = collections.OrderedDict()
+    configs["volume_network_path"] = f"//{uri.netloc}/{username}"
+    configs["volume_username"] = base64.b64encode(username.encode("ascii")).decode("ascii")
+    configs["volume_password"] = base64.b64encode(password.encode("ascii")).decode("ascii")
+    return configs

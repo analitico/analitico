@@ -13,27 +13,31 @@ spec:
     spec:
       containers:
       - name: {job_id_slug}
-        image: eu.gcr.io/analitico-api/job
-        command: ["python3",  "job.py"]
+        image: eu.gcr.io/analitico-api/analitico-job
+        command: {job_command}
         env:
         - name: ANALITICO_WORKSPACE_ID
           value: {workspace_id}
         - name: ANALITICO_ITEM_ID
           value: {item_id}
+        - name: ANALITICO_ITEM_PATH
+          value: $ANALITICO_DRIVE/{item_type}s/{item_id}
         - name: ANALITICO_JOB_ID
           value: {job_id}
+        - name: ANALITICO_DRIVE
+          value: /mnt/analitico-drive
         volumeMounts:
-        - name: user-storage
-          mountPath: /mnt/user-storage
+        - name: analitico-drive
+          mountPath: /mnt/analitico-drive
           readOnly: false
       restartPolicy: Never
       volumes:
-      - name: user-storage
+      - name: analitico-drive
         flexVolume:
           driver: fstab/cifs
           fsType: cifs
           secretRef:
-            name: analitico-storage-{workspace_id_slug}
+            name: analitico-drive-{workspace_id_slug}
           options:
             networkPath: {volume_network_path}
             mountOptions: dir_mode=0755,file_mode=0644,noperm

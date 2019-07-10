@@ -143,7 +143,11 @@ class JobViewSetMixin:
             if data and "data" in data:
                 data = data["data"]
             action = job_id
-            reply = k8_jobs_create(item, action, request)
+
+            # pass command that should be executed on job docker
+            job_cmd = ["python3", "job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"]
+
+            reply = k8_jobs_create(item, job_cmd, request)
         elif job_id:
             reply = k8_jobs_get(item, job_id, request)
             assert reply["metadata"]["labels"]["analitico.ai/item-id"] == item.id
