@@ -14,6 +14,7 @@ fi
 
 
 # import env
+# TODO analitico-baseline image should be build with environment vars set #292
 source /home/www/analitico/scripts/import-env.sh
 
 cd /home/www/analitico
