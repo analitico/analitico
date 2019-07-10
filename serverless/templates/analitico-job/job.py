@@ -1,4 +1,3 @@
-
 import logging
 import os
 import json
@@ -16,7 +15,7 @@ except Exception as exc:
     raise AnaliticoException(f"Papermill dependency should be installed.") from exc
 
 # enable logging by default
-logging.getLogger("analitico").setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.INFO)
 logging.info("Running...")
 
 # provide a basic command line interface to launch jobs
