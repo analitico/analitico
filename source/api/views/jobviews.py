@@ -133,28 +133,39 @@ class JobViewSetMixin:
     ## Kubernetes jobs APIs
     ##
 
-    @action(methods=["get", "post"], detail=True, url_name="k8-jobs", url_path=r"k8s/jobs/(?P<job_id>[-\w.]{0,64})$")
-    def k8jobs_get(self, request, pk, job_id) -> Response:
-        """ Create a job, retrieve a specific job, retrieve all jobs for item. """
+    @action(methods=["get", "post"], detail=True, url_name="k8-jobs", url_path=r"k8s/jobs/(?P<job_pk>[-\w.]{0,64})$")
+    def k8jobs(self, request: Request, pk: str, job_pk: str) -> Response:
+        """
+        Create a job, retrieve a specific job, retrieve all jobs for item.
+        
+        Arguments:
+            request {Request} -- The request being posted.
+            pk {str} -- The item that we're reading or creating jobs for.
+            job_pk {str} -- The job id when getting a specific job, or the job action when creating a job.
+        
+        Returns:
+            Response -- The k8s job that was create or retrieve or a list of jobs for this item.
+        """
         item = self.get_object()
 
+        # create a new job
         if self.request.method == "POST":
-            data = request.data
-            if data and "data" in data:
-                data = data["data"]
-            action = job_id
+            job_action = job_pk
+            job_data = request.data
+            if job_data and "data" in job_data:
+                job_data = job_data["data"]
+            job = k8_jobs_create(item, job_action, job_data)
+            return Response(job, content_type="json")
 
-            # pass command that should be executed on job docker
-            job_cmd = ["python3", "job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"]
+        job_id = job_pk
+        if job_id:
+            # retrieve specific job by id
+            job = k8_jobs_get(item, job_id, request)
+            return Response(job, content_type="json")
 
-            reply = k8_jobs_create(item, job_cmd, request)
-        elif job_id:
-            reply = k8_jobs_get(item, job_id, request)
-            assert reply["metadata"]["labels"]["analitico.ai/item-id"] == item.id
-        else:
-            reply = k8_jobs_list(item, request)
-
-        return Response(reply, content_type="json")
+        # retrieve list of jobs
+        jobs = k8_jobs_list(item, request)
+        return Response(jobs, content_type="json")
 
 
 ##

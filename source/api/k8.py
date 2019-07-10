@@ -20,9 +20,9 @@ from rest_framework.response import Response
 import analitico.utilities
 
 from analitico import AnaliticoException, logger
-from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run
+from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run, read_json
 from api.factory import factory
-from api.models import ItemMixin, Job
+from api.models import ItemMixin, Job, Recipe, Model
 from api.models.job import generate_job_id
 from api.models.notebook import nb_extract_serverless
 
@@ -34,7 +34,9 @@ K8_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../.
 assert os.path.isdir(K8_TEMPLATE_DIR)
 
 # directory where the template used to dockerize jobs is stored
-K8_JOB_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../serverless/templates/analitico-job"))
+K8_JOB_TEMPLATE_DIR = os.path.realpath(
+    os.path.join(os.path.dirname(__file__), "../../serverless/templates/analitico-job")
+)
 assert os.path.isdir(K8_JOB_TEMPLATE_DIR)
 
 SOURCE_TEMPLATE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../source"))
@@ -43,6 +45,105 @@ assert os.path.isdir(SOURCE_TEMPLATE_DIR)
 
 def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
+
+
+def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None) -> dict:
+    """
+    Takes an item, extracts its notebook then extracts python code marked for deployment
+    from the notebook. Then takes a template directory and applies customizations to it.
+    Calls Google Build to build the docker and then publish the docker to a private registry.
+    Returns a dictionary with information on the built docker and adds the same dictionary to
+    the job as well. Logs operations to the job while they are being performed.
+    """
+    assert item
+    assert target
+
+    # follow symlink when copying a customer's drive contents?
+    symlinks = True
+
+    with tempfile.TemporaryDirectory(prefix="build") as tmpdirname:
+        # directory where template files are copied must not exist yet for copytree
+        docker_dst = os.path.join(tmpdirname, "docker")
+
+        try:
+            # copy current contents of this recipe's files on the attached drive to our docker directory
+            item_drive_path = os.path.join(os.environ["ANALITICO_DRIVE"], f"{item.type}s/{item.id}")
+            for name in os.listdir(item_drive_path):
+                src_name = os.path.join(item_drive_path, name)
+                dst_name = os.path.join(docker_dst, name)
+                try:
+                    if symlinks and os.path.islink(src_name):
+                        linkto = os.readlink(src_name)
+                        # TODO verify that customer symlinks are legitimate #291
+                        os.symlink(linkto, dst_name)
+                    elif os.path.isdir(src_name):
+                        shutil.copytree(src_name, dst_name, symlinks)
+                    else:
+                        shutil.copy2(src_name, dst_name)
+                except OSError as exc:
+                    logger.error(f"Could not copy {src_name} because: {exc}")
+        except Exception as exc:
+            logger.error(f"k8_build could not copy files from {item_drive_path}, exception: {exc}")
+
+        # copy items from the template used to dockerize
+        shutil.copytree(K8_TEMPLATE_DIR, docker_dst)
+
+        # copy analitico SDK and s24 helper methods
+        # TODO /analitico and /s24 need to be built into standalone libraries
+        shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(docker_dst, "analitico"))
+        shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(docker_dst, "s24"))
+
+        # extract code from notebook
+        notebook_name = job_data.get("notebook", None) if job_data else None
+        notebook = read_json(notebook_name)
+        if not notebook:
+            raise AnaliticoException(
+                f"Item '{item.id}' does not contain a notebook that can be built, please add a notebook."
+            )
+
+        # extract source code and scripting from notebook
+        source, script = nb_extract_serverless(notebook)
+        logger.info(f"scripts:{script}\nsource:\n{source}")
+
+        # overwrite template files
+        save_json(notebook, os.path.join(docker_dst, "notebook.ipynb"), indent=2)
+        save_text(source, os.path.join(docker_dst, "notebook.py"))
+        save_text(script, os.path.join(docker_dst, "notebook.sh"))
+
+        # docker build docker image need to be lowercase
+        image_name = "eu.gcr.io/analitico-api/" + k8_normalize_name(item.id)
+
+        # build docker image, save id temporary file...
+        docker_build_args = ["docker", "build", "-t", image_name, docker_dst]
+        subprocess_run(docker_build_args, cwd=docker_dst)
+
+        # push docker image to registry
+        docker_push_args = ["docker", "push", image_name]
+        subprocess_run(docker_push_args, timeout=600)  # 10 minutes to upload image
+
+    # retrieve docker information, output is json, parse and add basic info to docker dict
+    docker_inspect_args = ["docker", "inspect", image_name]
+    docker_inspect, _ = subprocess_run(docker_inspect_args)
+    docker_inspect = docker_inspect[0]
+
+    image = docker_inspect["RepoDigests"][0]
+    image_id = image[image.find("sha256:") :]
+
+    # save docker information inside item and job
+    docker = collections.OrderedDict()
+    docker["type"] = "analitico/docker"
+    docker["image"] = image
+    docker["image_name"] = image_name
+    docker["image_id"] = image_id
+    docker["created_at"] = docker_inspect["Created"]
+    docker["size"] = docker_inspect["Size"]
+    docker["virtual_size"] = docker_inspect["VirtualSize"]
+
+    target.set_attribute("docker", docker)
+    target.save()
+
+    logger.info(json.dumps(docker, indent=4))
+    return docker
 
 
 def k8_build(item: ItemMixin, job: Job = None, push=True) -> dict:
@@ -205,20 +306,47 @@ def k8_deploy(item: ItemMixin, endpoint: ItemMixin, job: Job = None) -> dict:
 ##
 
 
-def k8_jobs_create(item: ItemMixin, job_cmd: [str] = None, request: Request = None) -> dict:
-
-    workspace_id = item.workspace.id
-    job_id = generate_job_id()
+def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = None) -> dict:
 
     # start from storage config and all all the rest
     configs = k8_get_storage_volume_configuration(item)
-    configs["workspace_id"] = workspace_id
+
+    configs["job_id"] = job_id = generate_job_id()
+    configs["job_id_slug"] = k8_normalize_name(job_id)
+
+    configs["workspace_id"] = item.workspace.id
+    configs["workspace_id_slug"] = k8_normalize_name(item.workspace.id)
+
     configs["item_id"] = item.id
     configs["item_type"] = item.type
-    configs["job_id"] = job_id
-    configs["job_command"] = str(job_cmd)
-    configs["workspace_id_slug"] = k8_normalize_name(workspace_id)
-    configs["job_id_slug"] = k8_normalize_name(job_id)
+
+    if job_action == analitico.ACTION_RUN:
+        # pass command that should be executed on job docker
+        configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-run-template.yaml")
+        configs["job_command"] = str(["python3", "job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"])
+
+    elif job_action == analitico.ACTION_BUILD:
+        # create a model which will host the built recipe which will contain a snapshot
+        # of the assets in the recipe at the moment when the model is built. the recipe's
+        # notebook is not run when we build, if needed it must be run beforehand.
+        assert item.type == analitico.RECIPE_TYPE, "You can only build recipes into models."
+
+        model = Model(workspace=item.workspace)
+        model.set_attribute("recipe_id", item.id)
+        model.set_attribute("job_id", configs["job_id"])
+        model.save()
+
+        # we are not building the recipe INTO a model
+        # the image used to run this k8 job will be the standard analitico image with our
+        # api package that can access everything. we will run the django manage builder command
+        # which is a custom command that will copy the recipe's files into a temporary directory
+        # then build and push a docker from it and save the docker's information in the model.
+        configs["model_id"] = model.id
+        configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-build-template.yaml")
+        configs["job_command"] = str(["./scripts/builder-start.sh", item.id, model.id])
+
+    else:
+        raise AnaliticoException(f"Unknown job action: {job_action}")
 
     # k8s secret containing the credentials for the workspace mount
     secret_template = os.path.join(K8_JOB_TEMPLATE_DIR, "secret-template.yaml")
@@ -226,15 +354,15 @@ def k8_jobs_create(item: ItemMixin, job_cmd: [str] = None, request: Request = No
     assert secret, "kubectl did not apply the secret"
 
     # k8s job that will launch
-    job_template = os.path.join(K8_JOB_TEMPLATE_DIR, "job-template.yaml")
-    job = k8_customize_and_apply(job_template, **configs)
+    job = k8_customize_and_apply(configs["job_template"], **configs)
     assert job, "kubctl did not apply the job"
     return job
 
 
 def k8_jobs_get(item: ItemMixin, job_id: str = None, request: Request = None) -> dict:
     # return specific job filtered by item_id and job_id
-    job, _ = subprocess_run(cmd_args=["kubectl", "get", "job", job_id, "-n", "cloud", "-o", "json"])
+    job, _ = subprocess_run(cmd_args=["kubectl", "get", "job", k8_normalize_name(job_id), "-n", "cloud", "-o", "json"])
+    assert job["metadata"]["labels"]["analitico.ai/item-id"] == item.id
     return job
 
 
