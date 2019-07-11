@@ -14,7 +14,7 @@ import analitico.utilities
 from analitico import AnaliticoException
 from analitico.factory import Factory
 from analitico.schema import generate_schema
-from analitico.utilities import read_json, read_text
+from analitico.utilities import read_json, read_text, id_generator
 from analitico.pandas import pd_read_csv
 
 from .items import ItemMixin, ItemAssetsMixin, ASSETS_CLASS_DATA
@@ -28,7 +28,7 @@ from .token import get_workspace_token
 
 
 def generate_dataset_id():
-    return analitico.DATASET_PREFIX + get_random_string()
+    return analitico.DATASET_PREFIX + id_generator()
 
 
 class Dataset(ItemMixin, ItemAssetsMixin, models.Model):

@@ -14,7 +14,7 @@ from analitico import AnaliticoException
 from analitico.factory import Factory
 from analitico.constants import ACTION_PREDICT, ACTION_DEPLOY
 from analitico.plugin import PluginError
-from analitico.utilities import time_ms, read_json, set_dict_dot
+from analitico.utilities import time_ms, read_json, set_dict_dot, id_generator
 
 from api.k8 import k8_build, k8_deploy
 
@@ -30,7 +30,7 @@ from .notebook import Notebook, nb_run
 
 
 def generate_endpoint_id():
-    return analitico.ENDPOINT_PREFIX + get_random_string()
+    return analitico.ENDPOINT_PREFIX + id_generator()
 
 
 class Endpoint(ItemMixin, ItemAssetsMixin, models.Model):

@@ -9,6 +9,7 @@ from django.utils.crypto import get_random_string
 
 import analitico
 from analitico import logger
+from analitico.utilities import id_generator
 
 from .user import User
 
@@ -18,7 +19,7 @@ from .user import User
 
 
 def generate_token_id():
-    return analitico.TOKEN_PREFIX + get_random_string()
+    return analitico.TOKEN_PREFIX + id_generator()
 
 
 class Token(models.Model):

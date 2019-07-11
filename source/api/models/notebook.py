@@ -23,7 +23,7 @@ import analitico.plugin
 import analitico.utilities
 
 from analitico.factory import Factory
-from analitico.utilities import save_json, read_json, get_dict_dot, time_ms, subprocess_run
+from analitico.utilities import save_json, read_json, get_dict_dot, time_ms, subprocess_run, id_generator
 from analitico.exceptions import AnaliticoException
 
 from .items import ItemMixin, ItemAssetsMixin
@@ -42,7 +42,7 @@ NOTEBOOK_MIME_TYPE = "application/x-ipynb+json"
 
 
 def generate_notebook_id():
-    return analitico.NOTEBOOK_PREFIX + get_random_string()
+    return analitico.NOTEBOOK_PREFIX + id_generator()
 
 
 class Notebook(ItemMixin, ItemAssetsMixin, models.Model):

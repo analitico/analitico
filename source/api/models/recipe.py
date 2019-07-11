@@ -8,13 +8,14 @@ import analitico
 import analitico.plugin
 import api
 
+from analitico.utilities import id_generator
 from .items import ItemMixin
 from .workspace import Workspace
 from .model import Model, Job
 
 
 def generate_recipe_id():
-    return analitico.RECIPE_PREFIX + get_random_string()
+    return analitico.RECIPE_PREFIX + id_generator()
 
 
 class Recipe(ItemMixin, models.Model):

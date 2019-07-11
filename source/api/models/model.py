@@ -13,7 +13,7 @@ from analitico.factory import Factory
 from analitico.constants import ACTION_TRAIN
 from analitico.status import STATUS_RUNNING, STATUS_COMPLETED, STATUS_FAILED
 from analitico.exceptions import AnaliticoException
-from analitico.utilities import read_json
+from analitico.utilities import read_json, id_generator
 
 from .items import ItemMixin, ItemAssetsMixin
 from .workspace import Workspace
@@ -26,7 +26,7 @@ from .notebook import nb_run
 
 
 def generate_model_id():
-    return analitico.MODEL_PREFIX + get_random_string()
+    return analitico.MODEL_PREFIX + id_generator()
 
 
 class Model(ItemMixin, ItemAssetsMixin, models.Model):
