@@ -87,6 +87,10 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
                 # TODO figure out why the payload in the exception above is flattened when the error is reported
                 # raise exceptions.ValidationError(_('The specified group does not exist or the user does not belong to the group.'))
         workspace.save()
+
+        # provision storage for this workspace
+        api.models.drive.dr_create_workspace_storage(workspace)
+
         return workspace
 
     def update(self, instance, validated_data):
