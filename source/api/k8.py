@@ -333,7 +333,7 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
         configs["build_command"] = str(["./scripts/builder-start.sh", item.id, model.id])
 
     if job_action == analitico.ACTION_RUN_AND_BUILD:
-        configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-build-and-run-template.yaml")
+        configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-run-and-build-template.yaml")
 
     if not "job_template" in configs:
         raise AnaliticoException(f"Unknown job action: {job_action}")

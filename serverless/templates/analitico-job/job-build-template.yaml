@@ -14,7 +14,7 @@ spec:
   template:
     spec:
       containers:
-      - name: {job_id_slug}
+      - name: build-job-container
         image: eu.gcr.io/analitico-api/analitico-website:production
         command: {build_command}
         env:

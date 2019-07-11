@@ -13,7 +13,7 @@ spec:
   template:
     spec:
       containers:
-      - name: {job_id_slug}
+      - name: run-job-container
         image: eu.gcr.io/analitico-api/analitico-job:production
         command: {run_command}
         env:
