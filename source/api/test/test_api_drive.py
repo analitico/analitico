@@ -32,7 +32,7 @@ class DriveTests(AnaliticoApiTestCase):
         return {
             "storage": {
                 "driver": "hetzner-webdav",
-                "storagebox_id": 196_299,
+                "storagebox_id": "196299",
                 "url": "https://u208199.your-storagebox.de",
                 "credentials": {"username": "u208199", "password": "AyG9OxeeuXr0XpqF"},
             }
