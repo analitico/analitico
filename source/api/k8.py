@@ -20,7 +20,7 @@ from rest_framework.response import Response
 import analitico.utilities
 
 from analitico import AnaliticoException, logger
-from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run, read_json
+from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run, read_json, copytree
 from api.factory import factory
 from api.models import ItemMixin, Job, Recipe, Model
 from api.models.job import generate_job_id
@@ -61,48 +61,28 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None) -> di
     item_id_slug = k8_normalize_name(item.id)
     target_id_slug = k8_normalize_name(target.id)
 
-    # follow symlink when copying a customer's drive contents?
-    symlinks = True
-
-    with tempfile.TemporaryDirectory(prefix="build") as tmpdirname:
-        # directory where template files are copied must not exist yet for copytree
-        docker_dst = os.path.join(tmpdirname, "docker")
-
+    with tempfile.TemporaryDirectory(prefix="build_") as tmpdirname:
         # copy items from the template used to dockerize
-        shutil.copytree(K8_TEMPLATE_DIR, docker_dst)
+        analitico.utilities.copytree(K8_TEMPLATE_DIR, tmpdirname)
 
         # copy current contents of this recipe's files on the attached drive to our docker directory
         item_drive_path = os.environ.get("ANALITICO_DRIVE", None)
         if item_drive_path:
-            try:
-                item_drive_path = os.path.join(item_drive_path, f"{item.type}s/{item.id}")
-                for name in os.listdir(item_drive_path):
-                    src_name = os.path.join(item_drive_path, name)
-                    dst_name = os.path.join(docker_dst, name)
-                    try:
-                        if symlinks and os.path.islink(src_name):
-                            linkto = os.readlink(src_name)
-                            # TODO verify that customer symlinks are legitimate #291
-                            os.symlink(linkto, dst_name)
-                        elif os.path.isdir(src_name):
-                            shutil.copytree(src_name, dst_name, symlinks)
-                        else:
-                            shutil.copy2(src_name, dst_name)
-                    except OSError as exc:
-                        logger.error(f"Could not copy {src_name} because: {exc}")
-            except Exception as exc:
-                logger.error(f"k8_build could not copy files from {item_drive_path}, exception: {exc}")
+            item_drive_path = os.path.join(item_drive_path, f"{item.type}s/{item.id}")
+            analitico.utilities.copytree(item_drive_path, tmpdirname)
         else:
             logger.error(f"k8_build can't find environment variable ANALITICO_DRIVE and cannot copy source item files.")
 
         # copy analitico SDK and s24 helper methods
         # TODO /analitico and /s24 need to be built into standalone libraries
-        shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(docker_dst, "analitico"))
-        shutil.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(docker_dst, "s24"))
+        analitico.utilities.copytree(
+            os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(tmpdirname, "analitico")
+        )
+        analitico.utilities.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(tmpdirname, "s24"))
 
         # extract code from notebook
         notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
-        notebook_name = os.path.join(docker_dst, notebook_name)
+        notebook_name = os.path.join(tmpdirname, notebook_name)
         notebook = read_json(notebook_name)
         if not notebook:
             raise AnaliticoException(
@@ -114,16 +94,16 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None) -> di
         logger.info(f"scripts:{script}\nsource:\n{source}")
 
         # overwrite template files
-        save_json(notebook, os.path.join(docker_dst, "notebook.ipynb"), indent=2)
-        save_text(source, os.path.join(docker_dst, "notebook.py"))
-        save_text(script, os.path.join(docker_dst, "notebook.sh"))
+        save_json(notebook, os.path.join(tmpdirname, "notebook.ipynb"), indent=2)
+        save_text(source, os.path.join(tmpdirname, "notebook.py"))
+        save_text(script, os.path.join(tmpdirname, "notebook.sh"))
 
         # docker build docker image need to be lowercase
         image_name = f"eu.gcr.io/analitico-api/{item_id_slug}:{target_id_slug}"
 
         # build docker image, save id temporary file...
-        docker_build_args = ["docker", "build", "-t", image_name, docker_dst]
-        subprocess_run(docker_build_args, cwd=docker_dst)
+        docker_build_args = ["docker", "build", "-t", image_name, tmpdirname]
+        subprocess_run(docker_build_args, cwd=tmpdirname)
 
         # push docker image to registry
         docker_push_args = ["docker", "push", image_name]
