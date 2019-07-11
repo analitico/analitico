@@ -330,7 +330,18 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
         # then build and push a docker from it and save the docker's information in the model.
         configs["target_id"] = model.id
         configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-build-template.yaml")
-        configs["build_command"] = str(["./scripts/builder-start.sh", item.id, model.id])
+        configs["build_command"] = str(["/home/www/analitico/scripts/builder-start.sh", item.id, model.id])
+
+        # the run job needs to run using an image of the code that is the same of what we are running here
+        # gitlab tags our build with the environment variable ANALITICO_COMMIT_SHA
+        # so we can use that to make sure that the build image is the same
+        # TODO pipeline / we should build site, job, jupyter, baseline dockers with coordinate tag #297
+        commit_sha = os.environ.get("ANALITICO_COMMIT_SHA", None)
+        if not commit_sha:
+            msg = "k8_jobs_create - ANALITICO_COMMIT_SHA is not defined, will build using :latest docker image instead."
+            logger.warning(msg)
+        build_image_tag = f"@sha256:{commit_sha}" if commit_sha else ":latest"
+        configs["build_image"] = f"eu.gcr.io/analitico-api/analitico-website{build_image_tag}"
 
     if job_action == analitico.ACTION_RUN_AND_BUILD:
         configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-run-and-build-template.yaml")

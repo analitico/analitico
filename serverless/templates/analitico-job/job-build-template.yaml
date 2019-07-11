@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: build-job-container
-        image: eu.gcr.io/analitico-api/analitico-website:production
+        image: {build_image}
         command: {build_command}
         env:
         - name: ANALITICO_WORKSPACE_ID

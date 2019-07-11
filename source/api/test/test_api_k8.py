@@ -296,4 +296,3 @@ class K8Tests(AnaliticoApiTestCase):
         # k8s / write unit tests for k8_jobs_create #296
         # k8_jobs_create...
         pass
-        

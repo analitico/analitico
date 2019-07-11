@@ -34,7 +34,7 @@ spec:
           readOnly: false
       # then build item into a docker, push to registry, store docker information
       - name: build-job-container
-        image: eu.gcr.io/analitico-api/analitico-website:production
+        image: {build_image}
         command: {build_command}
         env:
         - name: ANALITICO_WORKSPACE_ID
