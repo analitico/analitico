@@ -4,6 +4,8 @@ import os
 import os.path
 import requests
 import urllib
+import io
+import base64
 
 # pylint: disable=no-member
 
@@ -155,6 +157,14 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
         },
     )
 
+    # ssh key to access to the drive by rsync (+ssh) or sftp
+    private_key, public_key = analitico.utilities.ssh_key_generator()
+    # upload the public key onto the drive
+    ssh_path = os.path.join(subaccount_path, ".ssh")
+    if not driver.exists(ssh_path):
+        driver.mkdir(ssh_path)
+    driver.upload(public_key, os.path.join(ssh_path, "authorized_keys"))
+
     # save subaccount information in the workspace
     subaccount_storage_conf = {
         "driver": "hetzner-webdav",
@@ -162,7 +172,12 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
         "drive_id": choosen_drive.id,
         "account_id": json["subaccount"]["accountid"],
         "url": "https://" + json["subaccount"]["server"],
-        "credentials": {"username": json["subaccount"]["username"], "password": json["subaccount"]["password"]},
+        "credentials": {
+            "username": json["subaccount"]["username"], 
+            "password": json["subaccount"]["password"],
+            "ssh_private_key": str(base64.b64encode(private_key), "ascii"),
+            "ssh_public_key": str(base64.b64encode(public_key), "ascii"),
+        },
     }
     workspace.set_attribute("storage", subaccount_storage_conf)
     workspace.save()
