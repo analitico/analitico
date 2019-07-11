@@ -10,7 +10,7 @@ class Command(BaseCommand):
         # https://docs.djangoproject.com/en/2.1/howto/custom-management-commands/
         # https://docs.python.org/3/library/argparse.html#module-argparse
         self.help = "Take a recipe_id followed by a model_it and build a docker of the recipe into the model."
-        parser.add_argument("item_id", nargs="2", type=str, help=self.help)
+        parser.add_argument("item_id", nargs="*", type=str, help=self.help)
 
     def handle(self, *args, **options):
         item_id = options["item_id"][0]
