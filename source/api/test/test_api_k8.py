@@ -277,3 +277,23 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertIn(result["_source"]["level"], levels.keys())
             del levels[result["_source"]["level"]]
             self.assertIn(message, result["_source"]["msg"])
+
+    ##
+    ## K8s Jobs
+    ##
+
+    def test_k8s_jobs_run(self):
+        # k8s / write unit tests for k8_jobs_create #296
+        # k8_jobs_create...
+        pass
+
+    def test_k8s_jobs_build(self):
+        # k8s / write unit tests for k8_jobs_create #296
+        # k8_jobs_create...
+        pass
+
+    def test_k8s_jobs_run_and_build(self):
+        # k8s / write unit tests for k8_jobs_create #296
+        # k8_jobs_create...
+        pass
+        
