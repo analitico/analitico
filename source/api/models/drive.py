@@ -173,7 +173,7 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
         "account_id": json["subaccount"]["accountid"],
         "url": "https://" + json["subaccount"]["server"],
         "credentials": {
-            "username": json["subaccount"]["username"], 
+            "username": json["subaccount"]["username"],
             "password": json["subaccount"]["password"],
             "ssh_private_key": str(base64.b64encode(private_key), "ascii"),
             "ssh_public_key": str(base64.b64encode(public_key), "ascii"),

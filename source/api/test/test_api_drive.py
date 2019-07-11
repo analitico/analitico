@@ -141,14 +141,15 @@ class DriveTests(AnaliticoApiTestCase):
                 save_text("this is a test content", f1_name)
                 f2_name = os.path.join(d, analitico.utilities.id_generator() + ".txt")
                 save_text("this is another test content", f2_name)
-                
+
                 sync_cmd = [
-                    "rsync", 
-                    "--recursive", 
+                    "rsync",
+                    "--recursive",
                     "--progress",
-                    "-e", f"'ssh -p23 -o StrictHostKeyChecking=no -i {private_key_name}'", 
+                    "-e",
+                    f"'ssh -p23 -o StrictHostKeyChecking=no -i {private_key_name}'",
                     f"{d}/",
-                    f"{storage_url}:./"
+                    f"{storage_url}:./",
                 ]
                 subprocess_run(sync_cmd)
 
@@ -163,15 +164,16 @@ class DriveTests(AnaliticoApiTestCase):
                 driver.upload(io.BytesIO(b"This is Goofy"), f4_name)
 
                 sync_cmd = [
-                    "rsync", 
-                    "--recursive", 
+                    "rsync",
+                    "--recursive",
                     "--progress",
-                    "-e", f"'ssh -p23 -o StrictHostKeyChecking=no -i {private_key_name}'", 
+                    "-e",
+                    f"'ssh -p23 -o StrictHostKeyChecking=no -i {private_key_name}'",
                     f"{storage_url}:./",
-                    f"{d}/"
+                    f"{d}/",
                 ]
                 subprocess_run(sync_cmd)
-                
+
                 self.assertTrue(Path(os.path.join(d, f3_name)).exists())
                 self.assertTrue(Path(os.path.join(d, f4_name)).exists())
 
@@ -181,4 +183,3 @@ class DriveTests(AnaliticoApiTestCase):
         finally:
             if delete:
                 dr_delete_workspace_storage(self.ws1)
-
