@@ -13,6 +13,7 @@ import base64
 import time
 from pathlib import Path
 
+from django.test import tag
 from analitico.utilities import subprocess_run, save_text
 from django.utils.crypto import get_random_string
 from rest_framework import status
@@ -108,6 +109,7 @@ class DriveTests(AnaliticoApiTestCase):
             if delete:
                 dr_delete_workspace_storage(self.ws1)
 
+    @tag("slow")
     def test_drive_base_rsync(self):
         delete = False
         try:
