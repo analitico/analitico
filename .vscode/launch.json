@@ -97,6 +97,20 @@
                 "jb_0rwHrO8vpTig"
             ],
             "django": true
+        },
+        {
+            "name": "Builder",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/source",
+            "program": "${workspaceFolder}/source/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "builder",
+                "jb_0rwHrO8vpTig",
+                "ml_OYioM1MCg3AG"
+            ],
+            "django": true
         }
     ]
 }
