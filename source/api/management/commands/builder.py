@@ -5,7 +5,6 @@ from api.k8 import k8_build_v2
 
 
 class Command(BaseCommand):
-
     def add_arguments(self, parser):
         # https://docs.djangoproject.com/en/2.1/howto/custom-management-commands/
         # https://docs.python.org/3/library/argparse.html#module-argparse

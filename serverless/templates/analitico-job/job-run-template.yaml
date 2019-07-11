@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: {job_id_slug}
-        image: eu.gcr.io/analitico-api/analitico-job
+        image: eu.gcr.io/analitico-api/analitico-job:production
         command: {job_command}
         env:
         - name: ANALITICO_WORKSPACE_ID

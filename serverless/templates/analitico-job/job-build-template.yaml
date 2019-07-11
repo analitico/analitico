@@ -6,6 +6,7 @@ metadata:
   labels:
     analitico.ai/workspace-id: {workspace_id}
     analitico.ai/item-id: {item_id}
+    analitico.ai/target-id: {target_id}
     analitico.ai/job-id: {job_id}
 spec:
   backoffLimit: 4
@@ -24,8 +25,8 @@ spec:
           value: $ANALITICO_DRIVE/{item_type}s/{item_id}
         - name: ANALITICO_JOB_ID
           value: {job_id}
-        - name: ANALITICO_MODEL_ID
-          value: {model_id}
+        - name: ANALITICO_TARGET_ID
+          value: {target_id}
         - name: ANALITICO_DRIVE
           value: /mnt/analitico-drive
         volumeMounts:
