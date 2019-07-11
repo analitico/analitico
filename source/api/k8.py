@@ -20,7 +20,7 @@ from rest_framework.response import Response
 import analitico.utilities
 
 from analitico import AnaliticoException, logger
-from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run, read_json, copytree
+from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run, read_json, copy_directory
 from api.factory import factory
 from api.models import ItemMixin, Job, Recipe, Model
 from api.models.job import generate_job_id
@@ -63,22 +63,20 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None) -> di
 
     with tempfile.TemporaryDirectory(prefix="build_") as tmpdirname:
         # copy items from the template used to dockerize
-        analitico.utilities.copytree(K8_TEMPLATE_DIR, tmpdirname)
+        copy_directory(K8_TEMPLATE_DIR, tmpdirname)
 
         # copy current contents of this recipe's files on the attached drive to our docker directory
         item_drive_path = os.environ.get("ANALITICO_DRIVE", None)
         if item_drive_path:
             item_drive_path = os.path.join(item_drive_path, f"{item.type}s/{item.id}")
-            analitico.utilities.copytree(item_drive_path, tmpdirname)
+            copy_directory(item_drive_path, tmpdirname)
         else:
             logger.error(f"k8_build can't find environment variable ANALITICO_DRIVE and cannot copy source item files.")
 
         # copy analitico SDK and s24 helper methods
         # TODO /analitico and /s24 need to be built into standalone libraries
-        analitico.utilities.copytree(
-            os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(tmpdirname, "analitico")
-        )
-        analitico.utilities.copytree(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(tmpdirname, "s24"))
+        copy_directory(os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(tmpdirname, "analitico"))
+        copy_directory(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(tmpdirname, "s24"))
 
         # extract code from notebook
         notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
