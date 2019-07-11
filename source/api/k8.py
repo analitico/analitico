@@ -307,12 +307,12 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
     configs["item_id"] = item.id
     configs["item_type"] = item.type
 
-    if job_action == analitico.ACTION_RUN:
+    if job_action == analitico.ACTION_RUN or job_action == analitico.ACTION_RUN_AND_BUILD:
         # pass command that should be executed on job docker
         configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-run-template.yaml")
-        configs["job_command"] = str(["python3", "job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"])
+        configs["run_command"] = str(["python3", "job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"])
 
-    elif job_action == analitico.ACTION_BUILD:
+    if job_action == analitico.ACTION_BUILD or job_action == analitico.ACTION_RUN_AND_BUILD:
         # create a model which will host the built recipe which will contain a snapshot
         # of the assets in the recipe at the moment when the model is built. the recipe's
         # notebook is not run when we build, if needed it must be run beforehand.
@@ -330,9 +330,12 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
         # then build and push a docker from it and save the docker's information in the model.
         configs["target_id"] = model.id
         configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-build-template.yaml")
-        configs["job_command"] = str(["./scripts/builder-start.sh", item.id, model.id])
+        configs["build_command"] = str(["./scripts/builder-start.sh", item.id, model.id])
 
-    else:
+    if job_action == analitico.ACTION_RUN_AND_BUILD:
+        configs["job_template"] = os.path.join(K8_JOB_TEMPLATE_DIR, "job-build-and-run-template.yaml")
+
+    if not "job_template" in configs:
         raise AnaliticoException(f"Unknown job action: {job_action}")
 
     # k8s secret containing the credentials for the workspace mount

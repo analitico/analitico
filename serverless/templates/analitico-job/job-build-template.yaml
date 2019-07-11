@@ -9,13 +9,14 @@ metadata:
     analitico.ai/target-id: {target_id}
     analitico.ai/job-id: {job_id}
 spec:
+  # TODO k8s / investigate if job.yaml needs backoffLimit: 4 #295
   backoffLimit: 4
   template:
     spec:
       containers:
       - name: {job_id_slug}
         image: eu.gcr.io/analitico-api/analitico-website:production
-        command: {job_command}
+        command: {build_command}
         env:
         - name: ANALITICO_WORKSPACE_ID
           value: {workspace_id}

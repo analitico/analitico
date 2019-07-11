@@ -13,6 +13,7 @@ spec:
   template:
     spec:
       containers:
+      # first run the notebook or recipe in an untrusted docker
       - name: {job_id_slug}
         image: eu.gcr.io/analitico-api/analitico-job:production
         command: {run_command}
@@ -25,6 +26,27 @@ spec:
           value: $ANALITICO_DRIVE/{item_type}s/{item_id}
         - name: ANALITICO_JOB_ID
           value: {job_id}
+        - name: ANALITICO_DRIVE
+          value: /mnt/analitico-drive
+        volumeMounts:
+        - name: analitico-drive
+          mountPath: /mnt/analitico-drive
+          readOnly: false
+      # then build item into a docker, push to registry, store docker information
+      - name: {job_id_slug}
+        image: eu.gcr.io/analitico-api/analitico-website:production
+        command: {build_command}
+        env:
+        - name: ANALITICO_WORKSPACE_ID
+          value: {workspace_id}
+        - name: ANALITICO_ITEM_ID
+          value: {item_id}
+        - name: ANALITICO_ITEM_PATH
+          value: $ANALITICO_DRIVE/{item_type}s/{item_id}
+        - name: ANALITICO_JOB_ID
+          value: {job_id}
+        - name: ANALITICO_TARGET_ID
+          value: {target_id}
         - name: ANALITICO_DRIVE
           value: /mnt/analitico-drive
         volumeMounts:
