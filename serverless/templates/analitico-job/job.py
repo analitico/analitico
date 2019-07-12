@@ -66,3 +66,5 @@ except Exception as exc:
     raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
 
 logging.info("Done")
+
+exit(code=0)

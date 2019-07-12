@@ -8,8 +8,8 @@ metadata:
     analitico.ai/item-id: {item_id}
     analitico.ai/job-id: {job_id}
 spec:
-  # TODO k8s / investigate if job.yaml needs backoffLimit: 4 #295
-  backoffLimit: 4
+  # no retries
+  backoffLimit: 0
   template:
     spec:
       containers:

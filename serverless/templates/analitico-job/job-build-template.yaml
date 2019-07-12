@@ -9,10 +9,20 @@ metadata:
     analitico.ai/target-id: {target_id}
     analitico.ai/job-id: {job_id}
 spec:
-  # TODO k8s / investigate if job.yaml needs backoffLimit: 4 #295
-  backoffLimit: 4
+  # no retries
+  backoffLimit: 0
   template:
     spec:
+      restartPolicy: Never
+      initContainers:
+      # run docker deamon in support to the builder
+      - name: docker-deamon
+        image: docker:stable-dind
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: docker-storage
+          mountPath: /var/lib/docker
       containers:
       # run docker deamon in support to the builder
       - name: docker-deamon
@@ -44,7 +54,6 @@ spec:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive
           readOnly: false
-      restartPolicy: Never
       volumes:
       - name: analitico-drive
         flexVolume:
