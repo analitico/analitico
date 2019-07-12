@@ -14,6 +14,14 @@ spec:
   template:
     spec:
       containers:
+      # run docker deamon in support to the builder
+      - name: docker-deamon
+        image: docker:stable-dind
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: docker-storage
+          mountPath: /var/lib/docker
       - name: build-job-container
         image: {build_image}
         command: {build_command}
@@ -30,6 +38,8 @@ spec:
           value: {target_id}
         - name: ANALITICO_DRIVE
           value: /mnt/analitico-drive
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
         volumeMounts:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive
@@ -45,3 +55,5 @@ spec:
           options:
             networkPath: {volume_network_path}
             mountOptions: dir_mode=0755,file_mode=0644,noperm
+      - name: docker-storage
+        emptyDir: {{}}
