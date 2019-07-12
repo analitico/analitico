@@ -340,7 +340,7 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
         if not commit_sha:
             msg = "k8_jobs_create - ANALITICO_COMMIT_SHA is not defined, will build using :latest docker image instead."
             logger.warning(msg)
-        build_image_tag = f"@sha256:{commit_sha}" if commit_sha else ":latest"
+        build_image_tag = f":{commit_sha}" if commit_sha else ":latest"
         configs["build_image"] = f"eu.gcr.io/analitico-api/analitico-website{build_image_tag}"
 
     if job_action == analitico.ACTION_RUN_AND_BUILD:
