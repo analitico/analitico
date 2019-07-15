@@ -153,7 +153,7 @@ class DriveTests(AnaliticoApiTestCase):
                     f"{d}/",
                     f"{storage_url}:./",
                 ]
-                subprocess_run(sync_cmd)
+                subprocess_run(" ".join(sync_cmd), shell=True)
 
                 self.assertTrue(driver.exists(f"/{os.path.basename(f1_name)}"))
                 self.assertTrue(driver.exists(f"/{os.path.basename(f2_name)}"))
@@ -174,7 +174,7 @@ class DriveTests(AnaliticoApiTestCase):
                     f"{storage_url}:./",
                     f"{d}/",
                 ]
-                subprocess_run(sync_cmd)
+                subprocess_run(" ".join(sync_cmd), shell=True)
 
                 self.assertTrue(Path(os.path.join(d, f3_name)).exists())
                 self.assertTrue(Path(os.path.join(d, f4_name)).exists())
