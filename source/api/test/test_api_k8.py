@@ -249,7 +249,7 @@ class K8Tests(AnaliticoApiTestCase):
             "error": logging.ERROR,
             "critical": logging.CRITICAL,
         }
-        message = f"test-{start_time}"
+        message = f"test_k8s_get_logs-{start_time}"
         for level, level_number in levels.items():
             response = requests.get(
                 endpoint_echo, params={"message": f"{message}-{level}", "level": level_number}, verify=False
@@ -264,7 +264,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
             elapsed = round(time.time() - start_time, 2)
-            if response.data["hits"]["total"] == expected_results:
+            if len(response.data["hits"]["hits"]) == expected_results:
                 insist = False
                 logging.log(logging.INFO, msg=f"Logs indexed in {elapsed} secs")
             else:
@@ -272,7 +272,11 @@ class K8Tests(AnaliticoApiTestCase):
                 insist = elapsed <= 60
 
         # check results from Elastic Search
-        self.assertEqual(response.data["hits"]["total"], expected_results)
+        hits_len = len(response.data["hits"]["hits"])
+        hits_total = response.data["hits"]["total"]
+        self.assertEqual(hits_len, expected_results)
+        self.assertEqual(hits_total, hits_len, f"Duplicated logs found. Retrieved {hits_len} but found {hits_total}.")
+
         for result in response.data["hits"]["hits"]:
             self.assertIn(result["_source"]["level"], levels.keys())
             del levels[result["_source"]["level"]]
