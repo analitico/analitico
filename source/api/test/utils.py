@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from analitico import ACTION_PROCESS
-from api.models import Token, User, Workspace
+from api.models import Token, User, Workspace, Drive
 from analitico.utilities import read_json, get_dict_dot
 
 # pylint: disable=no-member
@@ -24,6 +24,17 @@ NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
 @pytest.mark.django_db
 class AnaliticoApiTestCase(APITestCase):
     """ Base class for testing analitico APIs """
+
+    def get_storage_conf(self):
+        """ Configuration for the storage box for testing """
+        return {
+            "storage": {
+                "driver": "hetzner-webdav",
+                "storagebox_id": "196299",
+                "url": "https://u208199.your-storagebox.de",
+                "credentials": {"username": "u208199", "password": "AyG9OxeeuXr0XpqF"},
+            }
+        }
 
     def assertApiResponse(self, response, status_code=status.HTTP_200_OK):
         """ Assert that the response has succeded and contains "data" """
@@ -152,6 +163,10 @@ class AnaliticoApiTestCase(APITestCase):
         self.ws2 = Workspace.objects.create(pk="ws_user2", user=self.user2, title="Workspace2")
         self.ws3 = Workspace.objects.create(pk="ws_user3", user=self.user3, title="Workspace3")
         self.ws4 = Workspace.objects.create(pk="ws_user4", user=self.user4, title="Workspace4")
+
+        self.drive = Drive(id="dr_box002_test", attributes=self.get_storage_conf())
+        self.drive.save()
+
 
     def assertStatusCode(self, response, status_code=status.HTTP_200_OK):
         if response.status_code != status_code:

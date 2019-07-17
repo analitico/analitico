@@ -89,7 +89,8 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
         workspace.save()
 
         # provision storage for this workspace
-        api.models.drive.dr_create_workspace_storage(workspace)
+        if not workspace.get_attribute("storage"):
+            api.models.drive.dr_create_workspace_storage(workspace)
 
         return workspace
 

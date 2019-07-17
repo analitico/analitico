@@ -24,26 +24,12 @@ from .utils import AnaliticoApiTestCase
 class DriveTests(AnaliticoApiTestCase):
     """ Test allocating storage on Hetzner storage boxes, etc. """
 
-    drive: Drive = None
-
     driver: api.libcloud.WebdavStorageDriver = None
-
-    def get_storage_conf(self):
-        return {
-            "storage": {
-                "driver": "hetzner-webdav",
-                "storagebox_id": "196299",
-                "url": "https://u208199.your-storagebox.de",
-                "credentials": {"username": "u208199", "password": "AyG9OxeeuXr0XpqF"},
-            }
-        }
 
     def setUp(self):
         self.setup_basics()
-        self.drive = api.models.Drive(id="dr_box002_test", attributes=self.get_storage_conf())
-        self.drive.save()
         self.driver = hetzner_webdav_driver(self.drive)
-
+        
     def test_drive_create_then_delete_directory(self):
         dir_name = "tst_dir_" + get_random_string().lower()
         # create then delete directory
