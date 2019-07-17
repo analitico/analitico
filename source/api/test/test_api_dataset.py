@@ -45,7 +45,7 @@ class DatasetTests(AnaliticoApiTestCase):
         url = reverse("api:dataset-asset-detail", args=(dataset_id, asset_class, asset_name))
         response = self.upload_file(url, asset_name, "text/csv", token=self.token1)
         self.assertEqual(response.data[0]["id"], asset_name)
-        path = "workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
+        path = "/workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
         self.assertEqual(response.data[0]["path"], path)
         return url, response
 
