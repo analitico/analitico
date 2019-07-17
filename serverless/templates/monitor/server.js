@@ -137,7 +137,7 @@ function getCronFunction(taskConfig, options) {
                     if (error) {
                         throw error;
                     }
-                    
+
                     // check status code
                     if (response.statusCode !== 200) {
                         return triggerError(`${name}: status code ${response.statusCode}, body ${body}`, taskConfig, onlyNotify);
@@ -263,7 +263,8 @@ function triggerError(message, taskConfig, onlyNotify) {
     if (!onlyNotify) {
         // set error
         setTaskStatus(taskConfig.name, "error", {
-            lastError: message
+            lastError: message,
+            lastCheckAt:  moment().format("YYYY-MM-DDTHH:mm:ssZZ")
         })
     }
     notifyOnSlack(message);
