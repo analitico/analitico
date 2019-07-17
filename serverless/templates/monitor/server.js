@@ -138,14 +138,13 @@ function getCronFunction(taskConfig, options) {
                         throw error;
                     }
                     
-
                     // check status code
                     if (response.statusCode !== 200) {
-                        triggerError(`${name}: status code ${response.statusCode}, body ${body}`, taskConfig, onlyNotify);
+                        return triggerError(`${name}: status code ${response.statusCode}, body ${body}`, taskConfig, onlyNotify);
                     }
                     // check if body is present
                     if (!body) {
-                        triggerError(`${name}: empty body!`, taskConfig, onlyNotify);
+                        return triggerError(`${name}: empty body!`, taskConfig, onlyNotify);
                     }
 
                     if (response.timingPhases.total > requestMaxTime) {
