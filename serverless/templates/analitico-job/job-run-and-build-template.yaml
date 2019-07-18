@@ -33,6 +33,7 @@ spec:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive
           readOnly: false
+      containers:
       # run docker deamon in support to the builder
       - name: docker-deamon
         image: docker:stable-dind
@@ -41,7 +42,6 @@ spec:
         volumeMounts:
         - name: docker-storage
           mountPath: /var/lib/docker
-      containers:
       # then build item into a docker, push to registry, store docker information
       - name: build-job-container
         image: {build_image}

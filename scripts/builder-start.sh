@@ -12,3 +12,5 @@ cd $BASEDIR/../source
 
 echo "Starting builder..."
 ./manage.py builder $1 $2
+
+exit 0
