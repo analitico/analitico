@@ -2,7 +2,7 @@ FROM python:3.6.9-alpine3.10
 
 COPY ./analitico /home/www/analitico
 COPY ./analitico-ci /home/www/analitico-ci
-COPY requirements.txt requirements.txt
+COPY requirements.txt /home/www/analitico/requirements.txt
 
 RUN apk update && apk upgrade
 RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime && export DEBIAN_FRONTEND=noninteractive && apk add tzdata
