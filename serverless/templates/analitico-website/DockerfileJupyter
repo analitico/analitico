@@ -4,15 +4,15 @@ FROM eu.gcr.io/analitico-api/analitico-website:base
 # create user and change ownership of analitico venv
 WORKDIR /home/www/analitico
 # copy requirements
-COPY ./requirements.txt /home/www/analitico
+COPY ./analitico/requirements.txt /home/www/analitico
 # copy libraries
-COPY ./source/analitico /home/www/analitico/libs/analitico
-COPY ./source/s24 /home/www/analitico/libs/s24
+COPY ./analitico/source/analitico /home/www/analitico/libs/analitico
+COPY ./analitico/source/s24 /home/www/analitico/libs/s24
 # copy script to launch jupyter
-COPY ./scripts/docker-jupyter.sh /home/www/analitico
+COPY ./analitico/scripts/docker-jupyter.sh /home/www/analitico
 # use self signed certificates
-COPY ./analitico-ci/ssl/analitico.ai.crt /home/www/analitico/analitico.ai.crt
-COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico/analitico.ai.key
+COPY ./analitico/analitico-ci/ssl/analitico.ai.crt /home/www/analitico/analitico.ai.crt
+COPY ./analitico/analitico-ci/ssl/analitico.ai.key /home/www/analitico/analitico.ai.key
 # install new requirements, if any
 RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt;'
 # switch user

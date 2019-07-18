@@ -6,7 +6,8 @@ image: docker:latest
 
 variables:
   BUILD_IMAGE_URL: eu.gcr.io/analitico-api/analitico-website:$CI_COMMIT_SHA # ${BUILD_IMAGE_URL}
-  BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-website:$CI_COMMIT_SHA-jupyter # ${BUILD_JUPYTER_IMAGE_URL}
+  BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-jupyter:$CI_COMMIT_SHA # ${BUILD_JUPYTER_IMAGE_URL}
+  ANALITICO_BUILDER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-builder:$CI_COMMIT_SHA
 services:
 - docker:dind
 
@@ -45,6 +46,8 @@ build_dev:
     # pwd /builds/analitico/analitico
     # check out corrent commit because repo may have gone further
     - git checkout --recurse-submodules $CI_COMMIT_SHA
+    # go back
+    - cd ..
     # clone secrets
     - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
     # we have /builds/analitico/analitico-ci
@@ -55,21 +58,37 @@ build_dev:
     # authentication for Google Cloud Container Registry
     - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
     - gcloud -q auth configure-docker
-    # build docker image
+    ##
+    # build analitico-website image
+    ##
     - echo "$(date +'%T') - Build analitico image"
-    - docker build --pull -t $BUILD_IMAGE_URL .
+    - cp ./analitico/serverless/templates/analitico-website/DockerfilePipeline ./DockerfilePipeline
+    - docker build --pull -t $BUILD_IMAGE_URL -f DockerfilePipeline .
     - echo "$(date +'%T') - Finished building analitico image"
-    # push the image to gitlab registry
     - docker push $BUILD_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico image"
-    # build docker jupyter image with same venv
+    ##
+    # build jupyter image
+    ##
     - echo "$(date +'%T') - Build analitico jupyter image"
+    - cp ./analitico/serverless/templates/analitico-website/DockerfileJupyter ./DockerfileJupyter
     - docker build --pull -t $BUILD_JUPYTER_IMAGE_URL -f DockerfileJupyter .
     - echo "$(date +'%T') - Finished building analitico jupyter image"
-    # push docker jupyter
     - docker push $BUILD_JUPYTER_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico jupyter image"
+    ##
+    # build analitico-builder image
+    ##
+    #- echo "$(date +'%T') - Build analitico builder image"
+    # move docker file to "root"
+    #- cp ./analitico/serverless/templates/analitico-builder/Dockerfile ./DockerfileAnaliticoBuilder
+    #- docker build --pull -t $ANALITICO_BUILDER_IMAGE_URL -f DockerfileAnaliticoBuilder .
+    #- echo "$(date +'%T') - Finished building analitico builder image"
+    #- docker push $ANALITICO_BUILDER_IMAGE_URL
+    #- echo "$(date +'%T') - Finished pushing analitico builder image"
+    ## 
     # remove secrets
+    ## 
     - rm -R -f analitico-ci
   only:
     - master

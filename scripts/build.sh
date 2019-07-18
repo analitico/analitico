@@ -4,8 +4,6 @@ set -e
 BASEDIR=$(dirname "$0")
 # Build and test execution
 cd /home/www/analitico/
-# move analitico-ci out of analitico
-mv -f analitico-ci /home/www/
 
 echo "Injecting env"
 source /home/www/analitico-ci/analitico-env.sh
