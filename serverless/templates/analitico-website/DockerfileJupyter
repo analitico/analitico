@@ -11,8 +11,8 @@ COPY ./analitico/source/s24 /home/www/analitico/libs/s24
 # copy script to launch jupyter
 COPY ./analitico/scripts/docker-jupyter.sh /home/www/analitico
 # use self signed certificates
-COPY ./analitico/analitico-ci/ssl/analitico.ai.crt /home/www/analitico/analitico.ai.crt
-COPY ./analitico/analitico-ci/ssl/analitico.ai.key /home/www/analitico/analitico.ai.key
+COPY ./analitico-ci/ssl/analitico.ai.crt /home/www/analitico/analitico.ai.crt
+COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico/analitico.ai.key
 # install new requirements, if any
 RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt;'
 # switch user

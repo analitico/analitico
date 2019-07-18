@@ -79,13 +79,13 @@ build_dev:
     ##
     # build analitico-builder image
     ##
-    #- echo "$(date +'%T') - Build analitico builder image"
+    - echo "$(date +'%T') - Build analitico builder image"
     # move docker file to "root"
-    #- cp ./analitico/serverless/templates/analitico-builder/Dockerfile ./DockerfileAnaliticoBuilder
-    #- docker build --pull -t $ANALITICO_BUILDER_IMAGE_URL -f DockerfileAnaliticoBuilder .
-    #- echo "$(date +'%T') - Finished building analitico builder image"
-    #- docker push $ANALITICO_BUILDER_IMAGE_URL
-    #- echo "$(date +'%T') - Finished pushing analitico builder image"
+    - cp ./analitico/serverless/templates/analitico-builder/Dockerfile ./DockerfileAnaliticoBuilder
+    - docker build --pull -t $ANALITICO_BUILDER_IMAGE_URL -f DockerfileAnaliticoBuilder .
+    - echo "$(date +'%T') - Finished building analitico builder image"
+    - docker push $ANALITICO_BUILDER_IMAGE_URL
+    - echo "$(date +'%T') - Finished pushing analitico builder image"
     ## 
     # remove secrets
     ## 
