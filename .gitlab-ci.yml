@@ -31,7 +31,7 @@ build_dev:
     - ./script.sh --disable-prompts
     - export PATH=/root/google-cloud-sdk/bin:$PATH
     # remove repo
-    - rm -rf /builds/analitico/analitico
+    - rm -rf /builds
     - mkdir -p /builds/analitico/
     - cd /builds/analitico/
     # clone with submodule 
@@ -50,7 +50,7 @@ build_dev:
     - cd ..
     # clone secrets
     - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    # we have /builds/analitico/analitico-ci
+    # we have /builds/analitico-ci
     # remove credentials
     - rm /.git-credentials
     # add commit sha to the env script
