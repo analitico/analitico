@@ -14,15 +14,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      initContainers:
-      # run docker deamon in support to the builder
-      - name: docker-deamon
-        image: docker:stable-dind
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - name: docker-storage
-          mountPath: /var/lib/docker
       containers:
       # run docker deamon in support to the builder
       - name: docker-deamon

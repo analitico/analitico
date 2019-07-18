@@ -2,7 +2,6 @@ FROM python:3.6.9-alpine3.10
 
 COPY ./analitico /home/www/analitico
 COPY ./analitico-ci /home/www/analitico-ci
-COPY requirements.txt /home/www/analitico/requirements.txt
 
 RUN apk update && apk upgrade
 RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime && export DEBIAN_FRONTEND=noninteractive && apk add tzdata
@@ -11,7 +10,7 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime && export DEBIAN_FRONTEND=noni
 RUN apk add bash py3-virtualenv
 
 # create analitico folder, create python venv, install requirements
-RUN /bin/bash -c 'cd /home/www/analitico && python3 -m venv venv && source venv/bin/activate && pip3 install wheel && pip3 install -r requirements.txt'
+RUN cd /home/www/analitico && python3 -m venv venv && source venv/bin/activate && pip3 install wheel && pip3 install -r ./serverless/templates/analitico-builder/requirements.txt
 
 # install docker-dind:stable
 # from: https://github.com/docker-library/docker/blob/463595652d2367887b1ffe95ec30caa00179be72/18.09/Dockerfile
