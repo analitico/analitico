@@ -1,18 +1,28 @@
 FROM eu.gcr.io/analitico-api/analitico:base
 # we want to copy only requirements and ssl certificates
 # execute everything as a new users with restricted access
-# create user and change ownership of analitico venv
+
 WORKDIR /home/www/analitico
+
 # copy requirements
 COPY ./analitico/requirements.txt /home/www/analitico
+
 # copy libraries
 COPY ./analitico/source/analitico /home/www/analitico/libs/analitico
 COPY ./analitico/source/s24 /home/www/analitico/libs/s24
+
 # copy script to launch jupyter
 COPY ./analitico/scripts/docker-jupyter.sh /home/www/analitico
+
 # use self signed certificates
 COPY ./analitico-ci/ssl/analitico.ai.crt /home/www/analitico/analitico.ai.crt
 COPY ./analitico-ci/ssl/analitico.ai.key /home/www/analitico/analitico.ai.key
+
+# create python venv
+RUN /bin/bash -c 'python3 -m venv venv'
+
+# install new requirements, if any
+RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt;'
 
 # create notebook folder
 RUN /bin/bash -c 'mkdir -p /home/www/analitico/notebooks'
