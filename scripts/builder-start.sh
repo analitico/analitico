@@ -10,7 +10,7 @@ if ! pgrep dockerd
 then
     echo "Running docker daemon..."
     # run and wait it starts listening
-    dockerd-entrypoint.sh &> /dev/null
+    dockerd-entrypoint.sh &> /dev/null &
     sleep 5s
 fi
 
