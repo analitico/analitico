@@ -6,6 +6,14 @@
 
 # TODO analitico-baseline image should be build with environment vars set #292
 
+if ! pgrep dockerd
+then
+    echo "Running docker daemon..."
+    # run and wait it starts listening
+    dockerd-entrypoint.sh &> /dev/null
+    sleep 5s
+fi
+
 BASEDIR=$(dirname "$0")
 source $BASEDIR/import-env.sh
 cd $BASEDIR/../source

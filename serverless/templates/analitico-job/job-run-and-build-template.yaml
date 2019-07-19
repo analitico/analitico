@@ -34,15 +34,7 @@ spec:
           mountPath: /mnt/analitico-drive
           readOnly: false
       containers:
-      # run docker deamon in support to the builder
-      - name: docker-deamon
-        image: docker:stable-dind
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - name: docker-storage
-          mountPath: /var/lib/docker
-      # then build item into a docker, push to registry, store docker information
+      # build item into a docker, push to registry, store docker information
       - name: build-job-container
         image: {build_image}
         command: {build_command}
@@ -59,12 +51,14 @@ spec:
           value: {target_id}
         - name: ANALITICO_DRIVE
           value: /mnt/analitico-drive
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
+        securityContext:
+          privileged: true
         volumeMounts:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive
           readOnly: false
+        - name: docker-storage
+          mountPath: /var/lib/docker
       volumes:
       - name: analitico-drive
         flexVolume:

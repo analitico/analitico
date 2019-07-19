@@ -1,6 +1,9 @@
 # Baseline is anaconda
 FROM continuumio/anaconda3
 
+# Script for running the Docker deamon
+COPY dockerd-entrypoint.sh /usr/local/bin/
+
 RUN apt-get update
 
 RUN apt-get install -y nano less
@@ -15,7 +18,7 @@ RUN /bin/bash -c 'curl -sL https://deb.nodesource.com/setup_10.x | bash && apt-g
 RUN /bin/bash -c 'echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && apt-get update && apt-get install -y google-cloud-sdk'
 
 # Install Docker Cli (this is used by workers and unit tests )
-RUN /bin/bash -c 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && apt-get update && apt-get install -y docker-ce-cli'
+RUN /bin/bash -c 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && apt-get update && apt-get install -y docker-ce-cli docker-ce'
 
 # Install KubeControl for k8 Api Server communication
 RUN /bin/bash -c 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && apt-get update && apt-get install -y kubectl'
