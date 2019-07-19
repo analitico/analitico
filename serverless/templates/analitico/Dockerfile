@@ -24,9 +24,6 @@ RUN /bin/bash -c 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg 
 # create www user and add privileges as root in docker
 RUN adduser www --disabled-login --disabled-password  --gecos "" && adduser www root
 
-# switch to user www
-USER www
-
 # copy codebase repo
 COPY --chown=www ./analitico /home/www/analitico
 
@@ -35,7 +32,7 @@ COPY --chown=www ./analitico-ci /home/www/analitico-ci
 
 WORKDIR /home/www/analitico
 
-# create python venv and install wheel
+# create python venv
 RUN /bin/bash -c 'python3 -m venv venv'
 
 # build everything
