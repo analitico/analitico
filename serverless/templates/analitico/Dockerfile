@@ -7,7 +7,7 @@ USER root
 RUN apt-get install -y nano less
 
 # Install nginx and remove configuration
-RUN  apt-get install -y nginx curl apt-transport-https ca-certificates software-properties-common && rm /etc/nginx/nginx.conf 
+RUN  apt-get install -y gcc nginx curl apt-transport-https ca-certificates software-properties-common && rm /etc/nginx/nginx.conf 
 
 # Install node and yarn for web app
 RUN /bin/bash -c 'curl -sL https://deb.nodesource.com/setup_10.x | bash && apt-get install -y nodejs && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && apt-get update && apt-get install yarn'
