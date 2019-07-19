@@ -1,4 +1,4 @@
-FROM eu.gcr.io/analitico-api/analitico-website:base
+FROM eu.gcr.io/analitico-api/analitico:base
 # we want to copy only requirements and ssl certificates
 # execute everything as a new users with restricted access
 # create user and change ownership of analitico venv

@@ -5,9 +5,8 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
-  BUILD_IMAGE_URL: eu.gcr.io/analitico-api/analitico-website:$CI_COMMIT_SHA # ${BUILD_IMAGE_URL}
-  BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-jupyter:$CI_COMMIT_SHA # ${BUILD_JUPYTER_IMAGE_URL}
-  ANALITICO_BUILDER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-builder:$CI_COMMIT_SHA
+  BUILD_IMAGE_URL: eu.gcr.io/analitico-api/analitico:$CI_COMMIT_SHA
+  BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-jupyter:$CI_COMMIT_SHA 
 services:
 - docker:dind
 
@@ -58,11 +57,11 @@ build_dev:
     - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
     - gcloud -q auth configure-docker
     ##
-    # build analitico-website image
+    # build analitico image
     ##
     - echo "$(date +'%T') - Build analitico image"
-    - cp ./analitico/serverless/templates/analitico-website/DockerfilePipeline ./DockerfilePipeline
-    - docker build --pull -t $BUILD_IMAGE_URL -f DockerfilePipeline .
+    - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
+    - docker build --pull -t $BUILD_IMAGE_URL -f Dockerfile .
     - echo "$(date +'%T') - Finished building analitico image"
     - docker push $BUILD_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico image"
@@ -70,21 +69,11 @@ build_dev:
     # build jupyter image
     ##
     - echo "$(date +'%T') - Build analitico jupyter image"
-    - cp ./analitico/serverless/templates/analitico-website/DockerfileJupyter ./DockerfileJupyter
+    - cp ./analitico/serverless/templates/analitico/DockerfileJupyter ./DockerfileJupyter
     - docker build --pull -t $BUILD_JUPYTER_IMAGE_URL -f DockerfileJupyter .
     - echo "$(date +'%T') - Finished building analitico jupyter image"
     - docker push $BUILD_JUPYTER_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico jupyter image"
-    ##
-    # build analitico-builder image
-    ##
-    - echo "$(date +'%T') - Build analitico builder image"
-    # move docker file to "root"
-    - cp ./analitico/serverless/templates/analitico-builder/Dockerfile ./DockerfileAnaliticoBuilder
-    - docker build --pull -t $ANALITICO_BUILDER_IMAGE_URL -f DockerfileAnaliticoBuilder .
-    - echo "$(date +'%T') - Finished building analitico builder image"
-    - docker push $ANALITICO_BUILDER_IMAGE_URL
-    - echo "$(date +'%T') - Finished pushing analitico builder image"
     ## 
     # remove secrets
     ## 

@@ -1,5 +1,0 @@
-FROM eu.gcr.io/analitico-api/analitico-website:base
-COPY ./analitico /home/www/analitico
-COPY ./analitico-ci /home/www/analitico-ci
-WORKDIR /home/www/analitico
-RUN /bin/bash -c "./scripts/build.sh"

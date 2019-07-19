@@ -1,5 +1,5 @@
-# Use the Analitico baseline
-FROM eu.gcr.io/analitico-api/analitico-baseline:base
+# Baseline is anaconda
+FROM continuumio/anaconda3
 # Run as root
 USER root
 # Install nginx and remove configuration
@@ -16,3 +16,14 @@ RUN /bin/bash -c 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-
 
 # Install KubeControl for k8 Api Server communication
 RUN /bin/bash -c 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && apt-get update && apt-get install -y kubectl'
+
+# copy codebase repo
+COPY ./analitico /home/www/analitico
+
+# copy secrets
+COPY ./analitico-ci /home/www/analitico-ci
+
+WORKDIR /home/www/analitico
+
+# build everything
+RUN /bin/bash -c "./scripts/build.sh"
