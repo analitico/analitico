@@ -28,10 +28,10 @@ RUN adduser www --disabled-login --disabled-password  --gecos "" && adduser www 
 USER www
 
 # copy codebase repo
-COPY ./analitico /home/www/analitico
+COPY --chown=www ./analitico /home/www/analitico
 
 # copy secrets
-COPY ./analitico-ci /home/www/analitico-ci
+COPY --chown=www ./analitico-ci /home/www/analitico-ci
 
 WORKDIR /home/www/analitico
 
