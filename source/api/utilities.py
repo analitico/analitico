@@ -122,8 +122,8 @@ def exception_to_response(exc: Exception, context) -> Response:
 
 def get_query_parameter(request: Request, parameter: str, default=None) -> str:
     """ Returns a parameter either from the request's json payload, form parameters or query parameters. """
-    if parameter in request.data:
-        return request.data[parameter]
+    # if parameter in request.data:
+    #    return request.data[parameter]
     if parameter in request.query_params:
         return request.query_params[parameter]
     return default
