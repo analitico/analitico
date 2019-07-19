@@ -25,10 +25,10 @@ RUN /bin/bash -c 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg 
 RUN adduser www --disabled-login --disabled-password  --gecos "" && adduser www root
 
 # copy codebase repo
-COPY --chown=www ./analitico /home/www/analitico
+COPY ./analitico /home/www/analitico
 
 # copy secrets
-COPY --chown=www ./analitico-ci /home/www/analitico-ci
+COPY ./analitico-ci /home/www/analitico-ci
 
 WORKDIR /home/www/analitico
 
