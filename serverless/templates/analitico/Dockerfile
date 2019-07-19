@@ -21,8 +21,8 @@ RUN /bin/bash -c 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-
 # Install KubeControl for k8 Api Server communication
 RUN /bin/bash -c 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && apt-get update && apt-get install -y kubectl'
 
-# create www user
-RUN adduser www --disabled-login --disabled-password  --gecos ""
+# create www user and add privileges as root in docker
+RUN adduser www --disabled-login --disabled-password  --gecos "" && adduser www root
 
 # switch to user www
 USER www
@@ -36,7 +36,7 @@ COPY ./analitico-ci /home/www/analitico-ci
 WORKDIR /home/www/analitico
 
 # create python venv and install wheel
-RUN /bin/bash -c 'python3 -m venv venv && source venv/bin/activate && pip3 install wheel'
+RUN /bin/bash -c 'python3 -m venv venv'
 
 # build everything
 RUN /bin/bash -c './scripts/build.sh'
