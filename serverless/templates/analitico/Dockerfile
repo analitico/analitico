@@ -1,8 +1,7 @@
 # Baseline is anaconda
 FROM continuumio/anaconda3
 
-# Run as root
-USER root
+RUN apt-get update
 
 RUN apt-get install -y nano less
 
