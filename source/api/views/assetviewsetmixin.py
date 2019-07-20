@@ -322,7 +322,16 @@ class AssetViewSetMixin:
             # upload or replace existing files in storage
             # TODO extract metadata from custom headers, if any
             # TODO stream content
-            data = io.StringIO(request.data)
+            if request.FILES:
+                files = list(request.FILES.values())
+                if len(files) > 1:
+                    raise AnaliticoException(
+                        "You cannot upload multiple files at once.", status=status.HTTP_400_BAD_REQUEST
+                    )
+                # read data directly from file that django saved somewhere
+                data = iter(files[0])
+            else:
+                data = io.StringIO(request.data)
             driver.upload(data, path, extra=None)
             return Response(status=status.HTTP_204_NO_CONTENT)
 

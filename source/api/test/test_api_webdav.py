@@ -8,6 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.http.response import StreamingHttpResponse
 from django.utils.dateparse import parse_datetime
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from libcloud.storage.base import Object, Container, StorageDriver
 from libcloud.storage.types import (
@@ -23,13 +24,13 @@ import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from rest_framework import status
-from analitico.utilities import read_json, get_dict_dot
+from analitico.utilities import read_json, get_dict_dot, read_text
 
 import api
 import analitico
 import api.models
 import api.libcloud
-from .utils import AnaliticoApiTestCase
+from .utils import AnaliticoApiTestCase, NOTEBOOKS_PATH
 
 import libcloud
 import tempfile
@@ -990,6 +991,65 @@ class WebdavTests(AnaliticoApiTestCase):
             item.save()
             base_url = reverse("api:notebook-files", args=(item.id, ""))
             self.do_webdav_files_api_put_get_file_contents_on_custom_route(base_url)
+        finally:
+            item.delete()
+            item.save()
+
+    def do_webdav_files_api_put_as_form_get_file_contents_on_custom_route(self, base_url):
+        """ Upload form encoded files directly via /recipes/rx_xxx/files api """
+        try:
+            # try item in main dir, sub and sub sub
+            for prefix in ("", "sub/", "sub1/sub2/"):
+                obj_name = prefix + "tst_" + django.utils.crypto.get_random_string() + ".ipynb"
+                obj_path = os.path.join(NOTEBOOKS_PATH, "notebook01.ipynb")
+
+                with open(obj_path, "rb") as fp:
+                    obj_data = fp.read()
+                    obj_uploaded = SimpleUploadedFile("notebook.ipynb", obj_data)
+
+                    # upload file contents via /webdav api
+                    url = base_url + obj_name
+                    response = self.client.put(url, {"file": obj_uploaded}, format="multipart")
+                    self.assertEqual(response.status_code, 204)
+
+                # retrieve metadata contents from file api
+                response = self.client.get(url + "?metadata=true")
+                self.assertEqual(response.status_code, 200)
+                item = response.data[0]
+                self.assertEqual(item["id"], "/" + obj_name)
+
+                # retrieve contents from raw file api
+                # make sure we do streaming downloads
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.streaming)
+                data = b"".join(response.streaming_content)
+                self.assertEqual(data, obj_data)
+                self.assertEqual(response["ETag"], item["attributes"]["etag"])
+                self.assertEqual(response["Last-Modified"], item["attributes"]["last_modified"])
+                self.assertEqual(int(response["Content-Length"]), int(item["attributes"]["size"]))
+                self.assertEqual(int(response["Content-Length"]), len(data))
+
+                # delete item
+                response = self.client.delete(url)
+                self.assertEqual(response.status_code, 204)
+                obj_name = None
+
+                # retrieve item which no longer exists
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 404)
+
+        finally:
+            if obj_name:
+                response = self.client.delete(url)
+
+    def test_webdav_files_api_put_as_form_get_file_contents_notebooks_route(self):
+        """ Test /files route on Notebooks models using form upload """
+        try:
+            item = api.models.Notebook(workspace=self.ws_storage_webdav)
+            item.save()
+            base_url = reverse("api:notebook-files", args=(item.id, ""))
+            self.do_webdav_files_api_put_as_form_get_file_contents_on_custom_route(base_url)
         finally:
             item.delete()
             item.save()
