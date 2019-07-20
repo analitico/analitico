@@ -29,7 +29,7 @@ class DriveTests(AnaliticoApiTestCase):
     def setUp(self):
         self.setup_basics()
         self.driver = hetzner_webdav_driver(self.drive)
-        
+
     def test_drive_create_then_delete_directory(self):
         dir_name = "tst_dir_" + get_random_string().lower()
         # create then delete directory

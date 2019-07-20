@@ -167,7 +167,6 @@ class AnaliticoApiTestCase(APITestCase):
         self.drive = Drive(id="dr_box002_test", attributes=self.get_storage_conf())
         self.drive.save()
 
-
     def assertStatusCode(self, response, status_code=status.HTTP_200_OK):
         if response.status_code != status_code:
             logger.error(

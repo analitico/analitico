@@ -90,6 +90,7 @@ class EndpointAdmin(admin.ModelAdmin):
     search_fields = ("id", "title", "description", "attributes")
     ordering = ("-updated_at",)
 
+
 @admin.register(Drive)
 class DriveAdmin(admin.ModelAdmin):
     fields = ("id", "title", "attributes")
