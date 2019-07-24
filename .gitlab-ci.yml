@@ -15,15 +15,13 @@ services:
 stages:
   - build
   - deploy-staging
-  - live-tests
-  - deploy-workers
-  - deploy
+  - deploy-production
 
 cache:
   paths:
     - pip-cache
 
-build_dev:
+build-and-test:
   stage: build
   script:
     - apk add git bash curl python
@@ -83,7 +81,7 @@ build_dev:
   only:
     - master
 
-staging:
+website-s6:
   stage: deploy-staging
   image: ubuntu:18.04
   only:
@@ -120,7 +118,7 @@ staging:
       docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${BUILD_IMAGE_URL} ./scripts/website-start.sh; 
       docker image prune -f -a;" 
 
-website-staging-k8:
+website-k8:
   stage: deploy-staging
   image: google/cloud-sdk:latest
   only:
@@ -134,8 +132,8 @@ website-staging-k8:
     - cat service-staging.yaml
     - kubectl apply --filename ./service-staging.yaml
 
-website-k8:
-  stage: deploy
+website:
+  stage: deploy-production
   image: google/cloud-sdk:latest
   when: manual
   only:
@@ -193,7 +191,7 @@ worker-staging:
       docker create --name=analitico-worker-staging-keep-jupyter-image ${BUILD_JUPYTER_IMAGE_URL};"     
 
 worker-production:
-  stage: deploy-workers
+  stage: deploy-production
   when: manual
   image: ubuntu:18.04
   only:
@@ -244,7 +242,7 @@ worker-production:
 
 
 live-tests:
-  stage: live-tests
+  stage: deploy-production
   image: ubuntu:18.04
   only:
     - master
@@ -283,8 +281,8 @@ live-tests:
       docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/live-tests.sh;"
     
 
-deploy-jupyter-old:
-  stage: deploy-workers
+jupyter-old:
+  stage: deploy-production
   image: ubuntu:18.04
   when: manual
   only:
