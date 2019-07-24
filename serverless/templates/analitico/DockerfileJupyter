@@ -26,3 +26,6 @@ RUN /bin/bash -c 'source venv/bin/activate;  pip3 install -r requirements.txt;'
 
 # create notebook folder
 RUN /bin/bash -c 'mkdir -p /home/www/analitico/notebooks && chown www /home/www/analitico/notebooks'
+
+# switch user
+USER www
