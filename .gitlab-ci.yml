@@ -115,16 +115,9 @@ staging:
     # start 2 dockers for jupyter notebook
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
       docker pull ${BUILD_IMAGE_URL}; 
-      docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico; 
       docker rm analitico; 
       docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${BUILD_IMAGE_URL} ./scripts/website-start.sh; 
-      docker stop aj-s24; 
-      docker rm aj-s24; 
-      docker stop aj-generic; 
-      docker rm aj-generic; 
-      docker run --name=aj-s24 --init --runtime=nvidia --restart always -d -p 8810:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
-      docker run --name=aj-generic --init --runtime=nvidia --restart always -d -p 8811:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
       docker image prune -f -a;" 
 
 website-staging-k8:
@@ -289,3 +282,44 @@ live-tests:
       docker rm  analitico-live-tests; 
       docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/live-tests.sh;"
     
+
+deploy-jupyter-old:
+  stage: deploy-workers
+  image: ubuntu:18.04
+  when: manual
+  only:
+    - master
+  before_script:
+  ##
+  ## Install ssh-agent if not already installed, it is required by Docker.
+  ## (change apt-get to yum if you use an RPM-based image)
+  ##
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+  ##
+  ## Run ssh-agent (inside the build environment)
+  ##
+  - eval $(ssh-agent -s)
+
+  ##
+  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+  ## We're using tr to fix line endings which makes ed25519 keys work
+  ## without extra base64 encoding.
+  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+  ##
+  - mkdir -p ~/.ssh
+  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-add ~/.ssh/id_rsa
+  script:
+    # pull new docker image and run
+    # start 2 dockers for jupyter notebook
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
+      docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
+      docker stop aj-s24; 
+      docker rm aj-s24; 
+      docker stop aj-generic; 
+      docker rm aj-generic; 
+      docker run --name=aj-s24 --init --runtime=nvidia --restart always -d -p 8810:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
+      docker run --name=aj-generic --init --runtime=nvidia --restart always -d -p 8811:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
+      docker image prune -f -a;" 

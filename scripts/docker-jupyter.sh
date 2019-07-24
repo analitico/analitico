@@ -2,8 +2,11 @@
 # run jupyter notebooks in dockers
 export LC_CTYPE=C.UTF-8
 cd /home/www/analitico/
+
 # Python libraries are in /libs
 export PYTHONPATH=/home/www/analitico/libs/
+# activate virtual env
+source venv/bin/activate
 # start jupyter notebook
 echo "Start jupyter notebook" 
 exec jupyter notebook --port=8888 --ip=0.0.0.0 --no-browser \
