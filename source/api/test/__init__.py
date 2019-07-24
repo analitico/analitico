@@ -4,7 +4,6 @@ django.setup()
 
 from .utils import AnaliticoApiTestCase
 
-from .test_api_assets import AssetsTests
 from .test_api_dataset import DatasetTests
 from .test_api_items import ItemsTests
 from .test_api_ping import PingApiTests
