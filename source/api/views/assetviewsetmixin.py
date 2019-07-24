@@ -275,7 +275,9 @@ class AssetViewSetMixin:
 
             # is this a rename request? id/path is being updated
             if url != data["id"]:
-                driver.move(url, data["id"])
+                assert data["id"].startswith("/"), "Path should start with slash, eg: /file.txt"
+                destination = base_path + data["id"][1:]
+                driver.move(url, destination)
                 return Response(status=status.HTTP_201_CREATED)
 
             # TODO update extras if changed

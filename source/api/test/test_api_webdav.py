@@ -59,7 +59,7 @@ class WebdavTests(AnaliticoApiTestCase):
         self.assertEqual(response.data[0]["id"], UNICORN_FILENAME)
         self.assertEqual(response.data[0]["path"], "/workspaces/ws_storage_webdav/assets/unicorns-do-it-better.png")
 
-        # TODO fix has so it's based on md5 and not modification date
+        # TODO fix hash so it's based on md5 and not modification date
         # self.assertEqual(response.data[0]["hash"], "bb109c5ea3dae456d286c4622b46e2be")
 
         self.assertEqual(
@@ -853,7 +853,7 @@ class WebdavTests(AnaliticoApiTestCase):
             if obj_name:
                 driver.delete("/" + obj_name)
 
-    def test_webdav_files_api_move(self):
+    def test_webdav_files_api_move_in_workspace(self):
         """ Move a file via /files api """
         driver = self.get_driver()
         try:
@@ -890,6 +890,56 @@ class WebdavTests(AnaliticoApiTestCase):
 
         finally:
             driver.delete(path2)
+
+    def test_webdav_files_api_move_in_notebook(self):
+        """ Move a file via /files api """
+        driver = self.get_driver()
+        try:
+            item = api.models.Notebook(workspace=self.ws_storage_webdav)
+            item.save()
+
+            contents = ("Tell me something new: " + django.utils.crypto.get_random_string().lower()).encode()
+            base_path = f"{item.type}s/{item.id}"
+            path1 = self.get_random_path() + ".txt"
+            path2 = self.get_random_path() + ".txt"
+
+            url1 = reverse("api:notebook-files", args=(item.id, path1[1:]))
+            url2 = reverse("api:notebook-files", args=(item.id, path2[1:]))
+
+            # create file in first location
+            driver.mkdirs(base_path)
+            driver.upload(io.BytesIO(contents), base_path + path1)
+            self.assertTrue(driver.exists(base_path + path1))
+            self.assertFalse(driver.exists(base_path + path2))
+
+            # retrieve item contents
+            response3 = self.client.get(url1)
+            self.assertEqual(response3.status_code, status.HTTP_200_OK)
+            data3 = b"".join(response3.streaming_content)
+            self.assertEqual(data3, contents)
+
+            # retrieve item information
+            response1 = self.client.get(url1 + "?metadata=true")
+            self.assertEqual(response1.status_code, status.HTTP_200_OK)
+            data1 = response1.data[0]
+
+            # change name and update (rename)
+            data1["id"] = path2
+            response2 = self.client.put(url1 + "?metadata=true", data=data1)
+            self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+
+            # check if file actually moved
+            self.assertFalse(driver.exists(base_path + path1))
+            self.assertTrue(driver.exists(base_path + path2))
+
+            # download item data (not the metadata)
+            response3 = self.client.get(url2)
+            self.assertEqual(response3.status_code, status.HTTP_200_OK)
+            data3 = b"".join(response3.streaming_content)
+            self.assertEqual(data3, contents)
+
+        finally:
+            driver.delete(base_path + path2)
 
     def test_webdav_files_api_get_metadataheaders(self):
         """ Move a file via /files api """
