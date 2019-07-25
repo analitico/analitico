@@ -32,15 +32,6 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
 @pytest.mark.django_db
 class ParquetTests(AnaliticoApiTestCase):
-    def _upload_dog(self):
-        """ The same dog image is used in a number of tests """
-        url = reverse("api:workspace-asset-detail", args=("ws_storage_gcs", "assets", "oh-my-dog.jpg"))
-        response = self.upload_file(url, "image_dog1.jpg", "image/jpeg", token=self.token1)
-        self.assertEqual(response.data[0]["id"], "oh-my-dog.jpg")
-        self.assertEqual(response.data[0]["path"], "workspaces/ws_storage_gcs/assets/oh-my-dog.jpg")
-        self.assertEqual(response.data[0]["hash"], "a9f659efd070f3e5b121a54edd8b13d0")
-        self.assertEqual(response.data[0]["url"], "analitico://workspaces/ws_storage_gcs/assets/oh-my-dog.jpg")
-        return url, response
 
     def setUp(self):
         self.setup_basics()
