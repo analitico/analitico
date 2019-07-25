@@ -45,7 +45,7 @@ test -d $RUNDIR || mkdir -p $RUNDIR
 # virtual environment which will activate the environment itself.
 # Programs meant to be run under supervisor should not daemonize themselves 
 # (do not use --daemon)
-exec /home/www/analitico/venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
+exec gunicorn ${DJANGO_WSGI_MODULE}:application \
   --timeout 900 \
   --name $NAME \
   --workers $NUM_WORKERS \

@@ -48,8 +48,8 @@ class K8Tests(AnaliticoApiTestCase):
             "docker",
             {
                 "type": "analitico/docker",
-                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon:ml-zbsf4sky",
-                "image_name": "eu.gcr.io/analitico-api/nb-test-001:K8Tests_test_k8_deploy",
+                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon@sha256:b77b0fe771fb06df18ee9f9ed78f0707bca897ba0e77a938171a5ab184019bb9",
+                "image_name": "eu.gcr.io/analitico-api/rx-fvdmbmon:K8Tests_test_k8_deploy",
                 "image_id": "sha256:e60d4b0c3ac0f5ec647d8771c9184b547775707a1589438da3b6493f45a2a1fa",
             },
         )
