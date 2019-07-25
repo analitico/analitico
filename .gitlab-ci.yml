@@ -80,10 +80,10 @@ build-and-test:
     # docker image expects to find sdk and s24 in that path
     - cp -Rf ./analitico/sdk/analitico $build_dir
     - cp -Rf ./analitico/source/s24 $build_dir
-    - cp -R ./analitico/serverless/templates/analitico-client/* $build_dir/
+    - cp -Rf ./analitico/serverless/templates/analitico-client/* $build_dir/
     - cd $build_dir
     - docker build --no-cache --pull -t $BUILD_ANALITICO_CLIENT_IMAGE_URL -f Dockerfile .
-    - #cleanup
+    # cleanup
     - rm -Rf $build_dir
     - echo "$(date +'%T') - Finished building analitico-client image"
     - docker push $BUILD_ANALITICO_CLIENT_IMAGE_URL

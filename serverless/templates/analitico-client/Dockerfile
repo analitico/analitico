@@ -11,8 +11,8 @@ WORKDIR $WORKDIR
 COPY ./tasks/app.py app.py
 COPY ./tasks/job.py job.py
 
-COPY ./tasks/prediction-start.sh prediction-start.sh
-RUN chmod +x prediction-start.sh
+COPY ./tasks/serverless-start.sh serverless-start.sh
+RUN chmod +x serverless-start.sh
 
 # copy analitico SDK and s24 helper methods
 # TODO /analitico and /s24 need to be built into standalone libraries

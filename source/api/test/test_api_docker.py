@@ -108,7 +108,7 @@ class DockerTests(AnaliticoApiTestCase):
                 detach=True,
                 ports={f"{DOCKER_PORT}/tcp": DOCKER_PORT},
                 environment={"PORT": DOCKER_PORT},
-                command=f"./prediction-start.sh",
+                command=f"./serverless-start.sh",
             )
             # wait for gunicorn to start up
             time.sleep(2)
