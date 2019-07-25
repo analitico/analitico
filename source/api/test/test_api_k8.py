@@ -36,38 +36,40 @@ logger = logging.getLogger("analitico")
 class K8Tests(AnaliticoApiTestCase):
     """ Test kubernets API to build and deploy on knative """
 
-    endpoint_id = "ep_TEST_001"
-    target_id = "nb_TEST_001"  # help registry cleanups
-    endpoint_id_normalized = "ep-test-001"
-    target_id_normalized = "nb-test-001"
+    stage = api.k8.K8_STAGE_STAGING
+    item_id = "nb_TEST_001"  # help registry cleanups
+    item_id_normalized = "nb-test-001-staging"
 
-    # TODO cannot run this in CI/CD pipeline, should be added to live testing?
-    @tag("slow", "docker", "k8s")
-    def test_k8_build_and_deploy_docker(self):
-        """ Test building a docker from a notebook then deploying it """
+    def deploy_service(self):
+        self.post_notebook("notebook11.ipynb", self.item_id)
+        notebook = Notebook.objects.get(pk=self.item_id)
+        # pre run and built image tagged with `K8Tests_test_k8_deploy`
+        notebook.set_attribute(
+            "docker",
+            {
+                "type": "analitico/docker",
+                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon:ml-zbsf4sky",
+                "image_name": "eu.gcr.io/analitico-api/nb-test-001:K8Tests_test_k8_deploy",
+                "image_id": "sha256:e60d4b0c3ac0f5ec647d8771c9184b547775707a1589438da3b6493f45a2a1fa",
+            },
+        )
+        notebook.save()
 
-        self.post_notebook("notebook11.ipynb", self.target_id)
-        notebook = Notebook.objects.get(pk=self.target_id)
-        endpoint = Endpoint(id=self.endpoint_id, workspace=self.ws1)
-        endpoint.save()
-
-        docker = api.k8.k8_build(notebook)
-        self.assertEquals(docker["type"], "analitico/docker")
-        self.assertEquals(docker["image_name"], f"eu.gcr.io/analitico-api/{self.target_id_normalized}")  # normalized
-        self.assertIn(f"gcr.io/analitico-api/{self.target_id_normalized}@sha256:", docker["image"])
-        self.assertIn("sha256:", docker["image_id"])
-
-        logger.info("Run this image locally with:")
-        logger.info(f"docker run -e PORT=8080 -p 8080:8080 {docker['image']}")
-
-        service = api.k8.k8_deploy(notebook, endpoint)
+        service = api.k8.k8_deploy_v2(notebook, self.stage)
         self.assertEquals(service["type"], "analitico/service")
-        self.assertEquals(service["name"], self.endpoint_id_normalized)
+        self.assertEquals(service["name"], self.item_id_normalized)
         self.assertEquals(service["namespace"], "cloud")
         self.assertIn("url", service)
 
-        # give it a moment so it can, maybe, deploy...
-        time.sleep(10)
+        time.sleep(15)
+        return service
+
+    # TODO cannot run this in CI/CD pipeline, should be added to live testing?
+    @tag("slow", "docker", "k8s")
+    def test_k8_deploy_docker(self):
+        """ Test building a docker from a notebook then deploying it """
+
+        self.deploy_service()
 
         # retrieve service information from kubernetes cluster
         service, _ = subprocess_run(
@@ -75,7 +77,7 @@ class K8Tests(AnaliticoApiTestCase):
                 "kubectl",
                 "get",
                 "ksvc",
-                self.endpoint_id_normalized,
+                self.item_id_normalized,
                 "-n",
                 api.k8.K8_DEFAULT_NAMESPACE,
                 "-o",
@@ -120,21 +122,10 @@ class K8Tests(AnaliticoApiTestCase):
     ## K8s APIs that work on specific service
     ##
 
-    def deploy_service(self):
-        self.post_notebook("notebook11.ipynb", self.target_id)
-        notebook = Notebook.objects.get(pk=self.target_id)
-        endpoint = Endpoint(id=self.endpoint_id, workspace=self.ws1)
-        endpoint.save()
-
-        docker = api.k8.k8_build(notebook)
-        service = api.k8.k8_deploy(notebook, endpoint)
-        time.sleep(15)
-        return service
-
     @tag("slow", "docker", "k8s")
     def test_k8s_get_metrics(self):
         self.deploy_service()
-        url = reverse("api:k8-metrics", args=(self.endpoint_id,))
+        url = reverse("api:k8-metrics", args=(self.item_id, self.stage))
 
         # regular user CANNOT get metrics
         self.auth_token(self.token3)
@@ -158,6 +149,12 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(response.data["status"], "success")
         self.assertEqual(response.data["data"]["resultType"], "vector")
 
+        # service not found in production
+        self.auth_token(self.token2)
+        url_production = reverse("api:k8-metrics", args=(self.item_id, api.k8.K8_STAGE_PRODUCTION))
+        response = self.client.get(url_production, data={"metric": "container_cpu_load"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
         # admin user CAN get metrics
         self.auth_token(self.token1)
         response = self.client.get(url, data={"metric": "container_cpu_load"}, format="json")
@@ -168,7 +165,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(data["status"], "success")
         self.assertGreaterEqual(len(data["data"]["result"]), 1)  # one per revision (if any)
         for metric in data["data"]["result"]:
-            self.assertIn(self.endpoint_id_normalized, metric["metric"]["pod_name"])
+            self.assertIn(self.item_id_normalized, metric["metric"]["pod_name"])
 
         # filter a specific metric over a specific time range
         now = int(time.time())
@@ -183,15 +180,15 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(data["status"], "success")
         self.assertEqual(data["data"]["resultType"], "matrix")
         for metric in data["data"]["result"]:
-            self.assertIn(self.endpoint_id_normalized, metric["metric"]["pod_name"])
+            self.assertIn(self.item_id_normalized, metric["metric"]["pod_name"])
 
     @tag("slow", "docker", "k8s", "live")
     def test_k8s_get_logs(self):
         self.deploy_service()
-        url = reverse("api:k8-logs", args=(self.endpoint_id,))
+        url = reverse("api:k8-logs", args=(self.item_id, self.stage))
 
         # /echo endpoint will generate a log message at the given level
-        endpoint_echo = f"https://{self.endpoint_id_normalized}.cloud.analitico.ai/echo"
+        endpoint_echo = f"https://{self.item_id_normalized}.cloud.analitico.ai/echo"
 
         # generate info logs
         for x in range(20):
@@ -214,7 +211,14 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(data["timed_out"], False)
         self.assertGreater(data["hits"]["total"], 10)
 
+        # service not found in production
+        self.auth_token(self.token2)
+        url_production = reverse("api:k8-logs", args=(self.item_id, api.k8.K8_STAGE_PRODUCTION))
+        response = self.client.get(url_production, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
         # limit the number of results with ?size= parameter
+        self.auth_token(self.token1)
         response = self.client.get(url, data={"size": 10}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data

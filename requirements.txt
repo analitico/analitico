@@ -12,7 +12,7 @@ bleach==3.0.2
 cacheout
 cachetools==3.0.0
 catboost==0.11.1
-certifi==2018.8.24
+certifi==2019.3.9
 cffi==1.11.5
 chardet==3.0.4
 click==6.7
@@ -34,7 +34,7 @@ docker==4.0.1
 docutils==0.14
 dodgy==0.1.9
 drf-yasg==1.11.1
-entrypoints==0.2.3
+entrypoints==0.3
 enum34==1.1.6
 flex==6.13.2
 future==0.17.1

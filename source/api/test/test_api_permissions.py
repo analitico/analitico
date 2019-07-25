@@ -353,9 +353,6 @@ class PermissionsTests(AnaliticoApiTestCase):
     def test_roles_non_owner_with_read_role_on_recipes(self):
         self.editor_role_tests_by_item_class(Recipe, analitico.RECIPE_PREFIX, analitico.RECIPE_TYPE)
 
-    def test_roles_non_owner_with_read_role_on_endpoints(self):
-        self.editor_role_tests_by_item_class(Endpoint, analitico.ENDPOINT_PREFIX, analitico.ENDPOINT_TYPE)
-
     def test_roles_non_owner_with_read_role_on_notebooks(self):
         self.editor_role_tests_by_item_class(Notebook, analitico.NOTEBOOK_PREFIX, analitico.NOTEBOOK_TYPE)
 

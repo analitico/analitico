@@ -1,4 +1,0 @@
-analitico
-papermill
-requests
-simplejson

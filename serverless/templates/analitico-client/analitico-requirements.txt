@@ -1,0 +1,17 @@
+##
+## Include packages supported but not present in the Anaconda3 image or
+## other required packages at the last available version.
+##
+## The supported list of packages in the Anaconda3 can be found here:
+## https://docs.anaconda.com/anaconda/packages/py3.7_linux-64/
+## Note: if the column `in installer` is not checked then the package
+## at the specified version is supported but not present in the image.
+##
+
+# Flask is already installed in the base image
+simplejson==3.16.0
+catboost==0.15.2
+ortools==6.9.5824
+papermill==1.0.1
+gunicorn==19.9.0
+missingno==0.4.1

@@ -1,3 +1,7 @@
+##
+# Script executed by gunicorn for the prediction services
+##
+
 import os
 import simplejson as json
 import pandas as pd

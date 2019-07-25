@@ -1,7 +1,14 @@
+##
+# Script executed for running a notebook by the job run
+##
+
 import logging
 import os
 import json
 import argparse
+
+# python libraries search path
+os.environ["PYTHONPATH"] = os.path.expandvars("$PYTHONPATH:$ANALITICO_ITEM_PATH")
 
 try:
     from analitico import AnaliticoException
@@ -24,6 +31,12 @@ parser.add_argument(
     "notebooks", metavar="N", type=str, nargs="+", default="notebook.ipynb", help="a notebook file to be processed"
 )
 args = parser.parse_args()
+
+# support the the pip installation of requirements with requirements.txt
+requirements_name = os.path.join(os.environ.get("ANALITICO_ITEM_PATH"), "requirements.txt")
+if os.path.exists(requirements_name):
+    subprocess_run(["pip", "install", "-r", "requirements.txt"])
+
 
 # retrieve notebook that should be executed
 notebook_path = os.path.expandvars(args.notebooks[0])

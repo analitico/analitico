@@ -8,8 +8,9 @@ spec:
     spec:
       containers:
       - image: {docker_image}
+        command: ["./prediction-start.sh"]
         env:
-        - name: ANALITICO_TARGET_ID
-          value: "{target_id}"
+        - name: ANALITICO_SERVICE_NAME
+          value: "{service_name}"
         - name: ANALITICO_ITEM_ID
           value: "{item_id}"

@@ -6,6 +6,7 @@ metadata:
   labels:
     analitico.ai/workspace-id: {workspace_id}
     analitico.ai/item-id: {item_id}
+    analitico.ai/target-id: {target_id}
     analitico.ai/job-id: {job_id}
 spec:
   # no retries
@@ -13,28 +14,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      initContainers:
-        # first run the notebook or recipe in an untrusted docker
-      - name: run-job-container
-        image: eu.gcr.io/analitico-api/analitico-job:production
-        command: {run_command}
-        env:
-        - name: ANALITICO_WORKSPACE_ID
-          value: {workspace_id}
-        - name: ANALITICO_ITEM_ID
-          value: {item_id}
-        - name: ANALITICO_ITEM_PATH
-          value: $ANALITICO_DRIVE/{item_type}s/{item_id}
-        - name: ANALITICO_JOB_ID
-          value: {job_id}
-        - name: ANALITICO_DRIVE
-          value: /mnt/analitico-drive
-        volumeMounts:
-        - name: analitico-drive
-          mountPath: /mnt/analitico-drive
-          readOnly: false
       containers:
-      # build item into a docker, push to registry, store docker information
       - name: build-job-container
         image: {build_image}
         command: {build_command}
@@ -44,7 +24,7 @@ spec:
         - name: ANALITICO_ITEM_ID
           value: {item_id}
         - name: ANALITICO_ITEM_PATH
-          value: $ANALITICO_DRIVE/{item_type}s/{item_id}
+          value: /mnt/analitico-drive/{item_type}s/{item_id}
         - name: ANALITICO_JOB_ID
           value: {job_id}
         - name: ANALITICO_TARGET_ID

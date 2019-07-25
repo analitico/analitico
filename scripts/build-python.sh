@@ -13,8 +13,7 @@ export HOME="/home/www"
 export PYTHONPATH=/home/www/analitico/source
 
 echo "Installing requirements"
-source venv/bin/activate
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 
 cd source
 
@@ -41,4 +40,4 @@ echo "Running python tests"
 chmod -R 777 /tmp
 
 # remove google token
-rm /home/www/.google*
+rm -Rf /home/www/.google*

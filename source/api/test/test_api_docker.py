@@ -5,10 +5,12 @@ import time
 import docker
 import requests
 import time
+import tempfile
 
 from django.test import tag
 from django.urls import reverse
 from rest_framework import status
+from website.settings import BASE_DIR
 
 # relax pylint on testing code
 # pylint: disable=no-member
@@ -16,7 +18,7 @@ from rest_framework import status
 # pylint: disable=unused-wildcard-import
 
 from analitico.constants import ACTION_PROCESS, ACTION_DEPLOY
-from analitico.utilities import read_json, subprocess_run
+from analitico.utilities import read_json, subprocess_run, save_text, copy_directory, read_text
 
 import api
 import api.k8
@@ -26,13 +28,12 @@ from api.models import *
 from api.factory import factory
 from api.models.log import *
 from api.pagination import *
+from api.k8 import K8_JOB_TEMPLATE_DIR
 
 from .utils import AnaliticoApiTestCase
 
 # port that we use for the HTTP server in our
 DOCKER_PORT = 8001
-# port to expose prometheus metrics
-DOCKER_PROMETHEUS_PORT = 9090
 
 
 class DockerTests(AnaliticoApiTestCase):
@@ -57,21 +58,27 @@ class DockerTests(AnaliticoApiTestCase):
             self.endpoint_id = endpoint_id if endpoint_id else tests.endpoint_id
 
         def build_docker(self):
-            self.tests.post_notebook(self.notebook_filename, self.notebook_id)
-            self.notebook = Notebook.objects.get(pk=self.notebook_id)
+            # build from a temp folder
+            with tempfile.TemporaryDirectory() as tmp:
+                # prepare staff for building analitico-service
+                notebook_name = os.path.join(os.path.dirname(os.path.realpath(__file__)) + "/notebooks/", self.notebook_filename)
+                save_text(read_text(notebook_name), os.path.join(tmp, "notebook.ipynb"))
+                copy_directory(os.path.join(BASE_DIR, "analitico"), os.path.join(tmp, "analitico"))
+                copy_directory(os.path.join(BASE_DIR, "s24"), os.path.join(tmp, "s24"))
+                os.environ["ANALITICO_ITEM_PATH"] = tmp
 
-            self.docker_client = docker.from_env()
-            self.docker_build = api.k8.k8_build(self.notebook, push=False)
+                self.tests.post_notebook(self.notebook_filename, self.notebook_id)
+                self.notebook = Notebook.objects.get(pk=self.notebook_id)
 
-            self.notebook = Notebook.objects.get(pk=self.notebook_id)
-            self.endpoint = Endpoint(id=self.endpoint_id, workspace=self.tests.ws1)
-            self.endpoint.save()
+                self.docker_client = docker.from_env()
+                self.docker_build = api.k8.k8_build_v2(self.notebook, self.notebook, push=False)
+
+                self.notebook = Notebook.objects.get(pk=self.notebook_id)
+                self.endpoint = Endpoint(id=self.endpoint_id, workspace=self.tests.ws1)
+                self.endpoint.save()
 
         def get_container_url(self, relative_url):
             return f"http://127.0.0.1:{DOCKER_PORT}{relative_url}"
-
-        def get_prometheus_url(self, relative_url):
-            return f"http://127.0.0.1:{DOCKER_PROMETHEUS_PORT}{relative_url}"
 
         def get_container_response(self, relative_url, post=None):
             url = self.get_container_url(relative_url)
@@ -99,8 +106,9 @@ class DockerTests(AnaliticoApiTestCase):
             self.docker_container = self.docker_client.containers.run(
                 self.docker_build["image"],
                 detach=True,
-                ports={f"{DOCKER_PORT}/tcp": DOCKER_PORT, f"{DOCKER_PROMETHEUS_PORT}/tcp": DOCKER_PROMETHEUS_PORT},
+                ports={f"{DOCKER_PORT}/tcp": DOCKER_PORT},
                 environment={"PORT": DOCKER_PORT},
+                command=f"./prediction-start.sh",
             )
             # wait for gunicorn to start up
             time.sleep(2)
@@ -116,11 +124,11 @@ class DockerTests(AnaliticoApiTestCase):
         """ Notebook that returns a string """
         with self.DockerNotebookRunner(self, "notebook-docker-hello-world.ipynb") as runner:
             # test docker build attributes
-            image = f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}:latest"
-            image_name = f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}"
+            image = f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}:{self.notebook_id_normalized}"
+            image_name = f"eu.gcr.io/analitico-api/{self.notebook_id_normalized}:{self.notebook_id_normalized}"
             self.assertEquals(runner.docker_build["type"], "analitico/docker")
             self.assertEquals(runner.docker_build["image_name"], image_name)  # normalized
-            self.assertEquals(runner.docker_build["image"], image)
+            self.assertEquals(image, runner.docker_build["image"], image)
 
             response, json = runner.get_container_response_json("/")
             self.assertEqual(json["data"], "Hello Analitico")
@@ -268,19 +276,3 @@ class DockerTests(AnaliticoApiTestCase):
             self.assertEqual(
                 json["error"]["title"], "The notebook's code cannot be imported: No module named 'fuzzywuzzy'"
             )
-
-    @tag("slow", "docker")
-    def test_docker_gunicorn_exposes_prometheus_metrics_endpoint(self):
-        """ Gunicorn exposes /metrics endpoint with prometheus metrics """
-        with self.DockerNotebookRunner(self, "notebook-docker-hello-world-custom-json.ipynb") as runner:
-            # exec a request to generate some metrics
-            runner.get_container_response("/")
-
-            response = runner.get_prometheus_response("/metrics")
-            content = response.text
-
-            self.assertEqual(200, response.status_code)
-            self.assertIn("# HELP flask_exporter_info Multiprocess metric", content)
-            self.assertIn("flask_exporter_info", content)
-            self.assertIn("# HELP flask_http_request_total Multiprocess metric", content)
-            self.assertIn("flask_http_request_total", content)

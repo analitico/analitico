@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: run-job-container
-        image: eu.gcr.io/analitico-api/analitico-job:production
+        image: {run_image}
         command: {run_command}
         env:
         - name: ANALITICO_WORKSPACE_ID
@@ -22,7 +22,7 @@ spec:
         - name: ANALITICO_ITEM_ID
           value: {item_id}
         - name: ANALITICO_ITEM_PATH
-          value: $ANALITICO_DRIVE/{item_type}s/{item_id}
+          value: /mnt/analitico-drive/{item_type}s/{item_id}
         - name: ANALITICO_JOB_ID
           value: {job_id}
         - name: ANALITICO_DRIVE

@@ -6,7 +6,6 @@ from .datasetviews import DatasetViewSet
 from .jobviews import JobViewSet
 from .recipeviews import RecipeViewSet
 from .modelviews import ModelViewSet
-from .endpointviews import EndpointViewSet
 from .userviews import UserViewSet
 from .pluginviews import PluginViewSet
 from .notebookviews import NotebookViewSet

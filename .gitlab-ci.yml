@@ -5,7 +5,8 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
-  BUILD_IMAGE_URL: eu.gcr.io/analitico-api/analitico:$CI_COMMIT_SHA
+  BUILD_ANALITICO_IMAGE_URL: eu.gcr.io/analitico-api/analitico:$CI_COMMIT_SHA
+  BUILD_ANALITICO_CLIENT_IMAGE_URL: eu.gcr.io/analitico-api/analitico-client:$CI_COMMIT_SHA
   BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-jupyter:$CI_COMMIT_SHA 
   GIT_STRATEGY: none
   
@@ -24,14 +25,18 @@ cache:
 build-and-test:
   stage: build
   script:
+    # install dependecies
     - apk add git bash curl python
     - curl https://sdk.cloud.google.com > script.sh
     - chmod +x script.sh
     - ./script.sh --disable-prompts
     - export PATH=/root/google-cloud-sdk/bin:$PATH
-    # remove repo
-    - rm -rf /builds/analitico/*
-    - cd /builds/analitico/
+    # work directory
+    - export WORKDIR=/builds/analitico/
+    # setup the environment
+    # cleanup
+    - cd $WORKDIR
+    - rm -rf $WORKDIR/*
     # clone with submodule 
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
     - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
@@ -59,21 +64,40 @@ build-and-test:
     ##
     # build analitico image
     ##
+    - cd $WORKDIR
     - echo "$(date +'%T') - Build analitico image"
     - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
-    - docker build --pull -t $BUILD_IMAGE_URL -f Dockerfile .
+    - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
     - echo "$(date +'%T') - Finished building analitico image"
-    - docker push $BUILD_IMAGE_URL
+    - docker push $BUILD_ANALITICO_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico image"
+    ##
+    # build analitico-client image
+    ##
+    - cd $WORKDIR
+    - echo "$(date +'%T') - Build analitico-client image"
+    - build_dir=$(mktemp -d)
+    # docker image expects to find sdk and s24 in that path
+    - cp -Rf ./analitico/sdk/analitico $build_dir
+    - cp -Rf ./analitico/source/s24 $build_dir
+    - cp -R ./analitico/serverless/templates/analitico-client/* $build_dir/
+    - cd $build_dir
+    - docker build --no-cache --pull -t $BUILD_ANALITICO_CLIENT_IMAGE_URL -f Dockerfile .
+    - #cleanup
+    - rm -Rf $build_dir
+    - echo "$(date +'%T') - Finished building analitico-client image"
+    - docker push $BUILD_ANALITICO_CLIENT_IMAGE_URL
+    - echo "$(date +'%T') - Finished pushing analitico-client image"
     ##
     # build jupyter image
     ##
-    - echo "$(date +'%T') - Build analitico jupyter image"
+    - cd $WORKDIR
+    - echo "$(date +'%T') - Build analitico-jupyter image"
     - cp ./analitico/serverless/templates/analitico/DockerfileJupyter ./DockerfileJupyter
     - docker build --pull -t $BUILD_JUPYTER_IMAGE_URL -f DockerfileJupyter .
-    - echo "$(date +'%T') - Finished building analitico jupyter image"
+    - echo "$(date +'%T') - Finished building analitico-jupyter image"
     - docker push $BUILD_JUPYTER_IMAGE_URL
-    - echo "$(date +'%T') - Finished pushing analitico jupyter image"
+    - echo "$(date +'%T') - Finished pushing analitico-jupyter image"
     ## 
     # remove secrets
     ## 
@@ -112,7 +136,7 @@ website-s6:
     # pull new docker image and run
     # start 2 dockers for jupyter notebook
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_IMAGE_URL}; 
+      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
       docker stop analitico; 
       docker rm analitico; 
       docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${BUILD_IMAGE_URL} ./scripts/website-start.sh; 
@@ -128,7 +152,7 @@ website-k8:
     - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
     - yaml=`cat ./analitico-ci/k8/service-staging.yaml`
-    - echo "${yaml/"{docker_image}"/$BUILD_IMAGE_URL}" > service-staging.yaml
+    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > service-staging.yaml
     - cat service-staging.yaml
     - kubectl apply --filename ./service-staging.yaml
 
@@ -143,7 +167,7 @@ website:
     - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
     - yaml=`cat ./analitico-ci/k8/service.yaml`
-    - echo "${yaml/"{docker_image}"/$BUILD_IMAGE_URL}" > service.yaml
+    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > service.yaml
     - cat service.yaml
     - kubectl apply --filename ./service.yaml
 
@@ -182,12 +206,12 @@ worker-staging:
 
   script:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_IMAGE_URL}; 
+      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
       docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico-worker-staging1; 
       docker rm  analitico-worker-staging1; 
       docker rm analitico-worker-staging-keep-jupyter-image; 
-      docker run --name=analitico-worker-staging1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/worker-start.sh --tags staging; 
+      docker run --name=analitico-worker-staging1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh --tags staging; 
       docker create --name=analitico-worker-staging-keep-jupyter-image ${BUILD_JUPYTER_IMAGE_URL};"     
 
 worker-production:
@@ -225,7 +249,7 @@ worker-production:
 
   script:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_IMAGE_URL}; 
+      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
       docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
       docker stop analitico-worker1; 
       docker rm analitico-worker1; 
@@ -234,9 +258,9 @@ worker-production:
       docker stop analitico-worker3; 
       docker rm analitico-worker3; 
       docker rm analitico-worker-keep-jupyter-image; 
-      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh; 
+      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh; 
       docker create --name=analitico-worker-keep-jupyter-image ${BUILD_JUPYTER_IMAGE_URL};
       docker image prune -f -a;" 
 
@@ -275,10 +299,10 @@ live-tests:
 
   script:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_IMAGE_URL}; 
+      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
       docker stop analitico-live-tests; 
       docker rm  analitico-live-tests; 
-      docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_IMAGE_URL} ./scripts/live-tests.sh;"
+      docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/live-tests.sh;"
     
 
 jupyter-old:

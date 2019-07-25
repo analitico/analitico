@@ -27,7 +27,6 @@ def runtime(request: Request):
 router = routers.SimpleRouter(trailing_slash=False)
 
 router.register("datasets", api.views.DatasetViewSet, basename="dataset")  # extract, transform, load pipeline
-router.register("endpoints", api.views.EndpointViewSet, basename="endpoint")  # inference delivery endpoint
 router.register("jobs", api.views.JobViewSet, basename="job")  # sync and async job running
 router.register("models", api.views.ModelViewSet, basename="model")  # trained machine learning models
 router.register("recipes", api.views.RecipeViewSet, basename="recipe")  # machine learning algorightms

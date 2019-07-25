@@ -4,8 +4,7 @@
 set -e
 
 echo "Installing requirements"
-source venv/bin/activate
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 
 # build s24 docs
 pushd .
