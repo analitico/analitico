@@ -158,7 +158,7 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
     )
 
     # ssh key to access to the drive by rsync (+ssh) or sftp
-    private_key, public_key = analitico.utilities.ssh_key_generator()
+    private_key, public_key = api.utilities.ssh_key_generator()
     # upload the public key onto the drive
     ssh_path = os.path.join(subaccount_path, ".ssh")
     if not driver.exists(ssh_path):
