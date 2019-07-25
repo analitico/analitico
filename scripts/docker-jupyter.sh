@@ -9,7 +9,7 @@ export PYTHONPATH=/home/www/analitico/libs/
 source venv/bin/activate
 # start jupyter notebook
 echo "Start jupyter notebook" 
-exec jupyter notebook --port=8888 --ip=0.0.0.0 --no-browser \
+exec jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser \
 --keyfile='/home/www/analitico/analitico.ai.key' \
 --certfile='/home/www/analitico/analitico.ai.crt' \
 --notebook-dir='/home/www/analitico/notebooks'  \
