@@ -37,8 +37,8 @@ class K8Tests(AnaliticoApiTestCase):
     """ Test kubernets API to build and deploy on knative """
 
     stage = api.k8.K8_STAGE_STAGING
-    item_id = "nb_TEST_001"  # help registry cleanups
-    item_id_normalized = "nb-test-001-staging"
+    item_id = "nb_K8Tests_test_k8_deploy"  # help registry cleanups
+    item_id_normalized = "nb-k8tests-test-k8-deploy-staging"
 
     def deploy_service(self):
         self.post_notebook("notebook11.ipynb", self.item_id)
@@ -48,9 +48,9 @@ class K8Tests(AnaliticoApiTestCase):
             "docker",
             {
                 "type": "analitico/docker",
-                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon@sha256:b77b0fe771fb06df18ee9f9ed78f0707bca897ba0e77a938171a5ab184019bb9",
+                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon@sha256:4c8ac8b3b7e321adb28759374cc82339bd0d4ca7a9136c119664c36f959fe906",
                 "image_name": "eu.gcr.io/analitico-api/rx-fvdmbmon:K8Tests_test_k8_deploy",
-                "image_id": "sha256:e60d4b0c3ac0f5ec647d8771c9184b547775707a1589438da3b6493f45a2a1fa",
+                "image_id": "sha256:4c8ac8b3b7e321adb28759374cc82339bd0d4ca7a9136c119664c36f959fe906",
             },
         )
         notebook.save()
