@@ -139,7 +139,7 @@ website-s6:
       docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
       docker stop analitico; 
       docker rm analitico; 
-      docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${BUILD_IMAGE_URL} ./scripts/website-start.sh; 
+      docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${BUILD_ANALITICO_IMAGE_URL} ./scripts/website-start.sh; 
       docker image prune -f -a;" 
 
 website-k8:
