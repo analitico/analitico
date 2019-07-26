@@ -246,7 +246,9 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
     if job_action == analitico.ACTION_RUN or job_action == analitico.ACTION_RUN_AND_BUILD:
         # pass command that should be executed on job docker
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-run-template.yaml")
-        configs["run_command"] = str(["python3", "./tasks/job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"])
+        configs["run_command"] = str(
+            ["python3", "./tasks/job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"]
+        )
 
         configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client{image_tag}"
 
