@@ -61,7 +61,9 @@ class DockerTests(AnaliticoApiTestCase):
             # build from a temp folder
             with tempfile.TemporaryDirectory() as tmp:
                 # prepare staff for building analitico-service
-                notebook_name = os.path.join(os.path.dirname(os.path.realpath(__file__)) + "/notebooks/", self.notebook_filename)
+                notebook_name = os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)) + "/notebooks/", self.notebook_filename
+                )
                 save_text(read_text(notebook_name), os.path.join(tmp, "notebook.ipynb"))
                 copy_directory(os.path.join(BASE_DIR, "analitico"), os.path.join(tmp, "analitico"))
                 copy_directory(os.path.join(BASE_DIR, "s24"), os.path.join(tmp, "s24"))
@@ -72,10 +74,6 @@ class DockerTests(AnaliticoApiTestCase):
 
                 self.docker_client = docker.from_env()
                 self.docker_build = api.k8.k8_build_v2(self.notebook, self.notebook, push=False)
-
-                self.notebook = Notebook.objects.get(pk=self.notebook_id)
-                self.endpoint = Endpoint(id=self.endpoint_id, workspace=self.tests.ws1)
-                self.endpoint.save()
 
         def get_container_url(self, relative_url):
             return f"http://127.0.0.1:{DOCKER_PORT}{relative_url}"
@@ -108,7 +106,7 @@ class DockerTests(AnaliticoApiTestCase):
                 detach=True,
                 ports={f"{DOCKER_PORT}/tcp": DOCKER_PORT},
                 environment={"PORT": DOCKER_PORT},
-                command=f"./serverless-start.sh",
+                command=f"./tasks/serverless-start.sh",
             )
             # wait for gunicorn to start up
             time.sleep(2)
