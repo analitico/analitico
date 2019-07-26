@@ -151,7 +151,7 @@ class DatasetTests(AnaliticoApiTestCase):
                 # TODO why parquet file doesn't have the generic mime?
                 self.assertEqual(data["attributes"]["content_type"], None)
                 # NOTE you cannot rely on data size being the same of different platforms
-                self.assertEqual(data["attributes"]["size"], 27957)
+                # self.assertEqual(data["attributes"]["size"], 27957)
 
             # check asset again, this time with fresh metadata obtain from reading the file
             response = self.client.get(url + "?metadata=true&refresh=true")
@@ -186,7 +186,7 @@ class DatasetTests(AnaliticoApiTestCase):
                 # TODO why parquet file doesn't have the generic mime?
                 self.assertEqual(data["attributes"]["content_type"], None)
                 # NOTE you cannot rely on data size being the same of different platforms
-                self.assertEqual(data["attributes"]["size"], 14190)
+                # self.assertEqual(data["attributes"]["size"], 14190)
 
             # check asset again, this time with fresh metadata obtain from reading the file
             response = self.client.get(url + "?metadata=true&refresh=true")
