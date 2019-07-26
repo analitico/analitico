@@ -80,7 +80,7 @@ class UserSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 ##
 
 
-class UserViewSet(ItemViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class UserViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A user profile """
 
     item_class = api.models.User
