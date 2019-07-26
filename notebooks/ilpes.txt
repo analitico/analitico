@@ -1,0 +1,57 @@
+
+
+# oggetto sdk per lavorare col servizio, workspace di test, token di test
+sdk = analitico.authorize_sdk(endpoint="https://staging.analitico.ai/api/", token="tok_pbn6gxbj", workspace_id="ws_2q2fq3wg")
+
+# ho creato io un dataset apposta dove buttare quello che vuoi...
+dataset = sdk.get_dataset("ds_aqp195k4")
+
+# creo un dataframe io cosi giusto per averlo ma tu l'avrai da sql...
+from sklearn.datasets import load_boston
+boston_dataset = load_boston()
+df = pd.DataFrame(boston_dataset.data, columns=boston_dataset.feature_names)
+
+# salva come parquet e carica...
+dataset.upload("boston.parquet", df=boston_df)
+
+
+
+
+# qui di seguito copio i dati del workspace di test giusto cosi non vanno persi...
+
+{
+  "data": {
+    "type": "analitico/workspace",
+    "id": "ws_2q2fq3wg",
+    "attributes": {
+      "user": "massimiliano@supermercato24.it",
+      "title": "",
+      "description": "",
+      "created_at": "2019-07-12T18:47:49.846449+02:00",
+      "updated_at": "2019-07-12T18:48:08.350735+02:00",
+      "storage": {
+        "driver": "hetzner-webdav",
+        "storagebox_id": "194538",
+        "drive_id": "dr_box001",
+        "account_id": "206378",
+        "url": "https://u206378-sub7.your-storagebox.de",
+        "credentials": {
+          "username": "u206378-sub7",
+          "password": "NoZFTpoy0XziLrqM",
+          "ssh_private_key": "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQy9OdXQwU0lZSXUvUGsKZ3BpUVdEN01rTWsxVGc0TDRXZXNkWG1Jd3M1WGVLdGU3MEpXVTd3bHFjWGxoRytDcFdnNmhUOVRTZ2JXMjljMgo1WUI0NWlza3JZdDJyZDdZbkJBWnJ0SmxRTHJOdTZ2MWlvUDZ2NjJ3L3lmMlNBeWVEa0t1WnVOblI5N2VJL0VOCmtzOFg2NzhxSW9XKzE1OHk5K3B6a2wwRWFwNk1zVkJkM3ZGNEV6bWNtbDhYMDBId0xsZGJsdG54ODE0ZmdiTGEKRGZvd2NyWTVSTXZOL2s3aGdrR3lVS1hOVTR1VW1qMllpbDJrblA1Wm9RN0craXQyZDlYVTM0UUJsWGZzVEVHRApaN0cvcHU4anRUZlNCeVppaWhQeDFrY0FjdGZJWGF1MUtJVE9VdUlBbkdYM0k2ZVlMK0habjI0VEUxclA5UmtPCkROL1VkeHBEQWdNQkFBRUNnZ0VBTUJ2NFI2eUxsSno5Y3l2c2lMeTdLQ3J4aE9qYm5kK2Jmd2ViaVc1Q0RqMzkKR0Fpb3J5R29QKzJrTGVnUlNsU2xrYnUrd0F6ckJab1FYdTZGVVdYUHl3MmkvandteW1jUm9mU2JXUUJkUDdBTgpSdDBQOGNIU1NLc1orZHdNMktPTDRXZGZwYmV1ZWtPZXZhU0hXR1JuRjRuU0RyOGZmZXBrWWFtY242VFh1VnZmCldvQUVlZWRwVXRMMUZpcW5ybTR4TWd4NHJoZngrK0FnVks3Ums4am1pdHpqY0hSbnpFVnBMZERQdzNTUmtiMUUKRmJ4YXZVajM4czRwblkxWWY0b3dybTFYMEtOMjZlVTdnOGxtL0FEdFhqMW9hbnZtd0FhblhOM0FRVnZxaFVmQgppNVFUbzBEUUVoSDgvdzQ2VTY2U2N0M3dkZ3JpclkrVUlzcjAvUlV5eVFLQmdRRDQ1RVhWNndxWVFvVWNTdVJWCkNjcWVSYmtNb1RGRG5hYzdDMXpYdHhiYW43TmFIelNaM0Q2dmpxWlZxSUpYZVQyQ245TjltdnpzbUQrNEg4M2oKZVgyR0w2c0psS25RZjQzWmtXVGozZkpwNkx2VG95WnJYMjQxYXNqZ1ZZU1JPMFBwaGhNTVBTQTk3c2huQlFDdwpHbWdPL0plZk9xOWxHVzJnWGdKRFRwL2ZQUUtCZ1FERXJQTmZqY2ZhdHdlbGZvU2I3dUpLN2FFbDZTV1crbHhSCjhaTk9YdTFQcUJ2ZFlMcGxJYUEwWEp6cnpHRDRKSUpoNXRaeVZ3bzZweS9lSWdyYW9OcXlvRmhhbVRYZmMyTHMKWktNVDJVcXRaR3BNVW5VV3JRT0E4b0NwRllhMDh6RW9mZVd1SEFrTy90N2MyZVhXUUt4N014a05QaGUzNmlISQp1enZna2dwM2Z3S0JnSGNNSU1jd1ZISDlwMU9nRXRVR0NPOXBaQmpCWlNIMVg0N2pZWFlnc2dMQ1RuUTE1dUFOCk04S2ZGYnAxRGxzdXQ1Z3FRR3VjM1l1QlMwRVRuVlJId1IyVTRWZUV6ekRXUWhBbDlqN3o0MFo3TnBRRlBwUXYKSWpUVXJkNTNxU0FhVytKdjZkNTV3bGs5UklmYUlia1orRm5xd2M4OHI3WkkwbUhaZFhXaVB0LzFBb0dBU0ZPbQpDSnpXUTF1TjUxRjRxUE9YcXFCcTQ4c3l0S3dMYVdNaW5lNlE3UHRRaS8vM2JCdUtrOWIvS2tQMTRTdGorMmJ0CnRBeklTVHVVZ2VjWkFMK296WW5rRkNWRng0L2ljRGF1TmkxeHBnUkloeHJIem5mLzB0cmJiOUxud0FHek1VWGoKUWowekk1MmREYkRnTWdPRXFxWG03NVRIR2k1ekVDT3k2R29zaVRjQ2dZRUFtTkQxTFZrNkc1ZmFVVlNHbEhjYQp5MXBETHdGclFIS3NFRHJsYXdxdEw3azRBajdjY0tycUxBNXBHeUtjaFBLL2tMcWViS21pVUN2NXFSMTBEVWwwCkpBMXdndC8zcUdhTCtucURCdTZjZGU1S1I2ZjBXZGM5RlM5cjR5ZGNzd3JRRk8wbHpSMnpnZXhxYjJPYm5xTHQKbjJBN1BsVVRTLzBhcXF6WU95TGVXbmc9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K",
+          "ssh_public_key": "c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBREFRQUJBQUFCQVFDL051dDBTSVlJdS9Qa2dwaVFXRDdNa01rMVRnNEw0V2VzZFhtSXdzNVhlS3RlNzBKV1U3d2xxY1hsaEcrQ3BXZzZoVDlUU2diVzI5YzI1WUI0NWlza3JZdDJyZDdZbkJBWnJ0SmxRTHJOdTZ2MWlvUDZ2NjJ3L3lmMlNBeWVEa0t1WnVOblI5N2VJL0VOa3M4WDY3OHFJb1crMTU4eTkrcHprbDBFYXA2TXNWQmQzdkY0RXptY21sOFgwMEh3TGxkYmx0bng4MTRmZ2JMYURmb3djclk1Uk12Ti9rN2hna0d5VUtYTlU0dVVtajJZaWwya25QNVpvUTdHK2l0MmQ5WFUzNFFCbFhmc1RFR0RaN0cvcHU4anRUZlNCeVppaWhQeDFrY0FjdGZJWGF1MUtJVE9VdUlBbkdYM0k2ZVlMK0habjI0VEUxclA5UmtPRE4vVWR4cEQ="
+        }
+      },
+      "permissions": {},
+      "slack": {
+        "button": {
+          "url": "https://slack.com/oauth/authorize?client_id=556805619427.671910709446&scope=incoming-webhook&state=ws_2q2fq3wg%3AXuAWLJvVCoCVHHzBPJk77Xdgb0g&redirect_uri=https%3A//127.0.0.1%3A8000/api/workspaces/ws_2q2fq3wg/slack/oauth",
+          "html": "<a href=\"https://slack.com/oauth/authorize?client_id=556805619427.671910709446&scope=incoming-webhook&state=ws_2q2fq3wg%3AXuAWLJvVCoCVHHzBPJk77Xdgb0g&redirect_uri=https%3A//127.0.0.1%3A8000/api/workspaces/ws_2q2fq3wg/slack/oauth\"><img alt=\"Add to Slack\" height=\"40\" width=\"139\" src=\"https://platform.slack-edge.com/img/add_to_slack.png\" srcset=\"https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x\"></a>"
+        }
+      }
+    },
+    "links": {
+      "self": "https://127.0.0.1:8000/api/workspaces/ws_2q2fq3wg"
+    }
+  }
+}
