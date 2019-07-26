@@ -20,6 +20,7 @@ from __future__ import with_statement
 import os
 import re
 import unicodedata
+import simplejson as json
 
 from libcloud.utils.py3 import u
 from libcloud.common.base import Connection
@@ -230,7 +231,12 @@ class WebdavStorageDriver(StorageDriver):
             if metadata_elem:
                 for child in metadata_elem.getchildren():
                     tag = child.tag.split("}", 1)[1]
-                    metadata[tag] = child.text
+
+                    # deserialize complex items that were serialized to json
+                    if tag.endswith("-json"):
+                        metadata[tag[:-5]] = json.loads(child.text)
+                    else:
+                        metadata[tag] = child.text
 
             return Object(
                 name=name,
@@ -314,7 +320,7 @@ class WebdavStorageDriver(StorageDriver):
         self._send("DELETE", path, 204)
         return True
 
-    def upload(self, local_path_or_fileobj, remote_path, extra=None):
+    def upload(self, local_path_or_fileobj, remote_path, metadata=None):
         """ Upload a single file from filename or file-like object. """
         if isinstance(local_path_or_fileobj, str):
             with open(local_path_or_fileobj, "rb") as f:
@@ -322,9 +328,9 @@ class WebdavStorageDriver(StorageDriver):
         else:
             self._send("PUT", remote_path, (200, 201, 204), data=local_path_or_fileobj)
 
-        if extra:
-            # store custom properties with object
-            self.set_properties(remote_path, extra)
+        # store custom properties with object, if the object had some metadata
+        # associated with it already it will be overwritten by the new metadata
+        self.set_metadata(remote_path, metadata)
 
     def download(self, remote_path, local_path_or_fileobj):
         response = self._send("GET", remote_path, 200, stream=True)
@@ -376,20 +382,24 @@ class WebdavStorageDriver(StorageDriver):
         response = self._send("HEAD", remote_path, (200, 301, 404))
         return True if response.status_code != 404 else False
 
-    def set_properties(self, remote_path, extra=None) -> bool:
+    def set_metadata(self, remote_path, metadata=None) -> bool:
         """ 
-        Apply extra properties to remote_path item (can also be used to clear properties). 
-        At the moment the only properties that are applied are the ones in the "meta_data"
-        field which are applied as custom properties and then returned in Object.meta_data.
-        You can remove metadata by removing the "meta_data" field.
+        Apply extra metadata properties to remote_path item (can also be used to clear properties). 
+        which are applied as custom properties and then returned in Object.meta_data.
+        You can remove metadata by setting metadata to None.
         """
         patch_xml = '<?xml version="1.0" encoding="utf-8" ?>'
         patch_xml += '<dav:propertyupdate xmlns:dav="DAV:" xmlns:analitico="https://analitico.ai">'
         patch_xml += "<dav:set><dav:prop><analitico:metadata>"
-        if extra and METADATA_EXTRA_TAG in extra:
-            metadata = extra.get(METADATA_EXTRA_TAG, None)
+        if metadata:
             for key, value in metadata.items():
                 key = escape(slugify(key))
+
+                # serialize complex objects to json, key becomes key-json and is deserialized upon read
+                if not (isinstance(value, str) or isinstance(value, int)):
+                    key = key + "-json"
+                    value = json.dumps(value)
+
                 patch_xml += f"<analitico:{key}>{escape(str(value))}</analitico:{key}>"
         patch_xml += "</analitico:metadata></dav:prop></dav:set>"
         patch_xml += "</dav:propertyupdate>"
