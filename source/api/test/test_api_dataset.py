@@ -19,7 +19,7 @@ import analitico
 import analitico.plugin
 
 from analitico import logger
-from .utils import AnaliticoApiTestCase
+from .utils import AnaliticoApiTestCase, ASSETS_PATH
 from api.pagination import MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
 
 # conflicts with django's dynamically generated model.objects
@@ -44,33 +44,33 @@ class DatasetTests(AnaliticoApiTestCase):
 
     def upload_dataset(self, dataset="boston", suffix=".csv"):
         # https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html
-        with tempfile.NamedTemporaryFile(suffix=suffix) as f:
 
-            if dataset == "boston":
-                data = sklearn.datasets.load_boston()
-            elif dataset == "wine":
-                data = sklearn.datasets.load_wine()
-            elif dataset == "iris":
-                data = sklearn.datasets.load_iris()
+        filename = os.path.join(ASSETS_PATH, dataset + suffix)
+        if dataset == "boston":
+            data = sklearn.datasets.load_boston()
+        elif dataset == "wine":
+            data = sklearn.datasets.load_wine()
+        elif dataset == "iris":
+            data = sklearn.datasets.load_iris()
 
-            # np.c_ is the numpy concatenate function
-            d1 = np.c_[data["data"], data["target"]]
-            d2 = list(data["feature_names"])
-            d2.append("target")
-            df = pd.DataFrame(data=d1, columns=d2)
+        # np.c_ is the numpy concatenate function
+        d1 = np.c_[data["data"], data["target"]]
+        d2 = list(data["feature_names"])
+        d2.append("target")
+        df = pd.DataFrame(data=d1, columns=d2)
 
-            mimetype = "application/octet-stream"
-            if suffix == ".csv":
-                df.to_csv(f.name, index=False)  # no index column!
-                mimetype = "text/csv"
-            elif suffix == ".parquet":
-                df.to_parquet(f.name)
-                mimetype = PARQUET_MIME_TYPE
-            else:
-                raise NotImplementedError(f"{suffix} format is not supported")
-            url = reverse("api:dataset-files", args=("ds_sklearn", f"{dataset}{suffix}"))
-            response = self.upload_file(url, f.name, mimetype, token=self.token1)
-            return url
+        mimetype = "application/octet-stream"
+        if suffix == ".csv":
+            df.to_csv(filename, index=False)  # no index column!
+            mimetype = "text/csv"
+        elif suffix == ".parquet":
+            df.to_parquet(filename)
+            mimetype = PARQUET_MIME_TYPE
+        else:
+            raise NotImplementedError(f"{suffix} format is not supported")
+        url = reverse("api:dataset-files", args=("ds_sklearn", f"{dataset}{suffix}"))
+        self.upload_file(url, filename, mimetype, token=self.token1)
+        return url
 
     def upload_large_random_data(self, dataset_id, N=10000, k=5, suffix=".csv"):
         df = pd.DataFrame(
@@ -392,7 +392,7 @@ class DatasetTests(AnaliticoApiTestCase):
             total_ms = time_ms(total_ms)
             average_ms = float(total_ms) / 40
             self.assertLess(int(loading_ms), 150, "Average page loading time should be less than 150ms")
-            logger.info(f"Average page loading time for {suffix} is {average_ms} ms")
+            logger.info("Average page loading time for %s is %d ms", suffix, average_ms)
 
     def test_dataset_paging_larger_page(self):
         for suffix in TEST_DATA_SUFFIXES:
