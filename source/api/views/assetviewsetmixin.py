@@ -1,4 +1,3 @@
-# ItemSerializer and ItemViewSet for item APIs
 # pylint: disable=no-member
 
 import os
@@ -8,44 +7,23 @@ import io
 
 from pathlib import Path
 from django.http.response import StreamingHttpResponse
-from django.utils.http import parse_http_date_safe, http_date
-
-import rest_framework
-import rest_framework.viewsets
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, permission_classes
-from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework.serializers import Serializer
 
-from analitico import ACTION_PROCESS, AnaliticoException
-from analitico.utilities import get_csv_row_count
-from api.models import Dataset, Workspace
+from analitico import AnaliticoException
+from api.models import Workspace
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
-from api.utilities import get_query_parameter, get_query_parameter_as_bool
-from api.factory import ServerFactory
+from api.utilities import get_query_parameter_as_bool
 
 import libcloud
 import api.libcloud
 
 from api.libcloud.metadata import get_file_metadata
-from libcloud.storage.base import StorageDriver
-
-##
-## Cache
-##
-
-import diskcache
-import tempfile
-
-cache_directory = os.path.join(tempfile.gettempdir(), "analitico-disk-cache")
-if not os.path.isdir(cache_directory):
-    os.makedirs(cache_directory)
-cache = diskcache.Cache(cache_directory)
-
 
 ##
 ## FilesSerializer
