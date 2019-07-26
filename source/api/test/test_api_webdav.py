@@ -123,7 +123,7 @@ class WebdavTests(AnaliticoApiTestCase):
         try:
             # asset_id matches filename
             url = reverse("api:workspace-files", args=("ws_storage_webdav", UNICORN_FILENAME))
-            response = self.upload_file(url, UNICORN_FILENAME, "image/png", self.token2, status_code=status.HTTP_404_NOT_FOUND)
+            self.upload_file(url, UNICORN_FILENAME, "image/png", self.token2, status_code=status.HTTP_404_NOT_FOUND)
         except Exception as exc:
             raise exc
 
@@ -132,7 +132,7 @@ class WebdavTests(AnaliticoApiTestCase):
         try:
             # asset_id matches filename
             url = reverse("api:workspace-files", args=("ws_storage_webdav", UNICORN_FILENAME))
-            response = self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=None, status=status.HTTP_404_NOT_FOUND)
+            response = self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED)
         except Exception as exc:
             raise exc
 
@@ -142,8 +142,6 @@ class WebdavTests(AnaliticoApiTestCase):
             # upload an image to storage
             url = reverse("api:workspace-files", args=("ws_storage_webdav", "download1.jpg"))
             response1 = self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=self.token1)
-            self.assertEqual(response1.data[0]["id"], "download1.jpg")
-            self.assertIn("hash", response1.data[0])
 
             # now dowload the same asset
             self.auth_token(self.token1)
