@@ -267,3 +267,5 @@ class JobsTests(AnaliticoApiTestCase):
             cron=CRON_EVERY_HOUR,
         )
         self.assertEqual(len(jobs), 0)
+
+    # TODO test job with additional parameters?

@@ -1,0 +1,9 @@
+{
+	"type": "analitico/dataset",
+	"id": "ds_wine",
+	"attributes": {
+		"workspace_id": "ws_samples",
+		"title": "Placeholder for SKLearn Wine Dataset",
+		"description": "https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html"
+	}
+}

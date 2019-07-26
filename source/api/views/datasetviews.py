@@ -59,18 +59,5 @@ class DatasetViewSet(
     search_fields = ITEM_SEARCH_FIELDS  # defaults
     filterset_fields = ITEM_FILTERSET_FIELDS  # defaults
 
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["get"], detail=True, url_name="detail-data-csv", url_path="data/csv")
-    def data_csv(self, request, pk):
-        return self.asset_detail(request, pk, ASSETS_CLASS_DATA, "data.csv")
-
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["get"], detail=True, url_name="detail-data-json", url_path="data/json")
-    def data_json(self, request, pk):
-        """ Returns /data/data.csv as an array of json records with paging support """
-        return self.asset_download_csv_as_json_with_paging(request, pk, ASSETS_CLASS_DATA, "data.csv")
-
-    @permission_classes((IsAuthenticated,))
-    @action(methods=["get"], detail=True, url_name="detail-data-info", url_path="data/info")
-    def data_info(self, request, pk):
-        return self.asset_detail_info(request, pk, ASSETS_CLASS_DATA, "data.csv")
+    # Views that are used to see records in csv and parquet
+    # files can be found in the assets/files mixin

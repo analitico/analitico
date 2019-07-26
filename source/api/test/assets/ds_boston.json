@@ -1,0 +1,9 @@
+{
+	"type": "analitico/dataset",
+	"id": "ds_boston",
+	"attributes": {
+		"workspace_id": "ws_samples",
+		"title": "Placeholder for SKLearn Boston Dataset",
+		"description": "A placeholder description"
+	}
+}

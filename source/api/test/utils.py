@@ -121,29 +121,24 @@ class AnaliticoApiTestCase(APITestCase):
         else:
             self.client.logout()
 
-    def upload_file(self, url, asset_name, content_type, token=None, status_code=status.HTTP_201_CREATED):
+    def upload_file(self, url, asset_name, content_type, token=None):
         """ Uploads a single asset to given url service, performs basic checks """
         asset_path = asset_name
         if not os.path.isfile(asset_name):
             asset_path = os.path.join(ASSETS_PATH, asset_name)
-        asset_size = os.path.getsize(asset_path)
         with open(asset_path, "rb") as asset_file:
 
             asset_data = asset_file.read()
             asset_uploaded = SimpleUploadedFile(asset_name, asset_data, content_type)
-
             data = {"file": asset_uploaded}
+
             # no token means no authentication, not use default token
             self.auth_token(token)
             response = self.client.post(url, data, format="multipart")
-            self.assertEqual(response.status_code, status_code)
-
-            if status_code == status.HTTP_201_CREATED:
-                self.assertEqual(len(response.data), 1)
-                data = response.data[0]
-                self.assertEqual(data["content_type"], content_type)
-                self.assertTrue(data["filename"] in asset_name)
-                self.assertEqual(data["size"], asset_size)
+            self.assertTrue(
+                response.status_code == status.HTTP_201_CREATED or response.status_code == status.HTTP_204_NO_CONTENT
+            )
+            self.assertIsNone(response.data)
             return response
 
     def setup_basics(self):

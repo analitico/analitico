@@ -32,7 +32,6 @@ ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 
 @pytest.mark.django_db
 class ParquetTests(AnaliticoApiTestCase):
-
     def setUp(self):
         self.setup_basics()
         self.ds1 = Dataset(workspace=self.ws1, id="ds_1", title="Dataset1")

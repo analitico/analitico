@@ -1,0 +1,9 @@
+{
+	"type": "analitico/dataset",
+	"id": "ds_sklearn",
+	"attributes": {
+		"workspace_id": "ws_samples",
+		"title": "Placeholder for sklearn dataset",
+		"description": "A placeholder description"
+	}
+}

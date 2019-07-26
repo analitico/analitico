@@ -1,4 +1,3 @@
-import io
 import os
 import os.path
 import numpy as np
@@ -7,49 +6,73 @@ import tempfile
 import random
 import string
 import pytest
+import sklearn
+import sklearn.datasets
 
-from django.conf import settings
-from django.test import TestCase
+from django.test import tag
 from django.urls import reverse
-from django.http.response import StreamingHttpResponse
-from django.utils.dateparse import parse_datetime
-from django.core.files.uploadedfile import SimpleUploadedFile
-
-import django.utils.http
-import django.core.files
 
 from rest_framework import status
-from analitico.utilities import read_json, get_dict_dot, time_ms, logger
+from analitico.utilities import time_ms
 
 import analitico
 import analitico.plugin
-import api.models
 
-from analitico.status import STATUS_RUNNING
-from api.models import Job
+from analitico import logger
 from .utils import AnaliticoApiTestCase
-from analitico import ACTION_PROCESS
-from api.pagination import MIN_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
-from api.models import ASSETS_CLASS_DATA, ASSETS_CLASS_ASSETS
+from api.pagination import MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 # pylint: disable=unused-variable
+
+# we test and try files using these formats
+TEST_DATA_SUFFIXES = (".csv", ".parquet")
+
+# TODO find parquet's real mime type
+PARQUET_MIME_TYPE = "application/octet-stream"
 
 
 @pytest.mark.django_db
 class DatasetTests(AnaliticoApiTestCase):
     """ Test datasets operations like uploading assets, processing pipelines, downloading data, etc """
 
-    def _upload_titanic(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv", asset_class="assets"):
-        url = reverse("api:dataset-asset-detail", args=(dataset_id, asset_class, asset_name))
+    def upload_titanic_csv(self, dataset_id="ds_titanic_1", asset_name="titanic_1.csv"):
+        url = reverse("api:dataset-files", args=(dataset_id, asset_name))
         response = self.upload_file(url, asset_name, "text/csv", token=self.token1)
-        self.assertEqual(response.data[0]["id"], asset_name)
-        path = "/workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
-        self.assertEqual(response.data[0]["path"], path)
         return url, response
 
-    def upload_large_random_data_csv(self, dataset_id, N=10000, k=5):
+    def upload_dataset(self, dataset="boston", suffix=".csv"):
+        # https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html
+        with tempfile.NamedTemporaryFile(suffix=suffix) as f:
+
+            if dataset == "boston":
+                data = sklearn.datasets.load_boston()
+            elif dataset == "wine":
+                data = sklearn.datasets.load_wine()
+            elif dataset == "iris":
+                data = sklearn.datasets.load_iris()
+
+            # np.c_ is the numpy concatenate function
+            d1 = np.c_[data["data"], data["target"]]
+            d2 = list(data["feature_names"])
+            d2.append("target")
+            df = pd.DataFrame(data=d1, columns=d2)
+
+            mimetype = "application/octet-stream"
+            if suffix == ".csv":
+                df.to_csv(f.name, index=False)  # no index column!
+                mimetype = "text/csv"
+            elif suffix == ".parquet":
+                df.to_parquet(f.name)
+                mimetype = PARQUET_MIME_TYPE
+            else:
+                raise NotImplementedError(f"{suffix} format is not supported")
+            url = reverse("api:dataset-files", args=("ds_sklearn", f"{dataset}{suffix}"))
+            response = self.upload_file(url, f.name, mimetype, token=self.token1)
+            return url
+
+    def upload_large_random_data(self, dataset_id, N=10000, k=5, suffix=".csv"):
         df = pd.DataFrame(
             {
                 "Number": range(0, N, 1),
@@ -57,13 +80,15 @@ class DatasetTests(AnaliticoApiTestCase):
                 "String": pd.Series(random.choice(string.ascii_uppercase) for _ in range(N)),
             }
         )
-        with tempfile.NamedTemporaryFile(suffix=".csv") as csv_file:
-            df.to_csv(csv_file.name)
-            self.assertTrue(os.path.isfile(csv_file.name))
-            csv_file.seek(0)
-            url = reverse("api:dataset-asset-detail", args=(dataset_id, "data", "data.csv"))
-            response = self.upload_file(url, csv_file.name, "text/csv", token=self.token1)
-            self.assertEqual(response.data[0]["id"], "data.csv")
+        url = reverse("api:dataset-files", args=(dataset_id, f"data{suffix}"))
+        with tempfile.NamedTemporaryFile(suffix=suffix) as f:
+            if suffix == ".csv":
+                df.to_csv(f.name)
+                self.upload_file(url, f.name, "text/csv", token=self.token1)
+            if suffix == ".parquet":
+                df.to_parquet(f.name)
+                self.upload_file(url, f.name, PARQUET_MIME_TYPE, token=self.token1)
+        return url
 
     def setUp(self):
         self.setup_basics()
@@ -77,14 +102,12 @@ class DatasetTests(AnaliticoApiTestCase):
             raise exc
 
     def test_dataset_get_titanic(self):
-        """ Test getting a dataset """
         item = self.get_item("dataset", "ds_titanic_1", self.token1)
         self.assertEqual(item["id"], "ds_titanic_1")
         self.assertEqual(item["attributes"]["title"], "Kaggle - Titanic training dataset (train.csv)")
         self.assertEqual(item["attributes"]["description"], "https://www.kaggle.com/c/titanic")
 
-    def test_dataset_get_titanic_upload_csv(self):
-        """ Test uploading csv as a dataset asset """
+    def test_dataset_csv_get_titanic_upload_csv_check_metadata(self):
         # no assets before uploading
         ds_url = reverse("api:dataset-detail", args=("ds_titanic_1",))
         ds_response = self.client.get(ds_url, format="json")
@@ -92,423 +115,309 @@ class DatasetTests(AnaliticoApiTestCase):
         self.assertTrue("assets" not in ds_data1["attributes"])
 
         # upload titanic_1.csv
-        _, asset_response = self._upload_titanic("ds_titanic_1")
-        ds_asset1 = asset_response.data[0]
-        self.assertEqual(ds_asset1["id"], "titanic_1.csv")
-        self.assertEqual(ds_asset1["filename"], "titanic_1.csv")
-        self.assertEqual(ds_asset1["content_type"], "text/csv")
-        self.assertEqual(ds_asset1["size"], 61216)
+        self.upload_titanic_csv("ds_titanic_1")
 
-        # check dataset again, this time should have assets
-        ds_response2 = self.client.get(ds_url, format="json")
-        ds_data2 = ds_response2.data
-        self.assertTrue("assets" in ds_data2["attributes"])
-        ds_asset2 = ds_data2["attributes"]["assets"][0]
-
-        # assets from upload same as one from later query
-        self.assertEqual(ds_asset2["id"], "titanic_1.csv")
-        self.assertEqual(ds_asset2["filename"], "titanic_1.csv")
-        self.assertEqual(ds_asset2["content_type"], "text/csv")
-        self.assertEqual(ds_asset2["size"], 61216)
-
-    def test_dataset_job_action_unsupported(self):
-        """ Test requesting a job with an action that is not supported """
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_1", "bogus_action"))
-        job_response = self.client.post(job_url, format="json")
-        self.assertEqual(job_response.status_code, 405)
-        self.assertEqual(job_response.status_text, "Method Not Allowed")
-
-    def test_dataset_job_action_process(self):
-        """ Test uploading csv then requesting to process it """
-        _, _ = self._upload_titanic("ds_titanic_1")
-
-        # request job processing
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_1", ACTION_PROCESS))
-        job_response = self.client.post(job_url, format="json")
-        job_data = job_response.data
-
-        # check job that was created
-        self.assertEqual(job_data["id"][:3], "jb_")
-        self.assertEqual(job_data["type"], "analitico/job")
-        self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
-        self.assertEqual(job_data["attributes"]["workspace_id"], "ws_samples")
-        self.assertEqual(job_data["attributes"]["action"], "dataset/process")
-        # self.assertEqual(job_data["attributes"]["status"], STATUS_RUNNING)
-
-    def test_dataset_job_action_process_with_extra_query_values(self):
-        """ Test requesting a process action with additional query_values """
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_1", ACTION_PROCESS))
-        job_response = self.client.post(job_url, {"extra1": "value1", "extra2": "value2"})
-        job_data = job_response.data
-
-        # TODO check job that was created has extra params
-        self.assertEqual(job_data["attributes"]["item_id"], "ds_titanic_1")
-        self.assertEqual(job_data["attributes"]["workspace_id"], "ws_samples")
-        self.assertEqual(job_data["attributes"]["action"], "dataset/process")
-
-    def REFACTOR_USING_NOTEBOOKS_test_dataset_job_action_process_completed_url_asset(self):
-        """ Test uploading csv then requesting to process it and checking that it completed """
-        # request job processing
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_2", ACTION_PROCESS)) + "?async=false"
-        job_response = self.client.post(job_url, format="json")
-        job_data = job_response.data
-        self.assertStatusCode(job_response.status_code)
-        self.assertEqual(job_data["attributes"]["status"], "completed")
-
-        # check dataset again, this time should have data asset
-        ds_url = reverse("api:dataset-detail", args=("ds_titanic_2",))
-        ds_response = self.client.get(ds_url, format="json")
+        # check dataset again, this time should have csv asset
+        ds_url = reverse("api:dataset-files", args=("ds_titanic_1", "titanic_1.csv")) + "?metadata=true"
+        ds_response = self.client.get(ds_url)
         ds_data = ds_response.data
-        self.assertEqual(len(ds_data["attributes"]["data"]), 1)
-        ds_asset = ds_data["attributes"]["data"][0]
-        self.assertEqual(ds_asset["id"], "data.csv")
-        self.assertEqual(ds_asset["filename"], "data.csv")
-        self.assertEqual(ds_asset["content_type"], "text/csv")
-        self.assertTrue("schema" in ds_asset)
+        self.assertEqual(len(ds_data), 1)
+        self.assertEqual(ds_data[0]["id"], "/titanic_1.csv")
+        self.assertEqual(ds_data[0]["attributes"]["content_type"], "text/csv")
+        self.assertEqual(ds_data[0]["attributes"]["size"], 61216)
 
-        # dataset should have schema
-        ds_columns = ds_asset["schema"]["columns"]
-        self.assertEqual(len(ds_columns), 12)
-        self.assertEqual(ds_columns[0]["name"], "PassengerId")
-        self.assertEqual(ds_columns[0]["type"], "integer")
+    def test_dataset_upload_boston_check_metadata(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            # upload boston.suffix
+            url = self.upload_dataset(dataset="boston", suffix=suffix)
 
-        # retrieve asset info by itself using asset/json endpoint
-        meta_url = reverse("api:dataset-asset-detail-info", args=("ds_titanic_2", "data", "data.csv"))
-        meta_response = self.client.get(meta_url)
-        self.assertEqual(meta_response["Content-Type"], "application/json")
-        self.assertIsNotNone(meta_response.data)
-        meta = meta_response.data
-        self.assertEqual(meta["content_type"], "text/csv")
-        self.assertEqual(meta["filename"], "data.csv")
-        self.assertEqual(meta["id"], "data.csv")
-        self.assertEqual(meta["path"], "workspaces/ws_samples/datasets/ds_titanic_2/data/data.csv")
-        self.assertEqual(meta["url"], "analitico://datasets/ds_titanic_2/data/data.csv")
+            # check asset again, should have only basic file metadata
+            response = self.client.get(url + "?metadata=true")
+            self.assertEqual(len(response.data), 1)
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/boston{suffix}")
+            self.assertTrue("metadata" not in data["attributes"])
+            if suffix == ".csv":
+                self.assertEqual(data["attributes"]["content_type"], "text/csv")
+                self.assertEqual(data["attributes"]["size"], 39171)
+            if suffix == ".parquet":
+                # TODO why parquet file doesn't have the generic mime?
+                self.assertEqual(data["attributes"]["content_type"], None)
+                self.assertEqual(data["attributes"]["size"], 27957)
 
-    def test_dataset_job_action_process_csv_from_analitico_asset(self):
-        """ Test uploading csv then requesting to process it and checking that it completed """
+            # check asset again, this time with fresh metadata obtain from reading the file
+            response = self.client.get(url + "?metadata=true&refresh=true")
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/boston{suffix}")
+            self.assertIsNotNone(data["attributes"]["metadata"])
+            metadata = data["attributes"]["metadata"]
+            self.assertEqual(int(metadata["total_records"]), 506)
 
-        # upload titanic_1.csv
-        asset_url, asset_response = self._upload_titanic("ds_titanic_3")
-        ds_asset1 = asset_response.data[0]
-        self.assertEqual(ds_asset1["id"], "titanic_1.csv")
+            columns = metadata["schema"]["columns"]
+            self.assertEqual(len(columns), 14)
+            self.assertEqual(columns[0]["name"], "CRIM")
+            self.assertEqual(columns[0]["type"], "float")
+            self.assertEqual(columns[1]["name"], "ZN")
+            self.assertEqual(columns[1]["type"], "float")
 
-        # request job processing
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_3", ACTION_PROCESS)) + "?async=false"
-        job_response = self.client.post(job_url, format="json")
-        job_data = job_response.data
-        self.assertStatusCode(job_response)
-        self.assertEqual(job_data["attributes"]["status"], "completed")
+    def test_dataset_upload_wine_check_metadata(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            # upload wine.suffix
+            url = self.upload_dataset(dataset="wine", suffix=suffix)
 
-    def REFACTOR_USING_NOTEBOOKS_test_dataset_job_action_process_csv_with_no_plugins(self):
-        """ Test uploading csv then requesting to process it and checking that a plugin is created and schema filled """
-        # upload titanic_1.csv
-        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
-        ds_asset = asset_response.data[0]
-        self.assertEqual(ds_asset["id"], "titanic_1.csv")
+            # check asset again, should have only basic file metadata
+            response = self.client.get(url + "?metadata=true")
+            self.assertEqual(len(response.data), 1)
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/wine{suffix}")
+            self.assertTrue("metadata" not in data["attributes"])
+            if suffix == ".csv":
+                self.assertEqual(data["attributes"]["content_type"], "text/csv")
+                self.assertEqual(data["attributes"]["size"], 12617)
+            if suffix == ".parquet":
+                # TODO why parquet file doesn't have the generic mime?
+                self.assertEqual(data["attributes"]["content_type"], None)
+                self.assertEqual(data["attributes"]["size"], 14190)
 
-        # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
-        job_response = self.client.post(job_url, format="json")
-        job_data = job_response.data
-        self.assertStatusCode(job_response)
-        self.assertEqual(job_data["attributes"]["status"], "completed")
+            # check asset again, this time with fresh metadata obtain from reading the file
+            response = self.client.get(url + "?metadata=true&refresh=true")
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/wine{suffix}")
+            self.assertIsNotNone(data["attributes"]["metadata"])
+            metadata = data["attributes"]["metadata"]
+            self.assertEqual(int(metadata["total_records"]), 178)
 
-        # check dataset, now it should have an automatically created dataset pipeline plugin + schema
-        ds_url = reverse("api:dataset-detail", args=("ds_titanic_4",))
-        ds_response = self.client.get(ds_url, format="json")
-        ds_data = ds_response.data
-        self.assertTrue("plugin" in ds_data["attributes"])
-        ds_pipe_plugin = ds_data["attributes"]["plugin"]
-        self.assertEqual(ds_pipe_plugin["type"], analitico.plugin.PLUGIN_TYPE)
-        self.assertEqual(ds_pipe_plugin["name"], analitico.plugin.DATAFRAME_PIPELINE_PLUGIN)
+            columns = metadata["schema"]["columns"]
+            self.assertEqual(len(columns), 14)
+            self.assertEqual(columns[0]["name"], "alcohol")
+            self.assertEqual(columns[0]["type"], "float")
+            self.assertEqual(columns[1]["name"], "malic_acid")
+            self.assertEqual(columns[1]["type"], "float")
 
-        # inside the pipeline plugin we should have a csv source plugin
-        ds_csv_plugin = ds_pipe_plugin["plugins"][0]
-        self.assertEqual(ds_csv_plugin["type"], analitico.plugin.PLUGIN_TYPE)
-        self.assertEqual(ds_csv_plugin["name"], analitico.plugin.CSV_DATAFRAME_SOURCE_PLUGIN)
-        self.assertEqual(ds_csv_plugin["source"]["content_type"], "text/csv")
+    def test_dataset_upload_iris_check_metadata(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            # upload iris.suffix
+            url = self.upload_dataset(dataset="iris", suffix=suffix)
 
-        # csv source should be prepopulated with schema
-        ds_schema = ds_csv_plugin["source"]["schema"]
-        self.assertEqual(len(ds_schema["columns"]), 12)
+            # check asset again, should have only basic file metadata
+            response = self.client.get(url + "?metadata=true")
+            self.assertEqual(len(response.data), 1)
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/iris{suffix}")
+            self.assertTrue("metadata" not in data["attributes"])
+            if suffix == ".csv":
+                self.assertEqual(data["attributes"]["content_type"], "text/csv")
+                self.assertEqual(data["attributes"]["size"], 3077)
+            if suffix == ".parquet":
+                # TODO why parquet file doesn't have the generic mime?
+                self.assertEqual(data["attributes"]["content_type"], None)
+                self.assertEqual(data["attributes"]["size"], 3482)
 
-        # retrieve data.csv (output) info and check for schema
-        meta_url = reverse("api:dataset-asset-detail-info", args=("ds_titanic_4", "data", "data.csv"))
-        meta_response = self.client.get(meta_url)
-        self.assertEqual(meta_response["Content-Type"], "application/json")
-        self.assertIsNotNone(meta_response.data)
-        meta = meta_response.data
-        self.assertEqual(meta["content_type"], "text/csv")
-        self.assertEqual(meta["filename"], "data.csv")
-        self.assertEqual(meta["id"], "data.csv")
-        self.assertEqual(meta["path"], "workspaces/ws_samples/datasets/ds_titanic_4/data/data.csv")
-        self.assertEqual(meta["url"], "analitico://datasets/ds_titanic_4/data/data.csv")
-        self.assertTrue("schema" in meta)
-        self.assertEqual(len(meta["schema"]["columns"]), 12)
+            # check asset again, this time with fresh metadata obtained from reading the file
+            response = self.client.get(url + "?metadata=true&refresh=true")
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/iris{suffix}")
+            self.assertIsNotNone(data["attributes"]["metadata"])
+            metadata = data["attributes"]["metadata"]
+            self.assertEqual(int(metadata["total_records"]), 150)
 
-    def test_dataset_upload_process_data(self):
-        """ Test uploading csv then requesting to process it with data/process endpoint """
-        # upload titanic_1.csv
-        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
-        ds_asset = asset_response.data[0]
-        self.assertEqual(ds_asset["id"], "titanic_1.csv")
+            columns = metadata["schema"]["columns"]
+            self.assertEqual(len(columns), 5)
+            self.assertEqual(columns[0]["name"], "sepal length (cm)")
+            self.assertEqual(columns[0]["type"], "float")
+            self.assertEqual(columns[1]["name"], "sepal width (cm)")
+            self.assertEqual(columns[1]["type"], "float")
 
-        # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
-        job_response = self.client.post(job_url, format="json")
-        job_data = job_response.data
-        self.assertStatusCode(job_response)
-        self.assertEqual(job_data["attributes"]["status"], "completed")
-
-    def REFACTOR_USING_NOTEBOOKS_test_dataset_upload_process_data_get_csv(self):
-        """ Test uploading csv, processing, downloading csv """
+    def test_dataset_csv_upload_get_info(self):
         # upload and process titanic_1.csv
-        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
-        ds_asset = asset_response.data[0]
-        self.assertEqual(ds_asset["id"], "titanic_1.csv")
+        url, _ = self.upload_titanic_csv("ds_titanic_4")
 
-        # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
-        job_response = self.client.post(job_url, format="json")
-        job_data = job_response.data
-        self.assertStatusCode(job_response)
-        self.assertEqual(job_data["attributes"]["status"], "completed")
+        # request information on data, should not have metadata yet
+        response = self.client.get(url + "?metadata=true")
+        self.assertStatusCode(response)
+        self.assertFalse(response.streaming)
+        data = response.data[0]
+        self.assertNotIn("metadata", data["attributes"])
 
-        # request data download, check that it is streaming
-        csv_url = reverse("api:dataset-detail-data-csv", args=("ds_titanic_4",))
-        csv_response = self.client.get(csv_url)
-        self.assertStatusCode(csv_response)
-        self.assertTrue(csv_response.streaming)
-        csv = csv_response.streaming_content
-        csv_data = csv_response.getvalue().decode("utf-8")
-        # note that csv header starts with PassengerId because pandas implicit index was not saved (by design)
-        csv_header = "PassengerId,Survived,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked\n"
-        self.assertTrue(csv_data.startswith(csv_header))
-
-    def test_dataset_upload_process_data_get_info(self):
-        """ Test uploading csv, processing, downloading info on csv """
-        # upload and process titanic_1.csv
-        asset_url, asset_response = self._upload_titanic("ds_titanic_4")
-        ds_asset = asset_response.data[0]
-        self.assertEqual(ds_asset["id"], "titanic_1.csv")
-
-        # request dataset job processing (dataset has 1 csv asset and no plugins)
-        job_url = reverse("api:dataset-job-action", args=("ds_titanic_4", ACTION_PROCESS)) + "?async=false"
-        job_response = self.client.post(job_url, format="json")
-        job_data = job_response.data
-        self.assertStatusCode(job_response)
-        self.assertEqual(job_data["attributes"]["status"], "completed")
-
-        # request information on data, check schema is present
-        info_url = reverse("api:dataset-detail-data-info", args=("ds_titanic_4",))
-        info_response = self.client.get(info_url)
-        self.assertStatusCode(info_response)
-        self.assertFalse(info_response.streaming)
-        info_data = info_response.data
-        self.assertEqual(len(info_data["schema"]["columns"]), 12)
+        # request information on data, check schema is present, if not create it
+        response = self.client.get(url + "?metadata=true&refresh=true")
+        self.assertStatusCode(response)
+        self.assertFalse(response.streaming)
+        data = response.data[0]
+        self.assertIn("metadata", data["attributes"])
+        metadata = data["attributes"]["metadata"]
+        self.assertEqual(len(metadata["schema"]["columns"]), 12)
 
     ##
-    ## Paging CSV as JSON records
+    ## Paging tabular data files (eg: csv, parquet) as json
     ##
-
-    def test_dataset_paging_no_parameters_no_meta(self):
-        """ Download large csv as paged json with default settings """
-        N = 500
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        # do not indicate ?meta, defaults to false
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), 25)
-        self.assertEqual(records[0]["Number"], 0)
-        self.assertEqual(records[24]["Number"], 24)
-        self.assertTrue("meta" in response.data)
-        self.assertEqual(response.data["meta"]["page"], 0)
-        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["total_pages"], N / DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["total_records"], N)
-        # indicate ?meta=False
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=False"
-        response = self.client.get(url)
-        self.assertTrue("meta" in response.data)
-        self.assertEqual(response.data["meta"]["page"], 0)
-        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
-        self.assertTrue("total_pages" not in response.data["meta"])
-        self.assertTrue("total_records" not in response.data["meta"])
-
-    def test_dataset_paging_asset_endpoint(self):
-        """ Download paged csv using regular assets endpoint with ?format=json parameter """
-        N = 500
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        url = reverse("api:dataset-asset-detail", args=("ds_titanic_4", ASSETS_CLASS_DATA, "data.csv")) + "?format=json"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), 25)
-        self.assertEqual(records[0]["Number"], 0)
-        self.assertEqual(records[24]["Number"], 24)
-        self.assertTrue("meta" in response.data)
-        self.assertEqual(response.data["meta"]["page"], 0)
-        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["total_pages"], N / DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["total_records"], N)
-        # indicate ?meta=False
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=False"
-        response = self.client.get(url)
-        self.assertTrue("meta" in response.data)
-        self.assertEqual(response.data["meta"]["page"], 0)
-        self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
-        self.assertTrue("total_pages" not in response.data["meta"])
-        self.assertTrue("total_records" not in response.data["meta"])
-
-    def test_dataset_paging_no_parameters_uneven_pages(self):
-        N = 496  # last page is different
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=yes"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
-        self.assertEqual(records[0]["Number"], 0)
-        self.assertEqual(records[N % DEFAULT_PAGE_SIZE]["Number"], N % DEFAULT_PAGE_SIZE)
-        # metadata
-        meta = response.data["meta"]
-        self.assertEqual(meta["page"], 0)
-        self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_pages"], int((N + DEFAULT_PAGE_SIZE - 1) / DEFAULT_PAGE_SIZE))
-        self.assertEqual(meta["total_records"], N)
 
     def test_dataset_paging_no_parameters(self):
-        """ Test uploading a large csv then downloading as json in pages """
-        N = DEFAULT_PAGE_SIZE * 20
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?meta=1"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
-        self.assertEqual(records[0]["Number"], 0)
-        self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], DEFAULT_PAGE_SIZE - 1)
-        meta = response.data["meta"]
-        self.assertEqual(meta["page"], 0)
-        self.assertEqual(meta["page_records"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_records"], N)
+        for suffix in TEST_DATA_SUFFIXES:
+            N = 500
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix) + "?records=true"
+            response = self.client.get(url)
+            self.assertStatusCode(response)
+
+            records = response.data["data"]
+            self.assertEqual(len(records), 25)
+            self.assertEqual(records[0]["Number"], 0)
+            self.assertEqual(records[24]["Number"], 24)
+            self.assertTrue("meta" in response.data)
+            self.assertEqual(response.data["meta"]["page"], 0)
+            self.assertEqual(response.data["meta"]["page_size"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(response.data["meta"]["page_records"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(response.data["meta"]["total_pages"], N / DEFAULT_PAGE_SIZE)
+            self.assertEqual(response.data["meta"]["total_records"], N)
+
+    def test_dataset_paging_no_parameters_uneven_pages(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            N = 496  # last page is different
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix) + "?records=true"
+            response = self.client.get(url)
+            self.assertStatusCode(response)
+
+            records = response.data["data"]
+            self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
+            self.assertEqual(records[0]["Number"], 0)
+            self.assertEqual(records[N % DEFAULT_PAGE_SIZE]["Number"], N % DEFAULT_PAGE_SIZE)
+            # metadata
+            meta = response.data["meta"]
+            self.assertEqual(meta["page"], 0)
+            self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(meta["total_pages"], int((N + DEFAULT_PAGE_SIZE - 1) / DEFAULT_PAGE_SIZE))
+            self.assertEqual(meta["total_records"], N)
+
+    def test_dataset_paging_no_parameters_first_page(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            N = DEFAULT_PAGE_SIZE * 20
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix)
+            response = self.client.get(url + "?records=true")
+            self.assertStatusCode(response)
+
+            records = response.data["data"]
+            self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
+            self.assertEqual(records[0]["Number"], 0)
+            self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], DEFAULT_PAGE_SIZE - 1)
+            meta = response.data["meta"]
+            self.assertEqual(meta["page"], 0)
+            self.assertEqual(meta["page_records"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(meta["total_records"], N)
 
     def test_dataset_paging_second_page(self):
-        N = DEFAULT_PAGE_SIZE * 40
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=2"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
-        self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 2)
-        self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], (DEFAULT_PAGE_SIZE * 3) - 1)
+        for suffix in TEST_DATA_SUFFIXES:
+            N = DEFAULT_PAGE_SIZE * 40
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix) + "?records=true&page=2"
+            response = self.client.get(url)
+            self.assertStatusCode(response)
+
+            records = response.data["data"]
+            self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
+            self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 2)
+            self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], (DEFAULT_PAGE_SIZE * 3) - 1)
 
     def test_dataset_paging_last_page(self):
-        N = (DEFAULT_PAGE_SIZE * 20) - 10
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=19&meta=True"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), N % DEFAULT_PAGE_SIZE)
-        self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 19)
-        self.assertEqual(records[(N % DEFAULT_PAGE_SIZE) - 1]["Number"], N - 1)
-        meta = response.data["meta"]
-        self.assertEqual(meta["page"], 19)
-        self.assertEqual(meta["page_records"], N % DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_records"], N)
-        self.assertEqual(meta["total_pages"], int((N + DEFAULT_PAGE_SIZE - 1) / DEFAULT_PAGE_SIZE))
+        for suffix in TEST_DATA_SUFFIXES:
+            N = (DEFAULT_PAGE_SIZE * 20) - 10
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix) + "?records=true&page=19"
+            response = self.client.get(url)
+            self.assertStatusCode(response)
+
+            records = response.data["data"]
+            self.assertEqual(len(records), N % DEFAULT_PAGE_SIZE)
+            self.assertEqual(records[0]["Number"], DEFAULT_PAGE_SIZE * 19)
+            self.assertEqual(records[(N % DEFAULT_PAGE_SIZE) - 1]["Number"], N - 1)
+            meta = response.data["meta"]
+            self.assertEqual(meta["page"], 19)
+            self.assertEqual(meta["page_records"], N % DEFAULT_PAGE_SIZE)
+            self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(meta["total_records"], N)
+            self.assertEqual(meta["total_pages"], int((N + DEFAULT_PAGE_SIZE - 1) / DEFAULT_PAGE_SIZE))
 
     def test_dataset_paging_beyond_last_page(self):
-        N = (DEFAULT_PAGE_SIZE * 20) - 10
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=20"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), 0)
-        meta = response.data["meta"]
-        self.assertEqual(meta["page"], 20)
-        self.assertEqual(meta["page_records"], 0)
-        self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_records"], N)
-        self.assertEqual(meta["total_pages"], 20)
-        # beyond last
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=310"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), 0)
-        meta = response.data["meta"]
-        self.assertEqual(meta["page"], 310)
-        self.assertEqual(meta["page_records"], 0)
-        self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
-        self.assertEqual(meta["total_records"], N)
-        self.assertEqual(meta["total_pages"], 20)
+        for suffix in TEST_DATA_SUFFIXES:
+            N = (DEFAULT_PAGE_SIZE * 20) - 10
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix)
+            response = self.client.get(url + "?records=true&page=20")
+            self.assertStatusCode(response)
 
+            records = response.data["data"]
+            self.assertEqual(len(records), 0)
+            meta = response.data["meta"]
+            self.assertEqual(meta["page"], 20)
+            self.assertEqual(meta["page_records"], 0)
+            self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(meta["total_records"], N)
+            self.assertEqual(meta["total_pages"], 20)
+
+            # beyond last
+            response = self.client.get(url + "?records=true&page=310")
+            self.assertStatusCode(response)
+            records = response.data["data"]
+            self.assertEqual(len(records), 0)
+            meta = response.data["meta"]
+            self.assertEqual(meta["page"], 310)
+            self.assertEqual(meta["page_records"], 0)
+            self.assertEqual(meta["page_size"], DEFAULT_PAGE_SIZE)
+            self.assertEqual(meta["total_records"], N)
+            self.assertEqual(meta["total_pages"], 20)
+
+    @tag("slow", "live")
     def test_dataset_paging_scan_pages_check_performance(self):
-        N = DEFAULT_PAGE_SIZE * 5000  # large but not huge 125K records
-        self.upload_large_random_data_csv("ds_titanic_4", N)
+        for suffix in TEST_DATA_SUFFIXES:
+            N = DEFAULT_PAGE_SIZE * 5000  # large but not huge 125K records
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix)
 
-        # first page loading time may be higher because cache is cold
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
-
-        # WARNING: THIS TEST CHECKS PERFORMANCE AND WILL THROW IF THE LOOP IS SLOW
-        # THIS MEANS THAT IF YOU SETUP A BREAKPOINT AND DEBUG THE CODE YOU WILL GET AN ASSERT
-        total_ms = time_ms()
-        for i in range(1, 50):  # 50 runs
-            page_number = random.randint(1, 3000)  # random page
-            loading_ms = time_ms()
-            url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",))
-            url = url + "?page=" + str(page_number) + "&meta=false"  # NO META ROWS COUNT
-            response = self.client.get(url)
+            # first page loading time may be higher because cache is cold
+            response = self.client.get(url + "?records=true")
             self.assertStatusCode(response)
             records = response.data["data"]
             self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
-            self.assertEqual(records[0]["Number"], page_number * DEFAULT_PAGE_SIZE)
-            self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], ((page_number + 1) * DEFAULT_PAGE_SIZE) - 1)
-            loading_ms = time_ms(loading_ms)
-            self.assertLess(int(loading_ms), 100, "Page loading time should be under 100ms")
-        total_ms = time_ms(total_ms)
-        average_ms = float(total_ms) / 40
-        self.assertLess(int(loading_ms), 150, "Average page loading time should be less than 150ms")
-        analitico.logger.info("Average page loading time is " + str(average_ms) + " ms")
+
+            # WARNING: THIS TEST CHECKS PERFORMANCE AND WILL THROW IF THE LOOP IS SLOW
+            # THIS MEANS THAT IF YOU SETUP A BREAKPOINT AND DEBUG THE CODE YOU WILL GET AN ASSERT
+            total_ms = time_ms()
+            for i in range(1, 50):  # 50 runs
+                page_number = random.randint(1, 3000)  # random page
+                loading_ms = time_ms()
+                response = self.client.get(url + f"?records=true&page={page_number}")
+                self.assertStatusCode(response)
+                records = response.data["data"]
+                self.assertEqual(len(records), DEFAULT_PAGE_SIZE)
+                self.assertEqual(records[0]["Number"], page_number * DEFAULT_PAGE_SIZE)
+                self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], ((page_number + 1) * DEFAULT_PAGE_SIZE) - 1)
+                loading_ms = time_ms(loading_ms)
+                self.assertLess(int(loading_ms), 100, "Page loading time should be under 100ms")
+            total_ms = time_ms(total_ms)
+            average_ms = float(total_ms) / 40
+            self.assertLess(int(loading_ms), 150, "Average page loading time should be less than 150ms")
+            logger.info(f"Average page loading time for {suffix} is {average_ms} ms")
 
     def test_dataset_paging_larger_page(self):
-        self.upload_large_random_data_csv("ds_titanic_4", 1000)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=10&page_size=50&meta=tRUe"
-        response = self.client.get(url)
-        self.assertStatusCode(response)
-        records = response.data["data"]
-        self.assertEqual(len(records), 50)
-        self.assertEqual(records[0]["Number"], 500)
-        self.assertEqual(records[49]["Number"], 549)
-        meta = response.data["meta"]
-        self.assertEqual(meta["page"], 10)
-        self.assertEqual(meta["page_size"], 50)
+        for suffix in TEST_DATA_SUFFIXES:
+            url = self.upload_large_random_data("ds_titanic_4", 1000, suffix=suffix)
+            response = self.client.get(url + "?records=true&page=10&page_size=50")
+            self.assertStatusCode(response)
+
+            records = response.data["data"]
+            self.assertEqual(len(records), 50)
+            self.assertEqual(records[0]["Number"], 500)
+            self.assertEqual(records[49]["Number"], 549)
+            meta = response.data["meta"]
+            self.assertEqual(meta["page"], 10)
+            self.assertEqual(meta["page_size"], 50)
 
     def test_dataset_paging_huge_page(self):
-        N = MAX_PAGE_SIZE * 20
-        self.upload_large_random_data_csv("ds_titanic_4", N)
-        url = reverse("api:dataset-detail-data-json", args=("ds_titanic_4",)) + "?page=10&page_size=500&meta=yES"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        records = response.data["data"]
-        self.assertEqual(len(records), MAX_PAGE_SIZE)
-        self.assertEqual(records[0]["Number"], MAX_PAGE_SIZE * 10)  # constrained to max_page_size
-        meta = response.data["meta"]
-        self.assertEqual(meta["page"], 10)
-        self.assertEqual(meta["page_size"], MAX_PAGE_SIZE)
+        for suffix in TEST_DATA_SUFFIXES:
+            N = MAX_PAGE_SIZE * 20
+            url = self.upload_large_random_data("ds_titanic_4", N, suffix=suffix)
+            response = self.client.get(url + "?records=true&page=10&page_size=500")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            records = response.data["data"]
+            self.assertEqual(len(records), MAX_PAGE_SIZE)
+            self.assertEqual(records[0]["Number"], MAX_PAGE_SIZE * 10)  # constrained to max_page_size
+            meta = response.data["meta"]
+            self.assertEqual(meta["page"], 10)
+            self.assertEqual(meta["page_size"], MAX_PAGE_SIZE)

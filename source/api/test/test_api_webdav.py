@@ -758,13 +758,13 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(obj.meta_data["extra-spaces"], "No!")
 
             # change/replace extra
-            driver.set_properties("/" + obj_name, extra={"meta_data": {"extra1": "value1"}})
+            driver.set_metadata("/" + obj_name, metadata={"extra1": "value1"})
             obj = driver.get_object(container.name, obj_name)
             self.assertEqual(len(obj.meta_data), 1)
             self.assertEqual(obj.meta_data["extra1"], "value1")
 
             # remove all
-            driver.set_properties("/" + obj_name, extra=None)
+            driver.set_metadata("/" + obj_name, metadata=None)
             obj = driver.get_object(container.name, obj_name)
             self.assertFalse(obj.meta_data)
 
@@ -946,7 +946,7 @@ class WebdavTests(AnaliticoApiTestCase):
         driver = self.get_driver()
         try:
             # create file with metadata
-            extra = {"meta_data": {"key1": "value1", "key2": "value2", "key with space": 8, "dash-me": "yeah"}}
+            metadata = {"key1": "value1", "key2": "value2", "key with space": 8, "dash-me": "yeah"}
             path = self.get_random_path() + ".txt"
             url = reverse("api:workspace-files", args=("ws_storage_webdav", path[1:]))
 
@@ -954,7 +954,7 @@ class WebdavTests(AnaliticoApiTestCase):
             # extra = {"meta_data": {"key1": "value1", "key2": "value2", "key with space": 8, "dash-me": "yeah", "unicode chars": "ÿëéàaa" }}
 
             # create file with metadata
-            driver.upload(io.BytesIO(b"Tell me something new"), path, extra=extra)
+            driver.upload(io.BytesIO(b"Tell me something new"), path, metadata=metadata)
 
             # retrieve item, check metadata headers
             response = self.client.get(url)
