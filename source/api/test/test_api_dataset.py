@@ -19,6 +19,7 @@ import analitico
 import analitico.plugin
 
 from analitico import logger
+from analitico.pandas import pd_read_csv
 from .utils import AnaliticoApiTestCase, ASSETS_PATH
 from api.pagination import MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
 
@@ -45,6 +46,7 @@ class DatasetTests(AnaliticoApiTestCase):
     def upload_dataset(self, dataset="boston", suffix=".csv"):
         # https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html
 
+        df = None
         filename = os.path.join(ASSETS_PATH, dataset + suffix)
         if dataset == "boston":
             data = sklearn.datasets.load_boston()
@@ -52,12 +54,16 @@ class DatasetTests(AnaliticoApiTestCase):
             data = sklearn.datasets.load_wine()
         elif dataset == "iris":
             data = sklearn.datasets.load_iris()
+        elif dataset == "nba":
+            asset = os.path.join(ASSETS_PATH, "nba.csv")
+            df = pd_read_csv(asset)
 
-        # np.c_ is the numpy concatenate function
-        d1 = np.c_[data["data"], data["target"]]
-        d2 = list(data["feature_names"])
-        d2.append("target")
-        df = pd.DataFrame(data=d1, columns=d2)
+        if df is None:
+            # np.c_ is the numpy concatenate function
+            d1 = np.c_[data["data"], data["target"]]
+            d2 = list(data["feature_names"])
+            d2.append("target")
+            df = pd.DataFrame(data=d1, columns=d2)
 
         mimetype = "application/octet-stream"
         if suffix == ".csv":
@@ -227,6 +233,40 @@ class DatasetTests(AnaliticoApiTestCase):
             self.assertEqual(columns[0]["type"], "float")
             self.assertEqual(columns[1]["name"], "sepal width (cm)")
             self.assertEqual(columns[1]["type"], "float")
+
+    def test_dataset_upload_nba_check_metadata(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            # upload nba.suffix
+            url = self.upload_dataset(dataset="nba", suffix=suffix)
+
+            # check asset again, should have only basic file metadata
+            response = self.client.get(url + "?metadata=true")
+            self.assertEqual(len(response.data), 1)
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/nba{suffix}")
+            self.assertTrue("metadata" not in data["attributes"])
+            if suffix == ".csv":
+                self.assertEqual(data["attributes"]["content_type"], "text/csv")
+                self.assertEqual(data["attributes"]["size"], 32814)
+            if suffix == ".parquet":
+                # TODO why parquet file doesn't have the generic mime?
+                self.assertEqual(data["attributes"]["content_type"], None)
+                self.assertEqual(data["attributes"]["size"], 16785)
+
+            # check asset again, this time with fresh metadata obtain from reading the file
+            response = self.client.get(url + "?metadata=true&refresh=true")
+            data = response.data[0]
+            self.assertEqual(data["id"], f"/nba{suffix}")
+            self.assertIsNotNone(data["attributes"]["metadata"])
+            metadata = data["attributes"]["metadata"]
+            self.assertEqual(int(metadata["total_records"]), 457)
+
+            columns = metadata["schema"]["columns"]
+            self.assertEqual(len(columns), 9)
+            self.assertEqual(columns[0]["name"], "Name")
+            self.assertEqual(columns[0]["type"], "string")
+            self.assertEqual(columns[4]["name"], "Age")
+            self.assertEqual(columns[4]["type"], "float")
 
     def test_dataset_csv_upload_get_info(self):
         # upload and process titanic_1.csv
