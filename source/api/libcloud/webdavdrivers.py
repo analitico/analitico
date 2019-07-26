@@ -554,7 +554,7 @@ class WebdavStorageDriver(StorageDriver):
         full_path = os.path.join(container.name, object_name)
         directory = os.path.dirname(full_path)
         self.mkdirs(directory)
-        self.upload(iterator, full_path, extra=extra)
+        self.upload(iterator, full_path, metadata=extra)
         return self._make_object(container, object_name)
 
     def delete_object(self, obj: Object) -> bool:
