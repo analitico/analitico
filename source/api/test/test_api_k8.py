@@ -48,9 +48,9 @@ class K8Tests(AnaliticoApiTestCase):
             "docker",
             {
                 "type": "analitico/docker",
-                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon@sha256:4c8ac8b3b7e321adb28759374cc82339bd0d4ca7a9136c119664c36f959fe906",
+                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon@sha256:bd5feff21345f0a9d3ae855a925442487936d85968b823fddb92d10c287892e3",
                 "image_name": "eu.gcr.io/analitico-api/rx-fvdmbmon:K8Tests_test_k8_deploy",
-                "image_id": "sha256:4c8ac8b3b7e321adb28759374cc82339bd0d4ca7a9136c119664c36f959fe906",
+                "image_id": "sha256:bd5feff21345f0a9d3ae855a925442487936d85968b823fddb92d10c287892e3",
             },
         )
         notebook.save()
