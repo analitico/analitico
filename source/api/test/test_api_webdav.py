@@ -132,7 +132,9 @@ class WebdavTests(AnaliticoApiTestCase):
         try:
             # asset_id matches filename
             url = reverse("api:workspace-files", args=("ws_storage_webdav", UNICORN_FILENAME))
-            response = self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED)
+            response = self.upload_file(
+                url, UNICORN_FILENAME, "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED
+            )
         except Exception as exc:
             raise exc
 
@@ -327,7 +329,7 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(response1.status_code, status.HTTP_204_NO_CONTENT)  # deleted
 
             response2 = self.client.delete(url)
-            
+
             # TODO webdav / handle delete when file does not exists #323
             # self.assertEqual(response2.status_code, status.HTTP_404_NOT_FOUND)  # no longer there
         except Exception as exc:

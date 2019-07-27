@@ -139,7 +139,8 @@ class AnaliticoApiTestCase(APITestCase):
                 self.assertEqual(response.status_code, status_code)
             else:
                 self.assertTrue(
-                    response.status_code == status.HTTP_201_CREATED or response.status_code == status.HTTP_204_NO_CONTENT
+                    response.status_code == status.HTTP_201_CREATED
+                    or response.status_code == status.HTTP_204_NO_CONTENT
                 )
             return response
 
