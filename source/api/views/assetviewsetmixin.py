@@ -15,14 +15,17 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework.serializers import Serializer
 
-from analitico import AnaliticoException
+from analitico import AnaliticoException, PARQUET_SUFFIXES, CSV_SUFFIXES, EXCEL_SUFFIXES, HDF_SUFFIXES
+from analitico.pandas import pd_read_csv
+
 from api.models import Workspace
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
-from api.utilities import get_query_parameter_as_bool
+from api.utilities import get_query_parameter_as_bool, get_query_parameter_as_int, get_query_parameter
 
 import libcloud
 import api.libcloud
 
+from libcloud.storage.base import Object
 from api.libcloud.metadata import get_file_metadata
 
 ##
@@ -65,6 +68,63 @@ class LibcloudStorageItemsSerializer(Serializer):
 ##
 
 
+def get_filtered_dataframe(
+    item, obj: Object, page: int = 0, page_size: int = DEFAULT_PAGE_SIZE, query: str = None, sort: str = None
+):
+
+    obj_stream = obj.driver.download_as_stream(obj.name)
+    obj_io = api.libcloud.iterio.IterIO(obj_stream)
+
+    # true if dataframe has already been paged
+    already_paged = False
+    page_offset = page * page_size
+
+    suffix = Path(obj.name).suffix
+    if suffix in CSV_SUFFIXES:
+        if not query:
+            # read csv from stream, skip offset rows, read only rows we care about
+            df = pd_read_csv(obj_io, skiprows=range(1, page_offset + 1), nrows=page_size)
+            already_paged = True
+        else:
+            df = pd_read_csv(obj_io)
+    elif suffix in PARQUET_SUFFIXES:
+        df = pd.read_parquet(obj_io)
+    elif suffix in EXCEL_SUFFIXES:
+        df = pd.read_excel(obj_io)
+    elif suffix in HDF_SUFFIXES:
+        df = pd.read_hdf(obj_io)
+    else:
+        raise AnaliticoException(
+            f"Cannot convert {obj.name} to records, unknown format.", status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if query:
+        try:
+            # examples:
+            # https://www.geeksforgeeks.org/python-filtering-data-with-pandas-query-method/
+            df.query(query, inplace=True)
+        except Exception as exc:
+            raise AnaliticoException(
+                f"Query could not be completed: {exc}",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                extra={"query": query, "error": str(exc)},
+            ) from exc
+
+    if sort:
+        # eg: ?sort=Name,-Age
+        columns = sort.split(",")
+        for column in columns:
+            if column.startswith("-"):
+                df.sort_values(column[1:], ascending=False, inplace=True)
+            else:
+                df.sort_values(column, inplace=True)
+
+    if not already_paged:
+        df = df.iloc[page_offset : page_offset + page_size]
+
+    return df
+
+
 class AssetViewSetMixin:
     """
     This is a mixin used by other viewsets like WorkspaceViewSet and DatasetViewSet.
@@ -89,31 +149,23 @@ class AssetViewSetMixin:
                 "/files/ with ?records=true only supports GET", status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        # which page are we on, what size is each page?
-        page = int(request.GET.get(PAGE_PARAM, 0))
-        page_size = max(MIN_PAGE_SIZE, min(MAX_PAGE_SIZE, int(request.GET.get(PAGE_SIZE_PARAM, DEFAULT_PAGE_SIZE))))
-        offset = page * page_size
-
-        path = os.path.join(base_path, url)
-        asset_io = api.libcloud.iterio.IterIO(driver.download_as_stream(path))
-
-        suffix = Path(path).suffix
-        if suffix == ".csv":
-            # read csv from stream, skip offset rows, read only rows we care about
-            df = pd.read_csv(asset_io, skiprows=range(1, offset + 1), nrows=page_size)
-            df = df.fillna("")  # for now replace NaN with empty string
-        elif suffix == ".parquet":
-            # read parquet from stream, select only the rows we're interested in
-            df = pd.read_parquet(asset_io)
-            df = df.iloc[offset : offset + page_size]
-        else:
-            raise AnaliticoException(
-                f"Cannot convert {path} to records, unknown format.", status=status.HTTP_400_BAD_REQUEST
-            )
-
         # retrieve metadata, refresh if needed
+        path = os.path.join(base_path, url)
         obj = api.libcloud.metadata.get_file_metadata(driver, path, refresh=True)
         metadata = obj.meta_data
+
+        # which page are we on, what size is each page? should we filter rows?
+        page = get_query_parameter_as_int(request, PAGE_PARAM, 0)
+        page_size = max(
+            MIN_PAGE_SIZE, min(MAX_PAGE_SIZE, get_query_parameter_as_int(request, PAGE_SIZE_PARAM, DEFAULT_PAGE_SIZE))
+        )
+
+        query = get_query_parameter(request, "query", None)
+        sort = get_query_parameter(request, "order", None)
+
+        # retrieve data and filter it if requested
+        df = get_filtered_dataframe(item, obj, page, page_size, query, sort)
+        df = df.fillna("")  # replace NaN with empty string
 
         # add paging metadata
         rows = int(metadata["total_records"])
@@ -228,7 +280,8 @@ class AssetViewSetMixin:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         if request.method == "DELETE":
-            # TODO delete directories
+            # TODO delete empty directories
+            # TODO webdav / handle delete when file does not exists #323
             driver.delete(path)
             return Response(status=status.HTTP_204_NO_CONTENT)
 

@@ -132,9 +132,7 @@ class WebdavTests(AnaliticoApiTestCase):
         try:
             # asset_id matches filename
             url = reverse("api:workspace-files", args=("ws_storage_webdav", UNICORN_FILENAME))
-            response = self.upload_file(
-                url, UNICORN_FILENAME, "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED
-            )
+            self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=None, status_code=status.HTTP_401_UNAUTHORIZED)
         except Exception as exc:
             raise exc
 
@@ -143,7 +141,7 @@ class WebdavTests(AnaliticoApiTestCase):
         try:
             # upload an image to storage
             url = reverse("api:workspace-files", args=("ws_storage_webdav", "download1.jpg"))
-            response1 = self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=self.token1)
+            self.upload_file(url, UNICORN_FILENAME, "image/jpeg", token=self.token1)
 
             # now dowload the same asset
             self.auth_token(self.token1)
@@ -231,7 +229,7 @@ class WebdavTests(AnaliticoApiTestCase):
         """ Test downloading an asset with etag specified """
         try:
             # upload an image to storage
-            url, response = self.upload_unicorn()
+            url, _ = self.upload_unicorn()
 
             # pull once to find etag
             response1 = self.client.get(url)

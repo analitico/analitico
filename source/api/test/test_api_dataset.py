@@ -468,17 +468,111 @@ class DatasetTests(AnaliticoApiTestCase):
             self.assertEqual(meta["page_size"], MAX_PAGE_SIZE)
 
     ##
-    ## Filtering data 
+    ## Filtering data ?query=
     ##
 
-    def get_filtered_nba(self, expression, suffix, query=None):
+    def get_filtered_nba(self, query=None, sort=None, suffix=None, params=None, status_code=None):
         url = self.upload_dataset(dataset="nba", suffix=suffix) + "?records=true"
-        url += "&query=" + urllib.parse.quote(expression)
-        if query: url += query
+        if query:
+            url += "&query=" + urllib.parse.quote(query)
+        if sort:
+            url += "&order=" + urllib.parse.quote(sort)
+        if params:
+            url += "&" + params
         response = self.client.get(url)
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
+            return response
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         return response.data["data"]
 
-    def test_dataset_filtering_basics(self):
+    @tag("query")
+    def test_dataset_filtering_single(self):
         for suffix in TEST_DATA_SUFFIXES:
-            records = self.get_filtered_nba("Age < 25", suffix=suffix)
-            pass
+            records = self.get_filtered_nba("College == 'Arizona'", suffix=suffix, params="page_size=1000")
+            self.assertEqual(len(records), 13)
+            self.assertEqual(records[0]["Name"], "Rondae Hollis-Jefferson")
+
+    @tag("query")
+    def test_dataset_filtering_double(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            records = self.get_filtered_nba("Age < 25 and College == 'Arizona'", suffix=suffix, params="page_size=1000")
+            self.assertEqual(len(records), 4)
+            self.assertEqual(records[0]["Name"], "Rondae Hollis-Jefferson")
+
+    @tag("query")
+    def test_dataset_filtering_paged(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            # obtain first 100 records (page size is limited to max page in any case)
+            records1 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page_size=1000")
+            self.assertEqual(len(records1), 100)
+            self.assertEqual(records1[0]["Name"], "John Holland")
+
+            records2 = self.get_filtered_nba("Position == 'SG'", suffix=suffix)
+            self.assertEqual(len(records2), DEFAULT_PAGE_SIZE)
+            self.assertEqual(records1[0]["Name"], records2[0]["Name"])
+
+            records3 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page=1")
+            self.assertEqual(len(records3), DEFAULT_PAGE_SIZE)
+            self.assertEqual(records1[DEFAULT_PAGE_SIZE]["Name"], records3[0]["Name"])
+
+            records4 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page=1&page_size=10")
+            self.assertEqual(len(records4), 10)
+            self.assertEqual(records4[0]["Name"], records1[10]["Name"])
+            self.assertEqual(records4[0]["Name"], "Arron Afflalo")
+
+    @tag("query")
+    def test_dataset_filtering_bad_query(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            response = self.get_filtered_nba(
+                "MISSING_COLUMN == 'SG'", suffix=suffix, status_code=status.HTTP_400_BAD_REQUEST
+            )
+            data = response.data
+            self.assertEqual(data["error"]["code"], "error")
+            self.assertEqual(data["error"]["meta"]["extra"]["error"], "name 'MISSING_COLUMN' is not defined")
+            self.assertEqual(data["error"]["meta"]["extra"]["query"], "MISSING_COLUMN == 'SG'")
+
+    @tag("query")
+    def test_dataset_filtering_sort(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            records1 = self.get_filtered_nba(sort="Salary", suffix=suffix)
+            self.assertEqual(len(records1), DEFAULT_PAGE_SIZE)
+            for i in range(1, len(records1)):
+                s1 = records1[i - 1]["Salary"]
+                s2 = records1[i]["Salary"]
+                if s1 and s2:
+                    self.assertLessEqual(s1, s2)
+
+            records2 = self.get_filtered_nba(sort="-Salary", suffix=suffix)
+            self.assertEqual(len(records2), DEFAULT_PAGE_SIZE)
+            for i in range(1, len(records2)):
+                s1 = records2[i - 1]["Salary"]
+                s2 = records2[i]["Salary"]
+                if s1 and s2:
+                    self.assertGreaterEqual(s1, s2)
+
+    @tag("query")
+    def test_dataset_filtering_sort_multiple(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            records1 = self.get_filtered_nba(sort="Position,Salary", suffix=suffix)
+            self.assertEqual(len(records1), DEFAULT_PAGE_SIZE)
+            for i in range(1, len(records1)):
+                p1 = records1[i - 1]["Position"]
+                p2 = records1[i]["Position"]
+                if p1 == p2:
+                    s1 = records1[i - 1]["Salary"]
+                    s2 = records1[i]["Salary"]
+                    if s1 and s2:
+                        self.assertLessEqual(s1, s2)
+
+            records2 = self.get_filtered_nba(sort="Position,-Salary", suffix=suffix)
+            self.assertEqual(len(records2), DEFAULT_PAGE_SIZE)
+            for i in range(1, len(records2)):
+                p1 = records1[i - 1]["Position"]
+                p2 = records1[i]["Position"]
+                if p1 == p2:
+                    s1 = records2[i - 1]["Salary"]
+                    s2 = records2[i]["Salary"]
+                    if s1 and s2:
+                        self.assertGreaterEqual(s1, s2)
