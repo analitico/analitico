@@ -26,7 +26,8 @@ import libcloud
 import api.libcloud
 
 from libcloud.storage.base import Object
-from api.libcloud.metadata import get_file_metadata
+
+import api.metadata
 
 ##
 ## FilesSerializer
@@ -68,63 +69,6 @@ class LibcloudStorageItemsSerializer(Serializer):
 ##
 
 
-def get_filtered_dataframe(
-    item, obj: Object, page: int = 0, page_size: int = DEFAULT_PAGE_SIZE, query: str = None, sort: str = None
-):
-
-    obj_stream = obj.driver.download_as_stream(obj.name)
-    obj_io = api.libcloud.iterio.IterIO(obj_stream)
-
-    # true if dataframe has already been paged
-    already_paged = False
-    page_offset = page * page_size
-
-    suffix = Path(obj.name).suffix
-    if suffix in CSV_SUFFIXES:
-        if not query:
-            # read csv from stream, skip offset rows, read only rows we care about
-            df = pd_read_csv(obj_io, skiprows=range(1, page_offset + 1), nrows=page_size)
-            already_paged = True
-        else:
-            df = pd_read_csv(obj_io)
-    elif suffix in PARQUET_SUFFIXES:
-        df = pd.read_parquet(obj_io)
-    elif suffix in EXCEL_SUFFIXES:
-        df = pd.read_excel(obj_io)
-    elif suffix in HDF_SUFFIXES:
-        df = pd.read_hdf(obj_io)
-    else:
-        raise AnaliticoException(
-            f"Cannot convert {obj.name} to records, unknown format.", status=status.HTTP_400_BAD_REQUEST
-        )
-
-    if query:
-        try:
-            # examples:
-            # https://www.geeksforgeeks.org/python-filtering-data-with-pandas-query-method/
-            df.query(query, inplace=True)
-        except Exception as exc:
-            raise AnaliticoException(
-                f"Query could not be completed: {exc}",
-                status_code=status.HTTP_400_BAD_REQUEST,
-                extra={"query": query, "error": str(exc)},
-            ) from exc
-
-    if sort:
-        # eg: ?sort=Name,-Age
-        columns = sort.split(",")
-        for column in columns:
-            if column.startswith("-"):
-                df.sort_values(column[1:], ascending=False, inplace=True)
-            else:
-                df.sort_values(column, inplace=True)
-
-    if not already_paged:
-        df = df.iloc[page_offset : page_offset + page_size]
-
-    return df
-
-
 class AssetViewSetMixin:
     """
     This is a mixin used by other viewsets like WorkspaceViewSet and DatasetViewSet.
@@ -151,8 +95,7 @@ class AssetViewSetMixin:
 
         # retrieve metadata, refresh if needed
         path = os.path.join(base_path, url)
-        obj = api.libcloud.metadata.get_file_metadata(driver, path, refresh=True)
-        metadata = obj.meta_data
+        metadata = api.metadata.get_file_metadata(driver, path, refresh=True)
 
         # which page are we on, what size is each page? should we filter rows?
         page = get_query_parameter_as_int(request, PAGE_PARAM, 0)
@@ -164,7 +107,7 @@ class AssetViewSetMixin:
         sort = get_query_parameter(request, "order", None)
 
         # retrieve data and filter it if requested
-        df = get_filtered_dataframe(item, obj, page, page_size, query, sort)
+        df = api.metadata.get_file_dataframe(driver, path, page, page_size, query, sort)
         df = df.fillna("")  # replace NaN with empty string
 
         # add paging metadata
@@ -192,8 +135,9 @@ class AssetViewSetMixin:
 
             # refreshing metadata?
             refresh = get_query_parameter_as_bool(request, "refresh", False)
-            if refresh:
-                items = [get_file_metadata(driver, item.name, refresh=True) for item in items]
+
+            for item in items:
+                item.meta_data = api.metadata.get_file_metadata(driver, item.name, refresh=refresh)
 
             for item in items:
                 item.name = item.name.replace(base_path[:-1], "")
@@ -249,7 +193,7 @@ class AssetViewSetMixin:
             response["ETag"] = obj_ls.extra["etag"]
 
             # add amazon compatible metadata headers if any
-            metaheaders = api.libcloud.metadata_to_amz_meta_headers(obj_ls.meta_data)
+            metaheaders = api.metadata_to_amz_meta_headers(obj_ls.meta_data)
             for key, value in metaheaders.items():
                 response[key] = value
 

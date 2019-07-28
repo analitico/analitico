@@ -576,3 +576,24 @@ class DatasetTests(AnaliticoApiTestCase):
                     s2 = records2[i]["Salary"]
                     if s1 and s2:
                         self.assertGreaterEqual(s1, s2)
+
+    ##
+    ## Metadata and statistical information from files as json
+    ##
+
+    def test_dataset_metadata_describe(self):
+        for suffix in TEST_DATA_SUFFIXES:
+            url = self.upload_dataset(dataset="nba", suffix=suffix)
+            response = self.client.get(url + "?metadata=true&refresh=true")
+            self.assertStatusCode(response)
+
+            metadata = response.data[0]["attributes"]["metadata"]
+            self.assertEqual(metadata["total_records"], 457)
+
+            self.assertAlmostEqual(metadata["describe"]["Age"]["min"], 19.0, places=2)
+            self.assertAlmostEqual(metadata["describe"]["Age"]["mean"], 26.93873, places=2)
+            self.assertAlmostEqual(metadata["describe"]["Age"]["max"], 40.0, places=2)
+
+            self.assertAlmostEqual(metadata["describe"]["Salary"]["25%"], 1_044_792.25, places=2)
+            self.assertAlmostEqual(metadata["describe"]["Salary"]["50%"], 2_839_073.0, places=2)
+            self.assertAlmostEqual(metadata["describe"]["Salary"]["75%"], 6_500_000.0, places=2)
