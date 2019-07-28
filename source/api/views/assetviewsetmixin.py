@@ -15,7 +15,7 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework.serializers import Serializer
 
-from analitico import AnaliticoException, PARQUET_SUFFIXES, CSV_SUFFIXES, EXCEL_SUFFIXES, HDF_SUFFIXES
+from analitico import AnaliticoException, PARQUET_SUFFIXES, CSV_SUFFIXES, EXCEL_SUFFIXES, HDF_SUFFIXES, PANDAS_SUFFIXES
 from analitico.pandas import pd_read_csv
 
 from api.models import Workspace
@@ -130,6 +130,8 @@ class AssetViewSetMixin:
     def files_metadata(self, request, pk, url, driver, base_path):
         # return metadata for files and directories
         assert base_path and base_path.endswith("/")
+        assert url and url.startswith("/")
+
         if request.method in ["GET"]:
             items = driver.ls(os.path.join(base_path, url))
 
@@ -150,6 +152,13 @@ class AssetViewSetMixin:
         if request.method in ["PUT", "POST"]:
             data = request.data["data"]
 
+            # changing schema?
+            metadata = api.metadata.get_file_metadata(driver, url)
+            if "schema" in metadata and "schema" in data["attributes"]:
+                if metadata["schema"] != data["attributes"]["schema"]:
+                    api.metadata.apply_conversions(driver, url, new_schema=data["attributes"]["schema"])
+                    return Response(status=status.HTTP_201_CREATED)
+
             # is this a rename/move request? id/path is being updated
             # this is equivalent to webdav's move http method which we
             # cannot use because django's middleware filters out move
@@ -157,10 +166,22 @@ class AssetViewSetMixin:
             if url != data["id"]:
                 assert data["id"].startswith("/"), "Path should start with slash, eg: /file.txt"
                 destination = base_path + data["id"][1:]
+
+                # are we changing format?
+                src_suffix = Path(url).suffix
+                dst_suffix = Path(destination).suffix
+                if src_suffix != dst_suffix:
+                    # we support limited formats for data conversions
+                    if src_suffix in PANDAS_SUFFIXES and dst_suffix in PANDAS_SUFFIXES:
+                        api.metadata.apply_conversions(driver, url, new_path=destination)
+                        return Response(status=status.HTTP_201_CREATED)
+                    else:
+                        raise AnaliticoException(
+                            f"Can't convert a {src_suffix} to a {dst_suffix}", status_code=status.HTTP_400_BAD_REQUEST
+                        )
+
                 driver.move(url, destination)
                 return Response(status=status.HTTP_201_CREATED)
-
-            # TODO update extras if changed
 
         msg = f"Method {request.method} on {request.path} is not implemented"
         raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
@@ -193,7 +214,7 @@ class AssetViewSetMixin:
             response["ETag"] = obj_ls.extra["etag"]
 
             # add amazon compatible metadata headers if any
-            metaheaders = api.metadata_to_amz_meta_headers(obj_ls.meta_data)
+            metaheaders = api.libcloud.metadata_to_amz_meta_headers(obj_ls.meta_data)
             for key, value in metaheaders.items():
                 response[key] = value
 

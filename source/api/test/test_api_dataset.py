@@ -597,3 +597,44 @@ class DatasetTests(AnaliticoApiTestCase):
             self.assertAlmostEqual(metadata["describe"]["Salary"]["25%"], 1_044_792.25, places=2)
             self.assertAlmostEqual(metadata["describe"]["Salary"]["50%"], 2_839_073.0, places=2)
             self.assertAlmostEqual(metadata["describe"]["Salary"]["75%"], 6_500_000.0, places=2)
+
+    ##
+    ## Format conversions
+    ##
+
+    def test_dataset_convert_csv_to_parquet(self):
+        csv_url = self.upload_dataset(dataset="nba", suffix=".csv")
+        response1 = self.client.get(csv_url + "?metadata=true&refresh=true")
+        self.assertStatusCode(response1)
+
+        # to ask the server to convert csv file to parquet format
+        # we need to change the id of the object to the new format/location
+        # we desire and then do a PUT of this data on the current path of the file
+        data = response1.data[0]
+        data["id"] = data["id"].replace(".csv", ".parquet")
+        response2 = self.client.put(csv_url + "?metadata=true", data={"data": data})
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        csv_schema = response2.data["meta"]["schema"]
+        self.assertEqual(len(csv_schema["columns"]), 9)
+
+        # older .csv file no longer exists
+        response3 = self.client.get(csv_url)
+        self.assertEqual(response3.status_code, status.HTTP_404_NOT_FOUND)
+
+        # can download parquet?
+        parquet_url = csv_url.replace(".csv", ".parquet")
+        response4 = self.client.get(parquet_url)
+        self.assertStatusCode(response4)
+
+        # can download parquet's metadata?
+        response5 = self.client.get(parquet_url + "?records=true&refresh=true")
+        self.assertStatusCode(response5)
+        parquet_schema = response5.data["meta"]["schema"]
+        self.assertEqual(len(parquet_schema["columns"]), 9)
+
+    def test_dataset_change_schema(self):
+        url = self.upload_dataset(dataset="nba", suffix=".parquet")
+        response1 = self.client.get(url + "?metadata=true&refresh=true")
+        self.assertStatusCode(response1)
+
+        # TODO change schema

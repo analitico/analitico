@@ -133,9 +133,7 @@ def get_file_dataframe(
     elif suffix in HDF_SUFFIXES:
         df = pd.read_hdf(obj_io)
     else:
-        raise AnaliticoException(
-            f"Cannot convert {path} to records, unknown format.", status=status.HTTP_400_BAD_REQUEST
-        )
+        raise AnaliticoException(f"Unknown format for {path}.", status_code=status.HTTP_400_BAD_REQUEST)
 
     if query:
         try:
@@ -163,3 +161,46 @@ def get_file_dataframe(
         df = df.iloc[page_offset : page_offset + page_size]
 
     return df
+
+
+def apply_conversions(driver: WebdavStorageDriver, path: str, new_path: str = None, new_schema: dict = None):
+    """
+    Converts data files from a format to another or applies a new schema to transform columns, etc.
+    
+    Arguments:
+        driver {WebdavStorageDriver} -- Storage driver used to retrieve the file
+        path {str} -- The path of the asset on disk
+    
+    Keyword Arguments:
+        new_path {str} -- The new path (with new suffix) (default: {None})
+        new_schema {dict} -- The new schema to be applied (default: {None})
+    """
+
+    # read dataframe in its entirety, no paging
+    df = get_file_dataframe(driver, path)
+
+    # do we apply a new schema?
+    if new_schema:
+        df = analitico.schema.apply_schema(df, new_schema)
+
+    # what format do we write to?
+    new_suffix = Path(new_path if new_path else path).suffix.lower()
+
+    # write dataframe to a temp file then upload to storage path
+    with tempfile.NamedTemporaryFile(mode="w+", prefix="df_", suffix=new_suffix) as f:
+        if new_suffix in CSV_SUFFIXES:
+            df.to_csv(f.name)
+        elif new_suffix in PARQUET_SUFFIXES:
+            df.to_parquet(f.name)
+        elif new_suffix in EXCEL_SUFFIXES:
+            df.to_excel(f.name)
+        elif new_suffix in HDF_SUFFIXES:
+            df = pd.to_hdf(f.name, key="df")
+        else:
+            raise AnaliticoException(f"Unknown format for {path}.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        driver.upload(f.name, new_path if new_path else path)
+        if path != new_path:
+            driver.delete(path)
+
+    return True
