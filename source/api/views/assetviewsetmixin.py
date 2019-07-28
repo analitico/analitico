@@ -139,7 +139,14 @@ class AssetViewSetMixin:
             refresh = get_query_parameter_as_bool(request, "refresh", False)
 
             for item in items:
-                item.meta_data = api.metadata.get_file_metadata(driver, item.name, refresh=refresh)
+                # append analitico's metadata to webdav's metadata
+                metadata = api.metadata.get_file_metadata(driver, item.name, refresh=refresh)
+                if metadata:
+                    if item.meta_data:
+                        for key, value in metadata:
+                            item.meta_data[key] = value
+                    else:
+                        item.meta_data = metadata
 
             for item in items:
                 item.name = item.name.replace(base_path[:-1], "")

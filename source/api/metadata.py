@@ -58,7 +58,10 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
         dict -- The object's metadata (if any).
     """
     ls = driver.ls(path)
-    assert len(ls) == 1
+
+    # no metadata for directories for now
+    if len(ls) != 1: return {}
+
     obj = ls[0]
 
     # retrieve metadata from disk cache if availa
