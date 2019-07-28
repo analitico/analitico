@@ -2,6 +2,7 @@ import tempfile
 import diskcache
 import pandas as pd
 import os
+import libcloud.storage
 
 from pathlib import Path
 from rest_framework import status
@@ -59,10 +60,11 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
     """
     ls = driver.ls(path)
 
-    # no metadata for directories for now
-    if len(ls) != 1: return {}
-
-    obj = ls[0]
+    if len(ls) == 1 and isinstance(ls[0], libcloud.storage.base.Object): 
+        obj = ls[0]
+    else:
+        # no metadata for directories for now
+        return {}
 
     # retrieve metadata from disk cache if availa
     metadata_key = f"{driver.url}{path}#{obj.hash}"

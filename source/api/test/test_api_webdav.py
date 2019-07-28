@@ -759,6 +759,25 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             driver.delete("/" + obj_name)
 
+    def test_webdav_files_api_list_directory(self):
+        driver = self.get_driver()
+        try:
+            dir_name = "/tst_dir_" + django.utils.crypto.get_random_string() + "/"
+            driver.mkdir(dir_name)
+
+            # retrieve file via /files/url api
+            url = reverse("api:workspace-files", args=("ws_storage_webdav", dir_name)) + "?metadata=true"
+            response = self.client.get(url)
+            data = response.data
+
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0]["type"], "analitico/directory")
+            self.assertEqual(data[0]["id"], dir_name)
+            self.assertEqual(data[0]["attributes"]["content_type"], "httpd/unix-directory")
+        finally:
+            driver.rmdir(dir_name)
+
+
     def test_webdav_files_api_put_get_file_contents(self):
         """ Upload raw files directly via /files api """
         driver = self.get_driver()
