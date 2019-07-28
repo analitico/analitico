@@ -614,8 +614,6 @@ class DatasetTests(AnaliticoApiTestCase):
         data["id"] = data["id"].replace(".csv", ".parquet")
         response2 = self.client.put(csv_url + "?metadata=true", data={"data": data})
         self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
-        csv_schema = response2.data["meta"]["schema"]
-        self.assertEqual(len(csv_schema["columns"]), 9)
 
         # older .csv file no longer exists
         response3 = self.client.get(csv_url)
