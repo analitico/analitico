@@ -701,6 +701,25 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             driver.delete("/" + obj_name)
 
+    def test_webdav_driver_upload_with_not_so_looooooooong_extra(self):
+        driver = self.get_driver()
+        try:
+            obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
+            obj_data = b"This is it "
+            obj_extra = {
+                # if you test with 1024 of metadata, the driver fails
+                "long": django.utils.crypto.get_random_string(length=512)
+            }
+
+            # upload with "extra" metadata
+            container = driver.create_container("/")
+            obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name, extra=obj_extra)
+            self.assertIsInstance(obj, Object)
+            self.assertEqual(obj.meta_data["long"], obj_extra["long"])
+
+        finally:
+            driver.delete("/" + obj_name)
+
     ##
     ## /api/workspaces/ws_xxx/files/ methods
     ##

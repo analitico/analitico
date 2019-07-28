@@ -406,6 +406,7 @@ class WebdavStorageDriver(StorageDriver):
 
         # should apply and reply with 207
         self._send("PROPPATCH", remote_path, (200, 207), data=patch_xml)
+        # TODO should really check the content of 207 responses and exctract and 500 inside the xml payload
         return True
 
     ##
