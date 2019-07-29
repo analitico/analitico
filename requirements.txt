@@ -89,7 +89,7 @@ numpy==1.15.4
 oauthlib==3.0.0
 openpyxl
 ortools==6.9.5824
-pandas==0.23.4
+pandas==0.25.0
 pandocfilters==1.4.2
 papermill==1.0.0
 parso==0.3.1
