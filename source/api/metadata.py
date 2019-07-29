@@ -16,6 +16,12 @@ from analitico.pandas import pd_read_csv
 import api.libcloud.iterio
 from api.libcloud.webdavdrivers import WebdavStorageDriver
 
+# use simplejson instead of standard built in library
+# mostly because it has a parameter which supports replacing nan with nulls
+# thus producing json which is ecma compliant and won't have issues being read
+# https://simplejson.readthedocs.io/en/latest/
+import simplejson as json
+
 # Diskcache is used to cache file's metadata on the server
 # http://www.grantjenks.com/docs/diskcache/tutorial.html
 # http://www.grantjenks.com/docs/diskcache/api.html
@@ -84,6 +90,11 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
                 metadata["total_records"] = len(df.index)
                 metadata["schema"] = analitico.schema.generate_schema(df)
                 metadata["describe"] = df.describe().to_dict()
+
+        # numpy and pandas can add NaN values to the dictionary which
+        # then creates problems when these values are served in our
+        # json reply so we sanitize the metadata before we store it
+        metadata = json.loads(json.dumps(metadata, skipkeys=True, ignore_nan=True, default=lambda o: "NOT-SERIALIZABLE"))
 
         try:
             # store updated metadata in local disk cache
