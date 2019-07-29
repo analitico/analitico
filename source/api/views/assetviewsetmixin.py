@@ -175,7 +175,7 @@ class AssetViewSetMixin:
             # this is equivalent to webdav's move http method which we
             # cannot use because django's middleware filters out move
             # as an http method/verb
-            new_path = None
+            new_path = url
             if url != data["id"]:
                 assert data["id"].startswith("/"), "Path should start with slash, eg: /file.txt"
                 new_path = base_path + data["id"][1:]
@@ -185,18 +185,24 @@ class AssetViewSetMixin:
                 dst_suffix = Path(new_path).suffix
                 if src_suffix != dst_suffix:
                     # we support limited formats for data conversions
-                    if src_suffix in PANDAS_SUFFIXES and dst_suffix in PANDAS_SUFFIXES:
-                        api.metadata.apply_conversions(driver, url, new_path=new_path, new_schema=new_schema)
-                        return Response(status=status.HTTP_201_CREATED)
-                    else:
-                        raise AnaliticoException(
-                            f"Can't convert {src_suffix} to {dst_suffix}", status_code=status.HTTP_400_BAD_REQUEST
-                        )
+                    if not(src_suffix in PANDAS_SUFFIXES and dst_suffix in PANDAS_SUFFIXES):
+                        msg = f"Can't convert {src_suffix} to {dst_suffix}"
+                        raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
 
-            if new_path or new_schema: # or both at once...
+                    # converting a file format and potentially changing its schema at once
+                    api.metadata.apply_conversions(driver, url, new_path=new_path, new_schema=new_schema)
+                    return Response(status=status.HTTP_201_CREATED)
+
+            if new_schema:
+                # changing schema and moving without converting formats
                 api.metadata.apply_conversions(driver, url, new_path=new_path, new_schema=new_schema)
+                return Response(status=status.HTTP_201_CREATED)
+            elif url != new_path:
+                # moving files without any conversions
+                driver.move(url, new_path)
+                return Response(status=status.HTTP_201_CREATED)
 
-            return Response(status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_200_OK)
 
         msg = f"Method {request.method} on {request.path} is not implemented"
         raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
