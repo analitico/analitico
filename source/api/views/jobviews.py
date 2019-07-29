@@ -1,5 +1,7 @@
 """ JobSerializer and JobViewSet classes """
 
+import requests
+
 import rest_framework
 from rest_framework import serializers
 
@@ -22,6 +24,7 @@ from django.http.response import StreamingHttpResponse
 from django.utils.http import parse_http_date_safe, http_date
 from django.utils.timezone import now
 from django.urls import reverse
+import django.conf
 
 import rest_framework
 import rest_framework.viewsets
@@ -91,6 +94,7 @@ class JobViewSetMixin:
     # defined in subclass to list acceptable actions
     job_actions = ()
 
+    # DEPRECATED
     @permission_classes((IsAuthenticated,))
     @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
     def job_list(self, request, pk) -> Response:
@@ -102,6 +106,7 @@ class JobViewSetMixin:
         jobs_serializer = JobSerializer(jobs, many=True)
         return Response(jobs_serializer.data)
 
+    # DEPRECATED
     @permission_classes((IsAuthenticated,))
     @action(methods=["post"], detail=True, url_name="job-action", url_path=r"jobs/(?P<job_action>[-\w.]{4,256})$")
     def job_create(self, request, pk, job_action) -> Response:

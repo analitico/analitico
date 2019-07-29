@@ -37,10 +37,11 @@ class K8Tests(AnaliticoApiTestCase):
     """ Test kubernets API to build and deploy on knative """
 
     stage = api.k8.K8_STAGE_STAGING
-    item_id = "nb_K8Tests_test_k8_deploy"  # help registry cleanups
-    item_id_normalized = "nb-k8tests-test-k8-deploy-staging"
+    item_id = "nb_K8Tests_test_k8"  # help registry cleanups
+    item_id_normalized = "nb-k8tests-test-k8-staging"
 
     def deploy_service(self):
+        self.auth_token(self.token1)
         self.post_notebook("notebook11.ipynb", self.item_id)
         notebook = Notebook.objects.get(pk=self.item_id)
         # pre run and built image tagged with `K8Tests_test_k8_deploy`
@@ -63,6 +64,26 @@ class K8Tests(AnaliticoApiTestCase):
 
         time.sleep(15)
         return service
+
+    def delete_job(self, job_id: str):
+        subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
+
+    def job_run_notebook(self, item_id=None):
+        if item_id is None:
+            item_id = self.item_id
+        self.post_notebook("notebook11.ipynb", item_id)
+        notebook = Notebook.objects.get(pk=item_id)
+
+        url_job_run = reverse("api:notebook-k8-jobs", args=(notebook.id, analitico.ACTION_RUN))
+        response = self.client.post(url_job_run)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        job_id = response.data["metadata"]["name"]
+
+        # wait for deployment
+        time.sleep(15)
+
+        return job_id
 
     # TODO cannot run this in CI/CD pipeline, should be added to live testing?
     @tag("slow", "docker", "k8s")
@@ -123,9 +144,9 @@ class K8Tests(AnaliticoApiTestCase):
     ##
 
     @tag("slow", "docker", "k8s")
-    def test_k8s_get_metrics(self):
+    def test_service_metrics(self):
         self.deploy_service()
-        url = reverse("api:k8-metrics", args=(self.item_id, self.stage))
+        url = reverse("api:notebook-k8-metrics", args=(self.item_id, self.stage))
 
         # regular user CANNOT get metrics
         self.auth_token(self.token3)
@@ -151,7 +172,7 @@ class K8Tests(AnaliticoApiTestCase):
 
         # service not found in production
         self.auth_token(self.token2)
-        url_production = reverse("api:k8-metrics", args=(self.item_id, api.k8.K8_STAGE_PRODUCTION))
+        url_production = reverse("api:notebook-k8-metrics", args=(self.item_id, api.k8.K8_STAGE_PRODUCTION))
         response = self.client.get(url_production, data={"metric": "container_cpu_load"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -183,9 +204,9 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertIn(self.item_id_normalized, metric["metric"]["pod_name"])
 
     @tag("slow", "docker", "k8s", "live")
-    def test_k8s_get_logs(self):
+    def test_service_logs(self):
         self.deploy_service()
-        url = reverse("api:k8-logs", args=(self.item_id, self.stage))
+        url = reverse("api:notebook-k8-logs", args=(self.item_id, self.stage))
 
         # /echo endpoint will generate a log message at the given level
         endpoint_echo = f"https://{self.item_id_normalized}.cloud.analitico.ai/echo"
@@ -213,13 +234,13 @@ class K8Tests(AnaliticoApiTestCase):
 
         # service not found in production
         self.auth_token(self.token2)
-        url_production = reverse("api:k8-logs", args=(self.item_id, api.k8.K8_STAGE_PRODUCTION))
+        url_production = reverse("api:notebook-k8-logs", args=(self.item_id, api.k8.K8_STAGE_PRODUCTION))
         response = self.client.get(url_production, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # limit the number of results with ?size= parameter
         self.auth_token(self.token1)
-        response = self.client.get(url, data={"size": 10}, format="json")
+        response = self.client.get(url, data={"size": 10, "order": "@timestamp:desc"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data
         self.assertEqual(len(data["hits"]["hits"]), 10)
@@ -290,6 +311,58 @@ class K8Tests(AnaliticoApiTestCase):
     ## K8s Jobs
     ##
 
+    @tag("slow", "docker", "k8s", "live")
+    def test_k8s_job_logs(self):
+        # run a job to generate logs
+        job_id = self.job_run_notebook()
+        # wait for logs to be collected
+        time.sleep(30)
+
+        url = reverse("api:notebook-k8-job-logs", args=(self.item_id, job_id))
+
+        # user CANNOT read logs from items he does not have access to
+        self.auth_token(self.token3)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # user CANNOT read logs from jobs that does not belong to the item
+        self.auth_token(self.token1)
+        another_job_id = self.job_run_notebook("nb_anothernotebook")
+        another_job_url = reverse("api:notebook-k8-job-logs", args=(self.item_id, another_job_id))
+        response = self.client.get(another_job_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # admin user CAN get logs
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertGreater(len(data["hits"]["hits"]), 5)
+        self.assertEqual(data["timed_out"], False)
+        self.assertGreater(data["hits"]["total"], 5)
+
+        # limit the number of results with ?size= parameter
+        self.auth_token(self.token1)
+        response = self.client.get(url, data={"size": 3, "order": "@timestamp:desc"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(len(data["hits"]["hits"]), 3)
+        self.assertEqual(data["timed_out"], False)
+        self.assertGreater(data["hits"]["total"], 3)
+
+        # user can provide a query string
+        self.auth_token(self.token1)
+        response = self.client.get(
+            url, data={"query": '"this-is-a-string-that-will-never-be-present-in-a-log"'}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(len(data["hits"]["hits"]), 0)
+
+        # clean up
+        self.delete_job(job_id)
+        self.delete_job(another_job_id)
+
     def test_k8s_jobs_run(self):
         # k8s / write unit tests for k8_jobs_create #296
         # k8_jobs_create...
@@ -304,3 +377,13 @@ class K8Tests(AnaliticoApiTestCase):
         # k8s / write unit tests for k8_jobs_create #296
         # k8_jobs_create...
         pass
+
+    def test_get_job_that_does_not_exist(self):
+        """ Expect 404 not found when a job does not exist """
+        job_id = self.job_run_notebook()
+        url = reverse("api:notebook-k8-jobs", args={self.item_id, "jb-imafakejob"})
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # clean up
+        self.delete_job(job_id)

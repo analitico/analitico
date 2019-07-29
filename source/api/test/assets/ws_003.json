@@ -1,9 +1,9 @@
 {
     "type": "analitico/workspace",
-    "id": "ws_storage_webdav",
+    "id": "ws_003",
     "attributes": {
-        "user": "user1@analitico.ai",
-        "title": "This is the title",
+        "user": "user3@analitico.ai",
+        "title": "Workspace3",
         "description": "This is the description",
         "notes": "A workspace used to test WebDAV integration with Hetzner",
         "storage": {

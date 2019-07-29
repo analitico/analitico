@@ -274,3 +274,12 @@ class DockerTests(AnaliticoApiTestCase):
             self.assertEqual(
                 json["error"]["title"], "The notebook's code cannot be imported: No module named 'fuzzywuzzy'"
             )
+
+    @tag("slow", "docker")
+    def test_docker_custom_library_missing_serverless_tag(self):
+        """ Notebook that uses a library that it remembered to install but in a cell not marked with the tag `serverless` """
+        with self.DockerNotebookRunner(self, "notebook-docker-custom-library-missing-serveless-tag.ipynb") as runner:
+            response, json = runner.get_container_response_json("/", status_code=500)
+            self.assertEqual(
+                json["error"]["title"], "The notebook's code cannot be imported: No module named 'fuzzywuzzy'"
+            )

@@ -327,7 +327,7 @@ class NotebooksTests(AnaliticoApiTestCase):
             "data": {
                 "id": data["id"],
                 "attributes": {
-                    "workspace_id": "ws_user1",  # TODO required here but not in PATCH, why?
+                    "workspace_id": "ws_001",  # TODO required here but not in PATCH, why?
                     "title": "title1",
                     "description": "description1",
                     "notebook": notebook1,
@@ -348,7 +348,7 @@ class NotebooksTests(AnaliticoApiTestCase):
             "data": {
                 "id": data["id"],
                 "attributes": {
-                    "workspace_id": "ws_user1",  # TODO required here but not in PATCH, why?
+                    "workspace_id": "ws_001",  # TODO required here but not in PATCH, why?
                     "description": "description2",
                     "notebook": notebook1,
                 },

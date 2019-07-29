@@ -3,11 +3,11 @@
     "id": "ws_001",
     "attributes": {
         "user": "user1@analitico.ai",
-        "title": "This is the title",
+        "title": "Workspace1",
         "description": "This is the description",
         "notes": "Some notes here",
         "storage": {
-            "driver": "webdav",
+            "driver": "hetzner-webdav",
             "url": "https://u206378-sub4.your-storagebox.de",
             "notes": "This subuser is reserved for unit testing use",
             "credentials": {

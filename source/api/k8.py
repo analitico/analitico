@@ -292,9 +292,20 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
 
 
 def k8_jobs_get(item: ItemMixin, job_id: str = None, request: Request = None) -> dict:
-    # return specific job filtered by item_id and job_id
-    job, _ = subprocess_run(cmd_args=["kubectl", "get", "job", k8_normalize_name(job_id), "-n", "cloud", "-o", "json"])
-    assert job["metadata"]["labels"]["analitico.ai/item-id"] == item.id
+    try:
+        # return specific job filtered by item_id and job_id
+        job, _ = subprocess_run(
+            cmd_args=["kubectl", "get", "job", k8_normalize_name(job_id), "-n", "cloud", "-o", "json"]
+        )
+    except Exception as exec:
+        raise AnaliticoException(f"Job {job_id} cannot be retrieved or not found", status_code=status.HTTP_404_NOT_FOUND) from exec
+
+    # cannot retrieve a job not created for the item
+    if job["metadata"]["labels"]["analitico.ai/item-id"] != item.id:
+        raise AnaliticoException(
+            f"Job {job_id} not found for the item {item.id}", status_code=status.HTTP_404_NOT_FOUND
+        )
+
     return job
 
 

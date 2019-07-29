@@ -101,7 +101,7 @@ class PermissionsTests(AnaliticoApiTestCase):
 
     def test_permissions_setting_to_owned_workspace(self):
         self.auth_token(self.token1)
-        url = reverse("api:workspace-detail", args=("ws_user1",))
+        url = reverse("api:workspace-detail", args=("ws_001",))
 
         # GET the workspace as it is now, no permissions specified
         response = self.client.get(url)
@@ -181,7 +181,7 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.assertEqual(data["attributes"]["permissions"]["user4@analitico.ai"]["permissions"][2], "permission3a")
 
     def test_permissions_setting_to_someone_elses_workspace(self):
-        url = reverse("api:workspace-detail", args=("ws_user2",))
+        url = reverse("api:workspace-detail", args=("ws_002",))
         # this is a long story so bear with me...
 
         # user2 has a workspace all of his own
@@ -447,19 +447,19 @@ class PermissionsTests(AnaliticoApiTestCase):
         role = Role(workspace=self.ws1, user=self.user3)
 
         # no rights, no posting
-        response = self.client.post(url, {"workspace": "ws_user1", "title": "Created by reader3"}, format="json")
+        response = self.client.post(url, {"workspace": "ws_001", "title": "Created by reader3"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # analitico.reader CANNOT post dataset
         role.roles = "role1,role2,analitico.reader,role3"
         role.save()
-        response = self.client.post(url, {"workspace": "ws_user1", "title": "Created by reader3"}, format="json")
+        response = self.client.post(url, {"workspace": "ws_001", "title": "Created by reader3"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # analitico.editor can post dataset
         role.roles = "role1,role2,analitico.editor,role3"
         role.save()
-        response = self.client.post(url, {"workspace": "ws_user1", "title": "Created by editor3"}, format="json")
+        response = self.client.post(url, {"workspace": "ws_001", "title": "Created by editor3"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_roles_reader_CANT_PATCH_editor_can(self):

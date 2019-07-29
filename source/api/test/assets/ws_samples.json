@@ -7,7 +7,7 @@
         "description": "A collection of samples recipes",
         "notes": "Some notes here",
         "storage": {
-            "driver": "webdav",
+            "driver": "hetzner-webdav",
             "url": "https://u206378-sub4.your-storagebox.de",
             "notes": "This subuser is reserved for unit testing use",
             "credentials": {

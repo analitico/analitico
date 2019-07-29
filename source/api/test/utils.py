@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from analitico import ACTION_PROCESS
-from api.models import Token, User, Workspace, Drive
+from api.models import Token, User, Workspace, Drive, NOTEBOOK_MIME_TYPE
 from analitico.utilities import read_json, get_dict_dot
 
 # pylint: disable=no-member
@@ -145,6 +145,7 @@ class AnaliticoApiTestCase(APITestCase):
             return response
 
     def setup_basics(self):
+        # test users
         self.user1 = User.objects.create_user(
             email="user1@analitico.ai", is_staff=True, is_superuser=True
         )  # 1st user is admin
@@ -152,16 +153,29 @@ class AnaliticoApiTestCase(APITestCase):
         self.user3 = User.objects.create_user(email="user3@analitico.ai")  # 3rd is a regular user
         self.user4 = User.objects.create_user(email="user4@analitico.ai", is_staff=True)  # 4th is staff but not admin
 
+        # test tokens
         self.token1 = Token.objects.create(pk="tok_user1", user=self.user1)
         self.token2 = Token.objects.create(pk="tok_user2", user=self.user2)
         self.token3 = Token.objects.create(pk="tok_user3", user=self.user3)
         self.token4 = Token.objects.create(pk="tok_user4", user=self.user4)
 
-        self.ws1 = Workspace.objects.create(pk="ws_user1", user=self.user1, title="Workspace1")
-        self.ws2 = Workspace.objects.create(pk="ws_user2", user=self.user2, title="Workspace2")
-        self.ws3 = Workspace.objects.create(pk="ws_user3", user=self.user3, title="Workspace3")
-        self.ws4 = Workspace.objects.create(pk="ws_user4", user=self.user4, title="Workspace4")
+        # test workspaces
+        ws1 = self.read_json_asset(os.path.join(ASSETS_PATH, "ws_001.json"))
+        ws2 = self.read_json_asset(os.path.join(ASSETS_PATH, "ws_002.json"))
+        ws3 = self.read_json_asset(os.path.join(ASSETS_PATH, "ws_003.json"))
+        endpoint = reverse("api:workspace-list")
+        self.auth_token(self.token1)
+        response_ws1 = self.client.post(endpoint, {"data": ws1}, format="json")
+        self.auth_token(self.token2)
+        response_ws2 = self.client.post(endpoint, {"data": ws2}, format="json")
+        self.auth_token(self.token3)
+        response_ws3 = self.client.post(endpoint, {"data": ws3}, format="json")
+        self.client.logout()
+        self.ws1 = Workspace.objects.get(pk=response_ws1.data["id"])
+        self.ws2 = Workspace.objects.get(pk=response_ws2.data["id"])
+        self.ws3 = Workspace.objects.get(pk=response_ws3.data["id"])
 
+        # test drive
         self.drive = Drive(id="dr_box002_test", attributes=self.get_storage_conf())
         self.drive.save()
 
@@ -188,8 +202,11 @@ class AnaliticoApiTestCase(APITestCase):
             assert os.path.isfile(notebook_path)
         return read_json(notebook_path)
 
-    def post_notebook(self, notebook_path, notebook_id="nb_1"):
+    def post_notebook(self, notebook_path, notebook_id="nb_1", notebook_name="notebook.ipynb"):
         """ Posts a notebook model """
+        if not os.path.isfile(notebook_path):
+            notebook_path = os.path.join(NOTEBOOKS_PATH, notebook_path)
+            assert os.path.isfile(notebook_path)
         notebook = self.read_notebook(notebook_path)
 
         url = reverse("api:notebook-list")
@@ -198,7 +215,7 @@ class AnaliticoApiTestCase(APITestCase):
             url,
             dict(
                 id=notebook_id,
-                workspace_id="ws_user1",
+                workspace_id="ws_001",
                 title="title: " + notebook_id,
                 description="description: " + notebook_id,
                 notebook=notebook,
@@ -207,6 +224,12 @@ class AnaliticoApiTestCase(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # upload notebook file
+        url = reverse("api:notebook-files", args=(notebook_id, notebook_name))
+        response_upload = self.upload_file(url, notebook_path, NOTEBOOK_MIME_TYPE, token=self.token1)
+        self.assertEqual(response_upload.status_code, status.HTTP_204_NO_CONTENT)
+
         data = response.data
         self.assertEqual(data["id"], notebook_id)
         return response
