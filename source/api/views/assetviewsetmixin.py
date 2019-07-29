@@ -259,9 +259,10 @@ class AssetViewSetMixin:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         if request.method == "DELETE":
-            # TODO delete empty directories
-            # TODO webdav / handle delete when file does not exists #323
-            driver.delete(path)
+            try:
+                driver.delete(path)
+            except api.libcloud.WebdavException as exc:
+                raise AnaliticoException(f"Can't delete {path}", status_code=exc.actual_code) from exc
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         # some combinations of methods and urls are not supported

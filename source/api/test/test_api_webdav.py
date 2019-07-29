@@ -784,6 +784,13 @@ class WebdavTests(AnaliticoApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_webdav_files_api_delete_missing_file(self):
+        # delete a file which we never created via /files/url api
+        dir_name = "/tst_dir_" + django.utils.crypto.get_random_string() + ".missing"
+        url = reverse("api:workspace-files", args=("ws_storage_webdav", dir_name))
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_webdav_files_api_put_get_file_contents(self):
         """ Upload raw files directly via /files api """
         driver = self.get_driver()
