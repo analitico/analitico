@@ -50,8 +50,7 @@ class ParquetTests(AnaliticoApiTestCase):
             }
         )
 
-    def test_parquet_upload(self):
-
+    def OFFtest_parquet_upload(self):
         df = self.get_random_dataframe()
         self.assertIsNotNone(df)
 
@@ -59,7 +58,7 @@ class ParquetTests(AnaliticoApiTestCase):
         response = factory.upload("ds_WKIIILcZg9rF", df, "random-table.parquet")
         self.assertIsNotNone(response)
 
-    def test_parquet_upload_via_sdk(self):
+    def OFFtest_parquet_upload_via_sdk(self):
         df = self.get_random_dataframe()
         self.assertIsNotNone(df)
 
