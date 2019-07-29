@@ -50,16 +50,15 @@ class K8ViewSetMixin:
             service = item.get_attribute("service")
             if not service or not service[stage]:
                 raise AnaliticoException(
-                    f"Item {item.id} in {stage} has not been deployed as a service.", status_code=status.HTTP_404_NOT_FOUND
-            )
+                    f"Item {item.id} in {stage} has not been deployed as a service.",
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
             return service[stage]["name"], service[stage]["namespace"]
         except Exception as exc:
             # try pk directly as service name but only if admin rights
             if request.user.is_superuser:
                 return pk, self.get_namespace(request)
-            raise AnaliticoException(
-                f"Item {pk} has not been found.", status_code=status.HTTP_404_NOT_FOUND
-            ) from exc
+            raise AnaliticoException(f"Item {pk} has not been found.", status_code=status.HTTP_404_NOT_FOUND) from exc
 
     ##
     ## Services information
