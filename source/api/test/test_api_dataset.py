@@ -630,33 +630,39 @@ class DatasetTests(AnaliticoApiTestCase):
         parquet_schema = response5.data["meta"]["schema"]
         self.assertEqual(len(parquet_schema["columns"]), 9)
 
-    def test_dataset_convert_parquet_to_hdf(self):
-        parquet_url = self.upload_dataset(dataset="nba", suffix=".parquet")
-        response1 = self.client.get(parquet_url + "?metadata=true&refresh=true")
+    def check_suffix1_to_suffix2_conversion(self, suffix1, suffix2):
+        suffix1_url = self.upload_dataset(dataset="nba", suffix=suffix1)
+        response1 = self.client.get(suffix1_url + "?metadata=true&refresh=true")
         self.assertStatusCode(response1)
 
-        # to ask the server to convert parquet file to hdf format
+        # to ask the server to convert format1 file to format2
         # we need to change the id of the object to the new format/location
         # we desire and then do a PUT of this data on the current path of the file
         data = response1.data[0]
-        data["id"] = data["id"].replace(".parquet", ".hdf")
-        response2 = self.client.put(parquet_url + "?metadata=true", data={"data": data})
+        data["id"] = data["id"].replace(suffix1, suffix2)
+        response2 = self.client.put(suffix1_url + "?metadata=true", data={"data": data})
         self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
 
         # older file no longer exists
-        response3 = self.client.get(parquet_url)
+        response3 = self.client.get(suffix1_url)
         self.assertEqual(response3.status_code, status.HTTP_404_NOT_FOUND)
 
         # can download new file?
-        hdf_url = parquet_url.replace(".parquet", ".hdf")
-        response4 = self.client.get(hdf_url)
+        suffix2_url = suffix1_url.replace(suffix1, suffix2)
+        response4 = self.client.get(suffix2_url)
         self.assertStatusCode(response4)
 
-        # can download hdf's metadata?
-        response5 = self.client.get(hdf_url + "?records=true&refresh=true")
+        # can download format2's metadata?
+        response5 = self.client.get(suffix2_url + "?records=true&refresh=true")
         self.assertStatusCode(response5)
         hdf_schema = response5.data["meta"]["schema"]
         self.assertEqual(len(hdf_schema["columns"]), 9)
+
+    def test_dataset_convert_parquet_to_hdf(self):
+        self.check_suffix1_to_suffix2_conversion(".parquet", ".h5")
+
+    def test_dataset_convert_parquet_to_excel(self):
+        self.check_suffix1_to_suffix2_conversion(".parquet", ".xlsx")
 
     def test_dataset_change_schema(self):
         url = self.upload_dataset(dataset="nba", suffix=".parquet")

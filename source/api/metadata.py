@@ -134,9 +134,12 @@ def get_file_dataframe(
     elif suffix in PARQUET_SUFFIXES:
         df = pd.read_parquet(obj_io)
     elif suffix in EXCEL_SUFFIXES:
-        df = pd.read_excel(obj_io)
+        # reading stream is not supported yet
+        with tempfile.NamedTemporaryFile(suffix=suffix) as f:
+            driver.download(path, f.name)
+            df = pd.read_excel(f.name)
     elif suffix in HDF_SUFFIXES:
-        # reading hdf from stream is not supported yet
+        # reading stream is not supported yet
         with tempfile.NamedTemporaryFile(suffix=suffix) as f:
             driver.download(path, f.name)
             df = pd.read_hdf(f.name, "df")
@@ -201,7 +204,9 @@ def apply_conversions(driver: WebdavStorageDriver, path: str, new_path: str = No
         elif new_suffix in PARQUET_SUFFIXES:
             df.to_parquet(f.name)
         elif new_suffix in EXCEL_SUFFIXES:
-            df.to_excel(f.name)
+            # writer = pd.ExcelWriter(f.name, engine='xlsxwriter', date_format='YYYY-MM-DD', datetime_format='YYYY-MM-DD HH:MM:SS')
+            writer = pd.ExcelWriter(f.name, date_format="YYYY-MM-DD", datetime_format="YYYY-MM-DD HH:MM:SS")
+            df.to_excel(writer, index=False)
         elif new_suffix in HDF_SUFFIXES:
             df.to_hdf(f.name, key="df", mode="w")
         else:
