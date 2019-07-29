@@ -167,33 +167,34 @@ class AssetViewSetMixin:
             # schema has changes?
             old_schema = get_dict_dot(api.metadata.get_file_metadata(driver, url), "schema")
             new_schema = get_dict_dot(data, "attributes.metadata.schema")
-            if old_schema and new_schema and old_schema != new_schema:
-                api.metadata.apply_conversions(driver, url, new_schema=new_schema)
-                return Response(status=status.HTTP_201_CREATED)
+            if new_schema == old_schema:
+                # new schema same as old, don't convert
+                new_schema = None
 
             # is this a rename/move request? id/path is being updated
             # this is equivalent to webdav's move http method which we
             # cannot use because django's middleware filters out move
             # as an http method/verb
+            new_path = None
             if url != data["id"]:
                 assert data["id"].startswith("/"), "Path should start with slash, eg: /file.txt"
-                destination = base_path + data["id"][1:]
+                new_path = base_path + data["id"][1:]
 
                 # are we changing format?
                 src_suffix = Path(url).suffix
-                dst_suffix = Path(destination).suffix
+                dst_suffix = Path(new_path).suffix
                 if src_suffix != dst_suffix:
                     # we support limited formats for data conversions
                     if src_suffix in PANDAS_SUFFIXES and dst_suffix in PANDAS_SUFFIXES:
-                        api.metadata.apply_conversions(driver, url, new_path=destination)
+                        api.metadata.apply_conversions(driver, url, new_path=new_path, new_schema=new_schema)
                         return Response(status=status.HTTP_201_CREATED)
                     else:
                         raise AnaliticoException(
-                            f"Can't convert a {src_suffix} to a {dst_suffix}", status_code=status.HTTP_400_BAD_REQUEST
+                            f"Can't convert {src_suffix} to {dst_suffix}", status_code=status.HTTP_400_BAD_REQUEST
                         )
-                else:
-                    driver.move(url, destination)
-                    return Response(status=status.HTTP_201_CREATED)
+
+            if new_path or new_schema: # or both at once...
+                api.metadata.apply_conversions(driver, url, new_path=new_path, new_schema=new_schema)
 
             return Response(status=status.HTTP_201_CREATED)
 

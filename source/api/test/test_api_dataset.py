@@ -669,6 +669,7 @@ class DatasetTests(AnaliticoApiTestCase):
 
         # check current file schema
         schema = response1.data[0]["attributes"]["metadata"]["schema"]
+        self.assertEqual(len(schema["columns"]), 9)
         self.assertEqual(schema["columns"][2]["name"], "Number")
         self.assertEqual(schema["columns"][2]["type"], "float")
         self.assertEqual(schema["columns"][4]["name"], "Age")
@@ -690,6 +691,48 @@ class DatasetTests(AnaliticoApiTestCase):
         response4 = self.client.get(url + "?records=true&refresh=true")
 
         new_schema = response4.data["meta"]["schema"]
+        self.assertEqual(len(new_schema["columns"]), 9)
+        self.assertEqual(new_schema["columns"][2]["name"], "Number")
+        self.assertEqual(new_schema["columns"][2]["type"], "string")
+        self.assertEqual(new_schema["columns"][4]["name"], "Age")
+        self.assertEqual(new_schema["columns"][4]["type"], "integer")
+
+        new_records = response4.data["data"]
+        self.assertEqual(new_records[3]["Number"], "28.0")  # string
+        self.assertEqual(new_records[3]["Age"], 22)  # integer
+
+    def test_dataset_convert_and_change_schema(self):
+        url = self.upload_dataset(dataset="nba", suffix=".csv")
+        response1 = self.client.get(url + "?metadata=true&refresh=true")
+        self.assertStatusCode(response1)
+
+        # check current file schema
+        old_schema = response1.data[0]["attributes"]["metadata"]["schema"]
+        self.assertEqual(len(old_schema["columns"]), 9)
+        self.assertEqual(old_schema["columns"][2]["name"], "Number")
+        self.assertEqual(old_schema["columns"][2]["type"], "float")
+        self.assertEqual(old_schema["columns"][4]["name"], "Age")
+        self.assertEqual(old_schema["columns"][4]["type"], "float")
+
+        # retrieve current schema + records
+        response2 = self.client.get(url + "?records=true&refresh=true")
+        old_records = response2.data["data"]
+        self.assertEqual(old_records[3]["Number"], 28.0)  # float
+        self.assertEqual(old_records[3]["Age"], 22.0)  # float
+
+        # request conversion from csv to parquet + change a couple columns' types
+        response1.data[0]["id"] = response1.data[0]["id"].replace(".csv", ".parquet")
+        old_schema["columns"][2]["type"] = "string"  # "Number": float -> string
+        old_schema["columns"][4]["type"] = "integer"  # "Age": float -> int
+        response3 = self.client.put(url + "?metadata=true", data={"data": response1.data[0]})
+        self.assertEqual(response3.status_code, status.HTTP_201_CREATED)
+
+        # retrieve updated schema + records
+        parquet_url = url.replace(".csv", ".parquet")
+        response4 = self.client.get(parquet_url + "?records=true&refresh=true")
+
+        new_schema = response4.data["meta"]["schema"]
+        self.assertEqual(len(new_schema["columns"]), 9)
         self.assertEqual(new_schema["columns"][2]["name"], "Number")
         self.assertEqual(new_schema["columns"][2]["type"], "string")
         self.assertEqual(new_schema["columns"][4]["name"], "Age")

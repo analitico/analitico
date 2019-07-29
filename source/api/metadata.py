@@ -94,7 +94,9 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
         # numpy and pandas can add NaN values to the dictionary which
         # then creates problems when these values are served in our
         # json reply so we sanitize the metadata before we store it
-        metadata = json.loads(json.dumps(metadata, skipkeys=True, ignore_nan=True, default=lambda o: "NOT-SERIALIZABLE"))
+        metadata = json.loads(
+            json.dumps(metadata, skipkeys=True, ignore_nan=True, default=lambda o: "NOT-SERIALIZABLE")
+        )
 
         try:
             # store updated metadata in local disk cache
@@ -211,8 +213,9 @@ def apply_conversions(driver: WebdavStorageDriver, path: str, new_path: str = No
     # write dataframe to a temp file then upload to storage path
     with tempfile.NamedTemporaryFile(mode="w+", prefix="df_", suffix=new_suffix) as f:
         if new_suffix in CSV_SUFFIXES:
-            df.to_csv(f.name)
+            df.to_csv(f.name, index=False)
         elif new_suffix in PARQUET_SUFFIXES:
+            # TODO add index=False after updating pandas to > 0.24
             df.to_parquet(f.name)
         elif new_suffix in EXCEL_SUFFIXES:
             df.to_excel(f.name, index=False)
