@@ -17,6 +17,7 @@ from rest_framework.serializers import Serializer
 
 from analitico import AnaliticoException, PARQUET_SUFFIXES, CSV_SUFFIXES, EXCEL_SUFFIXES, HDF_SUFFIXES, PANDAS_SUFFIXES
 from analitico.pandas import pd_read_csv
+from analitico.utilities import get_dict_dot
 
 from api.models import Workspace
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
@@ -159,12 +160,12 @@ class AssetViewSetMixin:
         if request.method in ["PUT", "POST"]:
             data = request.data["data"]
 
-            # changing schema?
-            metadata = api.metadata.get_file_metadata(driver, url)
-            if "schema" in metadata and "schema" in data["attributes"]:
-                if metadata["schema"] != data["attributes"]["schema"]:
-                    api.metadata.apply_conversions(driver, url, new_schema=data["attributes"]["schema"])
-                    return Response(status=status.HTTP_201_CREATED)
+            # schema has changes?
+            old_schema = get_dict_dot(api.metadata.get_file_metadata(driver, url), "schema")
+            new_schema = get_dict_dot(data, "attributes.metadata.schema")
+            if old_schema and new_schema and old_schema != new_schema:
+                api.metadata.apply_conversions(driver, url, new_schema=new_schema)
+                return Response(status=status.HTTP_201_CREATED)
 
             # is this a rename/move request? id/path is being updated
             # this is equivalent to webdav's move http method which we
@@ -186,9 +187,11 @@ class AssetViewSetMixin:
                         raise AnaliticoException(
                             f"Can't convert a {src_suffix} to a {dst_suffix}", status_code=status.HTTP_400_BAD_REQUEST
                         )
+                else:
+                    driver.move(url, destination)
+                    return Response(status=status.HTTP_201_CREATED)
 
-                driver.move(url, destination)
-                return Response(status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_201_CREATED)
 
         msg = f"Method {request.method} on {request.path} is not implemented"
         raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)

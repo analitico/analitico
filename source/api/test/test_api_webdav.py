@@ -777,16 +777,12 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             driver.rmdir(dir_name)
 
-
     def test_webdav_files_api_put_get_file_contents(self):
         """ Upload raw files directly via /files api """
         driver = self.get_driver()
         try:
             obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
             obj_data = b"This is it"
-
-            # TODO save extras as well
-            obj_extra = {"property1": "value1", "property2": 2}
 
             # upload file contents via /webdav api
             url = reverse("api:workspace-files", args=("ws_storage_webdav", obj_name))  # raw file url

@@ -60,7 +60,7 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
     """
     ls = driver.ls(path)
 
-    if len(ls) == 1 and isinstance(ls[0], libcloud.storage.base.Object): 
+    if len(ls) == 1 and isinstance(ls[0], libcloud.storage.base.Object):
         obj = ls[0]
     else:
         # no metadata for directories for now
@@ -136,7 +136,10 @@ def get_file_dataframe(
     elif suffix in EXCEL_SUFFIXES:
         df = pd.read_excel(obj_io)
     elif suffix in HDF_SUFFIXES:
-        df = pd.read_hdf(obj_io)
+        # reading hdf from stream is not supported yet
+        with tempfile.NamedTemporaryFile(suffix=suffix) as f:
+            driver.download(path, f.name)
+            df = pd.read_hdf(f.name, "df")
     else:
         raise AnaliticoException(f"Unknown format for {path}.", status_code=status.HTTP_400_BAD_REQUEST)
 
@@ -200,12 +203,14 @@ def apply_conversions(driver: WebdavStorageDriver, path: str, new_path: str = No
         elif new_suffix in EXCEL_SUFFIXES:
             df.to_excel(f.name)
         elif new_suffix in HDF_SUFFIXES:
-            df = pd.to_hdf(f.name, key="df")
+            df.to_hdf(f.name, key="df", mode="w")
         else:
             raise AnaliticoException(f"Unknown format for {path}.", status_code=status.HTTP_400_BAD_REQUEST)
 
         driver.upload(f.name, new_path if new_path else path)
-        if path != new_path:
+
+        # file has moved to new location?
+        if new_path and path != new_path:
             driver.delete(path)
 
     return True

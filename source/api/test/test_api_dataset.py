@@ -630,9 +630,67 @@ class DatasetTests(AnaliticoApiTestCase):
         parquet_schema = response5.data["meta"]["schema"]
         self.assertEqual(len(parquet_schema["columns"]), 9)
 
+    def test_dataset_convert_parquet_to_hdf(self):
+        parquet_url = self.upload_dataset(dataset="nba", suffix=".parquet")
+        response1 = self.client.get(parquet_url + "?metadata=true&refresh=true")
+        self.assertStatusCode(response1)
+
+        # to ask the server to convert parquet file to hdf format
+        # we need to change the id of the object to the new format/location
+        # we desire and then do a PUT of this data on the current path of the file
+        data = response1.data[0]
+        data["id"] = data["id"].replace(".parquet", ".hdf")
+        response2 = self.client.put(parquet_url + "?metadata=true", data={"data": data})
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+
+        # older file no longer exists
+        response3 = self.client.get(parquet_url)
+        self.assertEqual(response3.status_code, status.HTTP_404_NOT_FOUND)
+
+        # can download new file?
+        hdf_url = parquet_url.replace(".parquet", ".hdf")
+        response4 = self.client.get(hdf_url)
+        self.assertStatusCode(response4)
+
+        # can download hdf's metadata?
+        response5 = self.client.get(hdf_url + "?records=true&refresh=true")
+        self.assertStatusCode(response5)
+        hdf_schema = response5.data["meta"]["schema"]
+        self.assertEqual(len(hdf_schema["columns"]), 9)
+
     def test_dataset_change_schema(self):
         url = self.upload_dataset(dataset="nba", suffix=".parquet")
         response1 = self.client.get(url + "?metadata=true&refresh=true")
         self.assertStatusCode(response1)
 
-        # TODO change schema
+        # check current file schema
+        schema = response1.data[0]["attributes"]["metadata"]["schema"]
+        self.assertEqual(schema["columns"][2]["name"], "Number")
+        self.assertEqual(schema["columns"][2]["type"], "float")
+        self.assertEqual(schema["columns"][4]["name"], "Age")
+        self.assertEqual(schema["columns"][4]["type"], "float")
+
+        # retrieve current schema + records
+        response2 = self.client.get(url + "?records=true&refresh=true")
+        old_records = response2.data["data"]
+        self.assertEqual(old_records[3]["Number"], 28.0)  # float
+        self.assertEqual(old_records[3]["Age"], 22.0)  # float
+
+        # change a couple columns' types, put updated schema
+        schema["columns"][2]["type"] = "string"  # "Number": float -> string
+        schema["columns"][4]["type"] = "integer"  # "Age": float -> int
+        response3 = self.client.put(url + "?metadata=true", data={"data": response1.data[0]})
+        self.assertEqual(response3.status_code, status.HTTP_201_CREATED)
+
+        # retrieve updated schema + records
+        response4 = self.client.get(url + "?records=true&refresh=true")
+
+        new_schema = response4.data["meta"]["schema"]
+        self.assertEqual(new_schema["columns"][2]["name"], "Number")
+        self.assertEqual(new_schema["columns"][2]["type"], "string")
+        self.assertEqual(new_schema["columns"][4]["name"], "Age")
+        self.assertEqual(new_schema["columns"][4]["type"], "integer")
+
+        new_records = response4.data["data"]
+        self.assertEqual(new_records[3]["Number"], "28.0")  # string
+        self.assertEqual(new_records[3]["Age"], 22)  # integer

@@ -150,6 +150,7 @@ snowballstemmer==1.2.1
 sqlparse==0.3.0
 strict-rfc3339==0.7
 swagger-spec-validator==2.4.1
+tables
 tenacity==5.0.4
 terminado==0.8.1
 testpath==0.4.2
