@@ -134,7 +134,11 @@ class AssetViewSetMixin:
         assert url and url.startswith("/")
 
         if request.method in ["GET"]:
-            items = driver.ls(os.path.join(base_path, url))
+            try:
+                path = os.path.join(base_path, url)
+                items = driver.ls(path)
+            except api.libcloud.WebdavException as exc:
+                raise AnaliticoException(f"Can't get information on {path}", status_code=exc.actual_code) from exc
 
             # refreshing metadata?
             refresh = get_query_parameter_as_bool(request, "refresh", False)
@@ -154,7 +158,7 @@ class AssetViewSetMixin:
 
             base_url = request.build_absolute_uri()
             serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
-            return Response(serializer.data, content_type="json")
+            return Response(serializer.data)
 
         # modify metadata, rename, add custom metadata
         if request.method in ["PUT", "POST"]:

@@ -777,6 +777,13 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             driver.rmdir(dir_name)
 
+    def test_webdav_files_api_list_missing_directory(self):
+        # retrieve directory which we never made via /files/url api
+        dir_name = "/tst_dir_" + django.utils.crypto.get_random_string() + "/"
+        url = reverse("api:workspace-files", args=("ws_storage_webdav", dir_name)) + "?metadata=true"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_webdav_files_api_put_get_file_contents(self):
         """ Upload raw files directly via /files api """
         driver = self.get_driver()
