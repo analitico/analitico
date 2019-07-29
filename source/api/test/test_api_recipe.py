@@ -36,15 +36,13 @@ class RecipeTests(AnaliticoApiTestCase):
         url = reverse("api:dataset-asset-detail", args=(dataset_id, asset_class, asset_name))
         response = self.upload_file(url, asset_name, "text/csv", token=self.token1)
         self.assertEqual(response.data[0]["id"], asset_name)
-        path = "workspaces/ws_samples/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
+        path = "workspaces/ws_001/datasets/{}/{}/{}".format(dataset_id, asset_class, asset_name)
         self.assertEqual(response.data[0]["path"], path)
         return url, response
 
     def setUp(self):
         self.setup_basics()
         try:
-            url = reverse("api:workspace-list")
-            self.upload_items(url, analitico.WORKSPACE_PREFIX)
             url = reverse("api:dataset-list")
             self.upload_items(url, analitico.DATASET_PREFIX)
             url = reverse("api:recipe-list")

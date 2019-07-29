@@ -2,7 +2,7 @@
 	"type": "analitico/dataset",
 	"id": "ds_sklearn",
 	"attributes": {
-		"workspace_id": "ws_samples",
+		"workspace_id": "ws_001",
 		"title": "Placeholder for sklearn dataset",
 		"description": "A placeholder description"
 	}

@@ -60,9 +60,6 @@ class FiltersTests(AnaliticoApiTestCase):
     def setUp(self):
         self.setup_basics()
         try:
-            url = reverse("api:workspace-list")
-            self.upload_items(url, analitico.WORKSPACE_PREFIX)
-
             url = reverse("api:dataset-list")
             self.upload_items(url, analitico.DATASET_PREFIX)
 
@@ -292,7 +289,7 @@ class FiltersTests(AnaliticoApiTestCase):
 
         self.assertEqual(item["attributes"]["title"], "Kaggle - Titanic training dataset (train.csv)")
         self.assertEqual(item["attributes"]["description"], "https://www.kaggle.com/c/titanic")
-        self.assertEqual(item["attributes"]["workspace_id"], "ws_samples")
+        self.assertEqual(item["attributes"]["workspace_id"], "ws_001")
 
     def test_filters_fields_missing_field(self):
         """ Test ?field= to select fields which do not exist (should be ignored) """

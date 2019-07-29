@@ -100,8 +100,6 @@ class DatasetTests(AnaliticoApiTestCase):
     def setUp(self):
         self.setup_basics()
         try:
-            url = reverse("api:workspace-list")
-            self.upload_items(url, analitico.WORKSPACE_PREFIX)
             url = reverse("api:dataset-list")
             self.upload_items(url, analitico.DATASET_PREFIX)
         except Exception as exc:
