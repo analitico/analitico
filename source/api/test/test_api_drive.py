@@ -60,13 +60,14 @@ class DriveTests(AnaliticoApiTestCase):
     def test_drive_create_workspace_storage(self):
         delete = False
         try:
-            dr_create_workspace_storage(self.ws1)
+            ws = Workspace.objects.create(pk="ws_drivecreatestorage")
+            dr_create_workspace_storage(ws)
             delete = True
 
-            self.ws1.refresh_from_db()
+            ws.refresh_from_db()
             # sometimes the storage takes longer to be available
             time.sleep(60)
-            driver = self.ws1.storage.driver
+            driver = ws.storage.driver
             num_files = len(driver.ls("/"))
             driver.upload(io.BytesIO(b"This is Mickey"), "mickey.txt")
             driver.upload(io.BytesIO(b"This is Goofy"), "goofy.txt")
@@ -76,38 +77,39 @@ class DriveTests(AnaliticoApiTestCase):
             self.assertTrue(driver.exists("/goofy.txt"))
 
             # main storage box driver (different driver one directory up!)
-            self.assertTrue(self.driver.exists(f"/{self.ws1.id}/mickey.txt"))
-            self.assertTrue(self.driver.exists(f"/{self.ws1.id}/goofy.txt"))
+            self.assertTrue(self.driver.exists(f"/{ws.id}/mickey.txt"))
+            self.assertTrue(self.driver.exists(f"/{ws.id}/goofy.txt"))
 
             # delete subaccount and remove its files
-            dr_delete_workspace_storage(self.ws1)
-            self.ws1.refresh_from_db()
+            dr_delete_workspace_storage(ws)
+            ws.refresh_from_db()
             delete = False
 
             # main storage box driver (different driver one directory up!)
-            self.assertFalse(self.driver.exists(f"/{self.ws1.id}/mickey.txt"))
-            self.assertFalse(self.driver.exists(f"/{self.ws1.id}/goofy.txt"))
+            self.assertFalse(self.driver.exists(f"/{ws.id}/mickey.txt"))
+            self.assertFalse(self.driver.exists(f"/{ws.id}/goofy.txt"))
 
         except Exception as exc:
             logging.error(exc)
             raise exc
         finally:
             if delete:
-                dr_delete_workspace_storage(self.ws1)
+                dr_delete_workspace_storage(ws)
 
     @tag("slow")
     def test_drive_base_rsync(self):
         delete = False
         try:
-            dr_create_workspace_storage(self.ws1)
+            ws = Workspace.objects.create(pk="ws_drivecreatestorage")
+            dr_create_workspace_storage(ws)
             delete = True
 
             time.sleep(60)
             # sometimes the storage takes longer to be available
-            self.ws1.refresh_from_db()
-            driver: api.libcloud.WebdavStorageDriver = self.ws1.storage.driver
+            ws.refresh_from_db()
+            driver: api.libcloud.WebdavStorageDriver = ws.storage.driver
 
-            storage_conf = self.ws1.get_attribute("storage")
+            storage_conf = ws.get_attribute("storage")
             username = storage_conf["credentials"]["username"]
             storage_url = f"{username}@{username}.your-storagebox.de"
 
@@ -170,4 +172,4 @@ class DriveTests(AnaliticoApiTestCase):
             raise exc
         finally:
             if delete:
-                dr_delete_workspace_storage(self.ws1)
+                dr_delete_workspace_storage(ws)

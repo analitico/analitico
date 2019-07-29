@@ -54,14 +54,14 @@ class ItemsTests(AnaliticoApiTestCase):
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
         self.assertEqual(item["attributes"]["user"], "user1@analitico.ai")
-        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["title"], "Workspace1")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_get_user2(self):
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_002", self.token1)
         self.assertEqual(item["id"], "ws_002")
         self.assertEqual(item["attributes"]["user"], "user2@analitico.ai")
-        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["title"], "Workspace2")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_get_without_authorization(self):
@@ -77,13 +77,13 @@ class ItemsTests(AnaliticoApiTestCase):
         # ws_002 is owned by user2@analitico.ai but user1 is an admin so he should get it
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_002", self.token1)
         self.assertEqual(item["id"], "ws_002")
-        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["title"], "Workspace2")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
     def test_workspace_patch_title(self):
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
-        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["title"], "Workspace1")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
         patch = {"data": {"id": "ws_001", "attributes": {"title": "This is the patched title"}}}
@@ -94,7 +94,7 @@ class ItemsTests(AnaliticoApiTestCase):
     def test_workspace_patch_title_user2(self):
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_002", self.token1)
         self.assertEqual(item["id"], "ws_002")
-        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["title"], "Workspace2")
         self.assertEqual(item["attributes"]["description"], "This is the description")
 
         patch = {"data": {"id": "ws_002", "attributes": {"title": "This is the patched title"}}}
@@ -117,20 +117,20 @@ class ItemsTests(AnaliticoApiTestCase):
     def test_workspace_patch_made_up_attribute(self):
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
-        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["title"], "Workspace1")
         self.assertEqual(item["attributes"]["description"], "This is the description")
         self.assertFalse("made_up_attribute" in item["attributes"])
 
         patch = {"data": {"id": "ws_001", "attributes": {"made_up_attribute": "This is a made up attribute"}}}
         patch_item = self.patch_item(analitico.WORKSPACE_TYPE, "ws_001", patch, self.token1)
-        self.assertEqual(patch_item["attributes"]["title"], "This is the title")
+        self.assertEqual(patch_item["attributes"]["title"], "Workspace1")
         self.assertEqual(patch_item["attributes"]["description"], "This is the description")
         self.assertEqual(patch_item["attributes"]["made_up_attribute"], "This is a made up attribute")
 
     def test_workspace_patch_made_up_attribute_with_children(self):
         item = self.get_item(analitico.WORKSPACE_TYPE, "ws_001", self.token1)
         self.assertEqual(item["id"], "ws_001")
-        self.assertEqual(item["attributes"]["title"], "This is the title")
+        self.assertEqual(item["attributes"]["title"], "Workspace1")
         self.assertEqual(item["attributes"]["description"], "This is the description")
         self.assertFalse("made_up_attribute" in item["attributes"])
 
@@ -147,7 +147,7 @@ class ItemsTests(AnaliticoApiTestCase):
             }
         }
         patch_item = self.patch_item(analitico.WORKSPACE_TYPE, "ws_001", patch, self.token1)
-        self.assertEqual(patch_item["attributes"]["title"], "This is the title")
+        self.assertEqual(patch_item["attributes"]["title"], "Workspace1")
         self.assertEqual(patch_item["attributes"]["description"], "This is the description")
         self.assertEqual(
             patch_item["attributes"]["made_up_attribute_two"]["child1"], "This is a made up attribute, child 1"
