@@ -7,6 +7,7 @@ metadata:
     analitico.ai/workspace-id: {workspace_id}
     analitico.ai/item-id: {item_id}
     analitico.ai/target-id: {target_id}
+    analitico.ai/job-action: {job_action}
     analitico.ai/job-id: {job_id}
 spec:
   # no retries

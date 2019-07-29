@@ -224,6 +224,7 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
     # start from storage config and all all the rest
     configs = k8_get_storage_volume_configuration(item)
 
+    configs["job_action"] = job_action
     configs["job_id"] = job_id = generate_job_id()
     configs["job_id_slug"] = k8_normalize_name(job_id)
 
