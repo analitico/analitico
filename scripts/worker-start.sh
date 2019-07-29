@@ -5,8 +5,6 @@
 # TODO analitico-baseline image should be build with environment vars set #292
 BASEDIR=$(dirname "$0")
 source $BASEDIR/import-env.sh
-echo "Activate virtual env"
-source $BASEDIR/../venv/bin/activate
 cd $BASEDIR/../source
 
 echo "Starting worker..."
