@@ -132,12 +132,12 @@ class K8ViewSetMixin:
         # so that it remains the same every time we deploy a new version/model
         if isinstance(item, Model):
             recipe_id = item.get_attribute("recipe_id")
-            target =  api.factory.factory.get_item(recipe_id)
+            target = api.factory.factory.get_item(recipe_id)
         else:
             target = item
 
         service = k8_deploy_v2(item, target, stage)
-        
+
         return Response(service, content_type="json")
 
     @action(methods=["get"], detail=True, url_name="k8-metrics", url_path=r"k8s/metrics/(?P<stage>staging|production)$")
