@@ -56,7 +56,7 @@ class K8Tests(AnaliticoApiTestCase):
         )
         notebook.save()
 
-        service = api.k8.k8_deploy_v2(notebook, self.stage)
+        service = k8_deploy_v2(notebook, notebook, self.stage)
         self.assertEquals(service["type"], "analitico/service")
         self.assertEquals(service["name"], self.item_id_normalized)
         self.assertEquals(service["namespace"], "cloud")

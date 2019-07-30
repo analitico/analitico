@@ -19,7 +19,7 @@ import api.utilities
 import api.factory
 import api.permissions
 from api.models import Model
-from api.k8 import k8_deploy_v2
+from api.k8 import *
 
 from analitico import AnaliticoException, logger
 
@@ -58,17 +58,17 @@ class K8ViewSetMixin:
         except Exception as exc:
             # try pk directly as service name but only if admin rights
             if request.user.is_superuser:
-                return pk, self.get_namespace(request)
+                return pk, get_namespace(request)
             raise AnaliticoException(f"Item {pk} has not been found.", status_code=status.HTTP_404_NOT_FOUND) from exc
 
     ##
     ## Services information
     ##
 
-    @action(methods=["get"], detail=True, url_name="k8-ksvc", url_path="k8s/ksvc")
-    def ksvc(self, request, pk):
+    @action(methods=["get"], detail=True, url_name="k8-ksvc", url_path=r"k8s/ksvc/(?P<stage>staging|production)$")
+    def ksvc(self, request, pk, stage: str):
         """ Return given kubernetes service. The primary key can be the service name or an item that was deployed to a service. """
-        service_name, service_namespace = self.get_service_name(request, pk)
+        service_name, service_namespace = self.get_service_name(request, pk, stage)
         # kubectl get ksvc {service_name} -n {service_namespace} -o json
         return get_kubctl_response("kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json")
 
