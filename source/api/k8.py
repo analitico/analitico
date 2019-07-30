@@ -141,7 +141,7 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
     return docker
 
 
-def k8_deploy_v2(item: ItemMixin, stage: str) -> dict:
+def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODUCTION) -> dict:
     """
     Takes an item that already has a docker and deploys it to our knative cloud.
     Deployment performed by customizing a template service.yaml which is then
@@ -165,7 +165,7 @@ def k8_deploy_v2(item: ItemMixin, stage: str) -> dict:
             raise AnaliticoException(f"{item.id} cannot be deployed because its docker has not been built yet.")
 
         # name of service we are deploying
-        service_name = k8_normalize_name(f"{item.id}-{stage}")
+        service_name = k8_normalize_name(f"{target.id}-{stage}")
         service_namespace = "cloud"
         docker_image = docker["image"]
 
@@ -188,7 +188,7 @@ def k8_deploy_v2(item: ItemMixin, stage: str) -> dict:
             service_json, _ = subprocess_run(cmd_args)
 
             # retrieve existing services
-            services = item.get_attribute("service", {})
+            services = target.get_attribute("service", {})
 
             # save deployment information inside item, endpoint and job
             attrs = collections.OrderedDict()
@@ -201,15 +201,13 @@ def k8_deploy_v2(item: ItemMixin, stage: str) -> dict:
 
             # item's service dictionary can have a 'production' and a 'staging' collection or more
             services[stage] = attrs
-            item.set_attribute("service", services)
-            item.save()
+            target.set_attribute("service", services)
+            target.save()
 
             logger.info(json.dumps(attrs, indent=4))
             return attrs
-
     except AnaliticoException as exc:
         raise exc
-
     except Exception as exc:
         raise AnaliticoException(f"Could not deploy {item.id} because: {exc}") from exc
 

@@ -14,6 +14,7 @@ from .assetviewsetmixin import AssetViewSetMixin
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .jobviews import JobViewSetMixin
 from .notebookviews import NotebookViewSetMixin
+from .k8viewsetmixin import K8ViewSetMixin
 
 ##
 ## ModelSerializer
@@ -36,7 +37,7 @@ class ModelSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class ModelViewSet(
-    ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, rest_framework.viewsets.ModelViewSet
+    ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, K8ViewSetMixin, rest_framework.viewsets.ModelViewSet
 ):
     """ A trained machine learning model with its training information, recipe and file assets """
 

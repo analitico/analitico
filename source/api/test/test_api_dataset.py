@@ -431,10 +431,10 @@ class DatasetTests(AnaliticoApiTestCase):
                 self.assertEqual(records[0]["Number"], page_number * DEFAULT_PAGE_SIZE)
                 self.assertEqual(records[DEFAULT_PAGE_SIZE - 1]["Number"], ((page_number + 1) * DEFAULT_PAGE_SIZE) - 1)
                 loading_ms = time_ms(loading_ms)
-                self.assertLess(int(loading_ms), 100, "Page loading time should be under 100ms")
+                self.assertLess(int(loading_ms), 500, "Page loading time should be under 500ms")
             total_ms = time_ms(total_ms)
             average_ms = float(total_ms) / 40
-            self.assertLess(int(loading_ms), 150, "Average page loading time should be less than 150ms")
+            self.assertLess(int(loading_ms), 500, "Average page loading time should be less than 500ms")
             logger.info("Average page loading time for %s is %d ms", suffix, average_ms)
 
     def test_dataset_paging_larger_page(self):

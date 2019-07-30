@@ -15,10 +15,10 @@ from rest_framework import status
 
 import analitico
 import analitico.utilities
-import api.models
 import api.utilities
 import api.factory
 import api.permissions
+from api.models import Model
 from api.k8 import k8_deploy_v2
 
 from analitico import AnaliticoException, logger
@@ -117,7 +117,7 @@ class K8ViewSetMixin:
         
         Arguments:
             request {Request} -- The request being posted.
-            pk {str} -- The item that we're reading or creating jobs for.
+            pk {str} -- The item that we're deploying
             stage {str} -- K8_STAGE_PRODUCTION or K8_STAGE_STAGING
         
         Returns:
@@ -127,7 +127,16 @@ class K8ViewSetMixin:
 
         # TODO check for specific deployment permissions
 
-        service = k8_deploy_v2(item, stage)
+        # if we are deploying a Model it really is just a snapshot of a Recipe and
+        # we want to use the name of the recipe to derive the name of the service
+        # so that it remains the same every time we deploy a new version/model
+        if isinstance(item, Model):
+            recipe_id = item.get_attribute("recipe_id")
+            target =  api.factory.factory.get_item(recipe_id)
+        else:
+            target = item
+
+        service = k8_deploy_v2(item, target, stage)
         
         return Response(service, content_type="json")
 
