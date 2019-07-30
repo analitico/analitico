@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 import analitico.utilities
 import api.views
+from api.notifications import notifications_webhook
 
 app_name = "api"
 
@@ -37,4 +38,7 @@ router.register("plugins", api.views.PluginViewSet, basename="plugin")  # extens
 router.register("notebooks", api.views.NotebookViewSet, basename="notebook")  # notebooks
 router.register("k8s", api.views.K8ViewSet, basename="k8")  # kubernetes monitoring, operations, etc
 
-urlpatterns = router.urls + [path("runtime", runtime)]
+urlpatterns = router.urls + [
+    path("runtime", runtime, name="runtime"),
+    path("notify", notifications_webhook, name="notifications-webhook"),
+]

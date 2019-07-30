@@ -38,7 +38,12 @@ class RecipeSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class RecipeViewSet(
-    ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, K8ViewSetMixin, rest_framework.viewsets.ModelViewSet
+    ItemViewSetMixin,
+    AssetViewSetMixin,
+    JobViewSetMixin,
+    NotebookViewSetMixin,
+    K8ViewSetMixin,
+    rest_framework.viewsets.ModelViewSet,
 ):
     """
     A recipe contains a pipeline of plugins that can take some training data

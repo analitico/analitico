@@ -12,7 +12,7 @@ from rest_framework.request import Request
 import api
 
 from analitico import logger
-from api.slack import slack_oauth_exchange_code_for_token, slack_get_install_button_url
+from api.notifications import slack_oauth_exchange_code_for_token, slack_get_install_button_url
 from api.permissions import HasApiPermission, get_permitted_queryset
 from api.utilities import get_query_parameter, get_query_parameter_as_int, image_open, image_resize
 

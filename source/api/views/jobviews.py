@@ -165,11 +165,11 @@ class JobViewSetMixin:
         job_id = job_pk
         if job_id:
             # retrieve specific job by id
-            job = k8_jobs_get(item, job_id, request)
+            job = k8_jobs_get(item, job_id)
             return Response(job, content_type="json")
 
         # retrieve list of jobs
-        jobs = k8_jobs_list(item, request)
+        jobs = k8_jobs_list(item)
         return Response(jobs, content_type="json")
 
 

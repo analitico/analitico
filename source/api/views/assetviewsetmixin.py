@@ -185,7 +185,7 @@ class AssetViewSetMixin:
                 dst_suffix = Path(new_path).suffix
                 if src_suffix != dst_suffix:
                     # we support limited formats for data conversions
-                    if not(src_suffix in PANDAS_SUFFIXES and dst_suffix in PANDAS_SUFFIXES):
+                    if not (src_suffix in PANDAS_SUFFIXES and dst_suffix in PANDAS_SUFFIXES):
                         msg = f"Can't convert {src_suffix} to {dst_suffix}"
                         raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
 

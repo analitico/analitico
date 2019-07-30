@@ -7,16 +7,16 @@ import rest_framework.exceptions
 
 from PIL import Image
 from collections import OrderedDict
+from django.core.signing import Signer
 from django.conf import settings
 from rest_framework.request import Request
 from rest_framework.response import Response
-
-import analitico.utilities
-from analitico.exceptions import AnaliticoException
-
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
+
+import analitico.utilities
+from analitico.exceptions import AnaliticoException
 
 
 # RESTful API Design Tips from Experience
@@ -215,3 +215,26 @@ def ssh_key_generator():
         crypto_serialization.Encoding.OpenSSH, crypto_serialization.PublicFormat.OpenSSH
     )
     return (private_key, public_key)
+
+
+def get_signed_secret(content: str) -> str:
+    """
+    Returns a secret that can be used to make sure a request was originally signed by analitico.
+    
+    Arguments:
+        content {str} -- A string that should be turned into a signed secret, eg. something unique, a nonce, etc.
+    
+    Returns:
+        str -- A signed secret.
+    """
+    signer = Signer()
+    value = signer.sign(content)
+    return value
+
+
+def get_unsigned_secret(secret: str) -> str:
+    """ Returns a previously signed secret (or an exception if the string was tampered with). """
+    if not secret:
+        raise AnaliticoException("get_unsigned_secret - the secret is missing")
+    signer = Signer()
+    return signer.unsign(secret)

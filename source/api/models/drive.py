@@ -18,7 +18,6 @@ import analitico.plugin
 import analitico.utilities
 from analitico import AnaliticoException
 
-import api.slack
 import api.storage
 import api.libcloud
 

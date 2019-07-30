@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 import api.models
 import api.utilities
-import api.slack
+import api.notifications
 
 from analitico.utilities import logger, get_dict_dot, comma_separated_to_array, array_to_comma_separated, set_dict_dot
 from api.models import Workspace, Dataset, Role, User
@@ -60,7 +60,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
             }
 
         # add url and html that can be used to enable slack configuration on this workspace
-        btn_url, btn_html = api.slack.slack_get_install_button_url(self.context["request"], item.id)
+        btn_url, btn_html = api.notifications.slack_get_install_button_url(self.context["request"], item.id)
         set_dict_dot(data, "attributes.slack.button.url", btn_url)
         set_dict_dot(data, "attributes.slack.button.html", btn_html)
 

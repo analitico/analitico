@@ -1,19 +1,20 @@
 import requests
 import urllib
 import os
+import logging
+import dateutil.parser
 
 from django.urls import reverse
-from django.core.signing import Signer
 from rest_framework.request import Request
 from rest_framework import status
 
 import analitico
 from analitico import logger, AnaliticoException
 from analitico.utilities import get_dict_dot
+from analitico.status import STATUS_COMPLETED, STATUS_FAILED
 
-from api.models import Job
 from api.factory import factory
-from api.utilities import get_query_parameter
+from api.utilities import get_query_parameter, get_signed_secret
 
 # https://api.slack.com/apps
 SLACK_CLIENT_ID = os.environ["ANALITICO_SLACK_CLIENT_ID"]
@@ -49,13 +50,6 @@ SLACK_OAUTH_ACCESS_URL = "https://slack.com/api/oauth.access"
 # https://api.slack.com/docs/oauth
 
 
-def slack_get_state(item_id: str) -> str:
-    """ Returns a secret that can be used to make sure the oauth was originated by analitico. """
-    signer = Signer()
-    value = signer.sign(item_id)
-    return value
-
-
 def slack_get_install_button_url(request: Request, item_id: str) -> str:
     """ Returns the url that can be used to display a button that can install the Slack app. """
     # oauth flow should redirect back to the same server that generates the link
@@ -64,7 +58,7 @@ def slack_get_install_button_url(request: Request, item_id: str) -> str:
     redirect_uri = request.build_absolute_uri(redirect_uri)
     redirect_uri = redirect_uri.replace("http://", "https://")
 
-    url = SLACK_BUTTON_URL.replace("$STATE$", urllib.parse.quote(slack_get_state(item_id)))
+    url = SLACK_BUTTON_URL.replace("$STATE$", urllib.parse.quote(get_signed_secret(item_id)))
     url = url.replace("$REDIRECT$", urllib.parse.quote(redirect_uri))
 
     html = SLACK_BUTTON_HTML.replace("$URL$", url)
@@ -87,7 +81,7 @@ def slack_oauth_exchange_code_for_token(request: Request, item_id: str) -> bool:
     redirect_uri = redirect_uri.replace("http://", "https://")
 
     # validate state to make sure user is authorized to connect workspace
-    if state != slack_get_state(item_id):
+    if state != get_signed_secret(item_id):
         raise AnaliticoException("?state= parameter was not signed properly.", status_code=status.HTTP_403_FORBIDDEN)
 
     # https://api.slack.com/methods/oauth.access
@@ -110,30 +104,9 @@ def slack_oauth_exchange_code_for_token(request: Request, item_id: str) -> bool:
     return True
 
 
-def slack_notify_job(job: Job) -> bool:
-    """ Sends a notification to Slack (if configured) regarding the completion of this job """
-
-    # links to job and target item
-    item_id = job.item_id
-    item = factory.get_item(item_id)
-    item_url = f"https://analitico.ai/app/{item.type}s/{item_id}"
-    job_url = f"{item_url}/jobs#{job.id}"
-
-    # elapsed time
-    elapsed_sec = int((job.updated_at - job.created_at).total_seconds())
-
-    # message shows item name (if named)
-    message = f"{item.title} _({item.id})_" if item.title else item_id
-    message += "\n" + job_url
-
-    # https://api.slack.com/incoming-webhooks
-    # https://api.slack.com/docs/message-attachments
-    message = {
-        "text": f"Job {job.status} in {int(elapsed_sec/60):02d}:{elapsed_sec%60:02d}",
-        "attachments": [
-            {"text": message, "color": "good" if job.status == analitico.status.STATUS_COMPLETED else "danger"}
-        ],
-    }
+def slack_notify(item, message, level) -> {}:
+    """ Sends a notification to Slack (if configured for this item) """
+    count = 0
 
     slack_conf_item = item
     slack_conf = item.get_attribute("slack")
@@ -144,25 +117,56 @@ def slack_notify_job(job: Job) -> bool:
     if slack_conf:
         weebhook_url = get_dict_dot(slack_conf, "oauth.incoming_webhook.url")
         if weebhook_url:
-            response = requests.post(weebhook_url, json=message)
-            if response.status_code != 200:
-                msg = f"slack_notify_job - {weebhook_url} returned status_code: {response.status_code}"
-                logger.warning(msg)
-                if response.status_code == 404:
-                    # user has removed this application from his workspace
-                    msg = f"slack_notify_job - removing slack configuration from {slack_conf_item.id}"
+            slack_level = int(slack_conf.get("level", logging.INFO))
+            if level >= slack_level:
+                response = requests.post(weebhook_url, json=message)
+                if response.status_code == 200:
+                    count += 1
+                else:
+                    msg = f"slack_notify_job - {weebhook_url} returned status_code: {response.status_code}"
                     logger.warning(msg)
-                    slack_conf_item.set_attribute("slack.oauth", None)
-                    slack_conf_item.save()
+                    if response.status_code == 404:
+                        # user has removed this application from his workspace
+                        msg = f"slack_notify_job - removing slack configuration from {slack_conf_item.id}"
+                        logger.warning(msg)
+                        slack_conf_item.set_attribute("slack.oauth", None)
+                        slack_conf_item.save()
         else:
-            logger.warning(f"slack_notify_job - {item_id} has 'slack' config but no webhook_url")
+            logger.warning("slack_notify_job - %s has 'slack' config but no webhook_url", item.id)
 
     # testing webhook for analitico's own workspace
     if SLACK_INTERNAL_WEBHOOK:
         message["text"] += "\n_Internal Notification_"
         response = requests.post(SLACK_INTERNAL_WEBHOOK, json=message)
-        if response.status_code != 200:
+        if response.status_code == 200:
+            count += 1
+        else:
             msg = f"slack_notify_job - analitico webhook returned status_code: {response.status_code}"
             logger.warning(msg)
+
+    return {"count": count}
+
+
+def slack_send_internal_notification(text: str, attachment: str, color=None) -> bool:
+    """ 
+    Sends a notification to Slack to the internal analitico channel. 
+    
+    Parameters:
+    text (str): The main text of the notification
+    attachment (str): Longer attached text (optional)
+    color (str): Color of attachment, eg: good, warning, danger, #231212
+    """
+    if not SLACK_INTERNAL_WEBHOOK:
+        return False
+
+    message = {"text": text + "\n_Internal Notification_"}
+
+    if attachment:
+        message["attachments"] = [{"text": attachment, "color": color if color else "good"}]
+
+    response = requests.post(SLACK_INTERNAL_WEBHOOK, json=message)
+    if response.status_code != 200:
+        msg = f"slack_notify_job - analitico webhook returned status_code: {response.status_code}"
+        logging.warning(msg)
 
     return True
