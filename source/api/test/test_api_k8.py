@@ -503,7 +503,7 @@ class K8Tests(AnaliticoApiTestCase):
             response = requests.get(server + url, headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             content = response.json()
-            service_url = content["data"]["response"]["status"]["url"]
+            service_url = content["data"]["status"]["url"]
 
             # notebook has been written to install packages and require them
             # when calling for prediction. If the build and the deployed
@@ -511,7 +511,7 @@ class K8Tests(AnaliticoApiTestCase):
             response = requests.get(service_url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             content = response.json()
-            self.assertIn("free_fuzzy", content["data"])
+            self.assertIn("free_joke", content["data"])
         finally:
             # clean up service
             subprocess_run("kubectl delete kservice -n cloud " + k8_service_name, shell=True)
