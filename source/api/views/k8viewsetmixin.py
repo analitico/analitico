@@ -19,6 +19,7 @@ import api.models
 import api.utilities
 import api.factory
 import api.permissions
+from api.k8 import k8_deploy_v2
 
 from analitico import AnaliticoException, logger
 
@@ -108,6 +109,27 @@ class K8ViewSetMixin:
             "--sort-by",
             ".metadata.creationTimestamp",
         )
+
+    @action(methods=["post"], detail=True, url_name="k8-deploy", url_path=r"k8s/deploy/(?P<stage>staging|production)$")
+    def k8deploy(self, request: Request, pk: str, stage: str) -> Response:
+        """
+        Deploy an item that has previously been built into a docker using /k8s/jobs/build, etc...
+        
+        Arguments:
+            request {Request} -- The request being posted.
+            pk {str} -- The item that we're reading or creating jobs for.
+            stage {str} -- K8_STAGE_PRODUCTION or K8_STAGE_STAGING
+        
+        Returns:
+            Response -- The k8s service that was deployed (or is being deployed asynch).
+        """
+        item = self.get_object()
+
+        # TODO check for specific deployment permissions
+
+        service = k8_deploy_v2(item, stage)
+        
+        return Response(service, content_type="json")
 
     @action(methods=["get"], detail=True, url_name="k8-metrics", url_path=r"k8s/metrics/(?P<stage>staging|production)$")
     def metrics(self, request, pk, stage):

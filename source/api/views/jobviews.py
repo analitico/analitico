@@ -44,7 +44,7 @@ from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.models import ItemMixin
 from api.models.job import Job, timeout_jobs
 from api.factory import factory
-from api.k8 import k8_jobs_create, k8_jobs_get, k8_jobs_list, k8_deploy_v2
+from api.k8 import k8_jobs_create, k8_jobs_get, k8_jobs_list
 
 from .itemviewsetmixin import filterset, ItemViewSetMixin
 
@@ -171,26 +171,6 @@ class JobViewSetMixin:
         # retrieve list of jobs
         jobs = k8_jobs_list(item, request)
         return Response(jobs, content_type="json")
-
-    @action(methods=["post"], detail=True, url_name="k8-deploy", url_path=r"k8s/deploy/(?P<stage>staging|production)$")
-    def k8deploy(self, request: Request, pk: str, stage: str) -> Response:
-        """
-        Deploy an item that has previously been built into a docker using /k8s/jobs/build, etc...
-        
-        Arguments:
-            request {Request} -- The request being posted.
-            pk {str} -- The item that we're reading or creating jobs for.
-            stage {str} -- K8_STAGE_PRODUCTION or K8_STAGE_STAGING
-        
-        Returns:
-            Response -- The k8s service that was deployed (or is being deployed asynch).
-        """
-        item = self.get_object()
-
-        # TODO check for specific deployment permissions
-
-        service = k8_deploy_v2(item, stage)
-        return Response(service, content_type="json")
 
 
 ##
