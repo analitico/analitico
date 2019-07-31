@@ -218,7 +218,12 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
 ##
 
 
-def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = None, notification_server_name: str = 'https://analitico.ai/') -> dict:
+def k8_jobs_create(
+    item: ItemMixin,
+    job_action: str = None,
+    job_data: dict = None,
+    notification_server_name: str = "https://analitico.ai/",
+) -> dict:
 
     # start from storage config and all all the rest
     configs = k8_get_storage_volume_configuration(item)
@@ -276,6 +281,7 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
 
     # webhook notification for job completion
     from api.notifications import get_job_completion_webhook
+
     notification_url_path = get_job_completion_webhook(item.id, job_id, 5)
     configs["notification_url"] = urllib.parse.urljoin(notification_server_name, notification_url_path)
 

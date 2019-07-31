@@ -155,7 +155,7 @@ class SlackTests(AnaliticoApiTestCase):
 
         start_time = time.time()
         delay = 5
-        
+
         webhook_url = api.notifications.get_job_completion_webhook(item.id, "jb-jyffvhih", delay=delay)
         response = self.client.get(webhook_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
