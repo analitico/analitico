@@ -24,7 +24,8 @@ import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from rest_framework import status
-from analitico.utilities import read_json, get_dict_dot, read_text, timeit
+from analitico import logger
+from analitico.utilities import read_json, get_dict_dot, read_text, timeit, time_ms
 
 import api
 import analitico
@@ -68,13 +69,18 @@ class WebdavTests(AnaliticoApiTestCase):
             container_name = base_name + "abc/def/ghi/"
             container = driver.create_container(container_name)
             self.assertEqual(container.name, container_name)
-
+            
             # random bytes to avoid compression, etc
             obj_data = bytearray(os.urandom(size)) 
             obj_name = "test.txt"
+
+            started_ms = time_ms()
             obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name)
             self.assertIsInstance(obj, Object)
             self.assertEqual(obj.name, container_name + obj_name)
+            elapsed_sec = int(time_ms(started_ms) / 1000)
+            kb_sec = int((size / 1024) / elapsed_sec)
+            logger.info(f"\nupload - driver.upload_object_via_stream: {int(size / MB_SIZE)} MBs in {elapsed_sec}s, {kb_sec} KB/s")
 
             # get and download object
             obj = driver.get_object(container_name, obj_name)
@@ -89,7 +95,12 @@ class WebdavTests(AnaliticoApiTestCase):
 
             # download and overwrite
             with tempfile.NamedTemporaryFile() as f:
+                started_ms = time_ms()
                 driver.download_object(obj, f.name, overwrite_existing=True)
+                elapsed_sec = int(time_ms(started_ms) / 1000)
+                kb_sec = int((size / 1024) / elapsed_sec)
+                logger.info(f"upload - driver.download_object: {int(size / MB_SIZE)} MBs in {elapsed_sec}s, {kb_sec} KB/s")
+
                 downloaded_data = f.file.read()
                 self.assertEqual(obj_data, downloaded_data)
 
@@ -713,7 +724,7 @@ class WebdavTests(AnaliticoApiTestCase):
     @timeit
     def test_webdav_driver_large_upload_4gb(self):
         # big upload should trigger all sorts of timeouts and memory problems
-        self.upload_random_rainbows(4 * 1024 * MB_SIZE) # 5 GBs
+        self.upload_random_rainbows(4 * 1024 * MB_SIZE) # 4 GBs
 
 
     def test_webdav_driver_upload_with_extra(self):
