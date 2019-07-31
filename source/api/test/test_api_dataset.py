@@ -526,7 +526,7 @@ class DatasetTests(AnaliticoApiTestCase):
             self.assertEqual(len(records3), DEFAULT_PAGE_SIZE)
             self.assertEqual(records1[DEFAULT_PAGE_SIZE]["Name"], records3[0]["Name"])
             self.assertEqual(meta3["total_records"], 102)
-            self.assertEqual(meta3["total_pages"], 11)
+            self.assertEqual(meta3["total_pages"], 5)
 
             records4, meta4 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page=1&page_size=10")
             self.assertEqual(len(records4), 10)
