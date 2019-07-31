@@ -65,9 +65,23 @@ class DriveTests(AnaliticoApiTestCase):
             delete = True
 
             ws.refresh_from_db()
-            # sometimes the storage takes longer to be available
-            time.sleep(60)
-            driver = ws.storage.driver
+            
+            # the storage takes a variable time to be available
+            start_time = time.time()
+            insist = True
+            driver = None
+            raised = None
+            while insist:
+                try:
+                    driver = ws.storage.driver
+                except Exception as exec:
+                    raised = exec
+                    time.sleep(10)
+                elapsed = time.time() - start_time
+                insist = not driver and elapsed < 120
+
+            self.assertIsNotNone(driver, raised)
+
             num_files = len(driver.ls("/"))
             driver.upload(io.BytesIO(b"This is Mickey"), "mickey.txt")
             driver.upload(io.BytesIO(b"This is Goofy"), "goofy.txt")
