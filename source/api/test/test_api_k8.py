@@ -362,8 +362,9 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(len(data["hits"]["hits"]), 0)
         finally:
             # clean up
-            self.delete_job(job_id)
-            self.delete_job(another_job_id)
+            if "job_id" in locals():
+                self.delete_job(job_id)
+                self.delete_job(another_job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run(self):
@@ -414,7 +415,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(None, execution_status["exception"])
         finally:
             # clean up
-            if job_id:
+            if "job_id" in locals():
                 self.delete_job(job_id)
 
     @tag("slow", "k8s", "live")
@@ -476,7 +477,7 @@ class K8Tests(AnaliticoApiTestCase):
                 self.delete_job(job_id)
                 url = reverse("api:model-detail", args=(target_id,))
                 requests.delete(server + url, headers=headers)
-            if docker and "image" in docker:
+            if "docker" in locals() and "image" in docker:
                 subprocess_run(
                     "gcloud container images delete --force-delete-tags --quiet " + docker["image"], shell=True
                 )
@@ -515,9 +516,6 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up service
             subprocess_run("kubectl delete kservice -n cloud " + k8_service_name, shell=True)
-
-    def test_k8s_jobs_run_and_build(self):
-        pass
 
     def test_get_job_that_does_not_exist(self):
         """ Expect 404 not found when a job does not exist """
