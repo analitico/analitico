@@ -519,6 +519,7 @@ class K8Tests(AnaliticoApiTestCase):
             # clean up service
             subprocess_run("kubectl delete kservice -n cloud " + k8_service_name, shell=True)
 
+    @tag("slow", "k8s", "live")
     def test_k8s_jobs_run_and_build(self):
         try:
             test_start_time = datetime.datetime.utcnow().timestamp()
