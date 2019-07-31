@@ -94,6 +94,46 @@ class JobViewSetMixin:
     # defined in subclass to list acceptable actions
     job_actions = ()
 
+    # DEPRECATED
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get"], detail=True, url_name="job-list", url_path="jobs")
+    def job_list(self, request, pk) -> Response:
+        """ Returns a listing of all jobs associated with this item. """
+        # we read the item here instead of just using pk because
+        # we need to make sure the user has access rights to it
+        item = self.get_object()
+        jobs = Job.objects.filter(item_id=item.id)
+        jobs_serializer = JobSerializer(jobs, many=True)
+        return Response(jobs_serializer.data)
+
+    # DEPRECATED
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["post"], detail=True, url_name="job-action", url_path=r"jobs/(?P<job_action>[-\w.]{4,256})$")
+    def job_create(self, request, pk, job_action) -> Response:
+        """ Creates a job for this item and returns it. """
+        job_item = self.get_object()
+        if job_action not in self.job_actions:
+            raise MethodNotAllowed(job_item.type + " cannot create a job of type: " + job_action)
+
+        # caller may have posted some attributes for the job. if so we want
+        # to add these to the job. django may have filtered the input and added
+        # a "data" wrapper to make the call more json:api compliant, so we need to strip it
+        data = request.data
+        if data and "data" in data:
+            data = data["data"]
+
+        job = job_item.create_job(job_action, data)
+
+        run_async = get_query_parameter_as_bool(request, "async", True)
+        if not run_async:
+            job.status = STATUS_RUNNING
+            job.save()
+            analitico.logger.warning(f"Running jobs synchronously is not recommended, item: {job_item.id}")
+            job.run(request)
+
+        serializer = JobSerializer(job)
+        return Response(serializer.data)
+
     ##
     ## Kubernetes jobs and service deployment APIs
     ##
