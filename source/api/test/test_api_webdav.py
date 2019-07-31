@@ -867,7 +867,7 @@ class WebdavTests(AnaliticoApiTestCase):
 
             # upload file contents via /webdav api
             url = reverse("api:workspace-files", args=("ws_storage_webdav", obj_name))  # raw file url
-            response = self.client.put(url, data=obj_data)
+            response = self.client.put(url, data=obj_data, content_type="text/plain")
             self.assertEqual(response.status_code, 204)
 
             # retrieve info directly from driver
