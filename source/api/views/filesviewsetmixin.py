@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import urllib
 import io
+import time
 
 from pathlib import Path
 from django.http.response import StreamingHttpResponse
@@ -138,6 +139,12 @@ class FilesViewSetMixin:
     ## ?metadata=true - methods used to retrieve information on the files (as opposed to file contents)
     ##
 
+    def get_sorting_key(self, file, order):
+        """ Returns a key that can be used by sorted to sort this Container/Object in the given order. """
+        key = "aaa-" if isinstance(file, libcloud.storage.base.Container) else "bbb-"
+        key += file.name.lower()
+        return key
+
     def files_metadata(self, request, pk, url, driver, base_path):
         # return metadata for files and directories
         assert base_path and base_path.endswith("/")
@@ -165,6 +172,10 @@ class FilesViewSetMixin:
 
             for item in items:
                 item.name = item.name.replace(base_path[:-1], "")
+
+            # order to be applied to the files, eg: ?order=name,size
+            order = get_query_parameter_as_bool(request, ORDER_PARAM, "id")
+            items = sorted(items, key=lambda f: self.get_sorting_key(f, order))
 
             base_url = request.build_absolute_uri()
             serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
@@ -257,19 +268,20 @@ class FilesViewSetMixin:
             # create directory if it doesn't exist (similar to cloud storage)
             driver.mkdirs(folder_path)
 
-            # upload or replace existing files in storage
-            # TODO extract metadata from custom headers, if any
-            # TODO stream content
-            if request.FILES:
-                files = list(request.FILES.values())
-                if len(files) > 1:
-                    raise AnaliticoException(
-                        "You cannot upload multiple files at once.", status=status.HTTP_400_BAD_REQUEST
-                    )
-                # read data directly from file that django saved somewhere
-                data = iter(files[0])
+            if request.content_type == "multipart/form-data":
+                # upload or replace existing files in storage
+                # TODO extract metadata from custom headers, if any
+                if request.FILES:
+                    files = list(request.FILES.values())
+                    if len(files) > 1:
+                        raise AnaliticoException(
+                            "You cannot upload multiple files at once.", status=status.HTTP_400_BAD_REQUEST
+                        )
+                    # read data directly from file that django saved somewhere
+                    data = iter(files[0])
             else:
-                data = io.StringIO(request.data)
+                # request acts as a file-like object
+                data = request.stream
 
             # upload, overwrite if there and reset metadata if any
             driver.upload(data, path, metadata=None)

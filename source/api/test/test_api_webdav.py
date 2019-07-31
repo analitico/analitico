@@ -2,6 +2,8 @@ import io
 import os
 import os.path
 import pytest
+import random
+import string
 
 from django.conf import settings
 from django.test import TestCase, tag
@@ -44,21 +46,23 @@ MB_SIZE = 1024 * 1024
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 UNICORN_FILENAME = "unicorns-do-it-better.png"
 
-WEBDAV_URL = "https://u206378-sub4.your-storagebox.de"
-WEBDAV_USERNAME = "u206378-sub4"
-WEBDAV_PASSWORD = "nGGGWuPsvqcOqzN8"
-
 
 @pytest.mark.django_db
 class WebdavTests(AnaliticoApiTestCase):
-    def get_driver(self):
+    def get_driver(self, item=None):
         """ Driver for WebDAV container used by unit testing """
-        return api.libcloud.WebdavStorageDriver(WEBDAV_URL, WEBDAV_USERNAME, WEBDAV_PASSWORD)
+        if item is None:
+            item = self.ws1
+        if item.workspace:
+            item = item.workspace
+        return item.storage.driver
 
-    def upload_unicorn(self):
+    def upload_unicorn(self, item=None, token=None):
         """ The same image is used in a number of tests """
-        url = reverse("api:workspace-files", args=("ws_storage_webdav", UNICORN_FILENAME))
-        response = self.upload_file(url, UNICORN_FILENAME, "image/png", token=self.token1)
+        if item is None:
+            item = self.ws1
+        url = reverse(f"api:{item.type}-files", args=(item.id, UNICORN_FILENAME))
+        response = self.upload_file(url, UNICORN_FILENAME, "image/png", token=token if token else self.token1)
         return url, response
 
     def upload_random_rainbows(self, size):
@@ -78,10 +82,10 @@ class WebdavTests(AnaliticoApiTestCase):
             obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name)
             self.assertIsInstance(obj, Object)
             self.assertEqual(obj.name, container_name + obj_name)
-            elapsed_sec = int(time_ms(started_ms) / 1000)
-            kb_sec = int((size / 1024) / max(1, elapsed_sec))
+            elapsed_ms = max(1, time_ms(started_ms))
+            kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
             logger.info(
-                f"\nupload - driver.upload_object_via_stream: {int(size / MB_SIZE)} MBs in {elapsed_sec}s, {kb_sec} KB/s"
+                f"\nupload - driver.upload_object_via_stream: {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
             )
 
             # get and download object
@@ -99,10 +103,10 @@ class WebdavTests(AnaliticoApiTestCase):
             with tempfile.NamedTemporaryFile() as f:
                 started_ms = time_ms()
                 driver.download_object(obj, f.name, overwrite_existing=True)
-                elapsed_sec = int(time_ms(started_ms) / 1000)
-                kb_sec = int((size / 1024) / max(1, elapsed_sec))
+                elapsed_ms = max(1, time_ms(started_ms))
+                kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
                 logger.info(
-                    f"upload - driver.download_object: {int(size / MB_SIZE)} MBs in {elapsed_sec}s, {kb_sec} KB/s"
+                    f"\nupload - driver.download_object: {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
                 )
 
                 downloaded_data = f.file.read()
@@ -725,7 +729,7 @@ class WebdavTests(AnaliticoApiTestCase):
 
     @tag("slow")
     @timeit
-    def test_webdav_driver_large_upload_4gb(self):
+    def OFFtest_webdav_driver_large_upload_4gb(self):
         # big upload should trigger all sorts of timeouts and memory problems
         self.upload_random_rainbows(4 * 1024 * MB_SIZE)  # 4 GBs
 
@@ -1019,7 +1023,7 @@ class WebdavTests(AnaliticoApiTestCase):
 
                 # upload file contents via /webdav api
                 url = base_url + obj_name
-                response = self.client.put(url, data=obj_data)
+                response = self.client.put(url, data=obj_data, content_type="text/plain")
                 self.assertEqual(response.status_code, 204)
 
                 # retrieve metadata contents from file api
@@ -1144,3 +1148,64 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             item.delete()
             item.save()
+
+    ##
+    ## sorting files and directories
+    ##
+
+    def test_webdav_files_api_upload_raw(self):
+        item = api.models.Dataset(workspace=self.ws1)
+        item.save()
+
+        # create file via RAW upload (eg: not a multipart upload)
+        obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
+        obj_data = b"This is the content."
+        obj_url = reverse(f"api:{item.type}-files", args=(item.id, obj_name))
+        response1 = self.client.put(obj_url, data=obj_data, content_type="text/plain")
+        self.assertEqual(response1.status_code, 204)
+
+        # retrieve file via /files/url api
+        response2 = self.client.get(obj_url)
+        self.assertTrue(isinstance(response2, StreamingHttpResponse))
+        response2_content = b"".join(response2.streaming_content)
+        self.assertEqual(len(obj_data), len(response2_content))
+        self.assertEqual(obj_data, response2_content)
+
+        # remove item from storage
+        response3 = self.client.delete(obj_url)
+        self.assertEqual(response3.status_code, 204)  # no content
+
+    def test_webdav_files_api_list_directory_with_order(self):
+        try:
+            item = api.models.Dataset(workspace=self.ws1)
+            item.save()
+
+            # create few random files using REGULAR raw content upload
+            num_files = 16
+            for i in range(0, num_files):
+                obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
+                obj_data = bytearray(os.urandom(random.randint(0, 1024)))
+                obj_url = reverse(f"api:{item.type}-files", args=(item.id, obj_name))
+                response = self.client.put(obj_url, data=obj_data, content_type="text/plain")
+                self.assertEqual(response.status_code, 204)
+
+            files_url = reverse(f"api:{item.type}-files", args=(item.id, "")) + "?metadata=true"
+
+            # files without explicit ordering should be in alphabetical order (first directories, then files)
+            response = self.client.get(files_url)
+            self.assertEqual(response.status_code, 200)
+            files = response.data
+            self.assertEqual(len(files), num_files + 1)  # /dir + files
+            for i in range(2, len(files)):
+                self.assertLessEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
+
+            # remove item from storage
+            response = self.client.delete(obj_url)
+            self.assertEqual(response.status_code, 204)  # no content
+
+        except Exception as exc:
+            raise exc
+
+        finally:
+            if item:
+                item.delete()
