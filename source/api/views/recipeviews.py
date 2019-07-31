@@ -11,7 +11,7 @@ import api.utilities
 from analitico import ACTION_TRAIN
 from api.models import Recipe, Job, Model
 from .attributeserializermixin import AttributeSerializerMixin
-from .assetviewsetmixin import AssetViewSetMixin
+from .filesviewsetmixin import FilesViewSetMixin
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .jobviews import JobViewSetMixin, JobSerializer
 from .notebookviews import NotebookViewSetMixin
@@ -39,7 +39,7 @@ class RecipeSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 class RecipeViewSet(
     ItemViewSetMixin,
-    AssetViewSetMixin,
+    FilesViewSetMixin,
     JobViewSetMixin,
     NotebookViewSetMixin,
     K8ViewSetMixin,

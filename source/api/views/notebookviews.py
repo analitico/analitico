@@ -22,7 +22,7 @@ from api.utilities import get_query_parameter, get_query_parameter_as_bool
 
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .attributeserializermixin import AttributeSerializerMixin
-from .assetviewsetmixin import AssetViewSetMixin
+from .filesviewsetmixin import FilesViewSetMixin
 from .jobviews import JobViewSetMixin
 from .k8viewsetmixin import K8ViewSetMixin
 
@@ -98,7 +98,7 @@ class NotebookViewSetMixin:
 
 class NotebookViewSet(
     ItemViewSetMixin,
-    AssetViewSetMixin,
+    FilesViewSetMixin,
     JobViewSetMixin,
     NotebookViewSetMixin,
     K8ViewSetMixin,

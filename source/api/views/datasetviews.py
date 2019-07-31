@@ -16,7 +16,7 @@ from api.models import Dataset, Job, ASSETS_CLASS_DATA
 
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
 from .attributeserializermixin import AttributeSerializerMixin
-from .assetviewsetmixin import AssetViewSetMixin
+from .filesviewsetmixin import FilesViewSetMixin
 from .jobviews import JobViewSetMixin
 from .notebookviews import NotebookViewSetMixin
 
@@ -41,7 +41,7 @@ class DatasetSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class DatasetViewSet(
-    ItemViewSetMixin, AssetViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, rest_framework.viewsets.ModelViewSet
+    ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, rest_framework.viewsets.ModelViewSet
 ):
     """
     A dataset model is used to store information on a dataset which is a plugin

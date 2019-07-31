@@ -11,7 +11,7 @@ import api.utilities
 
 from api.models import Dataset, Job
 
-from .assetviewsetmixin import AssetViewSetMixin
+from .filesviewsetmixin import FilesViewSetMixin
 from .attributeserializermixin import AttributeSerializerMixin
 
 # ItemSerializer and ItemViewSet for item APIs
@@ -178,7 +178,7 @@ class JobViewSetMixin:
 ##
 
 
-class JobViewSet(ItemViewSetMixin, AssetViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class JobViewSet(ItemViewSetMixin, FilesViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ A job can be created, listed, updated, cancelled, etc. """
 
     item_class = api.models.Job
