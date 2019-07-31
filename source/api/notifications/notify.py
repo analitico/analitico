@@ -106,16 +106,16 @@ def notifications_webhook(request: Request) -> Response:
     notification_type = api.utilities.get_query_parameter(request, "notification")
     item_id = api.utilities.get_query_parameter(request, "item_id", None)
     job_id = api.utilities.get_query_parameter(request, "job_id", None)
-    delay = min(10, int(api.utilities.get_query_parameter(request, "delay", 0)))
+    delay = int(api.utilities.get_query_parameter(request, "delay", 0))
 
     # verify that the secret used to sign is there and is valid
     api.utilities.get_unsigned_secret(api.utilities.get_query_parameter(request, "secret"))
 
-    if delay > 0:
+    if 0 < delay and delay < 10:
         # deplay execution and run in background
         # eg. because job is close to terminate and it wants to notify its state
         url = request.build_absolute_uri().replace(f"delay={delay}", "delay=0")
-        os.system(f"sleep {delay} && curl --silent '{url}' &>/dev/null &")
+        os.system(f"sleep {delay} && curl '{url}' &")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # notifying of job completion over slack and email
