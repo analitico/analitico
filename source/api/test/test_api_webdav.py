@@ -4,7 +4,7 @@ import os.path
 import pytest
 
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, tag
 from django.urls import reverse
 from django.http.response import StreamingHttpResponse
 from django.utils.dateparse import parse_datetime
@@ -24,7 +24,7 @@ import django.core.files
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from rest_framework import status
-from analitico.utilities import read_json, get_dict_dot, read_text
+from analitico.utilities import read_json, get_dict_dot, read_text, timeit
 
 import api
 import analitico
@@ -37,6 +37,8 @@ import tempfile
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
+
+MB_SIZE = 1024 * 1024
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 UNICORN_FILENAME = "unicorns-do-it-better.png"
@@ -57,6 +59,45 @@ class WebdavTests(AnaliticoApiTestCase):
         url = reverse("api:workspace-files", args=("ws_storage_webdav", UNICORN_FILENAME))
         response = self.upload_file(url, UNICORN_FILENAME, "image/png", token=self.token1)
         return url, response
+
+    def upload_random_rainbows(self, size):
+        """ Uploads random bytes to test upload limits, timeouts, etc. Size of upload is specified by caller. """
+        driver = self.get_driver()
+        try:
+            base_name = "/" + django.utils.crypto.get_random_string() + "/"
+            container_name = base_name + "abc/def/ghi/"
+            container = driver.create_container(container_name)
+            self.assertEqual(container.name, container_name)
+
+            # random bytes to avoid compression, etc
+            obj_data = bytearray(os.urandom(size)) 
+            obj_name = "test.txt"
+            obj = driver.upload_object_via_stream(io.BytesIO(obj_data), container, obj_name)
+            self.assertIsInstance(obj, Object)
+            self.assertEqual(obj.name, container_name + obj_name)
+
+            # get and download object
+            obj = driver.get_object(container_name, obj_name)
+            self.assertIsInstance(obj, Object)
+            self.assertEqual(obj.name, container_name + obj_name)
+            self.assertEqual(obj.container.name, container_name)
+
+            # can't overwrite unless specified
+            with tempfile.NamedTemporaryFile() as f:
+                with self.assertRaises(libcloud.common.types.LibcloudError):
+                    driver.download_object(obj, f.name)
+
+            # download and overwrite
+            with tempfile.NamedTemporaryFile() as f:
+                driver.download_object(obj, f.name, overwrite_existing=True)
+                downloaded_data = f.file.read()
+                self.assertEqual(obj_data, downloaded_data)
+
+            # streaming download
+            downloaded_data = next(iter(driver.download_object_as_stream(obj)))
+            self.assertEqual(obj_data, downloaded_data)
+        finally:
+            driver.rmdir(container_name)
 
     def setUp(self):
         self.setup_basics()
@@ -658,6 +699,22 @@ class WebdavTests(AnaliticoApiTestCase):
 
         finally:
             driver.rmdir(container_name)
+
+
+    @timeit
+    def test_webdav_driver_large_upload_1mb(self):
+        self.upload_random_rainbows(1 * MB_SIZE)
+
+    @timeit
+    def test_webdav_driver_large_upload_64mb(self):
+        self.upload_random_rainbows(64 * MB_SIZE)
+
+    @tag("slow")
+    @timeit
+    def test_webdav_driver_large_upload_4gb(self):
+        # big upload should trigger all sorts of timeouts and memory problems
+        self.upload_random_rainbows(4 * 1024 * MB_SIZE) # 5 GBs
+
 
     def test_webdav_driver_upload_with_extra(self):
         driver = self.get_driver()
