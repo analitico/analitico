@@ -1180,24 +1180,80 @@ class WebdavTests(AnaliticoApiTestCase):
             item = api.models.Dataset(workspace=self.ws1)
             item.save()
 
-            # create few random files using REGULAR raw content upload
-            num_files = 16
+            # create few random directories
+            num_dirs = 4
+            for i in range(0, num_dirs):
+                dir_name = "tst_" + django.utils.crypto.get_random_string() + "/"
+                dir_url = reverse(f"api:{item.type}-files", args=(item.id, dir_name))
+                response = self.client.post(dir_url)
+                self.assertEqual(response.status_code, 204)
+
+            # create few random files of different sizes
+            num_files = 4
             for i in range(0, num_files):
                 obj_name = "tst_" + django.utils.crypto.get_random_string() + ".txt"
-                obj_data = bytearray(os.urandom(random.randint(0, 1024)))
+                obj_data = bytearray(os.urandom(random.randint(64, 256)))
                 obj_url = reverse(f"api:{item.type}-files", args=(item.id, obj_name))
                 response = self.client.put(obj_url, data=obj_data, content_type="text/plain")
                 self.assertEqual(response.status_code, 204)
 
             files_url = reverse(f"api:{item.type}-files", args=(item.id, "")) + "?metadata=true"
 
-            # files without explicit ordering should be in alphabetical order (first directories, then files)
+            # files without explicit ordering should be in alphabetical order
+            # first home directory, then directories in alpha order, then files also ordered
             response = self.client.get(files_url)
             self.assertEqual(response.status_code, 200)
             files = response.data
-            self.assertEqual(len(files), num_files + 1)  # /dir + files
-            for i in range(2, len(files)):
+            self.assertEqual(len(files), num_dirs + num_files + 1)  # . + dirs + files
+            self.assertEqual(files[0]["id"], "/")
+            for i in range(2, num_dirs + 1):  # directories sorted
                 self.assertLessEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
+            for i in range(num_dirs + 2, len(files)):  # files sorted
+                self.assertLessEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
+
+            # ?order=id same as above
+            response = self.client.get(files_url + "&order=id")
+            self.assertEqual(response.status_code, 200)
+            files = response.data
+            self.assertEqual(len(files), num_dirs + num_files + 1)  # . + dirs + files
+            self.assertEqual(files[0]["id"], "/")
+            for i in range(2, num_dirs + 1):  # directories sorted
+                self.assertLessEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
+            for i in range(num_dirs + 2, len(files)):  # files sorted
+                self.assertLessEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
+
+            # ?order=-id for inverse alphabetical order but dirs always come first
+            response = self.client.get(files_url + "&order=-id")
+            self.assertEqual(response.status_code, 200)
+            files = response.data
+            self.assertEqual(len(files), num_dirs + num_files + 1)  # . + dirs + files
+            self.assertEqual(files[0]["id"], "/")
+            for i in range(2, num_dirs + 1):  # directories sorted
+                self.assertGreaterEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
+            for i in range(num_dirs + 2, len(files)):  # files sorted
+                self.assertGreaterEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
+
+            # ?order=size for size sorting
+            response = self.client.get(files_url + "&order=size")
+            self.assertEqual(response.status_code, 200)
+            files = response.data
+            self.assertEqual(len(files), num_dirs + num_files + 1)  # . + dirs + files
+            self.assertEqual(files[0]["id"], "/")
+            for i in range(1, len(files)):
+                if files[i - 1]["type"] == "analitico/file" and files[i]["type"] == "analitico/file":
+                    self.assertLessEqual(files[i - 1]["attributes"]["size"], files[i]["attributes"]["size"])
+
+            # ?order=-size,-id for inverse size than name sorting
+            response = self.client.get(files_url + "&order=-size,id")
+            self.assertEqual(response.status_code, 200)
+            files = response.data
+            self.assertEqual(len(files), num_dirs + num_files + 1)  # . + dirs + files
+            self.assertEqual(files[0]["id"], "/")
+            for i in range(1, len(files)):
+                if files[i - 1]["type"] == "analitico/file" and files[i]["type"] == "analitico/file":
+                    self.assertGreaterEqual(files[i - 1]["attributes"]["size"], files[i]["attributes"]["size"])
+                if files[i - 1]["type"] == "analitico/directory" and files[i]["type"] == "analitico/directory":
+                    self.assertLessEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
 
             # remove item from storage
             response = self.client.delete(obj_url)

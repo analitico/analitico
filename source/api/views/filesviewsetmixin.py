@@ -77,6 +77,83 @@ class LibcloudStorageItemsSerializer(Serializer):
 
 
 ##
+## Ordering files
+##
+
+
+def compare_files(file1, file2, order):
+    """
+    Compares two files or containers and determines which comes first based
+    on an order string like ?order=id or ?order=-size,id. The home directory
+    is always first. Directories next, then files. Sort is case insensitive.
+    """
+    name1 = file1.name.lower()
+    name2 = file2.name.lower()
+
+    if name1 == "/":
+        return -1
+    if name2 == "/":
+        return 1
+    if isinstance(file1, libcloud.storage.base.Container) and isinstance(file2, libcloud.storage.base.Object):
+        return -1
+    if isinstance(file1, libcloud.storage.base.Object) and isinstance(file2, libcloud.storage.base.Container):
+        return 1
+
+    order_keys = order.split(",")
+    for key in order_keys:
+        if key == "id":
+            assert isinstance(file1, libcloud.storage.base.Object) == isinstance(file2, libcloud.storage.base.Object)
+            if name1 != name2:
+                return -1 if name1 < name2 else 1
+        if key == "-id":
+            assert isinstance(file1, libcloud.storage.base.Object) == isinstance(file2, libcloud.storage.base.Object)
+            if name1 != name2:
+                return 1 if name1 < name2 else -1
+
+        # size is only applicable to object, not containers
+        if isinstance(file1, libcloud.storage.base.Object) and isinstance(file2, libcloud.storage.base.Object):
+            if key == "size":
+                if file1.size != file2.size:
+                    return -1 if file1.size < file2.size else 1
+            if key == "-size":
+                if file1.size != file2.size:
+                    return 1 if file1.size < file2.size else -1
+
+    if name1 == name2:
+        return 0
+    else:
+        return -1 if name1 < name2 else 1
+
+
+def compare_files_to_key(order):
+    """ Convert a cmp= function into a key= function """
+
+    class K(object):
+        def __init__(self, obj, *args):
+            self.obj = obj
+
+        def __lt__(self, other):
+            return compare_files(self.obj, other.obj, order) < 0
+
+        def __gt__(self, other):
+            return compare_files(self.obj, other.obj, order) > 0
+
+        def __eq__(self, other):
+            return compare_files(self.obj, other.obj, order) == 0
+
+        def __le__(self, other):
+            return compare_files(self.obj, other.obj, order) <= 0
+
+        def __ge__(self, other):
+            return compare_files(self.obj, other.obj, order) >= 0
+
+        def __ne__(self, other):
+            return compare_files(self.obj, other.obj, order) != 0
+
+    return K
+
+
+##
 ## FilesViewSetMixin - a mixin for uploading and downloading assets
 ##
 
@@ -139,12 +216,6 @@ class FilesViewSetMixin:
     ## ?metadata=true - methods used to retrieve information on the files (as opposed to file contents)
     ##
 
-    def get_sorting_key(self, file, order):
-        """ Returns a key that can be used by sorted to sort this Container/Object in the given order. """
-        key = "aaa-" if isinstance(file, libcloud.storage.base.Container) else "bbb-"
-        key += file.name.lower()
-        return key
-
     def files_metadata(self, request, pk, url, driver, base_path):
         # return metadata for files and directories
         assert base_path and base_path.endswith("/")
@@ -174,8 +245,8 @@ class FilesViewSetMixin:
                 item.name = item.name.replace(base_path[:-1], "")
 
             # order to be applied to the files, eg: ?order=name,size
-            order = get_query_parameter_as_bool(request, ORDER_PARAM, "id")
-            items = sorted(items, key=lambda f: self.get_sorting_key(f, order))
+            order = get_query_parameter(request, ORDER_PARAM, "id")
+            items = sorted(items, key=compare_files_to_key(order))
 
             base_url = request.build_absolute_uri()
             serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
@@ -266,7 +337,10 @@ class FilesViewSetMixin:
 
         if request.method in ["PUT", "POST"]:
             # create directory if it doesn't exist (similar to cloud storage)
+            # if we're making a directory path no upload is needed
             driver.mkdirs(folder_path)
+            if folder_path == path:
+                return Response(status=status.HTTP_204_NO_CONTENT)
 
             if request.content_type == "multipart/form-data":
                 # upload or replace existing files in storage
