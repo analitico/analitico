@@ -28,6 +28,10 @@ spec:
           value: {job_id}
         - name: ANALITICO_DRIVE
           value: /mnt/analitico-drive
+        - name: ANALITICO_JOB_ACTION
+          value: {job_action}
+        - name: ANALITICO_NOTIFICATION_URL
+          value: {notification_url}
         volumeMounts:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive

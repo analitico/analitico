@@ -1,3 +1,6 @@
+import os
+import requests
+
 from django.core.management.base import BaseCommand
 
 from api.factory import factory
@@ -17,6 +20,11 @@ class Command(BaseCommand):
 
         item = factory.get_item(item_id)  # the recipe
         target = factory.get_item(target_id)  # the model
+        try:
+            k8_build_v2(item, target)
+        finally:
+            notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
+            if notification_url:
+                requests.get(notification_url)
 
-        k8_build_v2(item, target)
         return 0

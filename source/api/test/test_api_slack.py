@@ -2,6 +2,7 @@ import pytest
 import urllib
 import datetime
 import logging
+import time
 
 from django.urls import reverse
 from rest_framework import status
@@ -146,3 +147,18 @@ class SlackTests(AnaliticoApiTestCase):
         self.assertEqual(outbox[0].to[0], "prova1@analitico.ai")
         self.assertEqual(outbox[1].to[0], "prova2@analitico.ai")
         self.assertEqual(outbox[2].to[0], "prova3@analitico.ai")
+
+    def test_notification_delay(self):
+        item = Dataset(id="ds_hdxqnp7t", workspace=self.ws1)
+        self.configure_test_notifications(item)
+        item.save()
+
+        start_time = time.time()
+        delay = 5
+        
+        webhook_url = api.notifications.get_job_completion_webhook(item.id, "jb-jyffvhih", delay=delay)
+        response = self.client.get(webhook_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # expecting immediate response from the request
+        self.assertLess(time.time() - start_time, delay)

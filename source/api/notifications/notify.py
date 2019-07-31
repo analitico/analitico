@@ -24,6 +24,7 @@ from api.factory import factory
 from api.k8 import k8_jobs_get
 import api.utilities
 import api.views
+from analitico.utilities import subprocess_run
 
 from .slack import slack_notify
 from .email import email_notify
@@ -77,7 +78,7 @@ def _notify_job(item_id: str, job_id: str):
     }
 
 
-def get_job_completion_webhook(item_id: str, job_id: str):
+def get_job_completion_webhook(item_id: str, job_id: str, delay: int = 0):
     secret = _get_job_secret(item_id, job_id)
     return (
         reverse("api:notifications-webhook")
@@ -88,6 +89,8 @@ def get_job_completion_webhook(item_id: str, job_id: str):
         + urllib.parse.quote(job_id)
         + "&secret="
         + urllib.parse.quote(secret)
+        + "&delay="
+        + urllib.parse.quote(str(delay))
     )
 
 
@@ -103,9 +106,17 @@ def notifications_webhook(request: Request) -> Response:
     notification_type = api.utilities.get_query_parameter(request, "notification")
     item_id = api.utilities.get_query_parameter(request, "item_id", None)
     job_id = api.utilities.get_query_parameter(request, "job_id", None)
+    delay = min(10, int(api.utilities.get_query_parameter(request, "delay", 0)))
 
     # verify that the secret used to sign is there and is valid
     api.utilities.get_unsigned_secret(api.utilities.get_query_parameter(request, "secret"))
+
+    if delay > 0:
+        # deplay execution and run in background
+        # eg. because job is close to terminate and it wants to notify its state
+        url = request.build_absolute_uri().replace(f"delay={delay}", "delay=0")
+        os.system(f"sleep {delay} && curl --silent '{url}' &>/dev/null &")
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     # notifying of job completion over slack and email
     if notification_type == "job":

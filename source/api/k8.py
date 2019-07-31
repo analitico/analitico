@@ -8,6 +8,7 @@ import urllib
 import base64
 import string
 import collections
+import urllib.parse
 
 import subprocess
 from subprocess import PIPE
@@ -217,7 +218,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
 ##
 
 
-def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = None) -> dict:
+def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = None, notification_server_name: str = 'https://analitico.ai/') -> dict:
 
     # start from storage config and all all the rest
     configs = k8_get_storage_volume_configuration(item)
@@ -272,6 +273,11 @@ def k8_jobs_create(item: ItemMixin, job_action: str = None, job_data: dict = Non
         configs["build_command"] = str(["/home/www/analitico/scripts/builder-start.sh", item.id, model.id])
 
         configs["build_image"] = f"eu.gcr.io/analitico-api/analitico{image_tag}"
+
+    # webhook notification for job completion
+    from api.notifications import get_job_completion_webhook
+    notification_url_path = get_job_completion_webhook(item.id, job_id, 5)
+    configs["notification_url"] = urllib.parse.urljoin(notification_server_name, notification_url_path)
 
     if job_action == analitico.ACTION_RUN_AND_BUILD:
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-run-and-build-template.yaml")

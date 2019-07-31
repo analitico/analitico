@@ -32,6 +32,10 @@ spec:
           value: {target_id}
         - name: ANALITICO_DRIVE
           value: /mnt/analitico-drive
+        - name: ANALITICO_JOB_ACTION
+          value: {job_action}
+        - name: ANALITICO_NOTIFICATION_URL
+          value: {notification_url}
         securityContext:
           privileged: true
         volumeMounts:
