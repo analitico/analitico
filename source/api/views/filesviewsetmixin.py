@@ -342,7 +342,7 @@ class FilesViewSetMixin:
             if folder_path == path:
                 return Response(status=status.HTTP_204_NO_CONTENT)
 
-            if request.content_type == "multipart/form-data":
+            if request.content_type.startswith("multipart/form-data"):
                 # upload or replace existing files in storage
                 # TODO extract metadata from custom headers, if any
                 if request.FILES:
