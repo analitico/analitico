@@ -60,7 +60,7 @@ class DriveTests(AnaliticoApiTestCase):
     def test_drive_create_workspace_storage(self):
         delete = False
         try:
-            ws = Workspace.objects.create(pk="ws_drivecreatestorage")
+            ws = Workspace.objects.create(pk="ws_testcreatestorage" + get_random_string(4))
             dr_create_workspace_storage(ws)
             delete = True
 
@@ -114,7 +114,7 @@ class DriveTests(AnaliticoApiTestCase):
     def test_drive_base_rsync(self):
         delete = False
         try:
-            ws = Workspace.objects.create(pk="ws_drivecreatestorage")
+            ws = Workspace.objects.create(pk="ws_testrsync" + get_random_string(6))
             dr_create_workspace_storage(ws)
             delete = True
 
