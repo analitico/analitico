@@ -493,18 +493,19 @@ class DatasetTests(AnaliticoApiTestCase):
             self.assertEqual(records[0]["Name"], "Rondae Hollis-Jefferson")
             self.assertEqual(meta["total_records"], 13)
             self.assertEqual(meta["total_pages"], 1)
-            self.assertEqual(meta["page_size"], 100) # max page size
+            self.assertEqual(meta["page_size"], 100)  # max page size
 
     @tag("query")
     def test_dataset_filtering_double(self):
         for suffix in TEST_DATA_SUFFIXES:
-            records, meta = self.get_filtered_nba("Age < 25 and College == 'Arizona'", suffix=suffix, params="page_size=1000")
+            records, meta = self.get_filtered_nba(
+                "Age < 25 and College == 'Arizona'", suffix=suffix, params="page_size=1000"
+            )
             self.assertEqual(len(records), 4)
             self.assertEqual(records[0]["Name"], "Rondae Hollis-Jefferson")
             self.assertEqual(meta["total_records"], 4)
             self.assertEqual(meta["total_pages"], 1)
-            self.assertEqual(meta["page_size"], 100) # max page size
-
+            self.assertEqual(meta["page_size"], 100)  # max page size
 
     @tag("query")
     def test_dataset_filtering_paged(self):

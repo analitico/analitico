@@ -1,4 +1,3 @@
-
 import logging
 from api.models import ItemMixin
 from django.core.mail import send_mail
@@ -33,7 +32,7 @@ def email_notify(item, message, level) -> dict:
     for to, to_conf in ws_conf.items():
         if level >= int(to_conf.get("level", logging.INFO)):
             # https://docs.djangoproject.com/en/2.2/topics/email/
-            subject = message["text"].replace("\n", " ") # remove newlines
+            subject = message["text"].replace("\n", " ")  # remove newlines
             send_mail(
                 subject=subject,
                 message=message["attachments"][0]["text"],

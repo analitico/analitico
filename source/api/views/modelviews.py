@@ -37,7 +37,12 @@ class ModelSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class ModelViewSet(
-    ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, K8ViewSetMixin, rest_framework.viewsets.ModelViewSet
+    ItemViewSetMixin,
+    FilesViewSetMixin,
+    JobViewSetMixin,
+    NotebookViewSetMixin,
+    K8ViewSetMixin,
+    rest_framework.viewsets.ModelViewSet,
 ):
     """ A trained machine learning model with its training information, recipe and file assets """
 

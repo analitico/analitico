@@ -15,7 +15,16 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.parsers import JSONParser, FileUploadParser, MultiPartParser
 from rest_framework.serializers import Serializer
 
-from analitico import AnaliticoException, PARQUET_SUFFIXES, CSV_SUFFIXES, EXCEL_SUFFIXES, HDF_SUFFIXES, PANDAS_SUFFIXES, ORDER_PARAM, QUERY_PARAM
+from analitico import (
+    AnaliticoException,
+    PARQUET_SUFFIXES,
+    CSV_SUFFIXES,
+    EXCEL_SUFFIXES,
+    HDF_SUFFIXES,
+    PANDAS_SUFFIXES,
+    ORDER_PARAM,
+    QUERY_PARAM,
+)
 from analitico.pandas import pd_read_csv
 from analitico.utilities import get_dict_dot
 
@@ -105,8 +114,8 @@ class FilesViewSetMixin:
             MIN_PAGE_SIZE, min(MAX_PAGE_SIZE, get_query_parameter_as_int(request, PAGE_SIZE_PARAM, DEFAULT_PAGE_SIZE))
         )
 
-        query = get_query_parameter(request, QUERY_PARAM, None) # ?query=
-        sort = get_query_parameter(request, ORDER_PARAM, None) # ?order=
+        query = get_query_parameter(request, QUERY_PARAM, None)  # ?query=
+        sort = get_query_parameter(request, ORDER_PARAM, None)  # ?order=
 
         # retrieve data and filter it if requested
         df, rows = api.metadata.get_file_dataframe(driver, path, page, page_size, query, sort)
