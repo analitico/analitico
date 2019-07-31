@@ -362,14 +362,14 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(len(data["hits"]["hits"]), 0)
         finally:
             # clean up
-            if "job_id" in locals():
-                self.delete_job(job_id)
-                self.delete_job(another_job_id)
+            self.delete_job(job_id)
+            self.delete_job(another_job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run(self):
         try:
             test_start_time = datetime.datetime.utcnow().timestamp()
+
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
             server = "https://staging.analitico.ai"
@@ -413,6 +413,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertGreaterEqual(notebook_start_time, test_start_time)
             self.assertGreaterEqual(notebook_end_time, notebook_start_time)
             self.assertEqual(None, execution_status["exception"])
+
         finally:
             # clean up
             if "job_id" in locals():
@@ -420,8 +421,8 @@ class K8Tests(AnaliticoApiTestCase):
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_build(self):
-
         test_start_time = datetime.datetime.utcnow().timestamp()
+
         # named: K8Tests.test_k8s_jobs_run
         receipe_id = "rx_x5b1npmn"
         server = "https://staging.analitico.ai"
@@ -471,16 +472,17 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(sderr, "")
 
             self.k8s_deploy_and_test(target_id, receipe_id)
+
         finally:
             # clean up job, model and image
             if job_id:
                 self.delete_job(job_id)
                 url = reverse("api:model-detail", args=(target_id,))
                 requests.delete(server + url, headers=headers)
-            if "docker" in locals() and "image" in docker:
-                subprocess_run(
-                    "gcloud container images delete --force-delete-tags --quiet " + docker["image"], shell=True
-                )
+                if "docker" in locals() and "image" in docker:
+                    subprocess_run(
+                        "gcloud container images delete --force-delete-tags --quiet " + docker["image"], shell=True
+                    )
 
     def k8s_deploy_and_test(self, model_id, receipe_id):
         """ This test is called by the test `test_k8s_jobs_build`. """
@@ -516,6 +518,81 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up service
             subprocess_run("kubectl delete kservice -n cloud " + k8_service_name, shell=True)
+
+    def test_k8s_jobs_run_and_build(self):
+        try:
+            test_start_time = datetime.datetime.utcnow().timestamp()
+
+            # named: K8Tests.test_k8s_jobs_run
+            receipe_id = "rx_x5b1npmn"
+            server = "https://staging.analitico.ai"
+            headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9"}
+
+            # run and build the recipe
+            url = reverse("api:recipe-k8-jobs", args=(receipe_id, analitico.ACTION_RUN_AND_BUILD))
+            response = requests.post(server + url, headers=headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            content = response.json()
+            job_id = content["data"]["metadata"]["name"]
+            target_id = content["data"]["metadata"]["labels"]["analitico.ai/target-id"]
+            url = reverse("api:recipe-k8-jobs", args=(receipe_id, job_id))
+
+            # wait to complete
+            insist = True
+            while insist:
+                response = requests.get(server + url, headers=headers)
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                # missing when still running
+                content = response.json()
+                if "active" in content["data"]["status"]:
+                    time.sleep(3)
+                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 600
+                else:
+                    insist = False
+
+            self.assertIn("succeeded", content["data"]["status"])
+            self.assertEqual(1, content["data"]["status"]["succeeded"])
+
+            url = reverse("api:recipe-files", args=(receipe_id, "notebook.ipynb"))
+            response = requests.get(server + url, headers=headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            # assert notebook has been run with no exceptions
+            notebook = response.json()
+            execution_status = notebook["metadata"]["papermill"]
+            notebook_start_time = dateutil.parser.parse(execution_status["start_time"]).timestamp()
+            notebook_end_time = dateutil.parser.parse(execution_status["end_time"]).timestamp()
+            self.assertGreaterEqual(notebook_start_time, test_start_time)
+            self.assertGreaterEqual(notebook_end_time, notebook_start_time)
+            self.assertEqual(None, execution_status["exception"])
+
+            # when build completes the target model is updated with the
+            # docker image specifications
+            url = reverse("api:model-detail", args=(target_id,))
+            response = requests.get(server + url, headers=headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            content = response.json()
+            self.assertIn("docker", content["data"]["attributes"])
+
+            docker = content["data"]["attributes"]["docker"]
+            image_describe_cmd = ["gcloud", "container", "images", "describe", "--format", "json", docker["image"]]
+            # it raises exception if docker image is not found
+            sdout, sderr = subprocess_run(image_describe_cmd)
+            self.assertEqual(sderr, "")
+
+        finally:
+            # clean up job, model and image
+            if job_id:
+                self.delete_job(job_id)
+                url = reverse("api:model-detail", args=(target_id,))
+                requests.delete(server + url, headers=headers)
+                if "docker" in locals() and "image" in docker:
+                    subprocess_run(
+                        "gcloud container images delete --force-delete-tags --quiet " + docker["image"], shell=True
+                    )
 
     def test_get_job_that_does_not_exist(self):
         """ Expect 404 not found when a job does not exist """
