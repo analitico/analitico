@@ -483,42 +483,57 @@ class DatasetTests(AnaliticoApiTestCase):
             return response
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        return response.data["data"]
+        return response.data["data"], response.data["meta"]
 
     @tag("query")
     def test_dataset_filtering_single(self):
         for suffix in TEST_DATA_SUFFIXES:
-            records = self.get_filtered_nba("College == 'Arizona'", suffix=suffix, params="page_size=1000")
+            records, meta = self.get_filtered_nba("College == 'Arizona'", suffix=suffix, params="page_size=1000")
             self.assertEqual(len(records), 13)
             self.assertEqual(records[0]["Name"], "Rondae Hollis-Jefferson")
+            self.assertEqual(meta["total_records"], 13)
+            self.assertEqual(meta["total_pages"], 1)
+            self.assertEqual(meta["page_size"], 100) # max page size
 
     @tag("query")
     def test_dataset_filtering_double(self):
         for suffix in TEST_DATA_SUFFIXES:
-            records = self.get_filtered_nba("Age < 25 and College == 'Arizona'", suffix=suffix, params="page_size=1000")
+            records, meta = self.get_filtered_nba("Age < 25 and College == 'Arizona'", suffix=suffix, params="page_size=1000")
             self.assertEqual(len(records), 4)
             self.assertEqual(records[0]["Name"], "Rondae Hollis-Jefferson")
+            self.assertEqual(meta["total_records"], 4)
+            self.assertEqual(meta["total_pages"], 1)
+            self.assertEqual(meta["page_size"], 100) # max page size
+
 
     @tag("query")
     def test_dataset_filtering_paged(self):
         for suffix in TEST_DATA_SUFFIXES:
             # obtain first 100 records (page size is limited to max page in any case)
-            records1 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page_size=1000")
+            records1, meta1 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page_size=1000")
             self.assertEqual(len(records1), 100)
             self.assertEqual(records1[0]["Name"], "John Holland")
+            self.assertEqual(meta1["total_records"], 102)
+            self.assertEqual(meta1["total_pages"], 2)
 
-            records2 = self.get_filtered_nba("Position == 'SG'", suffix=suffix)
+            records2, meta2 = self.get_filtered_nba("Position == 'SG'", suffix=suffix)
             self.assertEqual(len(records2), DEFAULT_PAGE_SIZE)
             self.assertEqual(records1[0]["Name"], records2[0]["Name"])
+            self.assertEqual(meta2["total_records"], 102)
+            self.assertEqual(meta2["total_pages"], 5)
 
-            records3 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page=1")
+            records3, meta3 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page=1")
             self.assertEqual(len(records3), DEFAULT_PAGE_SIZE)
             self.assertEqual(records1[DEFAULT_PAGE_SIZE]["Name"], records3[0]["Name"])
+            self.assertEqual(meta3["total_records"], 102)
+            self.assertEqual(meta3["total_pages"], 11)
 
-            records4 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page=1&page_size=10")
+            records4, meta4 = self.get_filtered_nba("Position == 'SG'", suffix=suffix, params="page=1&page_size=10")
             self.assertEqual(len(records4), 10)
             self.assertEqual(records4[0]["Name"], records1[10]["Name"])
             self.assertEqual(records4[0]["Name"], "Arron Afflalo")
+            self.assertEqual(meta4["total_records"], 102)
+            self.assertEqual(meta4["total_pages"], 11)
 
     @tag("query")
     def test_dataset_filtering_bad_query(self):
@@ -534,7 +549,7 @@ class DatasetTests(AnaliticoApiTestCase):
     @tag("query")
     def test_dataset_filtering_sort(self):
         for suffix in TEST_DATA_SUFFIXES:
-            records1 = self.get_filtered_nba(sort="Salary", suffix=suffix)
+            records1, _ = self.get_filtered_nba(sort="Salary", suffix=suffix)
             self.assertEqual(len(records1), DEFAULT_PAGE_SIZE)
             for i in range(1, len(records1)):
                 s1 = records1[i - 1]["Salary"]
@@ -542,7 +557,7 @@ class DatasetTests(AnaliticoApiTestCase):
                 if s1 and s2:
                     self.assertLessEqual(s1, s2)
 
-            records2 = self.get_filtered_nba(sort="-Salary", suffix=suffix)
+            records2, _ = self.get_filtered_nba(sort="-Salary", suffix=suffix)
             self.assertEqual(len(records2), DEFAULT_PAGE_SIZE)
             for i in range(1, len(records2)):
                 s1 = records2[i - 1]["Salary"]
@@ -553,7 +568,7 @@ class DatasetTests(AnaliticoApiTestCase):
     @tag("query")
     def test_dataset_filtering_sort_multiple(self):
         for suffix in TEST_DATA_SUFFIXES:
-            records1 = self.get_filtered_nba(sort="Position,Salary", suffix=suffix)
+            records1, _ = self.get_filtered_nba(sort="Position,Salary", suffix=suffix)
             self.assertEqual(len(records1), DEFAULT_PAGE_SIZE)
             for i in range(1, len(records1)):
                 p1 = records1[i - 1]["Position"]
@@ -564,7 +579,7 @@ class DatasetTests(AnaliticoApiTestCase):
                     if s1 and s2:
                         self.assertLessEqual(s1, s2)
 
-            records2 = self.get_filtered_nba(sort="Position,-Salary", suffix=suffix)
+            records2, _ = self.get_filtered_nba(sort="Position,-Salary", suffix=suffix)
             self.assertEqual(len(records2), DEFAULT_PAGE_SIZE)
             for i in range(1, len(records2)):
                 p1 = records1[i - 1]["Position"]

@@ -85,9 +85,9 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
 
         # can this file be read into a pandas dataframe?
         if suffix in analitico.PANDAS_SUFFIXES:
-            df = get_file_dataframe(driver, path)
+            df, rows = get_file_dataframe(driver, path)
             if df is not None:
-                metadata["total_records"] = len(df.index)
+                metadata["total_records"] = rows
                 metadata["schema"] = analitico.schema.generate_schema(df)
                 metadata["describe"] = df.describe().to_dict()
 
@@ -109,7 +109,7 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
 
 def get_file_dataframe(
     driver: WebdavStorageDriver, path: str, page: int = 0, page_size: int = None, query: str = None, sort: str = None
-) -> pd.DataFrame:
+) -> (pd.DataFrame, int):
     """
     Returns the tabular data file asset at the given path loaded into a Pandas
     data frame. Optionally this method will apply paging and filtering to the
@@ -128,6 +128,7 @@ def get_file_dataframe(
 
     Returns:
         pd.DataFrame -- Records as a Pandas dataframe.
+        int -- Number of rows in dataframe (if known).
     """
 
     obj_stream = driver.download_as_stream(path)
@@ -180,11 +181,14 @@ def get_file_dataframe(
             else:
                 df.sort_values(column, inplace=True)
 
+    # number of total rows is unknown if we're prepaging the file
+    rows = None if already_paged else len(df.index)
+
     if not already_paged and page_size:
         page_offset = page * page_size
         df = df.iloc[page_offset : page_offset + page_size]
 
-    return df
+    return df, rows
 
 
 def apply_conversions(driver: WebdavStorageDriver, path: str, new_path: str = None, new_schema: dict = None):
@@ -201,7 +205,7 @@ def apply_conversions(driver: WebdavStorageDriver, path: str, new_path: str = No
     """
 
     # read dataframe in its entirety, no paging
-    df = get_file_dataframe(driver, path)
+    df, _ = get_file_dataframe(driver, path)
 
     # do we apply a new schema?
     if new_schema:

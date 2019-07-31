@@ -108,11 +108,11 @@ class AssetViewSetMixin:
         sort = get_query_parameter(request, "order", None)
 
         # retrieve data and filter it if requested
-        df = api.metadata.get_file_dataframe(driver, path, page, page_size, query, sort)
+        df, rows = api.metadata.get_file_dataframe(driver, path, page, page_size, query, sort)
         df = df.fillna("")  # replace NaN with empty string
 
         # add paging metadata
-        rows = int(metadata["total_records"])
+        rows = rows if rows else int(metadata["total_records"])
         metadata[PAGE_PARAM] = page
         metadata["page_records"] = len(df)
         metadata[PAGE_SIZE_PARAM] = page_size
