@@ -7,6 +7,5 @@ from .jobviews import JobViewSet
 from .recipeviews import RecipeViewSet
 from .modelviews import ModelViewSet
 from .userviews import UserViewSet
-from .pluginviews import PluginViewSet
 from .notebookviews import NotebookViewSet
 from .k8views import K8ViewSet
