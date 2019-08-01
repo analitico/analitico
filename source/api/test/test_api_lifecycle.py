@@ -16,6 +16,7 @@ from api.models import Dataset, Recipe, Notebook, Model, Workspace
 # pylint: disable=no-member
 # pylint: disable=unused-variable
 
+
 @pytest.mark.django_db
 class LifecycleTests(AnaliticoApiTestCase):
     """ Test life cycle operations like provisioning and deprovisioning storage, etc """

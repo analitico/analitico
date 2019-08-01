@@ -227,3 +227,52 @@ class ItemsTests(AnaliticoApiTestCase):
     # test avatar with default
 
     # test avatar with wrong or non available image
+
+    ##
+    ## Cloning items
+    ##
+
+    def create_item_then_clone_it(self, item_class, workspace_id=None):
+        item = None
+        clone = None
+        try:
+            item = item_class(workspace=self.ws1)
+            item.save()
+
+            # TODO write some files to storage
+
+            url = reverse(f"api:{item.type}-clone", args=(item.id,))
+            if workspace_id:
+                url += "?workspace_id=" + workspace_id
+
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+            clone_id = response.data["id"]
+            clone = api.factory.factory.get_item(clone_id)
+
+            # TODO check files in cloned storage
+
+            self.assertEqual(clone.workspace.id, workspace_id if workspace_id else item.workspace.id)
+            self.assertEqual(item.type, clone.type)
+            self.assertNotEqual(item.id, clone.id)
+
+        finally:
+            if item:
+                item.delete()
+            if clone:
+                clone.delete()
+
+    def test_item_clone_dataset(self):
+        self.create_item_then_clone_it(api.models.Dataset)
+
+    def test_item_clone_notebook(self):
+        self.create_item_then_clone_it(api.models.Notebook)
+
+    def test_item_clone_recipe(self):
+        self.create_item_then_clone_it(api.models.Recipe)
+
+    def test_item_clone_workspace_does_not_work(self):
+        url = reverse(f"api:workspace-clone", args=(self.ws1.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -52,6 +52,7 @@ def post_delete_item_storage(item):
         logger.error(f"post_delete_item_storage - item: {item.id}, failed: {exc}")
         raise exc
 
+
 ##
 ## Signals used to receive notifications when models are deleted and cleanup resources
 ##

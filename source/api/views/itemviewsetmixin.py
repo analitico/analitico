@@ -3,6 +3,7 @@ import io
 from django.http.response import HttpResponse
 from django.shortcuts import redirect
 
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -11,9 +12,9 @@ from rest_framework.request import Request
 
 import api
 
-from analitico import logger
+from analitico import AnaliticoException, logger
 from api.notifications import slack_oauth_exchange_code_for_token, slack_get_install_button_url
-from api.permissions import HasApiPermission, get_permitted_queryset
+from api.permissions import HasApiPermission, get_permitted_queryset, has_item_permission_or_exception
 from api.utilities import get_query_parameter, get_query_parameter_as_int, image_open, image_resize
 
 
@@ -114,3 +115,40 @@ class ItemViewSetMixin:
         has_token = slack_oauth_exchange_code_for_token(request, pk)
         logger.info(f"{request.build_absolute_uri()}, has_token? {has_token}")
         return redirect(f"/app/workspaces/{pk}/settings")
+
+    ##
+    ## Cloning items
+    ##
+
+    @action(methods=["get"], detail=True, url_name="clone", url_path="clone")
+    def clone(self, request, pk) -> Response:
+        """
+        Clones this item and all its file assets. The cloned item will be returned and will have
+        a new id. By default the item is cloned in the same workspace, optionally you can specify
+        ?workspace_id= to have it cloned to that specific workspace (on which you'll need permissions).
+        
+        Returns:
+            Response -- The cloned item.
+        """
+        item = self.get_object()
+        if isinstance(item, api.models.Workspace):
+            raise AnaliticoException("You cannot clone a workspace", status_code=status.HTTP_400_BAD_REQUEST)
+
+        # normally the item is clone is its own workspace. if the ?workspace_id= parameter is
+        # specified then we can clone the item in a different workspace but we need to make sure
+        # we have create permissions for the particular type of item in the target workspace
+        workspace_id = api.utilities.get_query_parameter(request, "workspace_id", item.workspace.id)
+        workspace = api.factory.factory.get_item(workspace_id)
+        create_permission = f"analitico.{item.type}.create"
+        has_item_permission_or_exception(request.user, workspace, create_permission)
+
+        # clone item with in target workspace
+        clone = item
+        clone.workspace = workspace
+        clone.id = None
+        clone.save()
+
+        # TODO clone file assets
+
+        serializer = self.serializer_class(clone)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
