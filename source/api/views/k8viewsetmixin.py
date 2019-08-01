@@ -73,9 +73,9 @@ class K8ViewSetMixin:
         return get_kubctl_response("kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json")
 
     @action(methods=["get"], detail=True, url_name="k8-revisions", url_path=r"k8s/revisions/(?P<stage>staging|production)$")
-    def revisions(self, request, pk):
+    def revisions(self, request, pk, stage: str):
         """ Return a list of revisions for the given service. """
-        service_name, service_namespace = self.get_service_name(request, pk)
+        service_name, service_namespace = self.get_service_name(request, pk, stage)
         # kubectl get revisions -l serving.knative.dev/service={service_name} -n {service_namespace} -o json --sort-by .metadata.creationTimestamp
         return get_kubctl_response(
             "kubectl",
