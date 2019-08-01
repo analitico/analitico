@@ -103,7 +103,7 @@ class ItemMixin:
         return job
 
     ##
-    ## Assets
+    ## Storage and files
     ##
 
     @property
@@ -112,9 +112,9 @@ class ItemMixin:
         return api.storage.Storage.factory(settings)
 
     @property
-    def assets(self) -> [dict]:
-        assets = self.get_attribute("assets")
-        return assets if assets else []
+    def storage_base_path(self) -> str:
+        """ Base path for storage files associated with this item. """
+        return "/" if self.type == "workspace" else f"/{self.type}s/{self.id}/"
 
     def __str__(self):
         return self.type + ": " + self.id

@@ -7,6 +7,7 @@
         "description": "This is the description",
         "notes": "A workspace used to test WebDAV integration with Hetzner",
         "storage": {
+            "hold": true,
             "driver": "hetzner-webdav",
             "url": "https://u206378-sub4.your-storagebox.de",
             "notes": "This subuser is reserved for unit testing use",

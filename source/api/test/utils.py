@@ -19,6 +19,7 @@ logger = logging.getLogger("analitico")
 
 ASSETS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/assets/"
 NOTEBOOKS_PATH = os.path.dirname(os.path.realpath(__file__)) + "/notebooks/"
+UNICORN_FILENAME = "unicorns-do-it-better.png"
 
 
 @pytest.mark.django_db
@@ -29,6 +30,7 @@ class AnaliticoApiTestCase(APITestCase):
         """ Configuration for the storage box for testing """
         return {
             "storage": {
+                "hold": True,
                 "driver": "hetzner-webdav",
                 "storagebox_id": "196299",
                 "url": "https://u208199.your-storagebox.de",
@@ -143,6 +145,14 @@ class AnaliticoApiTestCase(APITestCase):
                     or response.status_code == status.HTTP_204_NO_CONTENT
                 )
             return response
+
+    def upload_unicorn(self, item=None, token=None):
+        """ The same image is used in a number of tests """
+        if item is None:
+            item = self.ws1
+        url = reverse(f"api:{item.type}-files", args=(item.id, UNICORN_FILENAME))
+        response = self.upload_file(url, UNICORN_FILENAME, "image/png", token=token if token else self.token1)
+        return url, response
 
     def setup_basics(self):
         # test users

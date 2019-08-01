@@ -57,14 +57,6 @@ class WebdavTests(AnaliticoApiTestCase):
             item = item.workspace
         return item.storage.driver
 
-    def upload_unicorn(self, item=None, token=None):
-        """ The same image is used in a number of tests """
-        if item is None:
-            item = self.ws1
-        url = reverse(f"api:{item.type}-files", args=(item.id, UNICORN_FILENAME))
-        response = self.upload_file(url, UNICORN_FILENAME, "image/png", token=token if token else self.token1)
-        return url, response
-
     def upload_random_rainbows(self, size):
         """ Uploads random bytes to test upload limits, timeouts, etc. Size of upload is specified by caller. """
         driver = self.get_driver()
@@ -130,46 +122,6 @@ class WebdavTests(AnaliticoApiTestCase):
     ##
     ## Workspace storage
     ##
-
-    # multiple uploads are not supported for now
-    def OFFtest_asset_upload_multiple_files(self):
-        """ Test multipart encoding to upload multiple files at once """
-        try:
-            url = reverse("api:workspace-files", args=("ws_storage_webdav",))
-
-            path1 = os.path.join(ASSETS_PATH, UNICORN_FILENAME)
-            path2 = os.path.join(ASSETS_PATH, "image_dog2.png")
-            path3 = os.path.join(ASSETS_PATH, "image_dog3.webp")
-
-            file1 = open(path1, "rb")
-            file2 = open(path2, "rb")
-            file3 = open(path3, "rb")
-
-            data = {
-                "file1": SimpleUploadedFile(UNICORN_FILENAME, file1.read(), "image/png"),
-                "file2": SimpleUploadedFile("image_dog2.png", file2.read(), "image/png"),
-                "file3": SimpleUploadedFile("image_dog3.webp", file3.read(), "image/webp"),
-            }
-
-            self.auth_token(self.token1)
-            response = self.client.post(url, data, format="multipart")
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-            self.assertEqual(len(response.data), 3)
-
-            self.assertEqual(response.data[0]["id"], UNICORN_FILENAME)
-            self.assertEqual(response.data[1]["id"], "image_dog2.png")
-            self.assertEqual(response.data[2]["id"], "image_dog3.webp")
-
-            self.assertEqual(response.data[0]["content_type"], "image/png")
-            self.assertEqual(response.data[1]["content_type"], "image/png")
-            self.assertEqual(response.data[2]["content_type"], "image/webp")
-
-            self.assertEqual(response.data[0]["size"], os.path.getsize(path1))
-            self.assertEqual(response.data[1]["size"], os.path.getsize(path2))
-            self.assertEqual(response.data[2]["size"], os.path.getsize(path3))
-
-        except Exception as exc:
-            raise exc
 
     def test_asset_upload_wrong_token_404(self):
         """ Test simple upload of image asset using the wrong token """

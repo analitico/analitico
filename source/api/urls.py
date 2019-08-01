@@ -10,6 +10,11 @@ import analitico.utilities
 import api.views
 from api.notifications import notifications_webhook
 
+# setup life cycle signal handlers used for example to dispose
+# files in storage when a dataset is deleted or remove k8s services
+# when a recipe is deleted, etc.
+import api.lifecycle
+
 app_name = "api"
 
 description_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "description.md")
