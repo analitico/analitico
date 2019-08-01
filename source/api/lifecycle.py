@@ -24,29 +24,33 @@ def post_delete_item_storage(item):
     Arguments:
         item {Dataset, Recipe, Notebook, Model} -- The item to be deleted.
     """
-    if isinstance(item, api.models.ItemMixin):
-        storage = item.storage
-        if storage:
-            driver = storage.driver
-            assert isinstance(driver, api.libcloud.WebdavStorageDriver)
+    try:
+        if isinstance(item, api.models.ItemMixin):
+            storage = item.storage
+            if storage:
+                driver = storage.driver
+                assert isinstance(driver, api.libcloud.WebdavStorageDriver)
 
-            if isinstance(item, api.models.Workspace):
-                storage_conf = item.get_attribute("storage")
-                if storage_conf["driver"] == "hetzner-webdav":
-                    # when a workspace is deleted we can deallocate the subuser which is allocated on the
-                    # storage box and all the files that is contains. some development accounts can be kept
-                    # without recreating the subaccount every time (eg. when unit testing) so they are marked
-                    # with a "hold" property.
-                    hold = storage_conf.get("hold", False)
-                    if not hold:
-                        dr_delete_workspace_storage(item)
-                        logger.info(f"Deleted storage account for {item.id}")
-            else:
-                # regular item, delete files
-                item_path = item.storage_base_path
-                driver.rmdir(item_path)
-                logger.info(f"Deleted files for {item.id}: {item_path}")
-
+                if isinstance(item, api.models.Workspace):
+                    storage_conf = item.get_attribute("storage")
+                    if storage_conf["driver"] == "hetzner-webdav":
+                        # when a workspace is deleted we can deallocate the subuser which is allocated on the
+                        # storage box and all the files that is contains. some development accounts can be kept
+                        # without recreating the subaccount every time (eg. when unit testing) so they are marked
+                        # with a "hold" property.
+                        hold = storage_conf.get("hold", False)
+                        if not hold:
+                            dr_delete_workspace_storage(item)
+                            logger.info(f"Deleted storage account for {item.id}")
+                else:
+                    # regular item, delete files
+                    item_path = item.storage_base_path
+                    if driver.exists(item_path):
+                        driver.rmdir(item_path)
+                        logger.info(f"Deleted files for {item.id}: {item_path}")
+    except Exception as exc:
+        logger.error(f"post_delete_item_storage - item: {item.id}, failed: {exc}")
+        raise exc
 
 ##
 ## Signals used to receive notifications when models are deleted and cleanup resources
