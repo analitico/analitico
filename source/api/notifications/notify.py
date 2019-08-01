@@ -115,7 +115,7 @@ def notifications_webhook(request: Request) -> Response:
         # deplay execution and run in background
         # eg. because job is close to terminate and it wants to notify its state
         url = request.build_absolute_uri().replace(f"delay={delay}", "delay=0")
-        os.system(f"sleep {delay} && curl '{url}' &")
+        os.system(f"sleep {delay} && curl -L '{url}' &")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # notifying of job completion over slack and email

@@ -72,7 +72,7 @@ class K8ViewSetMixin:
         # kubectl get ksvc {service_name} -n {service_namespace} -o json
         return get_kubctl_response("kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json")
 
-    @action(methods=["get"], detail=True, url_name="k8-revisions", url_path="k8s/revisions")
+    @action(methods=["get"], detail=True, url_name="k8-revisions", url_path=r"k8s/revisions/(?P<stage>staging|production)$")
     def revisions(self, request, pk):
         """ Return a list of revisions for the given service. """
         service_name, service_namespace = self.get_service_name(request, pk)
@@ -140,7 +140,7 @@ class K8ViewSetMixin:
 
         return Response(service, content_type="json")
 
-    @action(methods=["get"], detail=True, url_name="k8-metrics", url_path=r"k8s/metrics/(?P<stage>staging|production)$")
+    @action(methods=["get"], detail=True, url_name="k8-metrics", url_path=r"k8s/services/(?P<stage>staging|production)/metrics")
     def metrics(self, request, pk, stage):
         """ 
         Returns a list of metrics owned by the service. This API does not return information using
