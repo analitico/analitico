@@ -65,7 +65,7 @@ class DriveTests(AnaliticoApiTestCase):
             delete = True
 
             ws.refresh_from_db()
-            
+
             # the storage takes a variable time to be available
             start_time = time.time()
             insist = True

@@ -1255,6 +1255,28 @@ class WebdavTests(AnaliticoApiTestCase):
                 if files[i - 1]["type"] == "analitico/directory" and files[i]["type"] == "analitico/directory":
                     self.assertLessEqual(files[i - 1]["id"].lower(), files[i]["id"].lower())
 
+            # ?order=-last_modified - last modified first
+            response = self.client.get(files_url + "&order=-last_modified")
+            self.assertEqual(response.status_code, 200)
+            files = response.data
+            self.assertEqual(files[0]["id"], "/")
+            for i in range(1, len(files)):
+                if files[i - 1]["type"] == "analitico/file" and files[i]["type"] == "analitico/file":
+                    self.assertGreaterEqual(
+                        files[i - 1]["attributes"]["last_modified"], files[i]["attributes"]["last_modified"]
+                    )
+
+            # ?order=created - older files first
+            response = self.client.get(files_url + "&order=creation_time")
+            self.assertEqual(response.status_code, 200)
+            files = response.data
+            self.assertEqual(files[0]["id"], "/")
+            for i in range(1, len(files)):
+                if files[i - 1]["type"] == "analitico/file" and files[i]["type"] == "analitico/file":
+                    self.assertLessEqual(
+                        files[i - 1]["attributes"]["creation_time"], files[i]["attributes"]["creation_time"]
+                    )
+
             # remove item from storage
             response = self.client.delete(obj_url)
             self.assertEqual(response.status_code, 204)  # no content

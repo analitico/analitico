@@ -5,6 +5,7 @@ import pandas as pd
 import urllib
 import io
 import time
+import dateutil.parser
 
 from pathlib import Path
 from django.http.response import StreamingHttpResponse
@@ -99,25 +100,36 @@ def compare_files(file1, file2, order):
     if isinstance(file1, libcloud.storage.base.Object) and isinstance(file2, libcloud.storage.base.Container):
         return 1
 
+    # query string can have multiple keys, eg: ?order=id,-size,created
     order_keys = order.split(",")
     for key in order_keys:
+        reverse = 1
+        if key.startswith("-"):
+            key = key[1:]
+            reverse = -1
+
         if key == "id":
             assert isinstance(file1, libcloud.storage.base.Object) == isinstance(file2, libcloud.storage.base.Object)
             if name1 != name2:
-                return -1 if name1 < name2 else 1
-        if key == "-id":
-            assert isinstance(file1, libcloud.storage.base.Object) == isinstance(file2, libcloud.storage.base.Object)
-            if name1 != name2:
-                return 1 if name1 < name2 else -1
+                return (-1 if name1 < name2 else 1) * reverse
+
+        if key == "creation_time":
+            date1 = dateutil.parser.parse(file1.extra["creation_time"])
+            date2 = dateutil.parser.parse(file2.extra["creation_time"])
+            if date1 != date2:
+                return (-1 if date1 < date2 else 1) * reverse
+
+        if key == "last_modified":
+            date1 = dateutil.parser.parse(file1.extra["last_modified"])
+            date2 = dateutil.parser.parse(file2.extra["last_modified"])
+            if date1 != date2:
+                return (-1 if date1 < date2 else 1) * reverse
 
         # size is only applicable to object, not containers
-        if isinstance(file1, libcloud.storage.base.Object) and isinstance(file2, libcloud.storage.base.Object):
-            if key == "size":
+        if key == "size":
+            if isinstance(file1, libcloud.storage.base.Object) and isinstance(file2, libcloud.storage.base.Object):
                 if file1.size != file2.size:
-                    return -1 if file1.size < file2.size else 1
-            if key == "-size":
-                if file1.size != file2.size:
-                    return 1 if file1.size < file2.size else -1
+                    return (-1 if file1.size < file2.size else 1) * reverse
 
     if name1 == name2:
         return 0
