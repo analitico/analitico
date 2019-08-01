@@ -38,7 +38,7 @@ class TokenAdmin(admin.ModelAdmin):
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
     fields = ("id", "user", "group", "title", "description", "attributes")
-    list_display = ("id", "user", "group", "title", "description", "notes", "created_at", "updated_at")
+    list_display = ("id", "user", "group", "title", "description", "created_at", "updated_at")
     search_fields = ("id", "user", "group", "title", "description", "attributes")
     ordering = ("-updated_at",)
 
@@ -54,7 +54,7 @@ class RoleAdmin(admin.ModelAdmin):
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
     fields = ("id", "workspace", "title", "description", "attributes", "notebook")
-    list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at")
+    list_display = ("id", "workspace", "title", "description", "created_at", "updated_at")
     search_fields = ("id", "title", "description", "attributes", "notebook")
     ordering = ("-updated_at",)
 
@@ -70,7 +70,7 @@ class NotebookAdmin(admin.ModelAdmin):
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     fields = ("id", "workspace", "title", "description", "attributes", "notebook")
-    list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at")
+    list_display = ("id", "workspace", "title", "description", "created_at", "updated_at")
     search_fields = ("id", "title", "description", "attributes", "notebook")
     ordering = ("-updated_at",)
 
@@ -78,7 +78,7 @@ class RecipeAdmin(admin.ModelAdmin):
 @admin.register(Model)
 class ModelAdmin(admin.ModelAdmin):
     fields = ("id", "workspace", "title", "description", "attributes", "notebook")
-    list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at")
+    list_display = ("id", "workspace", "title", "description", "created_at", "updated_at")
     search_fields = ("id", "title", "description", "attributes", "notebook")
     ordering = ("-updated_at",)
 
@@ -86,7 +86,7 @@ class ModelAdmin(admin.ModelAdmin):
 @admin.register(Endpoint)
 class EndpointAdmin(admin.ModelAdmin):
     fields = ("id", "workspace", "title", "description", "attributes")
-    list_display = ("id", "workspace", "title", "description", "notes", "created_at", "updated_at")
+    list_display = ("id", "workspace", "title", "description", "created_at", "updated_at")
     search_fields = ("id", "title", "description", "attributes")
     ordering = ("-updated_at",)
 
@@ -110,7 +110,6 @@ class JobAdmin(admin.ModelAdmin):
         "status",
         "title",
         "description",
-        "notes",
         "created_at",
         "updated_at",
     )

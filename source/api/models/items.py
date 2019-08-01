@@ -42,7 +42,9 @@ class ItemMixin:
         """ Returns type of item, eg: workspace, project, dataset, etc """
         return type(self).__name__.lower()
 
+    ##
     ## Attributes
+    ##
 
     # A set of attributes implemented as a JSONField in the concrete class like this to work around a django issue:
     # attributes = jsonfield.JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict}, blank=True, null=True)
@@ -59,23 +61,13 @@ class ItemMixin:
         set_dict_dot(attributes, key, value)
         self.attributes = attributes  # need to assign or it won't save() it...
 
-    ## Basic properties
-
-    @property
-    def notes(self):
-        return self.get_attribute("notes")
-
-    @notes.setter
-    def notes(self, notes):
-        self.set_attribute("notes", notes)
-
     ##
     ## Notebooks
     ##
 
     def get_notebook(self, notebook_name=None):
         """
-        Retrieve a Jupyter notebook from the model by name. If the name is None, then
+        Retrieve a Jupyter notebook from the item by name. If the name is None, then
         the default notebook will be retrieved either from a field named "notebook" or
         if the field is not available from the "notebook" key of the model's attributes.
         Same for notebooks with other names.
