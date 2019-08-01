@@ -159,7 +159,8 @@ class JobViewSetMixin:
             job_data = request.data
             if job_data and "data" in job_data:
                 job_data = job_data["data"]
-            job = k8_jobs_create(item, job_action, job_data, request.build_absolute_uri("/"))
+            notification_server_name = request.build_absolute_uri("/").replace("http://","https://")
+            job = k8_jobs_create(item, job_action, job_data, notification_server_name)
             return Response(job, content_type="json")
 
         job_id = job_pk
