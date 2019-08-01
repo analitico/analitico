@@ -21,7 +21,7 @@ args = parser.parse_args()
 try:
 
     try:
-        from analitico import AnaliticoException, ACTION_RUN
+        from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
         from analitico.utilities import read_json, subprocess_run
     except Exception as exc:
         raise AnaliticoException(f"Analitico dependencies should be installed.") from exc
@@ -80,7 +80,13 @@ try:
         papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir)
     except Exception as exc:
         raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
-
+except Exception:
+    # when job does `run and build` error notification must be sent
+    notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
+    if os.environ.get("ANALITICO_JOB_ACTION") == ACTION_RUN_AND_BUILD and notification_url:
+        logging.info("Send notification")
+        requests.get(notification_url)
+    raise
 finally:
     # eclude when job does `run and build`
     notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
