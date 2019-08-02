@@ -10,8 +10,8 @@ metadata:
     analitico.ai/job-action: {job_action}
     analitico.ai/job-id: {job_id}
 spec:
-  # no retries
-  backoffLimit: 0
+  # eg, packages download error
+  backoffLimit: 3
   template:
     spec:
       restartPolicy: Never

@@ -8,10 +8,15 @@
 ## at the specified version is supported but not present in the image.
 ##
 
+# required by serverless
 # Flask is already installed in the base image
+gunicorn==19.9.0
+
+# required by sdk and s24
 simplejson==3.16.0
+numpy==1.17.0
+pandas==0.25.0
 catboost==0.15.2
 ortools==6.9.5824
 papermill==1.0.1
-gunicorn==19.9.0
 missingno==0.4.1
