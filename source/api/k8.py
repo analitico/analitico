@@ -344,6 +344,57 @@ def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
 
 
 ##
+## Jupyter - allocate and deallocate Jupyter server nodes
+##
+
+
+def k8_deploy_jupyter(workspace):
+    """
+    This method checks if the given workspace has been allocated one or more Jupyter servers.
+    If the workspace doesn't have a server running or the server has cooled down, it will be
+    reallocated and its information will be added to the "jupyter" key of the workspace.
+    
+    Arguments:
+        workspace {Workspace} -- The workspace for which we're allocating Jupyter.
+    
+    Returns:
+        dict -- The jupyter dictionary containing configurations and servers info.
+    """
+    jupyter = workspace.get_attribute("jupyter")
+    if not jupyter:
+        # default configuration for Jupyter servers
+        jupyter = {
+            "settings": {
+                "limits": {
+                    "gpu": 0,  # number of GPUs requested
+                    "cpu": 4,  # number of CPUs limit
+                    "memory": "8Gi",  # memory size limit
+                }
+            }
+        }
+
+    servers = jupyter.get("servers")
+    if not servers:
+        # TODO api / k8 / jupyter provisioning on k8 #266
+        jupyter["servers"] = [
+            {"url": "https://s6.analitico.ai:8811/", "token": "60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3"}
+        ]
+
+    workspace.set_attribute("jupyter", jupyter)
+    workspace.save()
+    return jupyter
+
+
+def k8_deallocate_jupyter(workspace):
+    """ This method is called when a workspace is deleted to deallocate its Jupyter servers (if any). """
+    jupyter = workspace.get_attribute("jupyter")
+    if jupyter and "servers" in jupyter:
+        for server in jupyter["servers"]:
+            # TODO deallocate Jupyter server
+            pass
+
+
+##
 ## Utilities
 ##
 
