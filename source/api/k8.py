@@ -166,7 +166,8 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             raise AnaliticoException(f"{item.id} cannot be deployed because its docker has not been built yet.")
 
         # name of service we are deploying
-        service_name = k8_normalize_name(f"{target.id}-{stage}")
+        name = f"{target.id}-{stage}" if stage != K8_STAGE_PRODUCTION else target.id
+        service_name = k8_normalize_name(name)
         service_namespace = "cloud"
         docker_image = docker["image"]
 
