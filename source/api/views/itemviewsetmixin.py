@@ -3,7 +3,7 @@ import io
 from django.http.response import HttpResponse
 from django.shortcuts import redirect
 
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -13,9 +13,10 @@ from rest_framework.request import Request
 import api
 
 from analitico import AnaliticoException, logger
-from api.notifications import slack_oauth_exchange_code_for_token, slack_get_install_button_url
+from api.notifications import slack_oauth_exchange_code_for_token
 from api.permissions import HasApiPermission, get_permitted_queryset, has_item_permission_or_exception
 from api.utilities import get_query_parameter, get_query_parameter_as_int, image_open, image_resize
+from api.libcloud.utilities import clone_files
 
 
 class filterset:
@@ -40,6 +41,7 @@ ITEM_FILTERSET_FIELDS = {
     "created_at": filterset.DATE,
     "updated_at": filterset.DATE,
 }
+
 
 ##
 ## ItemViewSetMixin
@@ -121,7 +123,7 @@ class ItemViewSetMixin:
     ##
 
     @action(methods=["get"], detail=True, url_name="clone", url_path="clone")
-    def clone(self, request, pk) -> Response:
+    def clone(self, request: Request, pk: str) -> Response:
         """
         Clones this item and all its file assets. The cloned item will be returned and will have
         a new id. By default the item is cloned in the same workspace, optionally you can specify
@@ -142,13 +144,15 @@ class ItemViewSetMixin:
         create_permission = f"analitico.{item.type}.create"
         has_item_permission_or_exception(request.user, workspace, create_permission)
 
-        # clone item with in target workspace
-        clone = item
+        # clone item in target workspace
+        clone = api.factory.factory.get_item(item.id)  # get a copy
         clone.workspace = workspace
         clone.id = None
         clone.save()
 
-        # TODO clone file assets
+        # clone file assets
+        clone_files(item, clone)
 
+        # pylint: disable=not-callable
         serializer = self.serializer_class(clone)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

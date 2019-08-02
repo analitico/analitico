@@ -2,15 +2,15 @@ import os
 import numpy as np
 import math
 
-from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
-from analitico.utilities import read_json, get_dict_dot
+from analitico.utilities import get_dict_dot, time_ms
 
 import analitico
 import api.models
 
+from analitico import logger
 from api.models import Workspace
 from .utils import AnaliticoApiTestCase
 
@@ -233,31 +233,51 @@ class ItemsTests(AnaliticoApiTestCase):
     ##
 
     def create_item_then_clone_it(self, item_class, workspace_id=None):
+        started_on = time_ms()
         item = None
         clone = None
         try:
             item = item_class(workspace=self.ws1)
             item.save()
 
-            # TODO write some files to storage
+            # create some files in a few directories
+            for i in range(0, 16):
+                if i < 12:
+                    path = f"tst_dir_{int(i/3)}/tst_file_{i}.txt"
+                else:
+                    path = f"tst_file_{i}.txt"
+                url = reverse(f"api:{item.type}-files", args=(item.id, path))
+                response = self.client.put(url, b"A simple string", content_type="text/simple")
 
+            # retrieve list of files in item
+            item_files_url = reverse(f"api:{item.type}-files", args=(item.id, ""))
+            item_files = self.client.get(item_files_url + "?metadata=true").data
+            self.assertEqual(len(item_files), 8 + 1)
+
+            # call API to clone item and /files
             url = reverse(f"api:{item.type}-clone", args=(item.id,))
             if workspace_id:
                 url += "?workspace_id=" + workspace_id
-
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
             clone_id = response.data["id"]
             clone = api.factory.factory.get_item(clone_id)
 
-            # TODO check files in cloned storage
+            # get list of file assets for cloned item (should match the ones we created)
+            clone_files_url = reverse(f"api:{clone.type}-files", args=(clone.id, ""))
+            clone_files = self.client.get(clone_files_url + "?metadata=true").data
+
+            self.assertEqual(len(item_files), len(clone_files))
+            for i in range(0, len(item_files)):
+                self.assertEqual(item_files[i]["id"], clone_files[i]["id"])
 
             self.assertEqual(clone.workspace.id, workspace_id if workspace_id else item.workspace.id)
             self.assertEqual(item.type, clone.type)
             self.assertNotEqual(item.id, clone.id)
 
         finally:
+            logger.info(f"\ncreate_item_then_clone_it - {item.id} in {time_ms(started_on)} ms.")
             if item:
                 item.delete()
             if clone:
