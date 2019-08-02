@@ -57,6 +57,7 @@ class DriveTests(AnaliticoApiTestCase):
     def test_drive_refresh_stats(self):
         dr_refresh_stats()
 
+    @tag("slow", "live")
     def test_drive_create_workspace_storage(self):
         delete = False
         try:
