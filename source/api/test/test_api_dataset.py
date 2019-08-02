@@ -18,6 +18,7 @@ from analitico.utilities import time_ms
 
 import analitico
 import analitico.plugin
+import api.models
 
 from analitico import logger
 from analitico.pandas import pd_read_csv
@@ -626,7 +627,7 @@ class DatasetTests(AnaliticoApiTestCase):
         # we desire and then do a PUT of this data on the current path of the file
         data = response1.data[0]
         data["id"] = data["id"].replace(".csv", ".parquet")
-        response2 = self.client.put(csv_url + "?metadata=true", data={"data": data})
+        response2 = self.client.put(csv_url + "?metadata=true&convert=true", data={"data": data})
         self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
 
         # older .csv file no longer exists
@@ -654,7 +655,7 @@ class DatasetTests(AnaliticoApiTestCase):
         # we desire and then do a PUT of this data on the current path of the file
         data = response1.data[0]
         data["id"] = data["id"].replace(suffix1, suffix2)
-        response2 = self.client.put(suffix1_url + "?metadata=true", data={"data": data})
+        response2 = self.client.put(suffix1_url + "?metadata=true&convert=true", data={"data": data})
         self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
 
         # older file no longer exists
@@ -737,7 +738,7 @@ class DatasetTests(AnaliticoApiTestCase):
         self.assertEqual(old_records[3]["Age"], 22.0)  # float
 
         # change nothing at all but do a put as if I was changing things
-        response3 = self.client.put(url + "?metadata=true", data={"data": response1.data[0]})
+        response3 = self.client.put(url + "?metadata=true&convert=true", data={"data": response1.data[0]})
         self.assertEqual(response3.status_code, status.HTTP_200_OK)  # nothing was changed!
 
         # retrieve schema + records, check that is DID NOT change
@@ -775,7 +776,7 @@ class DatasetTests(AnaliticoApiTestCase):
         response1.data[0]["id"] = response1.data[0]["id"].replace(".csv", ".parquet")
         old_schema["columns"][2]["type"] = "string"  # "Number": float -> string
         old_schema["columns"][4]["type"] = "integer"  # "Age": float -> int
-        response3 = self.client.put(url + "?metadata=true", data={"data": response1.data[0]})
+        response3 = self.client.put(url + "?metadata=true&convert=true", data={"data": response1.data[0]})
         self.assertEqual(response3.status_code, status.HTTP_201_CREATED)
 
         # retrieve updated schema + records
@@ -792,3 +793,31 @@ class DatasetTests(AnaliticoApiTestCase):
         new_records = response4.data["data"]
         self.assertEqual(new_records[3]["Number"], "28.0")  # string
         self.assertEqual(new_records[3]["Age"], 22)  # integer
+
+    def test_dataset_rename_file_without_conversions(self):
+        item = api.models.Recipe(workspace=self.ws1)
+        item.save()
+
+        # upload a text file which has a wrong double extension by mistake
+        url = reverse("api:recipe-files", args=(item.id, "notebook.ipynb.json"))
+        response1 = self.client.put(url, b"A regular string", content_type="text/simple")
+        self.assertEqual(response1.status_code, status.HTTP_204_NO_CONTENT)
+
+        # retrieve file metadata
+        response2 = self.client.get(url + "?metadata=true")
+
+        # request rename to the correct extension without file format conversion
+        response2.data[0]["id"] = response2.data[0]["id"].replace(".ipynb.json", ".ipynb")
+        response3 = self.client.put(url + "?metadata=true", data={"data": response2.data[0]})
+        self.assertEqual(response3.status_code, status.HTTP_201_CREATED)
+
+        # retrieve old file metadata
+        response4 = self.client.get(url + "?metadata=true")
+        self.assertEqual(response4.status_code, status.HTTP_404_NOT_FOUND)
+
+        # retrieve new file metadata
+        renamed_url = url.replace(".ipynb.json", ".ipynb")
+        response4 = self.client.get(renamed_url + "?metadata=true")
+        self.assertEqual(response4.status_code, status.HTTP_200_OK)
+
+        item.delete()

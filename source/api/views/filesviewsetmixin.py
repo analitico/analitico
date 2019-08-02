@@ -233,15 +233,17 @@ class FilesViewSetMixin:
         assert base_path and base_path.endswith("/")
         assert url and url.startswith("/")
 
+        # refreshing metadata?
+        refresh = get_query_parameter_as_bool(request, "refresh", False)
+        # requesting a file format conversion?
+        convert = get_query_parameter_as_bool(request, "convert", False)
+
         if request.method in ["GET"]:
             try:
                 path = os.path.join(base_path, url)
                 items = driver.ls(path)
             except api.libcloud.WebdavException as exc:
                 raise AnaliticoException(f"Can't get information on {path}", status_code=exc.actual_code) from exc
-
-            # refreshing metadata?
-            refresh = get_query_parameter_as_bool(request, "refresh", False)
 
             for item in items:
                 # append analitico's metadata to webdav's metadata
@@ -287,7 +289,7 @@ class FilesViewSetMixin:
                 # are we changing format?
                 src_suffix = Path(url).suffix
                 dst_suffix = Path(new_path).suffix
-                if src_suffix != dst_suffix:
+                if convert and src_suffix != dst_suffix:
                     # we support limited formats for data conversions
                     if not (src_suffix in PANDAS_SUFFIXES and dst_suffix in PANDAS_SUFFIXES):
                         msg = f"Can't convert {src_suffix} to {dst_suffix}"
