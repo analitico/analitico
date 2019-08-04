@@ -44,17 +44,31 @@ class BillingViewSetMixin:
     )
     def stripe_webook(self, request):
         """ Stripe will call us on this endpoint with events related to billing, sales, subscriptions, etc... """
+        try:
+            event = request.data["data"]
+            reply = stripe_process_event(event)
+        except Exception as exc:
+            logger.error(f"stripe_webook - error while processing: {request.data}")
+            raise exc
+        return Response(reply, status=status.HTTP_200_OK)
 
-        event = request.data["data"]
-        event_type = event["type"]
+##
+## Stripe utilities
+##
 
-        send_mail(
-            subject=f"Stripe webhook: {event_type}",
-            message=json.dumps(event, indent=4),
-            from_email="notifications@analitico.ai",
-            recipient_list=["gionata.mettifogo@analitico.ai"],
-            fail_silently=False,
-        )
+def stripe_process_event(event: dict) -> dict:
 
-        return Response(status=status.HTTP_200_OK)
+    event_type = event["type"]
+    event_livemode = event.get("livemode", False)
 
+    event_subject = f"Stripe: {event_type} {'' if event_livemode else ' (test)'}"
+    event_message = json.dumps(event, indent=4)
+    send_mail(
+        subject=event_subject,
+        message=event_message,
+        from_email="notifications@analitico.ai",
+        recipient_list=["gionata.mettifogo@analitico.ai"],
+        fail_silently=False,
+    )
+
+    return {}
