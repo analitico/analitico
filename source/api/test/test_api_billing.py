@@ -37,10 +37,28 @@ class BillingTests(AnaliticoApiTestCase):
     def setUp(self):
         self.setup_basics()
 
-    def test_billing_strip_webhook_no_data(self):
+    def test_billing_stripe_webhook_bad_signature(self):
         # url = reverse("api:billing-stripe-webhook")
         url = reverse("api:workspace-billing-stripe-webhook")
-        response = self.client.post(url, {"type": "analitico.unittest"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        data = response.data
+        event = {
+            "created": 1326853478,
+            "livemode": False,
+            "id": "evt_00000000000000",
+            "type": "analitico.unittest",
+            "object": "event",
+            "request": None,
+            "pending_webhooks": 1,
+            "api_version": "2019-05-16",
+            "data": {
+                "object": {
+                    "id": "ba_00000000000000",
+                    "object": "bank_account",
+                    "account": "acct_00000000000000",
+                    "account_holder_name": "Jane Austen",
+                    "account_holder_type": "individual",
+                    "bank_name": "STRIPE TEST BANK"
+                }
+            }
+        }
+        response = self.client.post(url, event, content_type="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -17,6 +17,7 @@ from analitico import AnaliticoException, logger
 from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_exempt
 
+import stripe
 
 class BillingViewSetMixin:
     """ 
@@ -45,8 +46,7 @@ class BillingViewSetMixin:
     def stripe_webook(self, request):
         """ Stripe will call us on this endpoint with events related to billing, sales, subscriptions, etc... """
         try:
-            event = request.data["data"]
-            reply = stripe_process_event(event)
+            reply = stripe_process_event(request)
         except Exception as exc:
             logger.error(f"stripe_webook - error while processing: {request.data}")
             raise exc
@@ -56,13 +56,25 @@ class BillingViewSetMixin:
 ## Stripe utilities
 ##
 
-def stripe_process_event(event: dict) -> dict:
 
-    event_type = event["type"]
-    event_livemode = event.get("livemode", False)
+# These are test tokens, actual tokens are in secrets
+ANALITICO_STRIPE_SECRET_KEY = "sk_test_HOYuiExkdXkVdrhov3M6LwQQ"
+ANALITICO_STRIPE_ENDPOINT_SECRET = "whsec_6N2uPjVqWBB99TNRj9HQ5UwRWRNSvl9G"
+
+stripe.api_key = ANALITICO_STRIPE_SECRET_KEY
+
+def stripe_handle_checkout_session_completed(request: Request, session):
+    pass
+
+def stripe_process_event(request: Request) -> dict:
+
+    event_payload = request.body
+    event_data = json.loads(event_payload.decode())
+    event_type = event_data["type"]
+    event_livemode = event_data.get("livemode", False)
 
     event_subject = f"Stripe: {event_type} {'' if event_livemode else ' (test)'}"
-    event_message = json.dumps(event, indent=4)
+    event_message = json.dumps(event_data, indent=4)
     send_mail(
         subject=event_subject,
         message=event_message,
@@ -70,5 +82,21 @@ def stripe_process_event(event: dict) -> dict:
         recipient_list=["gionata.mettifogo@analitico.ai"],
         fail_silently=False,
     )
+
+    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+    event = None
+
+    # turn into actual stripe event
+    try:
+        event = stripe.Webhook.construct_event(event_payload, sig_header, ANALITICO_STRIPE_ENDPOINT_SECRET)
+    except ValueError as exc:
+        raise AnaliticoException("stripe_process_event - invalid payload", status_code=status.HTTP_400_BAD_REQUEST) from exc
+    except stripe.error.SignatureVerificationError as exc:
+        raise AnaliticoException("stripe_process_event - invalid signature", status_code=status.HTTP_400_BAD_REQUEST) from exc
+
+    # handle different kinds of stripe events
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        stripe_handle_checkout_session_completed(request, session)
 
     return {}
