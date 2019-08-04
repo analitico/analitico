@@ -59,7 +59,7 @@ class BillingViewSetMixin:
             # these flows for unit testing and also taking information directly from the event
             # itself is not suggested. So we do the safer thing and just take the event id from
             # the event itself then ask Stripe for the information so we're 100% sure it's real.
-            reply = stripe_handle_event(event_id)
+            stripe_handle_event(event_id)
 
         except Exception as exc:
             logger.error(f"stripe_webook - error while processing: {request.data}")
@@ -70,6 +70,6 @@ class BillingViewSetMixin:
             # notification information for the received event is sent to internal slack channel
             subject = f"Stripe *{event_type}*{'' if event_livemode else ' (test)'}"
             message = f"https://dashboard.stripe.com/{'' if event_livemode else 'test/'}events/{event_id}"
-            slack_send_internal_notification(subject, message, color)
+            slack_send_internal_notification(subject, message, color, channel="stripe")
 
-        return Response(reply, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)

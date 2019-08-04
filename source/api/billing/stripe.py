@@ -32,7 +32,7 @@ def stripe_handle_checkout_session_completed(event):
     pass
 
 
-def stripe_handle_event(event_id: str) -> dict:
+def stripe_handle_event(event_id: str):
     try:
         # trust nobody, get the data from stripe
         event = stripe.Event.retrieve(event_id)
@@ -40,8 +40,6 @@ def stripe_handle_event(event_id: str) -> dict:
         # handle different kinds of stripe events
         if event.type == "customer.created":
             stripe_handle_checkout_customer_created(event)
-
-        return {}
 
     except Exception as exc:
         logger.error(f"stripe_handle_event - error while handling {event_id}, exc: {exc}")

@@ -147,7 +147,9 @@ def slack_notify(item, message, level) -> {}:
     return {"count": count}
 
 
-def slack_send_internal_notification(text: str, attachment: str, color=None) -> bool:
+def slack_send_internal_notification(
+    text: str = None, attachment: str = None, color=None, message=None, channel=None
+) -> bool:
     """ 
     Sends a notification to Slack to the internal analitico channel. 
     
@@ -156,15 +158,21 @@ def slack_send_internal_notification(text: str, attachment: str, color=None) -> 
     attachment (str): Longer attached text (optional)
     color (str): Color of attachment, eg: good, warning, danger, #231212
     """
-    if not SLACK_INTERNAL_WEBHOOK:
+
+    webhook = SLACK_INTERNAL_WEBHOOK
+    if channel == "stripe":
+        webhook = "https://hooks.slack.com/services/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"
+
+    if not webhook:
         return False
 
-    message = {"text": text + "\n_Internal Notification_"}
+    if not message:
+        message = {"text": text + "\n_Internal Notification_"}
 
-    if attachment:
-        message["attachments"] = [{"text": attachment, "color": color if color else "good"}]
+        if attachment:
+            message["attachments"] = [{"text": attachment, "color": color if color else "good"}]
 
-    response = requests.post(SLACK_INTERNAL_WEBHOOK, json=message)
+    response = requests.post(webhook, json=message)
     if response.status_code != 200:
         msg = f"slack_notify_job - analitico webhook returned status_code: {response.status_code}"
         logging.warning(msg)
