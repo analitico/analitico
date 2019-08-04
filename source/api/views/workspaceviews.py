@@ -3,8 +3,11 @@ Views and ViewSets for API models
 """
 
 import rest_framework
+
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
+from django.views.decorators.csrf import csrf_exempt
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -21,6 +24,7 @@ from api.k8 import k8_deploy_jupyter
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .filesviewsetmixin import FilesViewSetMixin
+from .billingviewsetmixin import BillingViewSetMixin
 
 ##
 ## WorkspaceSerializer
@@ -136,7 +140,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 ##
 
 
-class WorkspaceViewSet(ItemViewSetMixin, FilesViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class WorkspaceViewSet(ItemViewSetMixin, FilesViewSetMixin, BillingViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ Views for workspaces and their access permissions. """
 
     item_class = api.models.Workspace

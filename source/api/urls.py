@@ -41,10 +41,8 @@ router.register("users", api.views.UserViewSet, basename="user")  # user profile
 router.register("workspaces", api.views.WorkspaceViewSet, basename="workspace")  # provides grouping
 router.register("notebooks", api.views.NotebookViewSet, basename="notebook")  # notebooks
 router.register("k8s", api.views.K8ViewSet, basename="k8")  # kubernetes monitoring, operations, etc
-#router.register("billing", api.views.BillingViewSet, basename="billing")  # billing flows, webhooks, stripe, etc
 
 urlpatterns = router.urls + [
     path("runtime", runtime, name="runtime"),
-    path("notify", notifications_webhook, name="notifications-webhook"),
-    path("billing/stripe/webhook", api.views.billingviews.stripe_webhook, name="billing-stripe-webhook"),
+    path("notify", notifications_webhook, name="notifications-webhook")
 ]

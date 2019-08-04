@@ -9,4 +9,3 @@ from .modelviews import ModelViewSet
 from .userviews import UserViewSet
 from .notebookviews import NotebookViewSet
 from .k8views import K8ViewSet
-from .billingviews import BillingViewSet

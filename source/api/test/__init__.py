@@ -17,3 +17,4 @@ from .test_api_docker import DockerTests
 from .test_api_k8 import K8Tests
 from .test_api_slack import SlackTests
 from .test_api_lifecycle import LifecycleTests
+from .test_api_billing import BillingTests
