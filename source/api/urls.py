@@ -44,5 +44,5 @@ router.register("k8s", api.views.K8ViewSet, basename="k8")  # kubernetes monitor
 
 urlpatterns = router.urls + [
     path("runtime", runtime, name="runtime"),
-    path("notify", notifications_webhook, name="notifications-webhook")
+    path("notify", notifications_webhook, name="notifications-webhook"),
 ]

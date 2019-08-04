@@ -10,7 +10,9 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 import analitico.utilities
-from api.views.k8viewsetmixin import get_namespace, get_kubctl_response, K8ViewSetMixin
+from api.notifications.slack import slack_send_internal_notification
+from api.billing.stripe import stripe_handle_event
+
 import api.utilities
 
 from analitico import AnaliticoException, logger
@@ -18,6 +20,7 @@ from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_exempt
 
 import stripe
+
 
 class BillingViewSetMixin:
     """ 
@@ -45,58 +48,28 @@ class BillingViewSetMixin:
     )
     def stripe_webook(self, request):
         """ Stripe will call us on this endpoint with events related to billing, sales, subscriptions, etc... """
+        color = "good"
+        event_data = request.data
+        event_type = event_data["type"]
+        event_id = event_data["id"]
+        event_livemode = event_data["livemode"]
         try:
-            reply = stripe_process_event(request)
+            # The event we receive from Stripe is signed and contains enough information
+            # so that it's source can be verified. However, it is quite complicated to simulate
+            # these flows for unit testing and also taking information directly from the event
+            # itself is not suggested. So we do the safer thing and just take the event id from
+            # the event itself then ask Stripe for the information so we're 100% sure it's real.
+            reply = stripe_handle_event(event_id)
+
         except Exception as exc:
             logger.error(f"stripe_webook - error while processing: {request.data}")
+            color = "danger"
             raise exc
+
+        finally:
+            # notification information for the received event is sent to internal slack channel
+            subject = f"Stripe *{event_type}*{'' if event_livemode else ' (test)'}"
+            message = f"https://dashboard.stripe.com/{'' if event_livemode else 'test/'}events/{event_id}"
+            slack_send_internal_notification(subject, message, color)
+
         return Response(reply, status=status.HTTP_200_OK)
-
-##
-## Stripe utilities
-##
-
-
-# These are test tokens, actual tokens are in secrets
-ANALITICO_STRIPE_SECRET_KEY = "sk_test_HOYuiExkdXkVdrhov3M6LwQQ"
-ANALITICO_STRIPE_ENDPOINT_SECRET = "whsec_6N2uPjVqWBB99TNRj9HQ5UwRWRNSvl9G"
-
-stripe.api_key = ANALITICO_STRIPE_SECRET_KEY
-
-def stripe_handle_checkout_session_completed(request: Request, session):
-    pass
-
-def stripe_process_event(request: Request) -> dict:
-
-    event_payload = request.body
-    event_data = json.loads(event_payload.decode())
-    event_type = event_data["type"]
-    event_livemode = event_data.get("livemode", False)
-
-    event_subject = f"Stripe: {event_type} {'' if event_livemode else ' (test)'}"
-    event_message = json.dumps(event_data, indent=4)
-    send_mail(
-        subject=event_subject,
-        message=event_message,
-        from_email="notifications@analitico.ai",
-        recipient_list=["gionata.mettifogo@analitico.ai"],
-        fail_silently=False,
-    )
-
-    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
-    event = None
-
-    # turn into actual stripe event
-    try:
-        event = stripe.Webhook.construct_event(event_payload, sig_header, ANALITICO_STRIPE_ENDPOINT_SECRET)
-    except ValueError as exc:
-        raise AnaliticoException("stripe_process_event - invalid payload", status_code=status.HTTP_400_BAD_REQUEST) from exc
-    except stripe.error.SignatureVerificationError as exc:
-        raise AnaliticoException("stripe_process_event - invalid signature", status_code=status.HTTP_400_BAD_REQUEST) from exc
-
-    # handle different kinds of stripe events
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        stripe_handle_checkout_session_completed(request, session)
-
-    return {}
