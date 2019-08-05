@@ -20,7 +20,7 @@ spec:
       containers:
       - image: {image_name}
         name: {pod_name}
-        command: ["./tasks/jupyter-start.sh"]
+        command: ["/app/tasks/jupyter-start.sh"]
         env:
         - name: PORT
           value: "8080"
