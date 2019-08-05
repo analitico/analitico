@@ -21,9 +21,18 @@ from rest_framework.response import Response
 import analitico.utilities
 
 from analitico import AnaliticoException, logger
-from analitico.utilities import save_json, save_text, read_text, get_dict_dot, subprocess_run, read_json, copy_directory
+from analitico.utilities import (
+    save_json,
+    save_text,
+    read_text,
+    get_dict_dot,
+    subprocess_run,
+    read_json,
+    copy_directory,
+    id_generator,
+)
 from api.factory import factory
-from api.models import ItemMixin, Job, Recipe, Model
+from api.models import ItemMixin, Job, Recipe, Model, Workspace
 from api.models.job import generate_job_id
 from api.models.notebook import nb_extract_serverless
 
@@ -49,6 +58,18 @@ assert os.path.isdir(SOURCE_TEMPLATE_DIR)
 
 def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
+
+def get_image_commit_sha():
+    """ 
+    Return the git commit SHA the running image is built from. 
+    If not set is returned the `latest` tag.
+    """
+    commit_sha = os.environ.get("ANALITICO_COMMIT_SHA", None)
+    if not commit_sha:
+        commit_sha = "latest"
+        msg = "get_image_commit_sha - ANALITICO_COMMIT_SHA is not defined, will build using `latest` tag instead."
+        logger.warning(msg)
+    return commit_sha
 
 
 def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=True) -> dict:
@@ -80,8 +101,10 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
 
         # copy analitico SDK and s24 helper methods
         # TODO /analitico and /s24 need to be built into standalone libraries
-        copy_directory(os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(tmpdirname, "analitico"))
-        copy_directory(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(tmpdirname, "s24"))
+        copy_directory(
+            os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(tmpdirname, "libraries", "analitico")
+        )
+        copy_directory(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(tmpdirname, "libraries", "s24"))
 
         # extract code from notebook
         notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
@@ -242,12 +265,7 @@ def k8_jobs_create(
     # the run job needs to run using an image of the code that is the same of what we are running here
     # gitlab tags our build with the environment variable ANALITICO_COMMIT_SHA
     # so we can use that to make sure that the build image is the same
-    # TODO pipeline / we should build site, job, jupyter, baseline dockers with coordinate tag #297
-    commit_sha = os.environ.get("ANALITICO_COMMIT_SHA", None)
-    if not commit_sha:
-        msg = "k8_jobs_create - ANALITICO_COMMIT_SHA is not defined, will build using :latest docker image instead."
-        logger.warning(msg)
-    image_tag = f":{commit_sha}" if commit_sha else ":latest"
+    image_tag = get_image_commit_sha()
 
     if job_action == analitico.ACTION_RUN or job_action == analitico.ACTION_RUN_AND_BUILD:
         # pass command that should be executed on job docker
@@ -256,7 +274,7 @@ def k8_jobs_create(
             ["python3", "./tasks/job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"]
         )
 
-        configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client{image_tag}"
+        configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
 
     if job_action == analitico.ACTION_BUILD or job_action == analitico.ACTION_RUN_AND_BUILD:
         # create a model which will host the built recipe which will contain a snapshot
@@ -278,7 +296,7 @@ def k8_jobs_create(
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-build-template.yaml")
         configs["build_command"] = str(["/home/www/analitico/scripts/builder-start.sh", item.id, model.id])
 
-        configs["build_image"] = f"eu.gcr.io/analitico-api/analitico{image_tag}"
+        configs["build_image"] = f"eu.gcr.io/analitico-api/analitico:{image_tag}"
 
     # webhook notification for job completion
     from api.notifications import get_job_completion_webhook
@@ -366,18 +384,62 @@ def k8_deploy_jupyter(workspace):
         jupyter = {
             "settings": {
                 "limits": {
-                    "gpu": 0,  # number of GPUs requested
                     "cpu": 4,  # number of CPUs limit
                     "memory": "8Gi",  # memory size limit
+                    "gpu": 0,  # number of GPUs requested
                 }
             }
         }
 
     servers = jupyter.get("servers")
     if not servers:
-        # TODO api / k8 / jupyter provisioning on k8 #266
+        # start from storage config and all all the rest
+        configs = k8_get_storage_volume_configuration(workspace)
+
+        workspace_id_slug = k8_normalize_name(workspace.id)
+        service_name = f"jupyter-{workspace_id_slug}"
+        service_namespace = K8_DEFAULT_NAMESPACE
+        deployment_name = f"{service_name}-deployment"
+        pod_name = f"{deployment_name}-{id_generator(5)}"
+
+        configs["service_name"] = service_name
+        configs["service_namespace"] = service_namespace
+        configs["workspace_id_slug"] = workspace_id_slug
+        configs["workspace_id"] = workspace.id
+        configs["deployment_name"] = deployment_name
+        configs["pod_name"] = pod_name
+
+        configs["cpu_limit"] = jupyter["settings"]["limits"]["cpu"]
+        configs["memory_limit"] = jupyter["settings"]["limits"]["memory"]
+        configs["gpu_limit"] = jupyter["settings"]["limits"]["gpu"]
+
+        image_tag = get_image_commit_sha()
+        configs["image_name"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
+
+        # jupyter token
+        token = id_generator(16)
+
+        # k8s secret containing the credentials for the workspace mount
+        configs["jupyter_token"] = str(base64.b64encode(token.encode()), "ascii")
+        configs["secret_name"] = f"analitico-jupyter-{workspace_id_slug}"
+
+        secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-secret-template.yaml")
+        secret = k8_customize_and_apply(secret_template, **configs)
+        assert secret, "kubectl did not apply the secret"
+
+        service_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-template.yaml")
+        service = k8_customize_and_apply(service_template, **configs)
+
+        # TODO: use knative route 
+        # # api / k8 / jupyter provisioning on k8 #266 
+        service_port = service["items"][1]["spec"]["ports"][0]["nodePort"]
         jupyter["servers"] = [
-            {"url": "https://s6.analitico.ai:8811/", "token": "60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3"}
+            {
+                "service_name": service_name,
+                "service_namespace": service_namespace,
+                "url": f"http://s1.analitico.ai:{service_port}",
+                "token": token,
+            }
         ]
 
     workspace.set_attribute("jupyter", jupyter)
@@ -390,8 +452,22 @@ def k8_deallocate_jupyter(workspace):
     jupyter = workspace.get_attribute("jupyter")
     if jupyter and "servers" in jupyter:
         for server in jupyter["servers"]:
-            # TODO deallocate Jupyter server
-            pass
+            assert server["service_name"]
+            assert server["service_namespace"]
+            # just to be sure
+            assert k8_normalize_name(workspace.id) in server["service_name"]
+            subprocess_run(
+                [
+                    "kubectl",
+                    "delete",
+                    "deployment,service,secret",
+                    "-n",
+                    server["service_namespace"],
+                    "-l",
+                    f"app={server['service_name']}",
+                    "--include-uninitialized"
+                ]
+            )
 
 
 ##
@@ -415,7 +491,8 @@ def k8_customize_and_apply(template_path: str, **kwargs):
 
 def k8_get_storage_volume_configuration(item: ItemMixin) -> dict:
     """ Returns credentials used to mount this item's workspace storage to K8 jobs or pods. """
-    workspace = item.workspace
+    workspace = item if isinstance(item, Workspace) else item.workspace
+
     storage = workspace.get_attribute("storage")
 
     assert storage["driver"] == "hetzner-webdav"

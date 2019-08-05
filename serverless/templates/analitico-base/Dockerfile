@@ -1,5 +1,9 @@
 # Baseline is anaconda
-FROM continuumio/anaconda3:2019.03
+FROM continuumio/anaconda3:2019.07
+
+# since anaconda3:2019.07 the path is not set
+# when RUN is executed and so pip is not found
+ENV PATH=$PATH:/opt/conda/bin/
 
 # Script for running the Docker deamon
 COPY dockerd-entrypoint.sh /usr/local/bin/

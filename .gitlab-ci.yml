@@ -78,8 +78,9 @@ build-and-test:
     - echo "$(date +'%T') - Build analitico-client image"
     - build_dir=$(mktemp -d)
     # docker image expects to find sdk and s24 in that path
-    - cp -Rf ./analitico/sdk/analitico $build_dir
-    - cp -Rf ./analitico/source/s24 $build_dir
+    - mkdir $build_dir/libraries
+    - cp -Rf ./analitico/sdk/analitico $build_dir/libraries
+    - cp -Rf ./analitico/source/s24 $build_dir/libraries
     - cp -Rf ./analitico/serverless/templates/analitico-client/* $build_dir/
     - cd $build_dir
     - docker build --no-cache --pull -t $BUILD_ANALITICO_CLIENT_IMAGE_URL -f Dockerfile .

@@ -14,8 +14,6 @@ gunicorn==19.9.0
 
 # required by sdk and s24
 simplejson==3.16.0
-numpy==1.17.0
-pandas==0.25.0
 catboost==0.15.2
 ortools==6.9.5824
 papermill==1.0.1

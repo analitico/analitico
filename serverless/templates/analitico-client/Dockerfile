@@ -1,5 +1,14 @@
-FROM continuumio/anaconda3:2019.03
+FROM continuumio/anaconda3:2019.07
 
+##
+# Image setup
+##
+
+# since anaconda3:2019.07 the path is not set
+# when RUN is executed and so pip is not found
+ENV PATH=$PATH:/opt/conda/bin/
+
+ENV LC_CTYPE=C.UTF-8
 ENV WORKDIR /app
 RUN mkdir /$WORKDIR
 
@@ -17,11 +26,21 @@ RUN chmod +x ./tasks/serverless-start.sh
 # Install analitico dependencies
 RUN pip install -r analitico-requirements.txt
 
-# Add libraries in base directory
-ENV PYTHONPATH=$PYTHONPATH:$WORKDIR
+# Add path to libraries
+ENV PYTHONPATH=$PYTHONPATH:$WORKDIR/libraries
 
 ##
-# User's generated file
+# Jupyter setup
+##
+
+RUN chmod +x ./tasks/jupyter-start.sh
+
+# Generate configuration for Jupyter server
+RUN mkdir -p jupyter
+RUN /bin/bash -c "cd jupyter && jupyter notebook --generate-config"
+
+##
+# Serveless setup
 ##
 
 # User's dependencies
