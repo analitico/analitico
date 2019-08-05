@@ -17,6 +17,7 @@ import os
 import logging.config
 import sys
 import tempfile
+import stripe
 
 from analitico.utilities import save_text, read_json
 from rest_framework.exceptions import APIException
@@ -30,6 +31,17 @@ try:
 
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = os.environ.get("ANALITICO_DEBUG", "False").lower() == "true"
+
+    ##
+    ## Stripe billing
+    ##
+
+    # These are test tokens, actual tokens are in secrets
+    ANALITICO_STRIPE_SECRET_KEY = "sk_test_HOYuiExkdXkVdrhov3M6LwQQ"
+    if not TESTING:
+        ANALITICO_STRIPE_SECRET_KEY = os.environ.get("ANALITICO_STRIPE_SECRET_KEY", ANALITICO_STRIPE_SECRET_KEY)
+    assert ANALITICO_STRIPE_SECRET_KEY, "Are you missing the environment variable ANALITICO_STRIPE_SECRET_KEY?"
+    stripe.api_key = ANALITICO_STRIPE_SECRET_KEY
 
     ###
     ### Logging (setup log first so at least if there's an error you get it logged)

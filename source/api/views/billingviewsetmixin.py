@@ -1,5 +1,7 @@
 import simplejson as json
 
+from collections import OrderedDict
+from django.conf import settings
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.decorators import action, api_view
@@ -26,39 +28,56 @@ class BillingViewSetMixin:
     """ 
     APIs to enable subscriptions, payments, etc. 
     The billing flow is implemented via Stripe Checkout and Billing APIs.
-
-    Checkout settings:
-    https://dashboard.stripe.com/account/checkout/settings
-
-    Checkout fullfillment:
-    https://stripe.com/docs/payments/checkout/fulfillment
-
-    Subscriptions APIs
-    https://stripe.com/docs/api/subscriptions?lang=python
-    
     """
+
+    @action(methods=["post"], detail=False, url_name="billing-session-create", url_path="billing/session")
+    def billing_session_create(self, request):
+        """ Create a checkout session that can be used by current user to purchase a subscription plan for a new workspace. """
+        plan = api.utilities.get_query_parameter(request, "plan")
+        if not plan:
+            raise AnaliticoException(
+                "Please provide ?plan= to be purchased with checkout.", status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # create a checkout session where I can purchase a subscription plan for a new workspace to be created
+        session = api.billing.stripe.stripe_session_create(request.user, workspace=None, plan=plan)
+        session_reply = {
+            "type": "analitico/stripe-session",
+            "id": session.id,
+            "attributes": {
+                "id": session.id,
+                "object": session.object,
+                "customer": session.customer,
+                "livemode": session.livemode,
+                "success_url": session.success_url,
+                "cancel_url": session.cancel_url,
+            },
+        }
+        return Response(session_reply, status=status.HTTP_201_CREATED)
 
     @csrf_exempt
     @action(
         methods=["get", "post"],
         detail=False,
-        url_name="billing-stripe-webhook",
-        url_path="billing/stripe/webhook",
+        url_name="billing-webhook",
+        url_path="billing/webhook",
         permission_classes=(AllowAny,),
     )
-    def stripe_webook(self, request):
+    def billing_webook(self, request):
         """ Stripe will call us on this endpoint with events related to billing, sales, subscriptions, etc... """
         color = "good"
         event_data = request.data
         event_type = event_data["type"]
         event_id = event_data["id"]
         event_livemode = event_data["livemode"]
+
+        # production endpoints will not process test events and will return a differentiated
+        # reply with a 204 status code so we can tell in stripe's backoffice that they weren't processed
+        if event_livemode is False:
+            if not settings.TESTING:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+
         try:
-            # The event we receive from Stripe is signed and contains enough information
-            # so that it's source can be verified. However, it is quite complicated to simulate
-            # these flows for unit testing and also taking information directly from the event
-            # itself is not suggested. So we do the safer thing and just take the event id from
-            # the event itself then ask Stripe for the information so we're 100% sure it's real.
             stripe_handle_event(event_id)
 
         except Exception as exc:
