@@ -13,8 +13,8 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 
 import analitico.utilities
 from api.notifications.slack import slack_send_internal_notification
-from api.billing.stripe import stripe_handle_event
 
+import api.billing
 import api.utilities
 
 from analitico import AnaliticoException, logger
@@ -25,10 +25,23 @@ import stripe
 
 
 class BillingViewSetMixin:
-    """ 
-    APIs to enable subscriptions, payments, etc. 
-    The billing flow is implemented via Stripe Checkout and Billing APIs.
-    """
+    """ Analitico billing views implemented with Stripe Checkout, Stripe Billing and custom logic. """
+
+    @action(
+        methods=["get"],
+        detail=False,
+        url_name="billing-plans",
+        url_path="billing/plans",
+        permission_classes=(AllowAny,),
+    )
+    def billing_plans(self, request):
+        """ Returns a list of available plans that users can choose from. """
+        plans = api.billing.stripe_get_plans()
+        plans_reply = [
+            {"type": "analitico/stripe-plan", "id": plan.id, "attributes": api.billing.stripe_to_dict(plan)}
+            for plan in plans.data
+        ]
+        return Response(plans_reply)
 
     @action(methods=["post"], detail=False, url_name="billing-session-create", url_path="billing/session")
     def billing_session_create(self, request):
@@ -40,7 +53,7 @@ class BillingViewSetMixin:
             )
 
         # create a checkout session where I can purchase a subscription plan for a new workspace to be created
-        session = api.billing.stripe.stripe_session_create(request.user, workspace=None, plan=plan)
+        session = api.billing.stripe_session_create(request.user, workspace=None, plan=plan)
         session_reply = {
             "type": "analitico/stripe-session",
             "id": session.id,
@@ -78,7 +91,7 @@ class BillingViewSetMixin:
                 return Response(status=status.HTTP_204_NO_CONTENT)
 
         try:
-            stripe_handle_event(event_id)
+            api.billing.stripe_handle_event(event_id)
 
         except Exception as exc:
             logger.error(f"stripe_webook - error while processing: {request.data}")

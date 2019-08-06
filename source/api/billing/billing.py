@@ -1,5 +1,5 @@
 import simplejson as json
-import stripe as stripe_sdk
+import stripe
 
 import analitico.utilities
 import api.utilities
@@ -21,27 +21,61 @@ from api.models import User, Workspace
 # Subscriptions APIs
 # https://stripe.com/docs/api/subscriptions?lang=python
 
+# pylint: disable=no-member
 
 ##
-## Stripe methods
+## Stripe methods and utilities
 ##
 
 
-def stripe_customer_retrieve(user: api.models.User, create: bool = True):
+def stripe_to_dict(obj):
+    """ Converts a stripe object to a regular dictionary. """
+    return json.loads(str(obj))
+
+
+def stripe_update_subscription(workspace: Workspace, subscription):
+    """ Copy updated information from the subscription into the workspace. """
+    stripe_conf = workspace.get_attribute("stripe", {})
+    stripe_conf["customer_id"] = subscription.customer
+    stripe_conf["subscription_id"] = subscription.id
+    stripe_conf["subscription"] = {
+        "id": subscription.id,
+        "status": subscription.status,
+        "livemode": subscription.livemode,
+        "billing": subscription.billing,
+        "created": subscription.created,
+        "current_period_start": subscription.current_period_start,
+        "current_period_end": subscription.current_period_end,
+        "customer": subscription.customer,
+        "metadata": dict(subscription.metadata),
+        "object": subscription.object,
+        "plan": {"object": subscription.plan.object, "id": subscription.plan.id, "product": subscription.plan.product},
+    }
+    workspace.set_attribute("stripe", stripe_conf)
+    workspace.save()
+
+
+def stripe_get_plans():
+    """ Retrieve list of currently active billing plans. """
+    plans = stripe.Plan.list(active=True)
+    return plans
+
+
+def stripe_customer_retrieve(user: User, create: bool = True):
     """ Creates or retrieves existing stripe customer mapped to analitico user. """
     stripe_conf = user.get_attribute("stripe", {})
     if "customer_id" in stripe_conf:
-        return stripe_sdk.Customer.retrieve(stripe_conf["customer_id"])
+        return stripe.Customer.retrieve(stripe_conf["customer_id"])
 
     if not create:
         raise AnaliticoException(f"User {user.email} does not have a stripe customer record.")
 
     customer = None
-    customers = stripe_sdk.Customer.list(limit=1, email=user.email)
+    customers = stripe.Customer.list(limit=1, email=user.email)
     if customers.data:
         customer = customers.data[0]
     else:
-        customer = stripe_sdk.Customer.create(email=user.email)
+        customer = stripe.Customer.create(email=user.email)
 
     # store in user for later use
     stripe_conf["customer_id"] = customer.id
@@ -72,7 +106,7 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
     # Create a session:
     # https://stripe.com/docs/api/checkout/sessions/create
     # https://stripe.com/docs/stripe-js/reference#stripe-redirect-to-checkout
-    session = stripe_sdk.checkout.Session.create(
+    session = stripe.checkout.Session.create(
         customer=customer.id,
         payment_method_types=["card"],
         billing_address_collection="required",
@@ -90,28 +124,6 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
 ##
 ## Webhook and events
 ##
-
-
-def _update_subscription(workspace: Workspace, subscription):
-    """ Copy updated information from the subscription into the workspace. """
-    stripe_conf = workspace.get_attribute("stripe", {})
-    stripe_conf["customer_id"] = subscription.customer
-    stripe_conf["subscription_id"] = subscription.id
-    stripe_conf["subscription"] = {
-        "id": subscription.id,
-        "status": subscription.status,
-        "livemode": subscription.livemode,
-        "billing": subscription.billing,
-        "created": subscription.created,
-        "current_period_start": subscription.current_period_start,
-        "current_period_end": subscription.current_period_end,
-        "customer": subscription.customer,
-        "metadata": dict(subscription.metadata),
-        "object": subscription.object,
-        "plan": {"object": subscription.plan.object, "id": subscription.plan.id, "product": subscription.plan.product},
-    }
-    workspace.set_attribute("stripe", stripe_conf)
-    workspace.save()
 
 
 # Example of events flow to create a subscription:
@@ -176,7 +188,7 @@ def stripe_handle_customer_subscription_created(event):
         # create a new workspace using the workspace_id that was indicated in metadata
         workspace = Workspace(id=workspace_id)
 
-    _update_subscription(workspace, subscription)
+    stripe_update_subscription(workspace, subscription)
     workspace.save()
 
 
@@ -194,7 +206,7 @@ def stripe_handle_event(event_id: str):
         # these flows for unit testing and also taking information directly from the event
         # itself is not suggested. So we do the safer thing and just take the event id from
         # the event itself then ask Stripe for the information so we're 100% sure it's real.
-        event = stripe_sdk.Event.retrieve(event_id)
+        event = stripe.Event.retrieve(event_id)
 
         # handle different kinds of stripe events
         if event.type == "customer.created":

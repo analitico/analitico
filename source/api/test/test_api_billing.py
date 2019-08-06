@@ -25,6 +25,21 @@ class BillingTests(AnaliticoApiTestCase):
     def setUp(self):
         self.setup_basics()
 
+    def test_billing_plans(self):
+        # Retrieve list of active billing plans
+        # GET /api/workspaces/billing/plans
+        self.auth_token(None)  # no auth
+        url = reverse("api:workspace-billing-plans")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.data
+        for plan in data:
+            self.assertEqual(plan["type"], "analitico/stripe-plan")
+            self.assertIn("id", plan)
+            self.assertTrue(plan["attributes"]["active"])
+            self.assertIn(plan["attributes"]["currency"], ("usd", "eur"))
+
     def test_billing_session_create(self):
         self.auth_token(self.token3)  # regular user
         url = reverse("api:workspace-billing-session-create") + "?plan=plan_premium_usd"
