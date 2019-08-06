@@ -41,6 +41,7 @@ router.register("users", api.views.UserViewSet, basename="user")  # user profile
 router.register("workspaces", api.views.WorkspaceViewSet, basename="workspace")  # provides grouping
 router.register("notebooks", api.views.NotebookViewSet, basename="notebook")  # notebooks
 router.register("k8s", api.views.K8ViewSet, basename="k8")  # kubernetes monitoring, operations, etc
+router.register("billing", api.views.BillingViewSet, basename="billing")  # billing, plans, invoices, etc...
 
 urlpatterns = router.urls + [
     path("runtime", runtime, name="runtime"),

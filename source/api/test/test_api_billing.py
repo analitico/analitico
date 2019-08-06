@@ -29,7 +29,7 @@ class BillingTests(AnaliticoApiTestCase):
         # Retrieve list of active billing plans
         # GET /api/workspaces/billing/plans
         self.auth_token(None)  # no auth
-        url = reverse("api:workspace-billing-plans")
+        url = reverse("api:billing-plans")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -42,7 +42,7 @@ class BillingTests(AnaliticoApiTestCase):
 
     def test_billing_session_create(self):
         self.auth_token(self.token3)  # regular user
-        url = reverse("api:workspace-billing-session-create") + "?plan=plan_premium_usd"
+        url = reverse("api:billing-session") + "?plan=plan_premium_usd"
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -52,7 +52,7 @@ class BillingTests(AnaliticoApiTestCase):
 
     def test_billing_session_create_no_auth(self):
         self.auth_token(None)  # no authentication
-        url = reverse("api:workspace-billing-session-create") + "?plan=plan_premium_usd"
+        url = reverse("api:billing-session") + "?plan=plan_premium_usd"
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -69,7 +69,7 @@ class BillingTests(AnaliticoApiTestCase):
             "livemode": False,
             "type": "customer.created",
         }
-        url = reverse("api:workspace-billing-webhook")
+        url = reverse("api:billing-webhook")
         response = self.client.post(url, event, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -88,7 +88,7 @@ class BillingTests(AnaliticoApiTestCase):
             "data": None,
             "livemode": False,
         }
-        url = reverse("api:workspace-billing-webhook")
+        url = reverse("api:billing-webhook")
         response = self.client.post(url, event, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -97,3 +97,22 @@ class BillingTests(AnaliticoApiTestCase):
 
         self.assertEqual(stripe_conf["customer_id"], "cus_FZH0mmWGNI2K9G")
         self.assertEqual(stripe_conf["subscription_id"], "sub_FZHAgRNxpptZ2Y")
+
+        # Retrieve list of invoices generated for a given workspace
+        # GET /api/workspaces/billing/plans
+        self.auth_token(self.token1)  # user1
+        url = reverse("api:billing-invoices", args=(workspace.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.data
+        for invoice in data:
+            self.assertEqual(invoice["type"], "analitico/stripe-invoice")
+            self.assertIn("id", invoice)
+
+    def test_billing_stripe_get_invoices_no_invoices(self):
+        # Retrieve list of invoices generated for a given workspace when the workspace has no stripe configuration
+        self.auth_token(self.token1)  # user1
+        url = reverse("api:billing-invoices", args=(self.ws1.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

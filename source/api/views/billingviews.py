@@ -1,83 +1,76 @@
-import simplejson as json
-
-from collections import OrderedDict
 from django.conf import settings
+
 from rest_framework.viewsets import ViewSet
-from rest_framework.permissions import IsAdminUser, AllowAny
-from rest_framework.decorators import action, api_view
+from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
 
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-
 import analitico.utilities
-from api.notifications.slack import slack_send_internal_notification
-
 import api.billing
 import api.utilities
 
 from analitico import AnaliticoException, logger
-from django.core.mail import send_mail
-from django.views.decorators.csrf import csrf_exempt
+from api.notifications.slack import slack_send_internal_notification
+from api.factory import factory
+from api.permissions import HasApiPermission, has_item_permission_or_exception
 
-import stripe
 
-
-class BillingViewSetMixin:
+class BillingViewSet(ViewSet):
     """ Analitico billing views implemented with Stripe Checkout, Stripe Billing and custom logic. """
 
-    @action(
-        methods=["get"],
-        detail=False,
-        url_name="billing-plans",
-        url_path="billing/plans",
-        permission_classes=(AllowAny,),
-    )
-    def billing_plans(self, request):
+    # All methods require prior authentication, no token, no access except when explicitely specified
+    permission_classes = (IsAuthenticated, HasApiPermission)
+
+    @action(methods=["get"], detail=False, url_name="plans", url_path="plans", permission_classes=(AllowAny,))
+    def billing_plans(self, request: Request):
         """ Returns a list of available plans that users can choose from. """
         plans = api.billing.stripe_get_plans()
         plans_reply = [
             {"type": "analitico/stripe-plan", "id": plan.id, "attributes": api.billing.stripe_to_dict(plan)}
-            for plan in plans.data
+            for plan in plans
         ]
-        return Response(plans_reply)
+        return Response(plans_reply, status=status.HTTP_200_OK)
 
-    @action(methods=["post"], detail=False, url_name="billing-session-create", url_path="billing/session")
-    def billing_session_create(self, request):
+    @action(methods=["post"], detail=False, url_name="session", url_path="session")
+    def billing_session(self, request: Request):
         """ Create a checkout session that can be used by current user to purchase a subscription plan for a new workspace. """
         plan = api.utilities.get_query_parameter(request, "plan")
         if not plan:
             raise AnaliticoException(
                 "Please provide ?plan= to be purchased with checkout.", status_code=status.HTTP_400_BAD_REQUEST
             )
-
-        # create a checkout session where I can purchase a subscription plan for a new workspace to be created
         session = api.billing.stripe_session_create(request.user, workspace=None, plan=plan)
         session_reply = {
             "type": "analitico/stripe-session",
             "id": session.id,
-            "attributes": {
-                "id": session.id,
-                "object": session.object,
-                "customer": session.customer,
-                "livemode": session.livemode,
-                "success_url": session.success_url,
-                "cancel_url": session.cancel_url,
-            },
+            "attributes": api.billing.stripe_to_dict(session),
         }
         return Response(session_reply, status=status.HTTP_201_CREATED)
 
-    @csrf_exempt
-    @action(
-        methods=["get", "post"],
-        detail=False,
-        url_name="billing-webhook",
-        url_path="billing/webhook",
-        permission_classes=(AllowAny,),
-    )
-    def billing_webook(self, request):
-        """ Stripe will call us on this endpoint with events related to billing, sales, subscriptions, etc... """
+    @action(methods=["get"], detail=True, url_name="invoices", url_path="invoices")
+    def billing_invoices(self, request: Request, pk: str):
+        """ Returns a list of invoices that have been generated for a specific workspace. """
+        workspace = factory.get_item(pk)
+        has_item_permission_or_exception(request.user, workspace, "analitico.workspaces.get")
+
+        invoices = api.billing.stripe_get_invoices(workspace)
+        if invoices:
+            invoices_reply = [
+                {
+                    "type": "analitico/stripe-invoice",
+                    "id": invoice.id,
+                    "attributes": api.billing.stripe_to_dict(invoice),
+                }
+                for invoice in invoices
+            ]
+            return Response(invoices_reply, status=status.HTTP_200_OK)
+        return Response([], status=status.HTTP_204_NO_CONTENT)
+
+    @action(methods=["post"], detail=False, url_name="webhook", url_path="webhook", permission_classes=(AllowAny,))
+    def billing_webook(self, request: Request):
+        """ Stripe webhook used to receive billing events. """
         color = "good"
         event_data = request.data
         event_type = event_data["type"]
@@ -92,12 +85,10 @@ class BillingViewSetMixin:
 
         try:
             api.billing.stripe_handle_event(event_id)
-
         except Exception as exc:
             logger.error(f"stripe_webook - error while processing: {request.data}")
             color = "danger"
             raise exc
-
         finally:
             # notification information for the received event is sent to internal slack channel
             subject = f"Stripe *{event_type}*{'' if event_livemode else ' (test)'}"

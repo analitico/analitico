@@ -61,6 +61,16 @@ def stripe_get_plans():
     return plans
 
 
+def stripe_get_invoices(workspace: Workspace):
+    """ Returns a list of invoices that were generated for the owner of the given workspace subscription (or None). """
+    customer_id = workspace.get_attribute("stripe.customer_id", None)
+    if not customer_id:
+        return None
+    # TODO could also retrieve all invoices then filter by metadata->workspace_id
+    invoices = stripe.Invoice.list(customer=customer_id)
+    return invoices
+
+
 def stripe_customer_retrieve(user: User, create: bool = True):
     """ Creates or retrieves existing stripe customer mapped to analitico user. """
     stripe_conf = user.get_attribute("stripe", {})

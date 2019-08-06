@@ -24,7 +24,6 @@ from api.k8 import k8_deploy_jupyter
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .filesviewsetmixin import FilesViewSetMixin
-from .billingviewsetmixin import BillingViewSetMixin
 
 ##
 ## WorkspaceSerializer
@@ -140,7 +139,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 ##
 
 
-class WorkspaceViewSet(ItemViewSetMixin, FilesViewSetMixin, BillingViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class WorkspaceViewSet(ItemViewSetMixin, FilesViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ Views for workspaces and their access permissions. """
 
     item_class = api.models.Workspace
