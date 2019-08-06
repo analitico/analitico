@@ -167,6 +167,7 @@ class BillingTests(AnaliticoApiTestCase):
             url = reverse("api:billing-invoices", args=(workspace.id,))
             response2 = self.client.get(url)
             self.assertEqual(response2.status_code, status.HTTP_200_OK)
+            data2 = response2.data
 
             # POST /api/billing/ws_xxx/subscription/plan/plan_id (change plan)
             url = reverse("api:billing-subscription-plan-change", args=(workspace.id, TEST_BILLING_PLAN2_ID))
@@ -191,9 +192,9 @@ class BillingTests(AnaliticoApiTestCase):
             response5 = self.client.get(url)
             self.assertEqual(response5.status_code, status.HTTP_200_OK)
 
-            # POST /api/billing/ws_xxx/subscription/cancel (cancel plan)
-            url = reverse("api:billing-subscription-cancel", args=(workspace.id,))
-            response6 = self.client.post(url)
+            # POST /api/billing/ws_xxx/subscription (cancel plan)
+            url = reverse("api:billing-subscription", args=(workspace.id,))
+            response6 = self.client.delete(url)
             self.assertEqual(response6.status_code, status.HTTP_200_OK)
             subscription = None
             data6 = response6.data

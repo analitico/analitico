@@ -3,8 +3,22 @@
 
 Analitico's billing flows are implemented using Stripe Checkout and Stripe billing.
 
-### Showing available plans
+### Billing APIs
 
+Showing available plans  
+```GET /api/billing/plans```
+
+Retrieving updated information on a workspace subscription:  
+```GET /api/billing/ws_xxx/subscription```
+
+Cancelling a subscription plan:  
+```DELETE /api/billing/ws_xxx/subscription```
+
+Changing a subscription plan:  
+```POST /api/billing/ws_xxx/subscription/plan/plan_xxx```
+
+Showing invoices related to a workspace:  
+```GET /api/billing/ws_xxx/invoices```
 
 
 ### Purchasing a plan

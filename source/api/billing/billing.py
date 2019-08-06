@@ -23,6 +23,15 @@ from api.models import User, Workspace
 
 # pylint: disable=no-member
 
+CUSTOMER_EVENTS = ("customer.created", "customer.updated")
+
+SUBSCRIPTION_EVENTS = (
+    "customer.subscription.created",
+    "customer.subscription.updated",
+    "customer.subscription.deleted",
+)
+
+
 ##
 ## Stripe methods and utilities
 ##
@@ -31,28 +40,6 @@ from api.models import User, Workspace
 def stripe_to_dict(obj):
     """ Converts a stripe object to a regular dictionary. """
     return json.loads(str(obj))
-
-
-def stripe_update_subscription(workspace: Workspace, subscription):
-    """ Copy updated information from the subscription into the workspace. """
-    stripe_conf = workspace.get_attribute("stripe", {})
-    stripe_conf["customer_id"] = subscription.customer
-    stripe_conf["subscription_id"] = subscription.id
-    stripe_conf["subscription"] = {
-        "id": subscription.id,
-        "status": subscription.status,
-        "livemode": subscription.livemode,
-        "billing": subscription.billing,
-        "created": subscription.created,
-        "current_period_start": subscription.current_period_start,
-        "current_period_end": subscription.current_period_end,
-        "customer": subscription.customer,
-        "metadata": dict(subscription.metadata),
-        "object": subscription.object,
-        "plan": {"object": subscription.plan.object, "id": subscription.plan.id, "product": subscription.plan.product},
-    }
-    workspace.set_attribute("stripe", stripe_conf)
-    workspace.save()
 
 
 def stripe_get_plans():
@@ -200,34 +187,48 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
 # https://dashboard.stripe.com/test/events/evt_1F44YyAICbSiYX9YdqLcjLoA
 
 
-def stripe_handle_checkout_customer_created(event):
+def stripe_handle_customer_event(event):
     """ When a customer is created in stripe, add its customer_id in analitico. """
     customer = event.data.object
     email = customer.email
-
     user = User.objects.get(email=email)
-    stripe = user.get_attribute("stripe", {})
-    stripe["customer_id"] = customer.id
-    user.set_attribute("stripe", stripe)
+
+    stripe_conf = user.get_attribute("stripe", {})
+    stripe_conf["customer_id"] = customer.id
+    stripe_conf["customer"] = stripe_to_dict(customer)
+
+    user.set_attribute("stripe", stripe_conf)
     user.save()
+    return True
 
 
-def stripe_handle_customer_subscription_created(event):
+def stripe_handle_subscription_event(event):
     """ A subscription has been created for an existing workspace or a new workspace to be provisioned. """
+    assert event.type in SUBSCRIPTION_EVENTS
     subscription = event.data.object
-
     workspace_id = subscription.metadata.get("workspace_id")
     if not workspace_id:
-        workspace_id = api.models.workspace.generate_workspace_id()
+        msg = f"A {event.id} event was received but the subscription metadata is missing a workspace_id field."
+        raise AnaliticoException(msg)
+
     try:
-        # assign the new or renewed subscription to an existing workspace
+        # assign the new or updated subscription to an existing workspace
         workspace = Workspace.objects.get(pk=workspace_id)
-    except Workspace.DoesNotExist:
+    except Workspace.DoesNotExist as exc:
+        if event.type != "customer.subscription.created":
+            msg = f"A {event.id} event was received but the {workspace_id} cannot be found."
+            raise AnaliticoException(msg) from exc
         # create a new workspace using the workspace_id that was indicated in metadata
         workspace = Workspace(id=workspace_id)
 
-    stripe_update_subscription(workspace, subscription)
+    stripe_conf = workspace.get_attribute("stripe", {})
+    stripe_conf["customer_id"] = subscription.customer
+    stripe_conf["subscription_id"] = subscription.id
+    stripe_conf["subscription"] = stripe_to_dict(subscription)
+
+    workspace.set_attribute("stripe", stripe_conf)
     workspace.save()
+    return True
 
 
 def stripe_handle_event(event_id: str):
@@ -245,12 +246,11 @@ def stripe_handle_event(event_id: str):
         # itself is not suggested. So we do the safer thing and just take the event id from
         # the event itself then ask Stripe for the information so we're 100% sure it's real.
         event = stripe.Event.retrieve(event_id)
-
-        # handle different kinds of stripe events
-        if event.type == "customer.created":
-            stripe_handle_checkout_customer_created(event)
-        elif event.type == "customer.subscription.created":
-            stripe_handle_customer_subscription_created(event)
+        if event.type in CUSTOMER_EVENTS:
+            return stripe_handle_customer_event(event)
+        elif event.type in SUBSCRIPTION_EVENTS:
+            return stripe_handle_subscription_event(event)
+        return False
 
     except Exception as exc:
         logger.error(f"stripe_handle_event - error while handling {event_id}, exc: {exc}")
