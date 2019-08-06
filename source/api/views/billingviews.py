@@ -68,6 +68,21 @@ class BillingViewSet(ViewSet):
             return Response(invoices_reply, status=status.HTTP_200_OK)
         return Response([], status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=["get"], detail=True, url_name="subscription", url_path="subscription")
+    def billing_subscription(self, request: Request, pk: str):
+        """ Returns the current subscription on the given workspace. """
+        workspace = factory.get_item(pk)
+        has_item_permission_or_exception(request.user, workspace, "analitico.workspaces.get")
+        subscription = api.billing.stripe_get_subscription(workspace)
+        if subscription:
+            subscription_reply = {
+                "type": "analitico/stripe-subscription",
+                "id": subscription.id,
+                "attributes": api.billing.stripe_to_dict(subscription),
+            }
+            return Response(subscription_reply, status=status.HTTP_200_OK)
+        return Response([], status=status.HTTP_204_NO_CONTENT)
+
     @action(methods=["post"], detail=False, url_name="webhook", url_path="webhook", permission_classes=(AllowAny,))
     def billing_webook(self, request: Request):
         """ Stripe webhook used to receive billing events. """

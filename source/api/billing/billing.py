@@ -71,6 +71,12 @@ def stripe_get_invoices(workspace: Workspace):
     return invoices
 
 
+def stripe_get_subscription(workspace: Workspace):
+    """ Returns the current Subscription for the given Workspace (or None). """
+    subscription_id = workspace.get_attribute("stripe.subscription_id", None)
+    return stripe.Subscription.retrieve(subscription_id) if subscription_id else None
+
+
 def stripe_customer_retrieve(user: User, create: bool = True):
     """ Creates or retrieves existing stripe customer mapped to analitico user. """
     stripe_conf = user.get_attribute("stripe", {})

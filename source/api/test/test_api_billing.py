@@ -98,6 +98,17 @@ class BillingTests(AnaliticoApiTestCase):
         self.assertEqual(stripe_conf["customer_id"], "cus_FZH0mmWGNI2K9G")
         self.assertEqual(stripe_conf["subscription_id"], "sub_FZHAgRNxpptZ2Y")
 
+        # Retrieve subscription on this workspace
+        # GET /api/billing/ws_xxx/subscription
+        self.auth_token(self.token1)  # user1
+        url = reverse("api:billing-subscription", args=(workspace.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(data["type"], "analitico/stripe-subscription")
+        self.assertEqual(data["attributes"]["object"], "subscription")
+        self.assertEqual(data["attributes"]["plan"]["object"], "plan")
+
         # Retrieve list of invoices generated for a given workspace
         # GET /api/workspaces/billing/plans
         self.auth_token(self.token1)  # user1
