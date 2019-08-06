@@ -151,42 +151,6 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
 ##
 
 
-# Example of events flow to create a subscription:
-#
-# customer.created (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YpEy8r6Pg
-#
-# payment_method.attached (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YtLLsxJET
-#
-# setup_intent.created (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9Yvi0UeKp6
-#
-# setup_intent.succeeded (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YJo1S2AJE
-#
-# invoice.created (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YFu6SBngY
-#
-# customer.updated (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9YRqEfkouH
-#
-# customer.subscription.created (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9YTzuuGI1y
-#
-# invoice.finalized (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9Y2dMecaKj
-#
-# invoice.updated (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9Ye9fON4Uw
-#
-# invoice.payment_succeeded (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YyAICbSiYX9YNAuSTXjT
-#
-# checkout.session.completed (test)
-# https://dashboard.stripe.com/test/events/evt_1F44YyAICbSiYX9YdqLcjLoA
-
-
 def stripe_handle_customer_event(event):
     """ When a customer is created in stripe, add its customer_id in analitico. """
     customer = event.data.object

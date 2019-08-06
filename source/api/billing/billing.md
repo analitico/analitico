@@ -53,3 +53,41 @@ The you use the sessionId from the newly created session to redirect to checkout
   });
 </script>
 ```
+
+### Events
+
+Example of events flow to create a subscription:
+
+customer.created (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YpEy8r6Pg
+
+payment_method.attached (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YtLLsxJET
+
+setup_intent.created (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9Yvi0UeKp6
+
+setup_intent.succeeded (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YJo1S2AJE
+
+invoice.created (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YwAICbSiYX9YFu6SBngY
+
+customer.updated (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9YRqEfkouH
+
+customer.subscription.created (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9YTzuuGI1y
+
+invoice.finalized (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9Y2dMecaKj
+
+invoice.updated (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YxAICbSiYX9Ye9fON4Uw
+
+invoice.payment_succeeded (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YyAICbSiYX9YNAuSTXjT
+
+checkout.session.completed (test)  
+https://dashboard.stripe.com/test/events/evt_1F44YyAICbSiYX9YdqLcjLoA
+

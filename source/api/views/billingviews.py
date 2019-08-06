@@ -98,9 +98,7 @@ class BillingViewSet(ViewSet):
         workspace = factory.get_item(pk)
         has_item_permission_or_exception(request.user, workspace, "analitico.workspaces.admin")
         subscription = api.billing.stripe_change_subscription_plan(workspace, plan_id)
-        return self.get_stripe_response(
-            subscription, "analitico/stripe-subscription", status=status.HTTP_201_CREATED
-        )
+        return self.get_stripe_response(subscription, "analitico/stripe-subscription", status=status.HTTP_201_CREATED)
 
     ##
     ## Stripe events webhook
