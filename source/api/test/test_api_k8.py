@@ -69,6 +69,16 @@ class K8Tests(AnaliticoApiTestCase):
     def delete_job(self, job_id: str):
         subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
 
+    def deploy_jupyter(self):
+        url = reverse("api:workspace-jupyter", args=(self.ws2.id,))
+        
+        self.auth_token(self.token2)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        self.ws2.refresh_from_db()
+        return self.ws2
+
     def job_run_notebook(self, item_id=None):
         if item_id is None:
             item_id = self.item_id
@@ -604,3 +614,79 @@ class K8Tests(AnaliticoApiTestCase):
 
         # clean up
         self.delete_job(job_id)
+
+    @tag("slow", "k8s")
+    def test_deploy_jupyter(self):
+        try:
+            # deploy jupyter
+            ws2 = self.deploy_jupyter()
+
+            # wait for running
+            time.sleep(20)
+
+            # attribute with jupyter deployment details
+            self.assertIn("jupyter", ws2.attributes)
+            jupyter = ws2.get_attribute("jupyter")
+
+            self.assertIn("servers", jupyter)
+            servers = jupyter["servers"]
+
+            self.assertGreaterEqual(1, len(servers))
+            jupyter_service_name = servers[0]["service_name"]
+            jupyter_service_namespace = servers[0]["service_namespace"]
+            jupyter_url = servers[0]["url"]
+            jupyter_token = servers[0]["token"]
+
+            # access denied without token (redirected to /login)
+            response = requests.get(jupyter_url, allow_redirects=True)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("/login", response.url)
+
+            # jupyter runs and logins (redirected to /tree)
+            url = f"{jupyter_url}?token={jupyter_token}"
+            response = requests.get(url, allow_redirects=True)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("/tree", response.url)
+
+            # delete jupyter when workspace is removed
+            ws2.delete()
+            # wait for pod termination
+            time.sleep(40)
+            # check all deployed resources to be deleted
+            response = subprocess_run(
+                [
+                    "kubectl",
+                    "get",
+                    "deployment,service,virtualService,pod,secret",
+                    "-l",
+                    f"app={jupyter_service_name}",
+                    "-n",
+                    jupyter_service_namespace,
+                    "-ojson"
+                ]
+            )
+            # all resources removed
+            self.assertEqual(0, len(response[0]["items"]))
+        except Exception as ex:
+            ws2.refresh_from_db()
+            k8_deallocate_jupyter(self.ws2)
+            raise ex
+
+    @tag("slow", "k8s")
+    def test_jupyter_is_not_deployed_twice(self):
+        try:
+            ws2 = self.deploy_jupyter()
+            jupyter = ws2.get_attribute("jupyter")
+            token = jupyter["servers"][0]["token"]
+
+            time.sleep(10)
+
+            # deploy another jupyter on the same workspace
+            ws2 = self.deploy_jupyter()
+            jupyter = ws2.get_attribute("jupyter")
+            token_redeployed = jupyter["servers"][0]["token"]
+
+            self.assertEqual(token, token_redeployed)
+        finally:
+            # cleanup
+            k8_deallocate_jupyter(ws2)

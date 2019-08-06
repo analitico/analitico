@@ -6,6 +6,12 @@ metadata:
   labels:
     app: {service_name}
     analitico.ai/workspace-id: {workspace_id}
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    kind: Service
+    name: {service_name}
+    uid: {owner_uid}
 spec:
   selector:
     matchLabels:
@@ -51,20 +57,45 @@ spec:
             networkPath: {volume_network_path}
             mountOptions: dir_mode=0755,file_mode=0644,noperm
 ---
-apiVersion: v1
-kind: Service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
 metadata:
-  name: {service_name}
-  namespace: {service_namespace}
+  name: {route_name}
+  namespace: knative-serving
   labels:
     app: {service_name}
     analitico.ai/workspace-id: {workspace_id}
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    kind: Service
+    name: {service_name}
+    uid: {owner_uid}
 spec:
-  selector:
-    app: {service_name}
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8080
-  type: NodePort
+  gateways:
+  - knative-ingress-gateway
+  - mesh
+  hosts:
+  - "{service_name}.cloud.analitico.ai"
+  - "{service_name}.cloud.svc.cluster.local"
+  http:
+  - match:
+    - authority:
+        regex: ^{service_name}\.cloud(?::\d{{1,5}})?$
+    - authority:
+        regex: ^{service_name}\.cloud\.analitico\.ai(?::\d{{1,5}})?$
+    - authority:
+        regex: ^{service_name}\.cloud\.svc(?::\d{{1,5}})?$
+    - authority:
+        regex: ^{service_name}\.cloud\.svc\.cluster\.local(?::\d{{1,5}})?$
+    retries:
+      attempts: 3
+      perTryTimeout: 10m0s
+    route:
+    - destination:
+        host: "{service_name}.cloud.svc.cluster.local"
+        port:
+          number: 80
+    timeout: 10m0s
+    websocketUpgrade: true
 ---

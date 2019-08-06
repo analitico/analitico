@@ -59,6 +59,7 @@ assert os.path.isdir(SOURCE_TEMPLATE_DIR)
 def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
 
+
 def get_image_commit_sha():
     """ 
     Return the git commit SHA the running image is built from. 
@@ -311,7 +312,7 @@ def k8_jobs_create(
         raise AnaliticoException(f"Unknown job action: {job_action}")
 
     # k8s secret containing the credentials for the workspace mount
-    secret_template = os.path.join(K8_TEMPLATE_DIR, "secret-template.yaml")
+    secret_template = os.path.join(K8_TEMPLATE_DIR, "drive-secret-template.yaml")
     secret = k8_customize_and_apply(secret_template, **configs)
     assert secret, "kubectl did not apply the secret"
 
@@ -401,6 +402,7 @@ def k8_deploy_jupyter(workspace):
         service_namespace = K8_DEFAULT_NAMESPACE
         deployment_name = f"{service_name}-deployment"
         pod_name = f"{deployment_name}-{id_generator(5)}"
+        route_name = f"route-{service_name}-{id_generator(5)}"
 
         configs["service_name"] = service_name
         configs["service_namespace"] = service_namespace
@@ -408,6 +410,7 @@ def k8_deploy_jupyter(workspace):
         configs["workspace_id"] = workspace.id
         configs["deployment_name"] = deployment_name
         configs["pod_name"] = pod_name
+        configs["route_name"] = route_name
 
         configs["cpu_limit"] = jupyter["settings"]["limits"]["cpu"]
         configs["memory_limit"] = jupyter["settings"]["limits"]["memory"]
@@ -416,28 +419,39 @@ def k8_deploy_jupyter(workspace):
         image_tag = get_image_commit_sha()
         configs["image_name"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
 
-        # jupyter token
+        # generate a jupyter token for login
         token = id_generator(16)
 
         # k8s secret containing the credentials for the workspace mount
         configs["jupyter_token"] = str(base64.b64encode(token.encode()), "ascii")
         configs["secret_name"] = f"analitico-jupyter-{workspace_id_slug}"
 
+        # k8s secret containing the credentials for the workspace mount
+        secret_template = os.path.join(K8_TEMPLATE_DIR, "drive-secret-template.yaml")
+        secret = k8_customize_and_apply(secret_template, **configs)
+        assert secret, "kubectl did not apply the drive secret"
+
+        # jupyter kubernetes service
+        secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-service-template.yaml")
+        service = k8_customize_and_apply(secret_template, **configs)
+        assert service, "kubectl did not apply the jupyter service"
+
+        configs["owner_uid"] = service["metadata"]["uid"]
+
+        # jupyter token
         secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-secret-template.yaml")
         secret = k8_customize_and_apply(secret_template, **configs)
-        assert secret, "kubectl did not apply the secret"
+        assert secret, "kubectl did not apply the jupyter secret"
 
         service_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-template.yaml")
-        service = k8_customize_and_apply(service_template, **configs)
+        template = k8_customize_and_apply(service_template, **configs)
+        assert template, "kubectl did not apply jupyter"
 
-        # TODO: use knative route 
-        # # api / k8 / jupyter provisioning on k8 #266 
-        service_port = service["items"][1]["spec"]["ports"][0]["nodePort"]
         jupyter["servers"] = [
             {
                 "service_name": service_name,
                 "service_namespace": service_namespace,
-                "url": f"http://s1.analitico.ai:{service_port}",
+                "url": f"https://{service_name}.{service_namespace}.analitico.ai",
                 "token": token,
             }
         ]
@@ -456,18 +470,20 @@ def k8_deallocate_jupyter(workspace):
             assert server["service_namespace"]
             # just to be sure
             assert k8_normalize_name(workspace.id) in server["service_name"]
+            # delete service to automatically delete all owened resources
             subprocess_run(
                 [
                     "kubectl",
                     "delete",
-                    "deployment,service,secret",
+                    "service",
                     "-n",
                     server["service_namespace"],
-                    "-l",
-                    f"app={server['service_name']}",
-                    "--include-uninitialized"
+                    server['service_name']
                 ]
             )
+        jupyter.pop("servers")
+        workspace.set_attribute("jupyter", jupyter)
+        workspace.save()
 
 
 ##
