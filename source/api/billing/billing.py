@@ -77,7 +77,29 @@ def stripe_get_subscription(workspace: Workspace):
     return stripe.Subscription.retrieve(subscription_id) if subscription_id else None
 
 
-def stripe_customer_retrieve(user: User, create: bool = True):
+def stripe_cancel_subscription(workspace: Workspace):
+    """ Cancels the workspace subscription and returns it (or None). """
+    subscription_id = workspace.get_attribute("stripe.subscription_id", None)
+    return stripe.Subscription.delete(subscription_id) if subscription_id else None
+
+
+def stripe_change_subscription_plan(workspace: Workspace, plan_id: str):
+    """ Changes the subscription to the given plan. """
+    subscription_id = workspace.get_attribute("stripe.subscription_id", None)
+    if not subscription_id:
+        raise AnaliticoException(
+            f"stripe_change_subscription_plan - {workspace.id} does not have an active subscription."
+        )
+    subscription = stripe.Subscription.retrieve(subscription_id)
+    subscription = stripe.Subscription.modify(
+        subscription.id,
+        cancel_at_period_end=False,
+        items=[{"id": subscription["items"]["data"][0].id, "plan": plan_id}],
+    )
+    return subscription
+
+
+def stripe_get_customer(user: User, create: bool = True):
     """ Creates or retrieves existing stripe customer mapped to analitico user. """
     stripe_conf = user.get_attribute("stripe", {})
     if "customer_id" in stripe_conf:
@@ -114,7 +136,7 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
     """
 
     # retrieve stripe user and create if needed
-    customer = stripe_customer_retrieve(user)
+    customer = stripe_get_customer(user)
 
     # subscription can be for an existing workspace or one that will be created with a new id
     workspace_id = workspace.id if workspace else api.models.workspace.generate_workspace_id()

@@ -4,7 +4,7 @@
         "analitico.workspaces.get": "Get workspaces.",
         "analitico.workspaces.update": "Edit workspaces.",
         "analitico.workspaces.delete": "Delete workspaces.",
-        "analitico.workspaces.admin": "Add or remove users from a workspace, edit permissions",
+        "analitico.workspaces.admin": "Add or remove users from a workspace, edit permissions, billing plans.",
 
         "analitico.notebooks.create": "Create notebooks.",
         "analitico.notebooks.get": "Get notebooks.",

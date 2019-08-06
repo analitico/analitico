@@ -1,5 +1,6 @@
 from django.conf import settings
 
+import rest_framework.status
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
 from rest_framework.decorators import action
@@ -23,18 +24,36 @@ class BillingViewSet(ViewSet):
     # All methods require prior authentication, no token, no access except when explicitely specified
     permission_classes = (IsAuthenticated, HasApiPermission)
 
+    ##
+    ## Utilities
+    ##
+
+    def get_stripe_item_response(self, items, item_type, many=False, status=status.HTTP_200_OK):
+        if many:
+            if items:
+                items_reply = [
+                    {"type": item_type, "id": item.id, "attributes": api.billing.stripe_to_dict(item)} for item in items
+                ]
+                return Response(items_reply, status=status)
+            return Response([], status=rest_framework.status.HTTP_204_NO_CONTENT)
+        else:
+            if items:  # single
+                reply = {"type": item_type, "id": items.id, "attributes": api.billing.stripe_to_dict(items)}
+                return Response(reply, status=status)
+        return Response(status=rest_framework.status.HTTP_204_NO_CONTENT)
+
+    ##
+    ## Actions
+    ##
+
     @action(methods=["get"], detail=False, url_name="plans", url_path="plans", permission_classes=(AllowAny,))
-    def billing_plans(self, request: Request):
+    def get_plans(self, request: Request):
         """ Returns a list of available plans that users can choose from. """
         plans = api.billing.stripe_get_plans()
-        plans_reply = [
-            {"type": "analitico/stripe-plan", "id": plan.id, "attributes": api.billing.stripe_to_dict(plan)}
-            for plan in plans
-        ]
-        return Response(plans_reply, status=status.HTTP_200_OK)
+        return self.get_stripe_item_response(plans, "analitico/stripe-plan", many=True)
 
     @action(methods=["post"], detail=False, url_name="session", url_path="session")
-    def billing_session(self, request: Request):
+    def create_session(self, request: Request):
         """ Create a checkout session that can be used by current user to purchase a subscription plan for a new workspace. """
         plan = api.utilities.get_query_parameter(request, "plan")
         if not plan:
@@ -42,49 +61,56 @@ class BillingViewSet(ViewSet):
                 "Please provide ?plan= to be purchased with checkout.", status_code=status.HTTP_400_BAD_REQUEST
             )
         session = api.billing.stripe_session_create(request.user, workspace=None, plan=plan)
-        session_reply = {
-            "type": "analitico/stripe-session",
-            "id": session.id,
-            "attributes": api.billing.stripe_to_dict(session),
-        }
-        return Response(session_reply, status=status.HTTP_201_CREATED)
+        return self.get_stripe_item_response(session, "analitico/stripe-session", status=status.HTTP_201_CREATED)
 
     @action(methods=["get"], detail=True, url_name="invoices", url_path="invoices")
-    def billing_invoices(self, request: Request, pk: str):
+    def get_invoices(self, request: Request, pk: str):
         """ Returns a list of invoices that have been generated for a specific workspace. """
         workspace = factory.get_item(pk)
         has_item_permission_or_exception(request.user, workspace, "analitico.workspaces.get")
-
         invoices = api.billing.stripe_get_invoices(workspace)
-        if invoices:
-            invoices_reply = [
-                {
-                    "type": "analitico/stripe-invoice",
-                    "id": invoice.id,
-                    "attributes": api.billing.stripe_to_dict(invoice),
-                }
-                for invoice in invoices
-            ]
-            return Response(invoices_reply, status=status.HTTP_200_OK)
-        return Response([], status=status.HTTP_204_NO_CONTENT)
+        return self.get_stripe_item_response(invoices, "analitico/stripe-invoice", many=True)
 
     @action(methods=["get"], detail=True, url_name="subscription", url_path="subscription")
-    def billing_subscription(self, request: Request, pk: str):
+    def get_subscription(self, request: Request, pk: str):
         """ Returns the current subscription on the given workspace. """
         workspace = factory.get_item(pk)
         has_item_permission_or_exception(request.user, workspace, "analitico.workspaces.get")
         subscription = api.billing.stripe_get_subscription(workspace)
-        if subscription:
-            subscription_reply = {
-                "type": "analitico/stripe-subscription",
-                "id": subscription.id,
-                "attributes": api.billing.stripe_to_dict(subscription),
-            }
-            return Response(subscription_reply, status=status.HTTP_200_OK)
-        return Response([], status=status.HTTP_204_NO_CONTENT)
+        return self.get_stripe_item_response(subscription, "analitico/stripe-subscription")
+
+    @action(
+        methods=["post"],
+        detail=True,
+        url_name="subscription-plan-change",
+        url_path=r"subscription/plan/(?P<plan_id>[-\w]+)",
+    )
+    def change_subscription_plan(self, request: Request, pk: str, plan_id: str):
+        """ Cancels a workspace's subscription immediately. """
+        # must own the workspace to be able to change its plan
+        workspace = factory.get_item(pk)
+        has_item_permission_or_exception(request.user, workspace, "analitico.workspaces.admin")
+        subscription = api.billing.stripe_change_subscription_plan(workspace, plan_id)
+        return self.get_stripe_item_response(
+            subscription, "analitico/stripe-subscription", status=status.HTTP_201_CREATED
+        )
+
+    @action(methods=["post"], detail=True, url_name="subscription-cancel", url_path="subscription/cancel")
+    def cancel_subscription(self, request: Request, pk: str):
+        """ Cancels a workspace's subscription immediately. """
+        workspace = factory.get_item(pk)
+        has_item_permission_or_exception(
+            request.user, workspace, "analitico.workspaces.admin"
+        )  # must own the workspace
+        subscription = api.billing.stripe_cancel_subscription(workspace)
+        return self.get_stripe_item_response(subscription, "analitico/stripe-subscription")
+
+    ##
+    ## Stripe events webhook
+    ##
 
     @action(methods=["post"], detail=False, url_name="webhook", url_path="webhook", permission_classes=(AllowAny,))
-    def billing_webook(self, request: Request):
+    def webook(self, request: Request):
         """ Stripe webhook used to receive billing events. """
         color = "good"
         event_data = request.data

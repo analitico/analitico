@@ -1,6 +1,8 @@
 import os
 import pytest
 import stripe
+import tempfile
+import requests
 
 from django.test import tag
 from django.urls import reverse
@@ -11,11 +13,15 @@ import analitico.plugin
 import api.models
 
 from analitico import logger
+from api.models import Workspace, User
 from .utils import AnaliticoApiTestCase
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
 # pylint: disable=unused-variable
+
+TEST_BILLING_PLAN1_ID = "plan_essentials_usd"
+TEST_BILLING_PLAN2_ID = "plan_standard_usd"
 
 
 @pytest.mark.django_db
@@ -45,10 +51,9 @@ class BillingTests(AnaliticoApiTestCase):
         url = reverse("api:billing-session") + "?plan=plan_premium_usd"
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
         data = response.data
         self.assertEqual(data["attributes"]["livemode"], False)
-        self.assertEqual(data["attributes"]["customer"], "cus_FZH0mmWGNI2K9G")
+        self.assertEqual(data["attributes"]["customer"], "cus_FZbGgzNiXyKEYS")
 
     def test_billing_session_create_no_auth(self):
         self.auth_token(None)  # no authentication
@@ -115,11 +120,15 @@ class BillingTests(AnaliticoApiTestCase):
         url = reverse("api:billing-invoices", args=(workspace.id,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         data = response.data
+        self.assertGreaterEqual(len(data), 1)
         for invoice in data:
             self.assertEqual(invoice["type"], "analitico/stripe-invoice")
             self.assertIn("id", invoice)
+            with tempfile.NamedTemporaryFile(prefix="invoice_", suffix=".pdf") as f:
+                # checks that no authorization is needed
+                response = requests.get(invoice["attributes"]["invoice_pdf"])
+                f.write(response.content)
 
     def test_billing_stripe_get_invoices_no_invoices(self):
         # Retrieve list of invoices generated for a given workspace when the workspace has no stripe configuration
@@ -127,3 +136,74 @@ class BillingTests(AnaliticoApiTestCase):
         url = reverse("api:billing-invoices", args=(self.ws1.id,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_billing_subscription_lifecycle(self):
+        # setup a customer with a new workspace that has a billing plan
+        # then retri
+        customer = api.billing.stripe_get_customer(self.user1)
+        workspace = Workspace(user=self.user1)
+        try:
+            subscription = stripe.Subscription.create(
+                customer=customer.id,
+                trial_period_days=7,
+                items=[{"plan": TEST_BILLING_PLAN1_ID, "quantity": 1, "metadata": {"workspace_id": workspace.id}}],
+            )
+            workspace.set_attribute("stripe", {"customer_id": customer.id, "subscription_id": subscription.id})
+            workspace.save()
+
+            # GET /api/billing/ws_xxx/subscription
+            self.auth_token(self.token1)  # user1
+            url = reverse("api:billing-subscription", args=(workspace.id,))
+            response1 = self.client.get(url)
+            self.assertEqual(response1.status_code, status.HTTP_200_OK)
+            data1 = response1.data
+            self.assertEqual(data1["type"], "analitico/stripe-subscription")
+            self.assertEqual(data1["attributes"]["object"], "subscription")
+            self.assertEqual(data1["attributes"]["status"], "trialing")
+            self.assertEqual(data1["attributes"]["plan"]["object"], "plan")
+            self.assertEqual(data1["attributes"]["plan"]["id"], TEST_BILLING_PLAN1_ID)
+
+            # GET /api/billing/ws_xxx/invoice
+            url = reverse("api:billing-invoices", args=(workspace.id,))
+            response2 = self.client.get(url)
+            self.assertEqual(response2.status_code, status.HTTP_200_OK)
+
+            # POST /api/billing/ws_xxx/subscription/plan/plan_id (change plan)
+            url = reverse("api:billing-subscription-plan-change", args=(workspace.id, TEST_BILLING_PLAN2_ID))
+            response3 = self.client.post(url)
+            self.assertEqual(response3.status_code, status.HTTP_201_CREATED)
+            data3 = response3.data
+            self.assertEqual(data3["type"], "analitico/stripe-subscription")
+            self.assertEqual(data3["id"], data1["id"])
+            self.assertEqual(data3["attributes"]["status"], "trialing")
+            self.assertEqual(data3["attributes"]["plan"]["id"], TEST_BILLING_PLAN2_ID)
+
+            # GET /api/billing/ws_xxx/subscription
+            url = reverse("api:billing-subscription", args=(workspace.id,))
+            response4 = self.client.get(url)
+            self.assertEqual(response4.status_code, status.HTTP_200_OK)
+            data4 = response4.data
+            self.assertEqual(data4["id"], data1["id"])
+            self.assertEqual(data4["attributes"]["plan"]["id"], TEST_BILLING_PLAN2_ID)
+
+            # GET /api/billing/ws_xxx/invoice
+            url = reverse("api:billing-invoices", args=(workspace.id,))
+            response5 = self.client.get(url)
+            self.assertEqual(response5.status_code, status.HTTP_200_OK)
+
+            # POST /api/billing/ws_xxx/subscription/cancel (cancel plan)
+            url = reverse("api:billing-subscription-cancel", args=(workspace.id,))
+            response6 = self.client.post(url)
+            self.assertEqual(response6.status_code, status.HTTP_200_OK)
+            subscription = None
+            data6 = response6.data
+            self.assertEqual(data6["id"], data1["id"])
+            self.assertEqual(data6["attributes"]["status"], "canceled")
+
+        except Exception as exc:
+            logger.error(exc)
+            raise exc
+
+        finally:
+            if subscription:
+                stripe.Subscription.delete(subscription.id)
