@@ -378,7 +378,7 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run(self):
         try:
-            test_start_time = datetime.datetime.utcnow().timestamp()
+            test_start_time = time.time()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
@@ -402,11 +402,12 @@ class K8Tests(AnaliticoApiTestCase):
 
                 # missing when still running
                 content = response.json()
-                if "active" in content["data"]["status"]:
-                    time.sleep(3)
-                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 300
-                else:
+                if "succeeded" in content["data"]["status"]:
                     insist = False
+                else:
+                    time.sleep(5)
+                    insist = (time.time() - test_start_time) <= 300
+                    
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -432,7 +433,7 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run_custom_notebook_name(self):
         try:
-            test_start_time = datetime.datetime.utcnow().timestamp()
+            test_start_time = time.time()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
@@ -460,11 +461,11 @@ class K8Tests(AnaliticoApiTestCase):
 
                 # missing when still running
                 content = response.json()
-                if "active" in content["data"]["status"]:
-                    time.sleep(3)
-                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 300
-                else:
+                if "succeeded" in content["data"]["status"]:
                     insist = False
+                else:
+                    time.sleep(5)
+                    insist = (time.time() - test_start_time) <= 300
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -477,7 +478,7 @@ class K8Tests(AnaliticoApiTestCase):
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_build(self):
-        test_start_time = datetime.datetime.utcnow().timestamp()
+        test_start_time = time.time()
 
         # named: K8Tests.test_k8s_jobs_run
         receipe_id = "rx_x5b1npmn"
@@ -505,11 +506,11 @@ class K8Tests(AnaliticoApiTestCase):
 
                 # missing when still running
                 content = response.json()
-                if "active" in content["data"]["status"]:
-                    time.sleep(3)
-                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 600
-                else:
+                if "succeeded" in content["data"]["status"]:
                     insist = False
+                else:
+                    time.sleep(5)
+                    insist = (time.time() - test_start_time) <= 600                    
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -529,6 +530,12 @@ class K8Tests(AnaliticoApiTestCase):
             # it raises exception if docker image is not found
             sdout, sderr = subprocess_run(image_describe_cmd)
             self.assertEqual(sderr, "")
+
+            # metadata with metrics are stored in the model
+            self.assertIn("metadata", content["data"]["attributes"])
+            metadata = content["data"]["attributes"]["metadata"]
+            self.assertIn("scores", metadata)
+            self.assertIn("number_of_lines", metadata["scores"])
 
             self.k8s_deploy_and_test(target_id, receipe_id)
 
@@ -581,7 +588,7 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run_and_build(self):
         try:
-            test_start_time = datetime.datetime.utcnow().timestamp()
+            test_start_time = time.time()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
@@ -610,11 +617,11 @@ class K8Tests(AnaliticoApiTestCase):
 
                 # missing when still running
                 content = response.json()
-                if "active" in content["data"]["status"]:
-                    time.sleep(3)
-                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 600
-                else:
+                if "succeeded" in content["data"]["status"]:
                     insist = False
+                else:
+                    time.sleep(5)
+                    insist = (time.time() - test_start_time) <= 600
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -688,7 +695,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = time.time() - start_time < 300
+                    insist = (time.time() - start_time) <= 300
 
             # attribute with jupyter deployment details
             self.assertIn("jupyter", ws2.attributes)

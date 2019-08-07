@@ -37,9 +37,9 @@ spec:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive
           readOnly: false
-        resources:
-          limits:
-            nvidia.com/gpu: 1
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 1
       restartPolicy: Never
       volumes:
       - name: analitico-drive
