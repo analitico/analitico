@@ -13,7 +13,6 @@ from api.models import User, Workspace
 # https://stripe.com/docs/api
 # Stripe.js reference:
 # https://stripe.com/docs/stripe-js/reference
-
 # Checkout settings:
 # https://dashboard.stripe.com/account/checkout/settings
 # Checkout fullfillment:
@@ -121,13 +120,10 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
     Returns:
         [dict] -- Summary information on the session that was created.
     """
-
     # retrieve stripe user and create if needed
     customer = stripe_get_customer(user)
-
     # subscription can be for an existing workspace or one that will be created with a new id
     workspace_id = workspace.id if workspace else api.models.workspace.generate_workspace_id()
-
     # Create a session:
     # https://stripe.com/docs/api/checkout/sessions/create
     # https://stripe.com/docs/stripe-js/reference#stripe-redirect-to-checkout
