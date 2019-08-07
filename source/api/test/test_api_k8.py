@@ -378,7 +378,8 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run(self):
         try:
-            test_start_time = time.time()
+            # required utc timestamp for date comparison
+            test_start_time = datetime.datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
@@ -406,8 +407,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = (time.time() - test_start_time) <= 300
-                    
+                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 300
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -588,7 +588,8 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run_and_build(self):
         try:
-            test_start_time = time.time()
+            # required utc timestamp for date comparison
+            test_start_time = datetime.datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
@@ -621,7 +622,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = (time.time() - test_start_time) <= 600
+                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 600
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
