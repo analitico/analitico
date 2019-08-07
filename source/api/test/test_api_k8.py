@@ -621,8 +621,20 @@ class K8Tests(AnaliticoApiTestCase):
             # deploy jupyter
             ws2 = self.deploy_jupyter()
 
-            # wait for running
-            time.sleep(20)
+            # wait for status to be running
+            insist = True
+            start_time = time.time()
+            while insist:
+                # ask to deploy jupyter to update the status of the deployment 
+                ws2 = self.deploy_jupyter()
+
+                jupyter = ws2.get_attribute("jupyter", [])
+                phase = jupyter["servers"][0]["status"]["phase"]
+                if phase == "Running": 
+                    insist = False
+                else:
+                    time.sleep(5)
+                    insist = time.time() - start_time < 300
 
             # attribute with jupyter deployment details
             self.assertIn("jupyter", ws2.attributes)
@@ -651,7 +663,7 @@ class K8Tests(AnaliticoApiTestCase):
             # delete jupyter when workspace is removed
             ws2.delete()
             # wait for pod termination
-            time.sleep(40)
+            time.sleep(60)
             # check all deployed resources to be deleted
             response = subprocess_run(
                 [
@@ -668,7 +680,7 @@ class K8Tests(AnaliticoApiTestCase):
             # all resources removed
             self.assertEqual(0, len(response[0]["items"]))
         except Exception as ex:
-            ws2.refresh_from_db()
+            self.ws2.refresh_from_db()
             k8_deallocate_jupyter(self.ws2)
             raise ex
 

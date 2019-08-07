@@ -447,7 +447,7 @@ def k8_deploy_jupyter(workspace):
         template = k8_customize_and_apply(service_template, **configs)
         assert template, "kubectl did not apply jupyter"
 
-        jupyter["servers"] = [
+        servers = [
             {
                 "service_name": service_name,
                 "service_namespace": service_namespace,
@@ -456,6 +456,26 @@ def k8_deploy_jupyter(workspace):
             }
         ]
 
+    # update status
+    response = subprocess_run(
+        [
+            "kubectl",
+            "get",
+            "pod",
+            "-n",
+            servers[0]["service_namespace"],
+            "--selector",
+            f"app={servers[0]['service_name']}",
+            "--sort-by",
+            "{.metadata.creationTimestamp}",
+            "-o",
+            "json"
+        ]
+    )
+    # expected to be only one pod
+    servers[0]["status"] = response[0]["items"][0]["status"]
+    
+    jupyter["servers"] = servers
     workspace.set_attribute("jupyter", jupyter)
     workspace.save()
     return jupyter
@@ -471,16 +491,7 @@ def k8_deallocate_jupyter(workspace):
             # just to be sure
             assert k8_normalize_name(workspace.id) in server["service_name"]
             # delete service to automatically delete all owened resources
-            subprocess_run(
-                [
-                    "kubectl",
-                    "delete",
-                    "service",
-                    "-n",
-                    server["service_namespace"],
-                    server['service_name']
-                ]
-            )
+            subprocess_run(["kubectl", "delete", "service", "-n", server["service_namespace"], server["service_name"]])
         jupyter.pop("servers")
         workspace.set_attribute("jupyter", jupyter)
         workspace.save()
