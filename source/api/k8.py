@@ -284,7 +284,7 @@ def k8_jobs_create(
         # pass command that should be executed on job docker
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-run-template.yaml")
         configs["run_command"] = str(
-            ["python3", "./tasks/job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/{notebook_name}"]
+            ["python3", "./tasks/job.py", os.path.join(f"$ANALITICO_DRIVE/{item.type}s/{item.id}", notebook_name)]
         )
 
         configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"

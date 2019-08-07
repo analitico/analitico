@@ -376,19 +376,20 @@ class K8Tests(AnaliticoApiTestCase):
             self.delete_job(another_job_id)
 
     @tag("slow", "k8s", "live")
-    def test_k8s_jobs_run(self):
+    def test_k8s_jobs_run(self, notebook_name = None):
         try:
             # required utc timestamp for date comparison
             test_start_time = datetime.datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
+            notebook_name = "notebook.ipynb" if not notebook_name else notebook_name
             server = "https://staging.analitico.ai"
-            headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9"}
+            headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
             # run the recipe
             url = reverse("api:recipe-k8-jobs", args=(receipe_id, analitico.ACTION_RUN))
-            response = requests.post(server + url, headers=headers)
+            response = requests.post(server + url, data=json.dumps({"data": {"notebook": notebook_name}}), headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
             content = response.json()
@@ -411,8 +412,9 @@ class K8Tests(AnaliticoApiTestCase):
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
+            self.assertEqual(notebook_name, content["data"]["metadata"]["annotations"]["analitico.ai/notebook-name"])
 
-            url = reverse("api:recipe-files", args=(receipe_id, "notebook.ipynb"))
+            url = reverse("api:recipe-files", args=(receipe_id, notebook_name))
             response = requests.get(server + url, headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -432,49 +434,8 @@ class K8Tests(AnaliticoApiTestCase):
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run_custom_notebook_name(self):
-        try:
-            test_start_time = time.time()
-
-            # named: K8Tests.test_k8s_jobs_run
-            receipe_id = "rx_x5b1npmn"
-            # custom notebook
-            notebook_name = "my-notebook.ipynb"
-            server = "https://staging.analitico.ai"
-            headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
-
-            # run the recipe
-            url = reverse("api:recipe-k8-jobs", args=(receipe_id, analitico.ACTION_RUN))
-            response = requests.post(
-                server + url, data=json.dumps({"data": {"notebook": notebook_name}}), headers=headers
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-            content = response.json()
-            job_id = content["data"]["metadata"]["name"]
-            url = reverse("api:recipe-k8-jobs", args=(receipe_id, job_id))
-
-            # wait to complete
-            insist = True
-            while insist:
-                response = requests.get(server + url, headers=headers)
-                self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-                # missing when still running
-                content = response.json()
-                if "succeeded" in content["data"]["status"]:
-                    insist = False
-                else:
-                    time.sleep(5)
-                    insist = (time.time() - test_start_time) <= 300
-
-            self.assertIn("succeeded", content["data"]["status"])
-            self.assertEqual(1, content["data"]["status"]["succeeded"])
-            self.assertEqual(notebook_name, content["data"]["metadata"]["labels"]["analitico.ai/notebook-name"])
-
-        finally:
-            # clean up
-            if "job_id" in locals():
-                self.delete_job(job_id)
+        self.test_k8s_jobs_run("my-notebook.ipynb")
+        self.test_k8s_jobs_run("/subfolder/another-my-notebook.ipynb")
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_build(self):
@@ -574,6 +535,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             content = response.json()
             service_url = content["data"]["status"]["url"]
+            time.sleep(10)
 
             # notebook has been written to install packages and require them
             # when calling for prediction. If the build and the deployed
@@ -696,8 +658,8 @@ class K8Tests(AnaliticoApiTestCase):
                 if phase == "Running":
                     insist = False
                 else:
-                    time.sleep(5)
                     insist = (time.time() - start_time) <= 300
+                time.sleep(10)
 
             # attribute with jupyter deployment details
             self.assertIn("jupyter", ws2.attributes)
@@ -743,9 +705,8 @@ class K8Tests(AnaliticoApiTestCase):
             # all resources removed
             self.assertEqual(0, len(response[0]["items"]))
         except Exception as ex:
-            if ws2:
-                ws2.refresh_from_db()
-                k8_deallocate_jupyter(ws2)
+            self.ws2.refresh_from_db()
+            k8_deallocate_jupyter(self.ws2)
             raise ex
 
     @tag("slow", "k8s", "live")
@@ -765,6 +726,5 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(token, token_redeployed)
         finally:
             # cleanup
-            if ws2:
-                ws2.refresh_from_db()
-                k8_deallocate_jupyter(ws2)
+            self.ws2.refresh_from_db()
+            k8_deallocate_jupyter(self.ws2)
