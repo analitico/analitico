@@ -836,6 +836,14 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(response["Last-Modified"], ls0.extra["last_modified"])
             self.assertEqual(int(response["Content-Length"]), ls0.size)
             self.assertEqual(int(response["Content-Length"]), len(data))
+            with self.assertRaises(KeyError):
+                response["Content-Disposition"]
+
+            # retrieve contents from raw file api with ?attachment=true to force download as attachment
+            response = self.client.get(url + "?attachment=true")
+            self.assertEqual(response.status_code, 200)
+            content_disposition = f'attachment; filename="{obj_name}"'
+            self.assertEqual(response["Content-Disposition"], content_disposition)
 
             # delete item
             response = self.client.delete(url)

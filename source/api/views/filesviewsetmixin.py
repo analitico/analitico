@@ -340,6 +340,11 @@ class FilesViewSetMixin:
             response["Last-Modified"] = obj_ls.extra["last_modified"]
             response["ETag"] = obj_ls.extra["etag"]
 
+            # if ?attachment=true add content disposition header
+            attachment = get_query_parameter_as_bool(request, "attachment", False)
+            if attachment:
+                response["Content-Disposition"] = f'attachment; filename="{os.path.basename(path)}"'
+
             # add amazon compatible metadata headers if any
             metaheaders = api.libcloud.metadata_to_amz_meta_headers(obj_ls.meta_data)
             for key, value in metaheaders.items():
