@@ -475,7 +475,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
-            self.assertEqual(notebook_name, content["data"]["metadata"]["labels"]["analitico.ai/notebook-name"])
+            self.assertEqual(notebook_name, content["data"]["metadata"]["annotations"]["analitico.ai/notebook-name"])
 
             # when build completes the target model is updated with the
             # docker image specifications
@@ -589,7 +589,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
-            self.assertEqual(notebook_name, content["data"]["metadata"]["labels"]["analitico.ai/notebook-name"])
+            self.assertEqual(notebook_name, content["data"]["metadata"]["annotations"]["analitico.ai/notebook-name"])
 
             url = reverse("api:recipe-files", args=(receipe_id, "notebook.ipynb"))
             response = requests.get(server + url, headers=headers)
