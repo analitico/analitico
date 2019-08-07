@@ -677,7 +677,7 @@ class K8Tests(AnaliticoApiTestCase):
         # clean up
         self.delete_job(job_id)
 
-    @tag("slow", "k8s")
+    @tag("slow", "k8s", "live")
     def test_deploy_jupyter(self):
         try:
             # deploy jupyter
@@ -742,11 +742,12 @@ class K8Tests(AnaliticoApiTestCase):
             # all resources removed
             self.assertEqual(0, len(response[0]["items"]))
         except Exception as ex:
-            self.ws2.refresh_from_db()
-            k8_deallocate_jupyter(self.ws2)
+            if ws2:
+                ws2.refresh_from_db()
+                k8_deallocate_jupyter(ws2)
             raise ex
 
-    @tag("slow", "k8s")
+    @tag("slow", "k8s", "live")
     def test_jupyter_is_not_deployed_twice(self):
         try:
             ws2 = self.deploy_jupyter()
@@ -763,4 +764,6 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(token, token_redeployed)
         finally:
             # cleanup
-            k8_deallocate_jupyter(ws2)
+            if ws2:
+                ws2.refresh_from_db()
+                k8_deallocate_jupyter(ws2)
