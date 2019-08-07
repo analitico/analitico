@@ -9,6 +9,7 @@ metadata:
     analitico.ai/target-id: {target_id}
     analitico.ai/job-action: {job_action}
     analitico.ai/job-id: {job_id}
+    analitico.ai/notebook-name: {notebook_name}
 spec:
   # eg, packages download error
   backoffLimit: 3

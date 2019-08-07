@@ -17,11 +17,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         item_id = options["item_id"][0]
         target_id = options["item_id"][1]
+        notebook = options["item_id"][2]
 
         item = factory.get_item(item_id)  # the recipe
         target = factory.get_item(target_id)  # the model
+        job_data = {"notebook": notebook} # the notebook name
         try:
-            k8_build_v2(item, target)
+            k8_build_v2(item, target, job_data)
         finally:
             notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
             if notification_url:

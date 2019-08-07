@@ -109,6 +109,9 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
 
         # extract code from notebook
         notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
+        # keep the notebook name into the model 
+        target.set_attribute("notebook", notebook_name)
+
         notebook_name = os.path.join(tmpdirname, notebook_name)
         notebook = read_json(notebook_name)
         if not notebook:
@@ -124,6 +127,12 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
         save_json(notebook, os.path.join(tmpdirname, "notebook.ipynb"), indent=2)
         save_text(source, os.path.join(tmpdirname, "notebook.py"))
         save_text(script, os.path.join(tmpdirname, "notebook.sh"))
+
+        # check if the recipe produced metadata.json
+        metadata_filename = os.path.join(tmpdirname, "metadata.json")
+        if os.path.isfile(metadata_filename):
+            metadata = read_json(metadata_filename)
+            target.set_attribute("metadata", metadata)
 
         # docker build docker image need to be lowercase
         image_name = f"eu.gcr.io/analitico-api/{item_id_slug}:{target_id_slug}"
@@ -263,6 +272,9 @@ def k8_jobs_create(
     configs["item_id"] = item.id
     configs["item_type"] = item.type
 
+    notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
+    configs["notebook_name"] = notebook_name
+
     # the run job needs to run using an image of the code that is the same of what we are running here
     # gitlab tags our build with the environment variable ANALITICO_COMMIT_SHA
     # so we can use that to make sure that the build image is the same
@@ -272,7 +284,7 @@ def k8_jobs_create(
         # pass command that should be executed on job docker
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-run-template.yaml")
         configs["run_command"] = str(
-            ["python3", "./tasks/job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/notebook.ipynb"]
+            ["python3", "./tasks/job.py", f"$ANALITICO_DRIVE/{item.type}s/{item.id}/{notebook_name}"]
         )
 
         configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
@@ -295,7 +307,9 @@ def k8_jobs_create(
         # then build and push a docker from it and save the docker's information in the model.
         configs["target_id"] = model.id
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-build-template.yaml")
-        configs["build_command"] = str(["/home/www/analitico/scripts/builder-start.sh", item.id, model.id])
+        configs["build_command"] = str(
+            ["/home/www/analitico/scripts/builder-start.sh", item.id, model.id, notebook_name]
+        )
 
         configs["build_image"] = f"eu.gcr.io/analitico-api/analitico:{image_tag}"
 
@@ -449,8 +463,8 @@ def k8_deploy_jupyter(workspace):
 
         servers = [
             {
-                "service_name": service_name,
-                "service_namespace": service_namespace,
+                "name": service_name,
+                "namespace": service_namespace,
                 "url": f"https://{service_name}.{service_namespace}.analitico.ai",
                 "token": token,
             }
@@ -463,18 +477,18 @@ def k8_deploy_jupyter(workspace):
             "get",
             "pod",
             "-n",
-            servers[0]["service_namespace"],
+            servers[0]["namespace"],
             "--selector",
-            f"app={servers[0]['service_name']}",
+            f"app={servers[0]['name']}",
             "--sort-by",
             "{.metadata.creationTimestamp}",
             "-o",
-            "json"
+            "json",
         ]
     )
     # expected to be only one pod
     servers[0]["status"] = response[0]["items"][0]["status"]
-    
+
     jupyter["servers"] = servers
     workspace.set_attribute("jupyter", jupyter)
     workspace.save()
@@ -486,12 +500,12 @@ def k8_deallocate_jupyter(workspace):
     jupyter = workspace.get_attribute("jupyter")
     if jupyter and "servers" in jupyter:
         for server in jupyter["servers"]:
-            assert server["service_name"]
-            assert server["service_namespace"]
+            assert server["name"]
+            assert server["namespace"]
             # just to be sure
-            assert k8_normalize_name(workspace.id) in server["service_name"]
+            assert k8_normalize_name(workspace.id) in server["name"]
             # delete service to automatically delete all owened resources
-            subprocess_run(["kubectl", "delete", "service", "-n", server["service_namespace"], server["service_name"]])
+            subprocess_run(["kubectl", "delete", "service", "-n", server["namespace"], server["name"]])
         jupyter.pop("servers")
         workspace.set_attribute("jupyter", jupyter)
         workspace.save()

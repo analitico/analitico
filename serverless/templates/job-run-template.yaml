@@ -8,6 +8,7 @@ metadata:
     analitico.ai/item-id: {item_id}
     analitico.ai/job-action: {job_action}
     analitico.ai/job-id: {job_id}
+    analitico.ai/notebook-name: {notebook_name}
 spec:
   # no retries
   backoffLimit: 0

@@ -19,6 +19,7 @@ source $BASEDIR/import-env.sh
 cd $BASEDIR/../source
 
 echo "Starting builder..."
-./manage.py builder $1 $2
+# eg: ./manage.py builder rx_9u8x8xom ml_b5l4ffj4 my-notebook.ipynb
+./manage.py builder $1 $2 $3
 
 exit 0
