@@ -112,7 +112,7 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
         # keep the notebook name into the model 
         target.set_attribute("notebook", notebook_name)
 
-        notebook_name = os.path.join(tmpdirname, notebook_name)
+        notebook_name = os.path.normpath(f"{tmpdirname}/{notebook_name}")
         notebook = read_json(notebook_name)
         if not notebook:
             raise AnaliticoException(
@@ -284,7 +284,7 @@ def k8_jobs_create(
         # pass command that should be executed on job docker
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-run-template.yaml")
         configs["run_command"] = str(
-            ["python3", "./tasks/job.py", os.path.join(f"$ANALITICO_DRIVE/{item.type}s/{item.id}", notebook_name)]
+            ["python3", "./tasks/job.py", os.path.normpath(f"$ANALITICO_DRIVE/{item.type}s/{item.id}/{notebook_name}")]
         )
 
         configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"

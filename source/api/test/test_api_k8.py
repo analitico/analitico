@@ -435,6 +435,7 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run_custom_notebook_name(self):
         self.test_k8s_jobs_run("my-notebook.ipynb")
+        self.test_k8s_jobs_run("subfolder/another-my-notebook.ipynb")
         self.test_k8s_jobs_run("/subfolder/another-my-notebook.ipynb")
 
     @tag("slow", "k8s", "live")
@@ -591,7 +592,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(1, content["data"]["status"]["succeeded"])
             self.assertEqual(notebook_name, content["data"]["metadata"]["annotations"]["analitico.ai/notebook-name"])
 
-            url = reverse("api:recipe-files", args=(receipe_id, "notebook.ipynb"))
+            url = reverse("api:recipe-files", args=(receipe_id, notebook_name))
             response = requests.get(server + url, headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
