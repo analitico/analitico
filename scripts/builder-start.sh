@@ -20,6 +20,6 @@ cd $BASEDIR/../source
 
 echo "Starting builder..."
 # eg: ./manage.py builder rx_9u8x8xom ml_b5l4ffj4 "my notebook.ipynb"
-./manage.py builder $1 $2 "$*"
+./manage.py builder $1 $2 "$3"
 
 exit 0
