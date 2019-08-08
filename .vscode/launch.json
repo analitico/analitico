@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.test_api_dataset.DatasetTests.test_dataset_job_action_process_csv_from_analitico_asset",
+                "api.test.test_api_k8.K8Tests",
                 "-v",
                 "2"
             ],

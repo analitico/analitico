@@ -376,14 +376,14 @@ class K8Tests(AnaliticoApiTestCase):
             self.delete_job(another_job_id)
 
     @tag("slow", "k8s", "live")
-    def test_k8s_jobs_run(self, notebook_name = None):
+    def test_k8s_jobs_run(self):
         try:
             # required utc timestamp for date comparison
             test_start_time = datetime.datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
-            notebook_name = "notebook.ipynb" if not notebook_name else notebook_name
+            notebook_name = "notebook.ipynb"
             server = "https://staging.analitico.ai"
             headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
@@ -433,19 +433,12 @@ class K8Tests(AnaliticoApiTestCase):
                 self.delete_job(job_id)
 
     @tag("slow", "k8s", "live")
-    def test_k8s_jobs_run_custom_notebook_name(self):
-        self.test_k8s_jobs_run("my notebook.ipynb")
-        self.test_k8s_jobs_run("subfolder/another my-notebook.ipynb")
-        self.test_k8s_jobs_run("/subfolder/another my-notebook.ipynb")
-
-    @tag("slow", "k8s", "live")
     def test_k8s_jobs_build(self):
         test_start_time = time.time()
 
         # named: K8Tests.test_k8s_jobs_run
         receipe_id = "rx_x5b1npmn"
-        # custom notebook
-        notebook_name = "my-notebook.ipynb"
+        notebook_name = "notebook.ipynb"
         server = "https://staging.analitico.ai"
         headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
@@ -550,15 +543,15 @@ class K8Tests(AnaliticoApiTestCase):
             subprocess_run("kubectl delete kservice -n cloud " + k8_service_name, shell=True)
 
     @tag("slow", "k8s", "live")
-    def test_k8s_jobs_run_and_build(self):
+    def test_k8s_jobs_run_and_build(self, notebook_name = None):
         try:
             # required utc timestamp for date comparison
             test_start_time = datetime.datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
-            # custom notebook
-            notebook_name = "my-notebook.ipynb"
+            # default or custom name
+            notebook_name = "notebook.ipynb" if not notebook_name else notebook_name
             server = "https://staging.analitico.ai"
             headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
@@ -630,6 +623,12 @@ class K8Tests(AnaliticoApiTestCase):
                     subprocess_run(
                         "gcloud container images delete --force-delete-tags --quiet " + docker["image"], shell=True
                     )
+
+    @tag("slow", "k8s")
+    def test_k8s_jobs_run_and_build_custom_notebook_name(self):
+        self.test_k8s_jobs_run_and_build("my notebook.ipynb")
+        self.test_k8s_jobs_run_and_build("subfolder/another my-notebook.ipynb")
+        self.test_k8s_jobs_run_and_build("/subfolder/another my-notebook.ipynb")
 
     def test_get_job_that_does_not_exist(self):
         """ Expect 404 not found when a job does not exist """
