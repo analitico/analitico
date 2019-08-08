@@ -92,12 +92,13 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
         copy_directory(K8_JOB_TEMPLATE_DIR, tmpdirname)
 
         # copy current contents of this recipe's files on the attached drive to our docker directory
-        item_drive_path = os.environ.get("ANALITICO_ITEM_PATH", None)
-        if item_drive_path:
+        analitico_drive = os.environ.get("ANALITICO_DRIVE", None)
+        if analitico_drive:
+            item_drive_path = os.path.join(analitico_drive, f"{item.type}s/{item.id}")
             copy_directory(item_drive_path, tmpdirname)
         else:
             logger.error(
-                f"k8_build can't find environment variable ANALITICO_ITEM_PATH and cannot copy source item files."
+                f"k8_build can't find environment variable ANALITICO_DRIVE and cannot copy source item files."
             )
 
         # copy analitico SDK and s24 helper methods
@@ -109,14 +110,21 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
 
         # extract code from notebook
         notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
-        # keep the notebook name into the model 
-        target.set_attribute("notebook", notebook_name)
-
-        notebook_name = os.path.normpath(f"{tmpdirname}/{notebook_name}")
-        notebook = read_json(notebook_name)
+        notebook = read_json(os.path.normpath(f"{tmpdirname}/{notebook_name}"))
         if not notebook:
             raise AnaliticoException(
                 f"Item '{item.id}' does not contain a notebook that can be built, please add a notebook."
+            )
+        
+        if analitico_drive:
+            # save notebook for inspection and 
+            # keep the notebook name into the model 
+            target_drive_path = os.path.join(analitico_drive, f"{target.type}s/{target.id}")
+            save_json(notebook, os.path.normpath(f"{target_drive_path}/{notebook_name}"), indent=2)
+            target.set_attribute("notebook", notebook_name)
+        else:
+            logger.error(
+                f"k8_build can't find environment variable ANALITICO_DRIVE and cannot save the notebook file for inspections."
             )
 
         # extract source code and scripting from notebook
@@ -306,6 +314,7 @@ def k8_jobs_create(
         # which is a custom command that will copy the recipe's files into a temporary directory
         # then build and push a docker from it and save the docker's information in the model.
         configs["target_id"] = model.id
+        configs["target_type"] = model.type
         configs["job_template"] = os.path.join(K8_TEMPLATE_DIR, "job-build-template.yaml")
         configs["build_command"] = str(
             ["/home/www/analitico/scripts/builder-start.sh", item.id, model.id, notebook_name]

@@ -476,8 +476,16 @@ class K8Tests(AnaliticoApiTestCase):
             url = reverse("api:model-detail", args=(target_id,))
             response = requests.get(server + url, headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-
             content = response.json()
+
+            # notebook name is saved in the model
+            self.assertIn("notebook", content["data"]["attributes"])
+            self.assertEqual(notebook_name, content["data"]["attributes"]["notebook"])
+            # notebook is copied in the target path on the drive
+            file_url = reverse("api:model-files", args=(target_id, notebook_name))
+            response = requests.get(server + file_url, headers=headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
             self.assertIn("docker", content["data"]["attributes"])
             docker = content["data"]["attributes"]["docker"]
             image_describe_cmd = ["gcloud", "container", "images", "describe", "--format", "json", docker["image"]]
@@ -529,7 +537,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             content = response.json()
             service_url = content["data"]["status"]["url"]
-            time.sleep(10)
+            time.sleep(30)
 
             # notebook has been written to install packages and require them
             # when calling for prediction. If the build and the deployed
