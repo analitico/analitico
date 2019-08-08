@@ -120,7 +120,10 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
             # save notebook for inspection and 
             # keep the notebook name into the model 
             target_drive_path = os.path.join(analitico_drive, f"{target.type}s/{target.id}")
-            save_json(notebook, os.path.normpath(f"{target_drive_path}/{notebook_name}"), indent=2)
+            # eg: /mnt/analitico-drive/models/ml_123456/my-folder/my-notebook.ipynb
+            notebook_fullname = os.path.normpath(f"{target_drive_path}/{notebook_name}")
+            os.makedirs(os.path.basename(notebook_fullname), exist_ok=True)
+            save_json(notebook, notebook_fullname, indent=2)
             target.set_attribute("notebook", notebook_name)
         else:
             logger.error(
