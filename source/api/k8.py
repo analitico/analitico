@@ -92,13 +92,12 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
         copy_directory(K8_JOB_TEMPLATE_DIR, tmpdirname)
 
         # copy current contents of this recipe's files on the attached drive to our docker directory
-        analitico_drive = os.environ.get("ANALITICO_DRIVE", None)
-        if analitico_drive:
-            item_drive_path = os.path.join(analitico_drive, f"{item.type}s/{item.id}")
+        item_drive_path = os.environ.get("ANALITICO_ITEM_PATH", None)
+        if item_drive_path:
             copy_directory(item_drive_path, tmpdirname)
         else:
             logger.error(
-                f"k8_build can't find environment variable ANALITICO_DRIVE and cannot copy source item files."
+                f"k8_build can't find environment variable ANALITICO_ITEM_PATH and cannot copy source item files."
             )
 
         # copy analitico SDK and s24 helper methods
@@ -115,14 +114,15 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
             raise AnaliticoException(
                 f"Item '{item.id}' does not contain a notebook that can be built, please add a notebook."
             )
-        
+
+        analitico_drive = os.environ.get("ANALITICO_DRIVE", None)
         if analitico_drive:
-            # save notebook for inspection and 
-            # keep the notebook name into the model 
+            # save notebook for inspection and
+            # keep the notebook name into the model
             target_drive_path = os.path.join(analitico_drive, f"{target.type}s/{target.id}")
             # eg: /mnt/analitico-drive/models/ml_123456/my-folder/my-notebook.ipynb
             notebook_fullname = os.path.normpath(f"{target_drive_path}/{notebook_name}")
-            os.makedirs(os.path.basename(notebook_fullname), exist_ok=True)
+            os.makedirs(os.path.dirname(notebook_fullname), exist_ok=True)
             save_json(notebook, notebook_fullname, indent=2)
             target.set_attribute("notebook", notebook_name)
         else:
