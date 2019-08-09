@@ -41,6 +41,8 @@ from libcloud.storage.base import Object
 
 import api.metadata
 
+# chunk size when streaming content
+CHUNK_SIZE = 1024 * 1024
 
 ##
 ## FilesSerializer
@@ -371,7 +373,8 @@ class FilesViewSetMixin:
                             "You cannot upload multiple files at once.", status=status.HTTP_400_BAD_REQUEST
                         )
                     # read data directly from file that django saved somewhere
-                    data = iter(files[0])
+                    # https://docs.djangoproject.com/en/2.2/ref/files/uploads/
+                    data = files[0].chunks(chunk_size=CHUNK_SIZE)
             else:
                 # request acts as a file-like object
                 data = request.stream

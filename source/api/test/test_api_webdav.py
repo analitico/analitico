@@ -746,7 +746,7 @@ class WebdavTests(AnaliticoApiTestCase):
 
     @timeit
     def test_webdav_driver_large_upload_128mb(self):
-        self.upload_download_via_webdav_driver(64 * MB_SIZE)
+        self.upload_download_via_webdav_driver(128 * MB_SIZE)
 
     @tag("slow")
     @timeit
@@ -1188,7 +1188,7 @@ class WebdavTests(AnaliticoApiTestCase):
 
     @timeit
     def test_webdav_files_api_large_upload_download_128mb(self):
-        self.upload_download_via_files_api(64 * MB_SIZE)
+        self.upload_download_via_files_api(128 * MB_SIZE)
 
     @tag("slow")
     @timeit
