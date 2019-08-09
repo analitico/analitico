@@ -57,7 +57,7 @@ class WebdavTests(AnaliticoApiTestCase):
             item = item.workspace
         return item.storage.driver
 
-    def upload_random_rainbows(self, size):
+    def upload_download_via_webdav_driver(self, size):
         """ Uploads random bytes to test upload limits, timeouts, etc. Size of upload is specified by caller. """
         driver = self.get_driver()
         try:
@@ -76,9 +76,10 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(obj.name, container_name + obj_name)
             elapsed_ms = max(1, time_ms(started_ms))
             kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
-            logger.info(
+            msg = (
                 f"\nupload - driver.upload_object_via_stream: {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
             )
+            logger.info(msg)
 
             # get and download object
             obj = driver.get_object(container_name, obj_name)
@@ -109,6 +110,70 @@ class WebdavTests(AnaliticoApiTestCase):
             self.assertEqual(obj_data, downloaded_data)
         finally:
             driver.rmdir(container_name)
+
+    def upload_download_via_files_api(self, size):
+        """
+        This test is using the /files api to upload and download files. The files api then upload
+        to storage for example using Hetzner webdav driver. So when you're running tests locally
+        you're really just uploading to yourself (not the server) then uploading to Hetzner storage box.
+        """
+        item = api.models.Dataset(workspace=self.ws_storage_webdav)
+        item.save()
+        try:
+            filename = "dir1/dir2/random.stuff"
+            url = reverse(f"api:{item.type}-files", args=(item.id, filename))
+            self.auth_token(self.token1)
+
+            # random bytes to avoid compression, etc
+            with tempfile.NamedTemporaryFile(prefix="test_", suffix=".stuff") as f1:
+                # write random contents to file
+                random_data1 = bytearray(os.urandom(size))
+                f1.write(random_data1)
+                f1.seek(0)
+
+                # upload as raw file to /files api
+                started_ms = time_ms()
+                response1 = self.client.put(url, random_data1, content_type="application/x-binary")
+                self.assertEqual(response1.status_code, status.HTTP_204_NO_CONTENT)
+                elapsed_ms = max(1, time_ms(started_ms))
+                kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
+                msg = f"upload (raw via /files): {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
+                logger.info(msg)
+
+                # upload as multipart file to /files api
+                started_ms = time_ms()
+                response2 = self.client.post(url, {"file2": f1}, format="multipart")
+                self.assertEqual(response2.status_code, status.HTTP_204_NO_CONTENT)
+                elapsed_ms = max(1, time_ms(started_ms))
+                kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
+                msg = f"upload (multipart via /files): {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
+                logger.info(msg)
+
+                # download via /files api
+                with tempfile.NamedTemporaryFile(prefix="test_", suffix=".stuff") as f3:
+                    started_ms = time_ms()
+                    response3 = self.client.get(url)
+                    self.assertEqual(response3.status_code, status.HTTP_200_OK)
+                    self.assertTrue(isinstance(response3, StreamingHttpResponse))
+                    for chunk in response3.streaming_content:
+                        logger.info(f"download chunk size: {len(chunk)}")
+                        f3.write(chunk)
+                    elapsed_ms = max(1, time_ms(started_ms))
+                    kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
+                    msg = f"download (multipart via /files): {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
+                    logger.info(msg)
+
+                    f3.seek(0)
+                    random_data3 = f3.read()
+                    self.assertEqual(random_data1, random_data3)
+
+        except Exception as exc:
+            logger.error(f"upload_download_via_files_api - {exc}")
+            raise exc
+
+        finally:
+            if item:
+                item.delete()
 
     def setUp(self):
         self.setup_basics()
@@ -673,17 +738,21 @@ class WebdavTests(AnaliticoApiTestCase):
 
     @timeit
     def test_webdav_driver_large_upload_1mb(self):
-        self.upload_random_rainbows(1 * MB_SIZE)
+        self.upload_download_via_webdav_driver(1 * MB_SIZE)
 
     @timeit
     def test_webdav_driver_large_upload_64mb(self):
-        self.upload_random_rainbows(64 * MB_SIZE)
+        self.upload_download_via_webdav_driver(64 * MB_SIZE)
+
+    @timeit
+    def test_webdav_driver_large_upload_128mb(self):
+        self.upload_download_via_webdav_driver(64 * MB_SIZE)
 
     @tag("slow")
     @timeit
     def OFFtest_webdav_driver_large_upload_4gb(self):
         # big upload should trigger all sorts of timeouts and memory problems
-        self.upload_random_rainbows(4 * 1024 * MB_SIZE)  # 4 GBs
+        self.upload_download_via_webdav_driver(4 * 1024 * MB_SIZE)  # 4 GBs
 
     def test_webdav_driver_upload_with_extra(self):
         driver = self.get_driver()
@@ -1108,6 +1177,24 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             item.delete()
             item.save()
+
+    @timeit
+    def test_webdav_files_api_large_upload_download_1mb(self):
+        self.upload_download_via_files_api(1 * MB_SIZE)
+
+    @timeit
+    def test_webdav_files_api_large_upload_download_64mb(self):
+        self.upload_download_via_files_api(64 * MB_SIZE)
+
+    @timeit
+    def test_webdav_files_api_large_upload_download_128mb(self):
+        self.upload_download_via_files_api(64 * MB_SIZE)
+
+    @tag("slow")
+    @timeit
+    def OFFtest_webdav_files_api_large_upload_download_4gb(self):
+        # big upload should trigger all sorts of timeouts and memory problems
+        self.upload_download_via_webdav_driver(4 * 1024 * MB_SIZE)  # 4 GBs
 
     ##
     ## sorting files and directories
