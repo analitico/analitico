@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.test_api_k8.K8Tests",
+                "analitico.test.test_sdk.SDKTests.test_sdk_upload_download_128mb",
                 "-v",
                 "2"
             ],
