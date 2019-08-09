@@ -44,6 +44,7 @@ try:
     # retrieve notebook that should be executed
     notebook_path = os.path.expandvars(args.notebooks[0])
     assert os.path.exists(notebook_path), f"Notebook {notebook_path} could not be found."
+    notebook_dir = os.path.dirname(notebook_path)
     notebook = read_json(notebook_path)
 
     # process commands embedded in our notebook first to install dependencies, etc
@@ -60,10 +61,12 @@ try:
                 # extract ! lines for scripts, no % magic lines
                 if line and line[0] == "!":
                     # command that should be passed to setup script
-                    cmd, cmd_args = line[1:], line[1:].split(" ")
+                    cmd = line[1:]
                     logging.info(f"# cell: {i+1}, line: {j+1}\n{cmd}\n\n")
                     try:
-                        subprocess_run(cmd_args)
+                        # run the cmd in the workdir of the notebook
+                        # and directly to the shell without parsing the arguments
+                        subprocess_run(cmd, shell=True, cwd=notebook_dir)
                     except Exception as exc:
                         raise AnaliticoException(
                             f"Error while preprocessing {notebook_path}, command: {cmd}, exc: {exc}"
@@ -71,7 +74,6 @@ try:
 
     # process notebook with papermill
     try:
-        notebook_dir = os.path.dirname(notebook_path)
         os.chdir(notebook_dir)
         logging.info("Notebook: " + notebook_path)
         logging.info("Notebook directory: " + os.getcwd())
