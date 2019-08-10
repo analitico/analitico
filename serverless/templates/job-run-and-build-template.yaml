@@ -41,9 +41,12 @@ spec:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive
           readOnly: false
-        # resources:
-        #   limits:
-        #     nvidia.com/gpu: 1
+        resources:
+          requests:
+            cpu: 500m
+          limits:
+            cpu: 4
+#           nvidia.com/gpu: 1
       containers:
       # build item into a docker, push to registry, store docker information
       - name: build-job-container
@@ -74,6 +77,13 @@ spec:
           readOnly: false
         - name: docker-storage
           mountPath: /var/lib/docker
+        resources:
+          requests:
+            cpu: 100m
+            memory: 4Gi
+          limits:
+            cpu: 1
+            memory: 4Gi
       volumes:
       - name: analitico-drive
         flexVolume:

@@ -46,6 +46,13 @@ spec:
           readOnly: false
         - name: docker-storage
           mountPath: /var/lib/docker
+        resources:
+          requests:
+            cpu: 100m
+            memory: 4Gi
+          limits:
+            cpu: 1
+            memory: 4Gi
       volumes:
       - name: analitico-drive
         flexVolume:
