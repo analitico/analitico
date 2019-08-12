@@ -387,6 +387,9 @@ def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
     )
     return jobs
 
+def k8_delete_job(job_id: str):
+    """ Delete the job on Kubernetes """
+    subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
 
 ##
 ## Jupyter - allocate and deallocate Jupyter server nodes

@@ -66,9 +66,6 @@ class K8Tests(AnaliticoApiTestCase):
         time.sleep(15)
         return service
 
-    def delete_job(self, job_id: str):
-        subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
-
     def deploy_jupyter(self):
         url = reverse("api:workspace-jupyter", args=(self.ws2.id,))
 
@@ -372,8 +369,8 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(len(data["hits"]["hits"]), 0)
         finally:
             # clean up
-            self.delete_job(job_id)
-            self.delete_job(another_job_id)
+            k8_delete_job(job_id)
+            k8_delete_job(another_job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run(self):
@@ -389,7 +386,9 @@ class K8Tests(AnaliticoApiTestCase):
 
             # run the recipe
             url = reverse("api:recipe-k8-jobs", args=(receipe_id, analitico.ACTION_RUN))
-            response = requests.post(server + url, data=json.dumps({"data": {"notebook": notebook_name}}), headers=headers)
+            response = requests.post(
+                server + url, data=json.dumps({"data": {"notebook": notebook_name}}), headers=headers
+            )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
             content = response.json()
@@ -430,7 +429,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up
             if "job_id" in locals():
-                self.delete_job(job_id)
+                k8_delete_job(job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_build(self):
@@ -465,7 +464,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = (time.time() - test_start_time) <= 600                    
+                    insist = (time.time() - test_start_time) <= 600
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -494,7 +493,7 @@ class K8Tests(AnaliticoApiTestCase):
             sdout, sderr = subprocess_run(image_describe_cmd)
             self.assertEqual(sderr, "")
 
-            # TODO sdk / set_metric save in metadata.json #350 
+            # TODO sdk / set_metric save in metadata.json #350
             # metadata with metrics are stored in the model
             # self.assertIn("metadata", content["data"]["attributes"])
             # metadata = content["data"]["attributes"]["metadata"]
@@ -506,7 +505,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up job, model and image
             if job_id:
-                self.delete_job(job_id)
+                k8_delete_job(job_id)
                 url = reverse("api:model-detail", args=(target_id,))
                 requests.delete(server + url, headers=headers)
                 if "docker" in locals() and "image" in docker:
@@ -551,7 +550,7 @@ class K8Tests(AnaliticoApiTestCase):
             subprocess_run("kubectl delete kservice -n cloud " + k8_service_name, shell=True)
 
     @tag("slow", "k8s", "live")
-    def test_k8s_jobs_run_and_build(self, notebook_name = None):
+    def test_k8s_jobs_run_and_build(self, notebook_name=None):
         try:
             # required utc timestamp for date comparison
             test_start_time = datetime.datetime.utcnow().timestamp()
@@ -624,7 +623,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up job, model and image
             if job_id:
-                self.delete_job(job_id)
+                k8_delete_job(job_id)
                 url = reverse("api:model-detail", args=(target_id,))
                 requests.delete(server + url, headers=headers)
                 if "docker" in locals() and "image" in docker:
@@ -646,7 +645,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # clean up
-        self.delete_job(job_id)
+        k8_delete_job(job_id)
 
     @tag("slow", "k8s", "live")
     def test_deploy_jupyter(self):

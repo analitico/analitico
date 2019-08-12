@@ -36,7 +36,7 @@ class ApiEndpointPipelinePlugin(EndpointPipelinePlugin):
 
         # read training information from disk
         artifacts_path = self.factory.get_artifacts_directory()
-        training_path = os.path.join(artifacts_path, "training.json")
+        training_path = os.path.join(artifacts_path, "metadata.json")
         training = read_json(training_path)
         assert training
 

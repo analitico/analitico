@@ -17,7 +17,7 @@ import analitico.plugin
 import analitico.utilities
 
 from analitico import AnaliticoException, ACTION_PROCESS, ACTION_TRAIN, logger
-from analitico.constants import ACTION_PREDICT
+from analitico.constants import ACTION_PREDICT, ACTION_RUN, ACTION_BUILD, ACTION_RUN_AND_BUILD
 from analitico.status import (
     STATUS_CREATED,
     STATUS_RUNNING,
@@ -208,7 +208,7 @@ def timeout_jobs() -> [Job]:
 # https://gitlab.com/doctormo/python-crontab/
 
 
-def schedule_items(items, action: str) -> [Job]:
+def schedule_items(items, action: str) -> [dict]:
     """ Takes a list of datasets, recipes or notebooks and creates jobs for any scheduled updates """
     jobs = []
     for item in items:
@@ -233,14 +233,13 @@ def schedule_items(items, action: str) -> [Job]:
                 if schedule_next <= now:
                     analitico.logger.info(msg)
                     # create the job that will process the item
-                    job = item.create_job(action)
-                    job.set_attribute("schedule", schedule)
-                    job.save()
+                    from api.k8 import k8_jobs_create
+                    job = k8_jobs_create(item, action)
                     jobs.append(job)
 
                     # update the schedule and keep track of job that last ran this item
                     schedule["scheduled_at"] = now.isoformat()
-                    schedule["scheduled_job"] = job.id
+                    schedule["scheduled_job"] = job["metadata"]["name"]
                     item.set_attribute("schedule", schedule)
                     item.save()
                 else:
@@ -253,7 +252,7 @@ def schedule_items(items, action: str) -> [Job]:
     return jobs
 
 
-def schedule_jobs() -> [Job]:
+def schedule_jobs() -> [dict]:
     """ 
     Checks to see if any datasets, recipes or notebooks need to run 
     on a schedule and generates the necessary jobs. Returns an array
@@ -266,13 +265,13 @@ def schedule_jobs() -> [Job]:
     from api.models import Dataset, Recipe, Notebook
 
     ds = Dataset.objects.filter(attributes__icontains='"schedule"')
-    ds_jobs = schedule_items(ds, ACTION_PROCESS)
+    ds_jobs = schedule_items(ds, ACTION_RUN)
 
     rx = Recipe.objects.filter(attributes__icontains='"schedule"')
-    rx_jobs = schedule_items(rx, ACTION_TRAIN)
+    rx_jobs = schedule_items(rx, ACTION_RUN)
 
     nb = Notebook.objects.filter(attributes__icontains='"schedule"')
-    nb_jobs = schedule_items(nb, ACTION_PROCESS)
+    nb_jobs = schedule_items(nb, ACTION_RUN)
 
     # also cancel stuck jobs
     return nb_jobs + ds_jobs + rx_jobs + timeout_jobs()

@@ -1,5 +1,6 @@
 import os
 import requests
+import logging
 
 from django.core.management.base import BaseCommand
 
@@ -14,6 +15,13 @@ class Command(BaseCommand):
         self.help = "Take a recipe_id followed by a model_it and build a docker of the recipe into the model."
         parser.add_argument("item_id", nargs="*", type=str, help=self.help)
 
+    def try_request_notification(self, notification_url):
+        try:
+            requests.get(notification_url)
+            logging.info("Notification requested")
+        except Exception:
+            logging.warning("Failed to request the notification", exec_info=True)
+
     def handle(self, *args, **options):
         item_id = options["item_id"][0]
         target_id = options["item_id"][1]
@@ -21,12 +29,12 @@ class Command(BaseCommand):
 
         item = factory.get_item(item_id)  # the recipe
         target = factory.get_item(target_id)  # the model
-        job_data = {"notebook": notebook} # the notebook name
+        job_data = {"notebook": notebook}  # the notebook name
         try:
             k8_build_v2(item, target, job_data)
         finally:
             notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
             if notification_url:
-                requests.get(notification_url)
+                self.try_request_notification(notification_url)
 
         return 0

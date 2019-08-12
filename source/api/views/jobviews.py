@@ -206,5 +206,4 @@ class JobViewSet(ItemViewSetMixin, FilesViewSetMixin, rest_framework.viewsets.Mo
         any jobs to reprocess them if necessary. Cancel any stuck jobs 
         """
         jobs = api.models.job.schedule_jobs()
-        jobs_serializer = JobSerializer(jobs, many=True)
-        return Response(jobs_serializer.data)
+        return Response(jobs, content_type="json")

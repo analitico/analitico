@@ -18,6 +18,7 @@ from rest_framework import status
 
 from api.models import *
 from api.models.job import *
+from api.k8 import k8_delete_job
 from .utils import AnaliticoApiTestCase
 
 # baseline date for tests faking cron based item scheduling
@@ -26,6 +27,10 @@ CRON_DATE = parser.parse("2020-04-17T00:00:00Z")
 
 class JobsTests(AnaliticoApiTestCase):
     """ Test jobs operations via APIs (inherit from notebooks so we can do jobs on notebooks easily) """
+
+    def cleanup(self, jobs: []):
+        for job in jobs:
+            k8_delete_job(job["metadata"]["name"])
 
     def test_job_notebook_process(self):
         response = self.post_notebook("notebook10.ipynb", "nb_01")
@@ -169,103 +174,165 @@ class JobsTests(AnaliticoApiTestCase):
             return response.data
 
     def test_job_schedule_only_for_admins(self):
-        url = reverse("api:job-schedule")
+        try:
+            jobs = []
+            url = reverse("api:job-schedule")
 
-        # regular user DOES NOT have access
-        self.auth_token(self.token2)
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            # regular user DOES NOT have access
+            self.auth_token(self.token2)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        # admin user has access
-        self.auth_token(self.token1)
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+            # admin user has access
+            self.auth_token(self.token1)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            
+            jobs = response.data
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_none(self):
         """ Test not having a cron setting in the schedule """
-        jobs = self.schedule_mock(cron="")
-        self.assertEqual(len(jobs), 0)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(cron="")
+            self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_minute_first(self):
         """ Test schedule that runs every minute, never run before """
-        jobs = self.schedule_mock(scheduled_at=None, cron="* * * * *")
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(scheduled_at=None, cron="* * * * *")
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_minute_next(self):
         """ Test schedule that runs every minute but has run once already at this very same time """
-        jobs = self.schedule_mock(cron="* * * * *")
-        self.assertEqual(len(jobs), 0)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(cron="* * * * *")
+            self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_minute_future(self):
         """ Test schedule that runs every minute on the next minute """
-        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=1), cron="* * * * *")
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=1), cron="* * * * *")
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_1(self):
-        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=50), cron=CRON_EVERY_HOUR)
-        self.assertEqual(len(jobs), 0)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=50), cron=CRON_EVERY_HOUR)
+            self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_2(self):
-        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=60), cron=CRON_EVERY_HOUR)
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=60), cron=CRON_EVERY_HOUR)
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_3(self):
-        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=61), cron=CRON_EVERY_HOUR)
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(minutes=61), cron=CRON_EVERY_HOUR)
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_4(self):
-        jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(days=1), cron=CRON_EVERY_HOUR)
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(tested_at=CRON_DATE + timedelta(days=1), cron=CRON_EVERY_HOUR)
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_already_run_1(self):
         """ Job runs every hour, last ran at 15 minutes, next due on the hour """
-        jobs = self.schedule_mock(
-            scheduled_at=CRON_DATE + timedelta(minutes=15),
-            tested_at=CRON_DATE + timedelta(minutes=59),
-            cron=CRON_EVERY_HOUR,
-        )
-        self.assertEqual(len(jobs), 0)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(
+                scheduled_at=CRON_DATE + timedelta(minutes=15),
+                tested_at=CRON_DATE + timedelta(minutes=59),
+                cron=CRON_EVERY_HOUR,
+            )
+            self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_already_run_2(self):
         """ Job runs every hour, last ran at 15 minutes, next due on the hour """
-        jobs = self.schedule_mock(
-            scheduled_at=CRON_DATE + timedelta(minutes=15),
-            tested_at=CRON_DATE + timedelta(minutes=60),
-            cron=CRON_EVERY_HOUR,
-        )
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(
+                scheduled_at=CRON_DATE + timedelta(minutes=15),
+                tested_at=CRON_DATE + timedelta(minutes=60),
+                cron=CRON_EVERY_HOUR,
+            )
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_already_run_3(self):
         """ Job runs every hour, last ran at 15 minutes, next due on the hour """
-        jobs = self.schedule_mock(
-            scheduled_at=CRON_DATE + timedelta(minutes=15),
-            tested_at=CRON_DATE + timedelta(minutes=62),
-            cron=CRON_EVERY_HOUR,
-        )
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(
+                scheduled_at=CRON_DATE + timedelta(minutes=15),
+                tested_at=CRON_DATE + timedelta(minutes=62),
+                cron=CRON_EVERY_HOUR,
+            )
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_already_run_4(self):
-        jobs = self.schedule_mock(
-            scheduled_at=CRON_DATE + timedelta(minutes=60),
-            tested_at=CRON_DATE + timedelta(minutes=75),
-            cron=CRON_EVERY_HOUR,
-        )
-        self.assertEqual(len(jobs), 0)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(
+                scheduled_at=CRON_DATE + timedelta(minutes=60),
+                tested_at=CRON_DATE + timedelta(minutes=75),
+                cron=CRON_EVERY_HOUR,
+            )
+            self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_already_run_5(self):
-        jobs = self.schedule_mock(
-            scheduled_at=CRON_DATE + timedelta(minutes=60),
-            tested_at=CRON_DATE + timedelta(minutes=120),
-            cron=CRON_EVERY_HOUR,
-        )
-        self.assertEqual(len(jobs), 1)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(
+                scheduled_at=CRON_DATE + timedelta(minutes=60),
+                tested_at=CRON_DATE + timedelta(minutes=120),
+                cron=CRON_EVERY_HOUR,
+            )
+            self.assertEqual(len(jobs), 1)
+        finally:
+            self.cleanup(jobs)
 
     def test_job_schedule_every_hour_already_run_6(self):
-        jobs = self.schedule_mock(
-            scheduled_at=CRON_DATE + timedelta(minutes=60),
-            tested_at=CRON_DATE + timedelta(minutes=119),
-            cron=CRON_EVERY_HOUR,
-        )
-        self.assertEqual(len(jobs), 0)
+        try:
+            jobs = []
+            jobs = self.schedule_mock(
+                scheduled_at=CRON_DATE + timedelta(minutes=60),
+                tested_at=CRON_DATE + timedelta(minutes=119),
+                cron=CRON_EVERY_HOUR,
+            )
+            self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
 
     # TODO test job with additional parameters?

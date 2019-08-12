@@ -18,6 +18,15 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+
+def try_request_notification(notification_url):
+    try:
+        requests.get(notification_url)
+        logging.info("Notification requested")
+    except Exception:
+        logging.warning("Failed to request the notification", exec_info=True)
+
+
 try:
 
     try:
@@ -39,7 +48,6 @@ try:
     requirements_name = os.path.join(os.environ.get("ANALITICO_ITEM_PATH"), "requirements.txt")
     if os.path.exists(requirements_name):
         subprocess_run(["pip", "install", "-r", "requirements.txt"])
-
 
     # retrieve notebook that should be executed
     notebook_path = os.path.expandvars(args.notebooks[0])
@@ -86,16 +94,13 @@ except Exception:
     # when job does `run and build` error notification must be sent
     notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
     if os.environ.get("ANALITICO_JOB_ACTION") == ACTION_RUN_AND_BUILD and notification_url:
-        logging.info("Send notification")
-        requests.get(notification_url)
+        try_request_notification(notification_url)
     raise
 finally:
     # eclude when job does `run and build`
     notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
     if os.environ.get("ANALITICO_JOB_ACTION") == ACTION_RUN and notification_url:
-        logging.info("Send notification")
-        requests.get(notification_url)
+        try_request_notification(notification_url)
 
 logging.info("Done")
-
 exit(code=0)

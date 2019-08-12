@@ -84,10 +84,10 @@ class Model(ItemMixin, ItemAssetsMixin, models.Model):
                 # if dataset has a notebook it will be used to process
                 nb_run(notebook_item=self, notebook_name=None, factory=factory, upload=True, job=job)
                 try:
-                    training_path = os.path.join(factory.get_artifacts_directory(), "training.json")
+                    training_path = os.path.join(factory.get_artifacts_directory(), "metadata.json")
                     training = read_json(training_path)
                 except:
-                    logger.warning("Model: could not read training.json")
+                    logger.warning("Model: could not read metadata.json")
                     training = {}
             else:
                 # if dataset does not have a notebook we will run its plugins
