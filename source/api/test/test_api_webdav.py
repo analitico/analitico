@@ -156,7 +156,8 @@ class WebdavTests(AnaliticoApiTestCase):
                     self.assertEqual(response3.status_code, status.HTTP_200_OK)
                     self.assertTrue(isinstance(response3, StreamingHttpResponse))
                     for chunk in response3.streaming_content:
-                        logger.info(f"download chunk size: {len(chunk)}")
+                        if len(chunk) < 16 * 1024:
+                            logger.warning(f"small download chunk size: {len(chunk)}")
                         f3.write(chunk)
                     elapsed_ms = max(1, time_ms(started_ms))
                     kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
@@ -1186,6 +1187,7 @@ class WebdavTests(AnaliticoApiTestCase):
     def test_webdav_files_api_large_upload_download_64mb(self):
         self.upload_download_via_files_api(64 * MB_SIZE)
 
+    @tag("slow")
     @timeit
     def test_webdav_files_api_large_upload_download_128mb(self):
         self.upload_download_via_files_api(128 * MB_SIZE)
