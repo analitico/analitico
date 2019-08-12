@@ -111,7 +111,7 @@ def notifications_webhook(request: Request) -> Response:
     # verify that the secret used to sign is there and is valid
     api.utilities.get_unsigned_secret(api.utilities.get_query_parameter(request, "secret"))
 
-    if 0 < delay and delay < 10:
+    if 0 < delay and delay <= 10:
         # deplay execution and run in background
         # eg. because job is close to terminate and it wants to notify its state
         url = request.build_absolute_uri().replace(f"delay={delay}", "delay=0")

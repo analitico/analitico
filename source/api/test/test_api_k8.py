@@ -587,7 +587,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 600
+                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 900
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
