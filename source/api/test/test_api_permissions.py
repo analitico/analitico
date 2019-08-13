@@ -4,7 +4,7 @@ from rest_framework import status
 from .utils import AnaliticoApiTestCase
 
 import analitico
-from api.models import Role, Job, Dataset, Model, Recipe, Endpoint, Log, Token, User, Notebook
+from api.models import Role, Job, Dataset, Model, Recipe, Endpoint, Log, Token, User, Notebook, Workspace
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -415,7 +415,6 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.auth_token(self.token3)
         role = Role(workspace=self.ws1, user=self.user3)
         url = reverse("api:notebook-detail", args=("nb_01",))
-        url_list = reverse("api:notebook-list")
 
         # user is an analitico.reader and can read
         role.roles = "role1,role2,analitico.reader,role3"
@@ -475,3 +474,46 @@ class PermissionsTests(AnaliticoApiTestCase):
         role.save()
         response = self.client.patch(url, {"title": "Title2"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    ##
+    ## Gallery
+    ##
+
+    def test_permissions_gallery(self):
+        ws_gallery = Workspace(id="ws_gallery", title="Gallery")
+        ws_gallery.save()
+
+        # regular user can retrieve gallery specifically
+        self.auth_token(self.token2)
+        url = reverse("api:workspace-detail", args=(ws_gallery.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(data["id"], "ws_gallery")
+        self.assertEqual(data["attributes"]["title"], "Gallery")
+        # regular user CANNOT alter gallery
+        data["attributes"]["title"] = "New Gallery"
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, 404)
+        # regular user CANNOT delete gallery
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 404)
+        # gallery is still there
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        # check permissions on regular items in the gallery
+        for item_class in (Dataset, Recipe, Notebook):
+            item = item_class(workspace=ws_gallery)
+            item.save()
+
+            item_url = reverse(f"api:{item.type}-detail", args=(item.id,))
+
+            response = self.client.get(item_url)
+            self.assertEqual(response.status_code, 200)  # can GET
+            response = self.client.put(item_url, data)
+            self.assertEqual(response.status_code, 404)  # can't PUT
+            response = self.client.put(item_url, data)
+            self.assertEqual(response.status_code, 404)  # can't DELETE
+            response = self.client.get(item_url)
+            self.assertEqual(response.status_code, 200)  # still there

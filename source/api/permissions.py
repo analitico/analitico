@@ -17,6 +17,9 @@ STANDARD_CONFIGURATIONS = read_json(os.path.join(os.path.dirname(__file__), "per
 STANDARD_ROLES = STANDARD_CONFIGURATIONS["roles"]
 STANDARD_PERMISSIONS = STANDARD_CONFIGURATIONS["permissions"]
 
+# gallery workspace has special read-only status for everyone
+GALLERY_WORKSPACE_ID = "ws_gallery"
+
 
 def get_configurations() -> dict:
     """ Return default configuration with list of permissions and roles. """
@@ -89,12 +92,18 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
         ff = ff | Q(roles__user=request.user, roles__permissions__icontains=permission)
         for role in roles:
             ff = ff | Q(roles__user=request.user, roles__roles__icontains=role)
+        # add readonly access to ws_gallery which is available to all user
+        if request.method == "GET" or request.method == "HEAD" or request.method == "OPTIONS":
+            ff = ff | Q(id="ws_gallery")
     else:
         # the items has a reference to the workspace on which we check for rights
         ff = Q(workspace__user=request.user)
         ff = ff | Q(workspace__roles__user=request.user, workspace__roles__permissions__icontains=permission)
         for role in roles:
             ff = ff | Q(workspace__roles__user=request.user, workspace__roles__roles__icontains=role)
+        # add readonly access to ws_gallery which is available to all user
+        if request.method == "GET" or request.method == "HEAD" or request.method == "OPTIONS":
+            ff = ff | Q(workspace__id="ws_gallery")
 
     # remove multiple copies of items, sort newer to older
     queryset = item_class.objects.filter(ff).distinct().order_by("-created_at")
@@ -120,6 +129,12 @@ def has_item_permission_or_exception(user, item: ItemMixin, permission: str) -> 
     # superusers have all permissions on all items
     if user.is_superuser:
         return True
+
+    # all users have read permission on the gallery and its contents
+    if permission.endswith(".get"):
+        is_gallery = isinstance(item, Workspace) and item.id == GALLERY_WORKSPACE_ID
+        if is_gallery or item.workspace.id == GALLERY_WORKSPACE_ID:
+            return True
 
     # if the item on which we're checking rights is a user itself
     # then only a user himself can change his own record
