@@ -132,8 +132,7 @@ def has_item_permission_or_exception(user, item: ItemMixin, permission: str) -> 
 
     # all users have read permission on the gallery and its contents
     if permission.endswith(".get"):
-        is_gallery = isinstance(item, Workspace) and item.id == GALLERY_WORKSPACE_ID
-        if is_gallery or item.workspace.id == GALLERY_WORKSPACE_ID:
+        if item.id == GALLERY_WORKSPACE_ID or (item.workspace and item.workspace.id == GALLERY_WORKSPACE_ID):
             return True
 
     # if the item on which we're checking rights is a user itself
