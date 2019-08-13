@@ -24,7 +24,7 @@ Showing invoices related to a workspace:
 ### Purchasing a plan
 
 First you create a session for the current user:  
-`POST /api/billing/sessions`
+`POST /api/billing/sessions?plan=plan_premium_usd`
 
 The you use the sessionId from the newly created session to redirect to checkout:  
 ```html

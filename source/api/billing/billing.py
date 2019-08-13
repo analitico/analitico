@@ -131,8 +131,8 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
         customer=customer.id,
         payment_method_types=["card"],
         billing_address_collection="required",
-        success_url="https://staging.analitico.ai/workspaces?checkout=success",
-        cancel_url="https://staging.analitico.ai/workspaces?checkout=cancel",
+        success_url=f"https://staging.analitico.ai/app/workspaces?checkout=success&workspace_id={workspace_id}",
+        cancel_url="https://staging.analitico.ai/app/workspaces?checkout=cancel",
         subscription_data={
             "trial_period_days": 14,
             "items": [{"plan": plan, "quantity": 1}],
