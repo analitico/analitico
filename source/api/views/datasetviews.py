@@ -19,6 +19,7 @@ from .attributeserializermixin import AttributeSerializerMixin
 from .filesviewsetmixin import FilesViewSetMixin
 from .jobviews import JobViewSetMixin
 from .notebookviews import NotebookViewSetMixin
+from .k8viewsetmixin import K8ViewSetMixin
 
 ##
 ## DatasetSerializer
@@ -41,7 +42,7 @@ class DatasetSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class DatasetViewSet(
-    ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, rest_framework.viewsets.ModelViewSet
+    ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, NotebookViewSetMixin, K8ViewSetMixin, rest_framework.viewsets.ModelViewSet
 ):
     """
     A dataset model is used to store information on a dataset which is a plugin
