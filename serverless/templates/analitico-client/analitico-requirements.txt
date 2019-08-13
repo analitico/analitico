@@ -11,6 +11,9 @@
 ## required by serverless
 # Flask is already installed in the base image
 gunicorn==19.9.0
+# no specific version for the sdk package because we are young 
+# and we want to keep the image updated to the last version
+analitico
 
 ## required by job run
 papermill==1.0.1

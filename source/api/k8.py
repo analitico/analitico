@@ -100,11 +100,8 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
                 f"k8_build can't find environment variable ANALITICO_ITEM_PATH and cannot copy source item files."
             )
 
-        # copy analitico SDK and s24 helper methods
-        # TODO /analitico and /s24 need to be built into standalone libraries
-        copy_directory(
-            os.path.join(SOURCE_TEMPLATE_DIR, "analitico"), os.path.join(tmpdirname, "libraries", "analitico")
-        )
+        # copy s24 helper methods
+        # TODO /s24 need to be built into standalone libraries
         copy_directory(os.path.join(SOURCE_TEMPLATE_DIR, "s24"), os.path.join(tmpdirname, "libraries", "s24"))
 
         # extract code from notebook

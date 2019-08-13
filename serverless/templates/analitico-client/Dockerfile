@@ -15,7 +15,7 @@ RUN mkdir /$WORKDIR
 WORKDIR $WORKDIR
 
 # Copy scripts to run a task
-# Copy analitico SDK and s24 helper methods
+# Copy s24 helper methods
 # Copy analitico and user's requirements.txt files
 # Copy commands collected from notebook (notebook.sh, if any) 
 # Copy code extracted from the notebook (notebook.py)
