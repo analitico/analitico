@@ -464,7 +464,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = (time.time() - test_start_time) <= 600
+                    insist = (time.time() - test_start_time) <= 900
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -493,12 +493,11 @@ class K8Tests(AnaliticoApiTestCase):
             sdout, sderr = subprocess_run(image_describe_cmd)
             self.assertEqual(sderr, "")
 
-            # TODO sdk / set_metric save in metadata.json #350
             # metadata with metrics are stored in the model
-            # self.assertIn("metadata", content["data"]["attributes"])
-            # metadata = content["data"]["attributes"]["metadata"]
-            # self.assertIn("scores", metadata)
-            # self.assertIn("number_of_lines", metadata["scores"])
+            self.assertIn("metadata", content["data"]["attributes"])
+            metadata = content["data"]["attributes"]["metadata"]
+            self.assertIn("scores", metadata)
+            self.assertIn("number_of_lines", metadata["scores"])
 
             self.k8s_deploy_and_test(target_id, receipe_id)
 
@@ -527,7 +526,7 @@ class K8Tests(AnaliticoApiTestCase):
         k8_service_name = content["data"]["response"]["metadata"]["name"]
 
         # wait for deploy to complete
-        time.sleep(20)
+        time.sleep(60)
 
         try:
             # retrieve deployed service info
@@ -536,7 +535,6 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             content = response.json()
             service_url = content["data"]["status"]["url"]
-            time.sleep(30)
 
             # notebook has been written to install packages and require them
             # when calling for prediction. If the build and the deployed

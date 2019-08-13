@@ -328,7 +328,7 @@ def k8_jobs_create(
     # webhook notification for job completion
     from api.notifications import get_job_completion_webhook
 
-    notification_url_path = get_job_completion_webhook(item.id, job_id, 5)
+    notification_url_path = get_job_completion_webhook(item.id, job_id, 10)
     configs["notification_url"] = urllib.parse.urljoin(notification_server_name, notification_url_path)
 
     if job_action == analitico.ACTION_RUN_AND_BUILD:
@@ -387,9 +387,11 @@ def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
     )
     return jobs
 
+
 def k8_delete_job(job_id: str):
     """ Delete the job on Kubernetes """
     subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
+
 
 ##
 ## Jupyter - allocate and deallocate Jupyter server nodes

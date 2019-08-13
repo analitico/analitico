@@ -152,13 +152,18 @@ class JobsTests(AnaliticoApiTestCase):
     ## Cron scheduling of jobs
     ##
 
-    def schedule_mock(self, created_at=CRON_DATE, scheduled_at=CRON_DATE, tested_at=CRON_DATE, cron=None) -> [Job]:
+    def schedule_mock(
+        self, created_at=CRON_DATE, scheduled_at=CRON_DATE, tested_at=CRON_DATE, cron=None, notebook_name: str = None
+    ) -> [dict]:
         # create notebook that will be scheduled
         with mock.patch("django.utils.timezone.now") as mock_now:
             mock_now.return_value = created_at
             nb = Notebook(id="nb_01", workspace=self.ws1)
             if cron:
                 schedule = {"cron": cron}
+                if notebook_name:
+                    # custom notebook name
+                    schedule["notebook"] = notebook_name
                 if scheduled_at:
                     schedule["scheduled_at"] = scheduled_at.isoformat()
                 nb.set_attribute("schedule", schedule)
@@ -187,7 +192,7 @@ class JobsTests(AnaliticoApiTestCase):
             self.auth_token(self.token1)
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            
+
             jobs = response.data
         finally:
             self.cleanup(jobs)
@@ -332,6 +337,30 @@ class JobsTests(AnaliticoApiTestCase):
                 cron=CRON_EVERY_HOUR,
             )
             self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
+
+    def test_job_schedule_with_custom_notebook_name(self):
+        try:
+            jobs = []
+            expected_notebook_name = "my notebook.ipynb"
+            jobs = self.schedule_mock(scheduled_at=None, cron="* * * * *", notebook_name=expected_notebook_name)
+            self.assertEqual(len(jobs), 1)
+
+            run_notebook_name = jobs[0]["metadata"]["annotations"]["analitico.ai/notebook-name"]
+            self.assertEqual(expected_notebook_name, run_notebook_name)
+        finally:
+            self.cleanup(jobs)
+
+    def test_job_schedule_with_custom_notebook_in_subfolder(self):
+        try:
+            jobs = []
+            expected_notebook_name = "subfolder/my notebook.ipynb"
+            jobs = self.schedule_mock(scheduled_at=None, cron="* * * * *", notebook_name=expected_notebook_name)
+            self.assertEqual(len(jobs), 1)
+
+            run_notebook_name = jobs[0]["metadata"]["annotations"]["analitico.ai/notebook-name"]
+            self.assertEqual(expected_notebook_name, run_notebook_name)
         finally:
             self.cleanup(jobs)
 

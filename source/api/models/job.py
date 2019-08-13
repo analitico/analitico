@@ -180,7 +180,8 @@ class Job(ItemMixin, models.Model):
 
 JOB_TIMEOUT_MINUTES = 30
 
-
+# DEPRECATED
+# #329 jobs / kill the job run when takes if not complete in 6 hours
 def timeout_jobs() -> [Job]:
     """ Find jobs that have been running for over 30 minutes (stuck) and mark them as failed """
     now = datetime.utcnow()
@@ -218,6 +219,8 @@ def schedule_items(items, action: str) -> [dict]:
                 # what is the cron configuration string used to schedule this item?
                 # https://en.wikipedia.org/wiki/Cron
                 cron = schedule.get("cron")
+                # the notebook to run
+                notebook = schedule.get("notebook")
 
                 # when was this item last scheduled?
                 scheduled_at = schedule.get("scheduled_at", "2010-01-01T00:00:00Z")  # UTC
@@ -234,7 +237,8 @@ def schedule_items(items, action: str) -> [dict]:
                     analitico.logger.info(msg)
                     # create the job that will process the item
                     from api.k8 import k8_jobs_create
-                    job = k8_jobs_create(item, action)
+                    job_data = {"notebook": notebook} if notebook else None
+                    job = k8_jobs_create(item, action, job_data=job_data)
                     jobs.append(job)
 
                     # update the schedule and keep track of job that last ran this item
@@ -274,4 +278,4 @@ def schedule_jobs() -> [dict]:
     nb_jobs = schedule_items(nb, ACTION_RUN)
 
     # also cancel stuck jobs
-    return nb_jobs + ds_jobs + rx_jobs + timeout_jobs()
+    return nb_jobs + ds_jobs + rx_jobs

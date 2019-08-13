@@ -52,7 +52,7 @@ from .itemviewsetmixin import filterset, ItemViewSetMixin
 ## JobSerializer
 ##
 
-
+# DEPRECATED
 class JobSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
     """ Serializer for Job model """
 
