@@ -180,6 +180,7 @@ def stripe_handle_subscription_event(event):
             raise AnaliticoException(msg) from exc
         # create a new workspace using the workspace_id that was indicated in metadata
         workspace = Workspace(id=workspace_id)
+        api.models.drive.dr_create_workspace_storage(workspace)
 
     stripe_conf = workspace.get_attribute("stripe", {})
     stripe_conf["customer_id"] = subscription.customer
@@ -188,6 +189,7 @@ def stripe_handle_subscription_event(event):
 
     workspace.set_attribute("stripe", stripe_conf)
     workspace.save()
+
     return True
 
 
