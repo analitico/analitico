@@ -67,10 +67,13 @@ class Storage:
     def factory(settings: dict):
         """ Creates a storage object from a settings dictionary or from default settings if None passed. """
         try:
-            if settings is None:
-                settings = django.conf.settings.ANALITICO_STORAGE
-            if "credentials" not in settings and settings["driver"] == django.conf.settings.ANALITICO_STORAGE["driver"]:
-                settings["credentials"] = django.conf.settings.ANALITICO_STORAGE["credentials"]
+            # WE NO LONGER AUTOMATICALLY ALLOCATE STORAGE ON GOOGLE STORAGE
+            # RATHER STORAGE HAS TO BE CONFIGURED EXPLICITELY VIA DRIVE MODEL APIs
+            # if settings is None:
+            #    settings = django.conf.settings.ANALITICO_STORAGE
+            # if "credentials" not in settings and settings["driver"] == django.conf.settings.ANALITICO_STORAGE["driver"]:
+            #    settings["credentials"] = django.conf.settings.ANALITICO_STORAGE["credentials"]
+            assert settings, "Storage.factory - no settings for this item"
 
             driver = settings["driver"]
             credentials = settings["credentials"]
