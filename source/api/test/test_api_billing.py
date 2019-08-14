@@ -83,52 +83,58 @@ class BillingTests(AnaliticoApiTestCase):
         self.assertEqual(stripe["customer_id"], "cus_FYvVlgYdX79DVl")
 
     def test_billing_stripe_webhook_customer_subscription_created(self):
-        # customer.subscription.created -> workspace created and configured
-        event = {
-            "id": "evt_1F48cAAICbSiYX9YRsYN7YaO",
-            "object": "event",
-            "type": "customer.subscription.created",
-            "api_version": "2019-05-16",
-            "created": 1565020849,
-            "data": None,
-            "livemode": False,
-        }
-        url = reverse("api:billing-webhook")
-        response = self.client.post(url, event, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        workspace = None
+        try:
+            # customer.subscription.created -> workspace created and configured
+            event = {
+                "id": "evt_1F48cAAICbSiYX9YRsYN7YaO",
+                "object": "event",
+                "type": "customer.subscription.created",
+                "api_version": "2019-05-16",
+                "created": 1565020849,
+                "data": None,
+                "livemode": False,
+            }
+            url = reverse("api:billing-webhook")
+            response = self.client.post(url, event, format="json")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        workspace = api.models.Workspace.objects.get(pk="ws_e78c8o4y")
-        stripe_conf = workspace.get_attribute("stripe")
+            workspace = api.models.Workspace.objects.get(pk="ws_e78c8o4y")
+            stripe_conf = workspace.get_attribute("stripe")
 
-        self.assertEqual(stripe_conf["customer_id"], "cus_FZH0mmWGNI2K9G")
-        self.assertEqual(stripe_conf["subscription_id"], "sub_FZHAgRNxpptZ2Y")
+            self.assertEqual(stripe_conf["customer_id"], "cus_FZH0mmWGNI2K9G")
+            self.assertEqual(stripe_conf["subscription_id"], "sub_FZHAgRNxpptZ2Y")
 
-        # Retrieve subscription on this workspace
-        # GET /api/billing/ws_xxx/subscription
-        self.auth_token(self.token1)  # user1
-        url = reverse("api:billing-subscription", args=(workspace.id,))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.data
-        self.assertEqual(data["type"], "analitico/stripe-subscription")
-        self.assertEqual(data["attributes"]["object"], "subscription")
-        self.assertEqual(data["attributes"]["plan"]["object"], "plan")
+            # Retrieve subscription on this workspace
+            # GET /api/billing/ws_xxx/subscription
+            self.auth_token(self.token1)  # user1
+            url = reverse("api:billing-subscription", args=(workspace.id,))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.data
+            self.assertEqual(data["type"], "analitico/stripe-subscription")
+            self.assertEqual(data["attributes"]["object"], "subscription")
+            self.assertEqual(data["attributes"]["plan"]["object"], "plan")
 
-        # Retrieve list of invoices generated for a given workspace
-        # GET /api/workspaces/billing/plans
-        self.auth_token(self.token1)  # user1
-        url = reverse("api:billing-invoices", args=(workspace.id,))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.data
-        self.assertGreaterEqual(len(data), 1)
-        for invoice in data:
-            self.assertEqual(invoice["type"], "analitico/stripe-invoice")
-            self.assertIn("id", invoice)
-            with tempfile.NamedTemporaryFile(prefix="invoice_", suffix=".pdf") as f:
-                # checks that no authorization is needed
-                response = requests.get(invoice["attributes"]["invoice_pdf"])
-                f.write(response.content)
+            # Retrieve list of invoices generated for a given workspace
+            # GET /api/workspaces/billing/plans
+            self.auth_token(self.token1)  # user1
+            url = reverse("api:billing-invoices", args=(workspace.id,))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.data
+            self.assertGreaterEqual(len(data), 1)
+            for invoice in data:
+                self.assertEqual(invoice["type"], "analitico/stripe-invoice")
+                self.assertIn("id", invoice)
+                with tempfile.NamedTemporaryFile(prefix="invoice_", suffix=".pdf") as f:
+                    # checks that no authorization is needed
+                    response = requests.get(invoice["attributes"]["invoice_pdf"])
+                    f.write(response.content)
+        finally:
+            # workspace storage needs to be deleted
+            if workspace:
+                workspace.delete()
 
     def test_billing_stripe_get_invoices_no_invoices(self):
         # Retrieve list of invoices generated for a given workspace when the workspace has no stripe configuration
@@ -208,3 +214,5 @@ class BillingTests(AnaliticoApiTestCase):
         finally:
             if subscription:
                 stripe.Subscription.delete(subscription.id)
+            if workspace:
+                workspace.delete()
