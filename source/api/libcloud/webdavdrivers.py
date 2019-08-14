@@ -22,6 +22,7 @@ import re
 import unicodedata
 import simplejson as json
 
+from pathlib import Path
 from libcloud.utils.py3 import u
 from libcloud.common.base import Connection
 from libcloud.storage.base import Object, Container, StorageDriver
@@ -334,7 +335,7 @@ class WebdavStorageDriver(StorageDriver):
 
     def download(self, remote_path, local_path_or_fileobj):
         response = self._send("GET", remote_path, 200, stream=True)
-        if isinstance(local_path_or_fileobj, str):
+        if isinstance(local_path_or_fileobj, str) or isinstance(local_path_or_fileobj, Path):
             with open(local_path_or_fileobj, "wb") as f:
                 for chunk in response.iter_content(DOWNLOAD_CHUNK_SIZE_BYTES):
                     f.write(chunk)
