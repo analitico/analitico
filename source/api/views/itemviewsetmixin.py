@@ -1,5 +1,8 @@
 import io
+import tempfile
 
+from PIL import Image
+from pathlib import Path
 from django.http.response import HttpResponse
 from django.shortcuts import redirect
 
@@ -76,35 +79,38 @@ class ItemViewSetMixin:
     ## Avatar action
     ##
 
+    # TODO cache avatar images on disk #378
     @action(methods=["get"], detail=True, url_name="avatar", url_path="avatar")
     def avatar(self, request, pk):
         """ Returns an item's avatar (if configured) """
         item = self.get_object()
 
-        square = get_query_parameter_as_int(request, "square", default=None)
-        width = get_query_parameter_as_int(request, "width", default=None)
-        height = get_query_parameter_as_int(request, "height", default=None)
+        # users can add an avatar.jpg or avatar.png image to the recipe, dataset or notebook files
+        image = None
+        for image_name in ("/avatar.jpg", "/avatar.png"):
+            if not image:
+                try:
+                    with tempfile.NamedTemporaryFile(suffix=Path(image_name).suffix) as f:
+                        item.download(image_name, f.name)
+                        image = Image.open(f.name)
+                except Exception as exc:
+                    logger.warning(f"avatar - {item.id} doesn't have {image_name}, exc: {exc}")
 
-        # first check if item has its own avatar
-        avatar = item.get_attribute("avatar", None)
-        if not avatar:
-            # default avatar is used if item has none
-            avatar = get_query_parameter(request, "default", default=None)
-            if not avatar:
-                raise NotFound("Item " + item.id + " does not have an avatar", code="no_avatar")
-
-        try:
-            image = image_open(avatar)
-        except Exception:
+        # if we don't find the custom image, use default avatars
+        if not image:
+            avatar = get_query_parameter(request, "default", default=f"default-{item.type}s.jpg")
             avatar = "https://app.analitico.ai/avatars/" + avatar
             image = image_open(avatar)
 
+        # additional query parameters can specify how to resize/crop
+        square = get_query_parameter_as_int(request, "square", default=None)
+        width = get_query_parameter_as_int(request, "width", default=None)
+        height = get_query_parameter_as_int(request, "height", default=None)
         image = image_resize(image, square, width, height)
 
         imagefile = io.BytesIO()
         image.save(imagefile, format="JPEG")
         imagedata = imagefile.getvalue()
-
         return HttpResponse(imagedata, content_type="image/jpeg")
 
     ##
