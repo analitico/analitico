@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "analitico.test.test_sdk.SDKTests.test_sdk_upload_download_128mb",
+                "api.test.test_api_billing.BillingTests",
                 "-v",
                 "2"
             ],
@@ -109,6 +109,18 @@
                 "builder",
                 "jb_0rwHrO8vpTig",
                 "ml_OYioM1MCg3AG"
+            ],
+            "django": true
+        },
+        {
+            "name": "Deploy Gallery",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/source",
+            "program": "${workspaceFolder}/source/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "gallery"
             ],
             "django": true
         }
