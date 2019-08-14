@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.exceptions import APIException, NotFound
 
 import analitico
+from analitico import AnaliticoException
 from analitico.status import STATUS_CREATED
 from analitico.utilities import get_dict_dot, set_dict_dot
 
@@ -61,6 +62,13 @@ class ItemMixin:
         set_dict_dot(attributes, key, value)
         self.attributes = attributes  # need to assign or it won't save() it...
 
+    def get_attribute_as_bool(self, key, default: bool = False) -> bool:
+        """ Returns attribute as a boolean value. """
+        value = self.get_attribute(key, False)
+        if isinstance(value, str):
+            value = value.lower() == "true" or value == "1"
+        return value is True
+
     ##
     ## Notebooks
     ##
@@ -109,12 +117,18 @@ class ItemMixin:
     @property
     def storage(self) -> api.storage.Storage:
         settings = (self.workspace if self.workspace else self).get_attribute("storage")
-        return api.storage.Storage.factory(settings)
+        return api.storage.Storage.factory(settings) if settings else None
 
     @property
     def storage_base_path(self) -> str:
         """ Base path for storage files associated with this item. """
         return "/" if self.type == "workspace" else f"/{self.type}s/{self.id}/"
+
+    def download(self, remote_path, local_path_or_fileobj):
+        """ Download file from item's storage to local file system. """
+        driver = self.storage.driver
+        assert driver, f"Storage driver for {self.id} is not configured."
+        return driver.download(self.storage_base_path + remote_path, local_path_or_fileobj)
 
     def __str__(self):
         return self.type + ": " + self.id
