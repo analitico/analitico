@@ -410,9 +410,8 @@ class FilesViewSetMixin:
 
         driver = workspace.storage.driver
         if not isinstance(driver, api.libcloud.WebdavStorageDriver):
-            raise AnaliticoException(
-                "/files is only supported on WebDAV based storage", status_code=status.HTTP_501_NOT_IMPLEMENTED
-            )
+            msg = "/files is only supported on WebDAV based storage"
+            raise AnaliticoException(msg, status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
         # path of this file (or directory) in storage
         base_path = "/" if isinstance(item, Workspace) else f"/{item.type}s/{item.id}/"
@@ -430,3 +429,15 @@ class FilesViewSetMixin:
 
         # operations on raw files (uploading, downloading, deleting, etc)
         return self.files_raw(request, pk, driver, url)
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get", "post", "put", "delete"], detail=True, url_name="files", url_path="assets/(?P<url>.*)")
+    def files_deprecated_route_assets(self, request, pk, url) -> Response:
+        """ Support previous route, eg: /datasets/ds_xxx/assets/customers.csv """
+        return self.files(request, pk, url)
+
+    @permission_classes((IsAuthenticated,))
+    @action(methods=["get", "post", "put", "delete"], detail=True, url_name="files", url_path="data/(?P<url>.*)")
+    def files_deprecated_route_data(self, request, pk, url) -> Response:
+        """ Support previous route, eg: /datasets/ds_xxx/data/customers.csv """
+        return self.files(request, pk, url)
