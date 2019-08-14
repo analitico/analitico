@@ -6,6 +6,8 @@ import requests
 import urllib
 import io
 import base64
+import time
+import tempfile
 
 # pylint: disable=no-member
 
@@ -135,9 +137,8 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
         # TODO could mark a box to take no more customers
 
     if not choosen_drive:
-        raise AnaliticoException(
-            "dr_create_workspace_storage - could not find a storage box where the account can be allocated"
-        )
+        msg = "dr_create_workspace_storage - could not find a storage box where the account can be allocated"
+        raise AnaliticoException(msg)
 
     # create directory that should be used by the workspace on this drive
     driver = hetzner_webdav_driver(choosen_drive)
@@ -185,6 +186,24 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
     workspace.set_attribute("storage", subaccount_storage_conf)
     workspace.save()
 
+    # hetzner has a little bit of a warm up period before the storage box is really
+    # available for use, probably due to the propagation of the subaccount information.
+    # as such, if we retrieve something from storage right away we will fail, however if
+    # we wait a little bit things will start working. the code below introduces a delay
+    # until the storage is ready to go
+    delay, ready = 0, False
+    while not ready and delay < 10:
+        try:
+            subaccount_driver = workspace.storage.driver
+            with tempfile.NamedTemporaryFile() as f:
+                subaccount_driver.download("/.ssh/authorized_keys", f.name)
+            ready = True
+        except Exception:
+            delay += 1
+            time.sleep(1)
+        msg = f"dr_create_workspace_storage - {subaccount_storage_conf['url']} is {'ready' if ready else 'NOT ready'}"
+        logger.info(msg)
+
     # refresh information on drive
     dr_refresh_stats(choosen_drive)
     return True
@@ -212,9 +231,9 @@ def dr_delete_workspace_storage(workspace: Workspace) -> bool:
         try:
             driver.rmdir(subaccount_path)
         except Exception as exc:
-            analitico.logger.warning(
-                f"dr_delect_workspace_storage - cannot delete {subaccount_path} on {drive_id}, exception: {exc}"
-            )
+            # TODO verify that contents are removed from storage when subaccount is deleted #372
+            msg = f"dr_delect_workspace_storage - cannot delete {subaccount_path} on {drive_id}, exception: {exc}"
+            analitico.logger.warning(msg)
 
     # remove storage configuration from workspace
     workspace.set_attribute("storage", None)
