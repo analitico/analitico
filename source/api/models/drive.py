@@ -22,6 +22,7 @@ import analitico
 import analitico.plugin
 import analitico.utilities
 from analitico import AnaliticoException, logger
+from analitico.utilities import time_ms
 
 import api.storage
 import api.libcloud
@@ -37,6 +38,9 @@ HETZNER_PASSWORD = os.environ["ANALITICO_HETZNER_PASSWORD"]
 assert HETZNER_ACCOUNT
 assert HETZNER_PASSWORD
 assert HETZNER_ENDPOINT.startswith("https://")
+
+# maximum time we're willing to wait for hetzner to setup a newly created subaccount
+HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS = 60 * 1000
 
 
 def generate_drive_id():
@@ -186,27 +190,28 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
     workspace.set_attribute("storage", subaccount_storage_conf)
     workspace.save()
 
-    # hetzner has a little bit of a warm up period before the storage box is really
+    # refresh information on drive
+    dr_refresh_stats(choosen_drive)
+
+    # hetzner has a little bit of a warmup period before the storage box is really
     # available for use, probably due to the propagation of the subaccount information.
     # as such, if we retrieve something from storage right away we will fail, however if
     # we wait a little bit things will start working. the code below introduces a delay
     # until the storage is ready to go
-    delay, ready = 0, False
-    while not ready and delay < 10:
+    started_on = time_ms()
+    while True:
         try:
             subaccount_driver = workspace.storage.driver
             with tempfile.NamedTemporaryFile() as f:
                 subaccount_driver.download("/.ssh/authorized_keys", f.name)
-            ready = True
+            return True
         except Exception:
-            delay += 1
-            time.sleep(1)
-        msg = f"dr_create_workspace_storage - {subaccount_storage_conf['url']} is {'ready' if ready else 'NOT ready'}"
-        logger.info(msg)
-
-    # refresh information on drive
-    dr_refresh_stats(choosen_drive)
-    return True
+            delay_ms = time_ms(started_on)
+            msg = f"dr_create_workspace_storage - {workspace.id} storage {subaccount_storage_conf['url']} is NOT ready, delay: {delay_ms} ms"
+            if delay_ms > HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS:
+                raise AnaliticoException(msg)
+            logger.info(msg)
+            time.sleep(2)
 
 
 def dr_delete_workspace_storage(workspace: Workspace) -> bool:
