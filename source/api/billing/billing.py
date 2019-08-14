@@ -66,7 +66,11 @@ def stripe_get_subscription(workspace: Workspace):
 def stripe_cancel_subscription(workspace: Workspace):
     """ Cancels the workspace subscription and returns it (or None). """
     subscription_id = workspace.get_attribute("stripe.subscription_id", None)
-    return stripe.Subscription.delete(subscription_id) if subscription_id else None
+    if subscription_id:
+        # subscription is not cancelled right away, rather it will die when the prepaid period is over
+        # https://stripe.com/docs/billing/subscriptions/canceling-pausing#canceling
+        return stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
+    return None
 
 
 def stripe_change_subscription_plan(workspace: Workspace, plan_id: str):

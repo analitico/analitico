@@ -192,6 +192,7 @@ class BillingTests(AnaliticoApiTestCase):
             data4 = response4.data
             self.assertEqual(data4["id"], data1["id"])
             self.assertEqual(data4["attributes"]["plan"]["id"], TEST_BILLING_PLAN2_ID)
+            self.assertEqual(data4["attributes"]["cancel_at_period_end"], False)
 
             # GET /api/billing/ws_xxx/invoice
             url = reverse("api:billing-invoices", args=(workspace.id,))
@@ -205,7 +206,7 @@ class BillingTests(AnaliticoApiTestCase):
             subscription = None
             data6 = response6.data
             self.assertEqual(data6["id"], data1["id"])
-            self.assertEqual(data6["attributes"]["status"], "canceled")
+            self.assertEqual(data6["attributes"]["cancel_at_period_end"], True)
 
         except Exception as exc:
             logger.error(exc)
