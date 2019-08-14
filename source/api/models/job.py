@@ -237,6 +237,7 @@ def schedule_items(items, action: str) -> [dict]:
                     analitico.logger.info(msg)
                     # create the job that will process the item
                     from api.k8 import k8_jobs_create
+
                     job_data = {"notebook": notebook} if notebook else None
                     job = k8_jobs_create(item, action, job_data=job_data)
                     jobs.append(job)
