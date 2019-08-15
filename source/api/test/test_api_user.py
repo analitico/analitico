@@ -210,6 +210,11 @@ class UserTests(AnaliticoApiTestCase):
         self.assertEqual(user["type"], TYPE_PREFIX + USER_TYPE)
         self.assertTrue("attributes" in user)
         attributes = user["attributes"]
+
+        self.assertEqual(attributes["is_staff"], False)
+        self.assertEqual(attributes["is_superuser"], False)
+        self.assertEqual(attributes["last_login"], None)
+
         self.assertEqual(attributes["first_name"], "Paolino")
         self.assertEqual(attributes["last_name"], "Paperino")
         self.assertEqual(attributes["shoe_size"], 14)

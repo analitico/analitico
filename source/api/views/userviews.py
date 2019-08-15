@@ -1,6 +1,7 @@
 import django.contrib.auth
-
 import rest_framework
+
+from django.contrib.auth import models
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.decorators import action, permission_classes
@@ -132,8 +133,10 @@ class UserViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
             raise AnaliticoException("You need to provide a valid password.", status=status.HTTP_400_BAD_REQUEST)
 
         # create and return new user
-        user = User(email=email, attributes=data["attributes"])
-        user.set_password(password)  # will save salted and hashed
+        user = User.objects.create_user(email, password)
+        user.is_staff = False
+        user.is_superuser = False
+        user.attributes = data["attributes"]
         user.save()
         return Response(self.serializer_class(user).data, status=status.HTTP_201_CREATED)
 
