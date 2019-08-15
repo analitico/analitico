@@ -87,7 +87,7 @@ class ItemViewSetMixin:
 
         # users can add an avatar.jpg or avatar.png image to the recipe, dataset or notebook files
         image = None
-        for image_name in ("/avatar.jpg", "/avatar.png"):
+        for image_name in ("/avatar.png", "/avatar.jpg"):
             if not image:
                 try:
                     with tempfile.NamedTemporaryFile(suffix=Path(image_name).suffix) as f:
@@ -98,20 +98,20 @@ class ItemViewSetMixin:
 
         # if we don't find the custom image, use default avatars
         if not image:
-            avatar = get_query_parameter(request, "default", default=f"default-{item.type}s.jpg")
-            avatar = "https://app.analitico.ai/avatars/" + avatar
-            image = image_open(avatar)
+            default_url = f"https://analitico.ai/assets/avatar-{item.type}.png"
+            image = image_open(default_url)
 
         # additional query parameters can specify how to resize/crop
+        # avatars are resized by specifying the height, not the width
         square = get_query_parameter_as_int(request, "square", default=None)
         width = get_query_parameter_as_int(request, "width", default=None)
         height = get_query_parameter_as_int(request, "height", default=None)
         image = image_resize(image, square, width, height)
 
         imagefile = io.BytesIO()
-        image.save(imagefile, format="JPEG")
+        image.save(imagefile, format="PNG")
         imagedata = imagefile.getvalue()
-        return HttpResponse(imagedata, content_type="image/jpeg")
+        return HttpResponse(imagedata, content_type="image/png")
 
     ##
     ## Slack integration (oauth redirect url)
