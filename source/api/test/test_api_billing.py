@@ -103,7 +103,7 @@ class BillingTests(AnaliticoApiTestCase):
         try:
             # customer.subscription.created -> workspace created and configured
             event = {
-                "id": "evt_1F48cAAICbSiYX9YRsYN7YaO",
+                "id": "evt_1F87ftAICbSiYX9Yr0C64hz6",
                 "object": "event",
                 "type": "customer.subscription.created",
                 "api_version": "2019-05-16",
@@ -115,11 +115,12 @@ class BillingTests(AnaliticoApiTestCase):
             response = self.client.post(url, event, format="json")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-            workspace = api.models.Workspace.objects.get(pk="ws_e78c8o4y")
+            workspace = api.models.Workspace.objects.get(pk="ws_0z7vjfe2")
+            self.assertEqual(workspace.user.email, "user1@analitico.ai")
             stripe_conf = workspace.get_attribute("stripe")
 
-            self.assertEqual(stripe_conf["customer_id"], "cus_FZH0mmWGNI2K9G")
-            self.assertEqual(stripe_conf["subscription_id"], "sub_FZHAgRNxpptZ2Y")
+            self.assertEqual(stripe_conf["customer_id"], "cus_FYvVlgYdX79DVl")
+            self.assertEqual(stripe_conf["subscription_id"], "sub_FdOSjEbGLRmolX")
 
             # Retrieve subscription on this workspace
             # GET /api/billing/ws_xxx/subscription
@@ -163,13 +164,15 @@ class BillingTests(AnaliticoApiTestCase):
         # setup a customer with a new workspace that has a billing plan
         # then retri
         subscription = None
-        customer = api.billing.stripe_get_customer(self.user1)
-        workspace = Workspace(user=self.user1)
+        user = self.user1
+        customer = api.billing.stripe_get_customer(user)
+        workspace = Workspace(user=user)
         try:
             subscription = stripe.Subscription.create(
                 customer=customer.id,
                 trial_period_days=7,
-                items=[{"plan": TEST_BILLING_PLAN1_ID, "quantity": 1, "metadata": {"workspace_id": workspace.id}}],
+                items=[{"plan": TEST_BILLING_PLAN1_ID, "quantity": 1}],
+                metadata={"workspace_id": workspace.id, "email": user.email},
             )
             workspace.set_attribute("stripe", {"customer_id": customer.id, "subscription_id": subscription.id})
             workspace.save()
@@ -185,6 +188,8 @@ class BillingTests(AnaliticoApiTestCase):
             self.assertEqual(data1["attributes"]["status"], "trialing")
             self.assertEqual(data1["attributes"]["plan"]["object"], "plan")
             self.assertEqual(data1["attributes"]["plan"]["id"], TEST_BILLING_PLAN1_ID)
+            self.assertEqual(data1["attributes"]["metadata"]["workspace_id"], workspace.id)
+            self.assertEqual(data1["attributes"]["metadata"]["email"], user.email)
 
             # GET /api/billing/ws_xxx/invoice
             url = reverse("api:billing-invoices", args=(workspace.id,))
