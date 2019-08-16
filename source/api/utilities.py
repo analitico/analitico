@@ -168,36 +168,41 @@ def image_resize(image, square=None, width=None, height=None):
     or forcing both width and height. In any case if the source image does not have
     the requested aspect ratio, the image will be resized and then cropped/centered.
     """
-    if width and height:
-        scale = max(width / float(image.width), height / float(image.height))
-        resized = (int(image.width * scale), int(image.height * scale))
-    elif width:
-        scale = width / float(image.width)
-        height = int(image.height * scale)
-        resized = (width, height)
-    elif height:
-        scale = height / float(image.height)
-        width = int(image.width * scale)
-        resized = (width, height)
-    elif square:
-        scale = max(square / float(image.width), square / float(image.height))
-        resized = (int(image.width * scale), int(image.height * scale))
-        width = height = square
-    else:
-        # no size specified, keep original
-        width, height = resized = image.size
+    try:
+        if width and height:
+            scale = max(width / float(image.width), height / float(image.height))
+            resized = (int(image.width * scale), int(image.height * scale))
+        elif width:
+            scale = width / float(image.width)
+            height = int(image.height * scale)
+            resized = (width, height)
+        elif height:
+            scale = height / float(image.height)
+            width = int(image.width * scale)
+            resized = (width, height)
+        elif square:
+            scale = max(square / float(image.width), square / float(image.height))
+            resized = (int(image.width * scale), int(image.height * scale))
+            width = height = square
+        else:
+            # no size specified, keep original
+            width, height = resized = image.size
 
-    # resize only if image really is of a different size
-    if image.size != resized:
-        image = image.resize(resized, Image.BICUBIC)
+        # resize only if image really is of a different size
+        if image.size != resized:
+            image = image.resize(resized, Image.BICUBIC)
 
-    # now crop any extra size while leaving image centered
-    extra_w = (image.width - width) / 2
-    extra_h = (image.height - height) / 2
-    box = (extra_w, extra_h, image.width - extra_w, image.height - extra_h)
-    image = image.crop(box)
+        # now crop any extra size while leaving image centered
+        extra_w = (image.width - width) / 2
+        extra_h = (image.height - height) / 2
+        box = (extra_w, extra_h, image.width - extra_w, image.height - extra_h)
+        image = image.crop(box)
 
-    return image
+        return image
+
+    except Exception as exc:
+        msg = f"image_resize - an error occoured while resizing, square: {square}, width: {width}, height: {height}, exc: {exc}"
+        raise AnaliticoException(msg)
 
 
 ##

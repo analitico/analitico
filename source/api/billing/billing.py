@@ -106,9 +106,10 @@ def stripe_get_customer(user: User, create: bool = True):
         customer = stripe.Customer.create(email=user.email)
 
     # store in user for later use
+    user1 = api.models.User.objects.get(email=user.email)
     stripe_conf["customer_id"] = customer.id
-    user.set_attribute("stripe", stripe_conf)
-    user.save()
+    user1.set_attribute("stripe", stripe_conf)
+    user1.save()
     return customer
 
 

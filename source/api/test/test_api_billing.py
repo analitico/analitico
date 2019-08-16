@@ -15,6 +15,7 @@ import api.models
 from analitico import logger
 from api.models import Workspace, User
 from .utils import AnaliticoApiTestCase
+from .test_api_user import TEST_USER_WITH_PASSWORD, TYPE_PREFIX, USER_TYPE, TEST_USER_EMAIL, TEST_USER_PASSWORD
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -54,6 +55,21 @@ class BillingTests(AnaliticoApiTestCase):
         data = response.data
         self.assertEqual(data["attributes"]["livemode"], False)
         self.assertEqual(data["attributes"]["customer"], "cus_FZbGgzNiXyKEYS")
+
+    def test_billing_session_create_with_newly_signed_up_user(self):
+        url = reverse("api:user-signup")
+        response = self.client.post(url, TEST_USER_WITH_PASSWORD, format="json")  # NO AUTH TOKEN
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        logged_in = self.client.login(username=TEST_USER_EMAIL, password=TEST_USER_PASSWORD)
+        self.assertTrue(logged_in)
+
+        url = reverse("api:billing-session") + "?plan=plan_premium_usd"
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        self.assertEqual(data["attributes"]["livemode"], False)
+        self.assertEqual(data["attributes"]["customer"], "cus_FdHPAsGYQEbSKj")
 
     def test_billing_session_create_no_auth(self):
         self.auth_token(None)  # no authentication
@@ -146,6 +162,7 @@ class BillingTests(AnaliticoApiTestCase):
     def test_billing_subscription_lifecycle(self):
         # setup a customer with a new workspace that has a billing plan
         # then retri
+        subscription = None
         customer = api.billing.stripe_get_customer(self.user1)
         workspace = Workspace(user=self.user1)
         try:
@@ -203,7 +220,6 @@ class BillingTests(AnaliticoApiTestCase):
             url = reverse("api:billing-subscription", args=(workspace.id,))
             response6 = self.client.delete(url)
             self.assertEqual(response6.status_code, status.HTTP_200_OK)
-            subscription = None
             data6 = response6.data
             self.assertEqual(data6["id"], data1["id"])
             self.assertEqual(data6["attributes"]["cancel_at_period_end"], True)
@@ -214,6 +230,7 @@ class BillingTests(AnaliticoApiTestCase):
 
         finally:
             if subscription:
+                # needs to be deleted because cancel method will cancel at period end, not now
                 stripe.Subscription.delete(subscription.id)
             if workspace:
                 workspace.delete()
