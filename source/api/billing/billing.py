@@ -141,7 +141,7 @@ def stripe_session_create(user: api.models.User, workspace: api.models.Workspace
         subscription_data={
             "trial_period_days": 14,
             "items": [{"plan": plan, "quantity": 1}],
-            "metadata": {"workspace_id": workspace_id},
+            "metadata": {"workspace_id": workspace_id, "email": user.email},
         },
     )
     return session
@@ -183,8 +183,15 @@ def stripe_handle_subscription_event(event):
         if event.type != "customer.subscription.created":
             msg = f"A {event.id} event was received but the {workspace_id} cannot be found."
             raise AnaliticoException(msg) from exc
-        # create a new workspace using the workspace_id that was indicated in metadata
+
+        # create a new workspace using the workspace_id and owner that were indicated in metadata
+        email = subscription.metadata.get("email")
+        assert email, "Stripe subscription does not indicate user's email address in its metadata."
+        user = User.objects.get(email=email)
+
         workspace = Workspace(id=workspace_id)
+        workspace.user = user
+        workspace.save()
         api.models.drive.dr_create_workspace_storage(workspace)
 
     stripe_conf = workspace.get_attribute("stripe", {})
