@@ -693,7 +693,7 @@ class K8Tests(AnaliticoApiTestCase):
             # delete jupyter when workspace is removed
             ws2.delete()
             # wait for pod termination
-            time.sleep(60)
+            time.sleep(90)
             # check all deployed resources to be deleted
             response = subprocess_run(
                 [

@@ -38,6 +38,10 @@ spec:
               name: {secret_name}
               key: token
         resources:
+          requests:
+            cpu: {cpu_request}
+            memory: {memory_request}
+            nvidia.com/gpu: {gpu_request}
           limits:
             cpu: {cpu_limit}
             memory: {memory_limit}

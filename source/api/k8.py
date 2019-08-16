@@ -412,6 +412,11 @@ def k8_deploy_jupyter(workspace):
         # default configuration for Jupyter servers
         jupyter = {
             "settings": {
+                "requests": {
+                    "cpu": 0.5,  # number of CPUs requested
+                    "memory": "8Gi",  # memory size requested
+                    "gpu": 0,  # number of GPUs requested
+                },
                 "limits": {
                     "cpu": 4,  # number of CPUs limit
                     "memory": "8Gi",  # memory size limit
@@ -440,6 +445,9 @@ def k8_deploy_jupyter(workspace):
         configs["pod_name"] = pod_name
         configs["route_name"] = route_name
 
+        configs["cpu_request"] = jupyter["settings"]["requests"]["cpu"]
+        configs["memory_request"] = jupyter["settings"]["requests"]["memory"]
+        configs["gpu_request"] = jupyter["settings"]["requests"]["gpu"]
         configs["cpu_limit"] = jupyter["settings"]["limits"]["cpu"]
         configs["memory_limit"] = jupyter["settings"]["limits"]["memory"]
         configs["gpu_limit"] = jupyter["settings"]["limits"]["gpu"]
