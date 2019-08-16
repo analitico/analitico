@@ -273,7 +273,7 @@ def schedule_jobs() -> [dict]:
     ds_jobs = schedule_items(ds, ACTION_RUN)
 
     rx = Recipe.objects.filter(attributes__icontains='"schedule"')
-    rx_jobs = schedule_items(rx, ACTION_RUN)
+    rx_jobs = schedule_items(rx, ACTION_RUN_AND_BUILD)
 
     nb = Notebook.objects.filter(attributes__icontains='"schedule"')
     nb_jobs = schedule_items(nb, ACTION_RUN)
