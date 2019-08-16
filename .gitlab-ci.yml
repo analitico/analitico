@@ -16,7 +16,9 @@ services:
 stages:
   - build
   - deploy-staging
+  - live-tests
   - deploy-production
+  - deprecated
 
 cache:
   paths:
@@ -106,7 +108,7 @@ build-and-test:
     - master
 
 website-s6:
-  stage: deploy-staging
+  stage: deprecated
   image: ubuntu:18.04
   when: manual
   only:
@@ -172,51 +174,9 @@ website:
     - cat service.yaml
     - kubectl apply --filename ./service.yaml
 
-worker-staging:
-  stage: deploy-staging
-  image: ubuntu:18.04
-  when: manual
-  only:
-    - master
-  before_script:
-  ##
-  ## Install ssh-agent if not already installed, it is required by Docker.
-  ## (change apt-get to yum if you use an RPM-based image)
-  ##
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-
-  ##
-  ## Run ssh-agent (inside the build environment)
-  ##
-  - eval $(ssh-agent -s)
-
-  ##
-  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
-  ## We're using tr to fix line endings which makes ed25519 keys work
-  ## without extra base64 encoding.
-  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
-  ##
-  - mkdir -p ~/.ssh
-  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-add ~/.ssh/id_rsa
-
-  # it creates a useless container "analitico-worker-keep-jupyter-image"
-  # to keep the image "-jupyter" that is used for the papermill dockers
-  # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
-
-  script:
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
-      docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
-      docker stop analitico-worker-staging1; 
-      docker rm  analitico-worker-staging1; 
-      docker rm analitico-worker-staging-keep-jupyter-image; 
-      docker run --name=analitico-worker-staging1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh --tags staging; 
-      docker create --name=analitico-worker-staging-keep-jupyter-image ${BUILD_JUPYTER_IMAGE_URL};"     
 
 worker-production:
-  stage: deploy-production
+  stage: deprecated
   when: manual
   image: ubuntu:18.04
   only:
@@ -267,7 +227,7 @@ worker-production:
 
 
 live-tests:
-  stage: deploy-production
+  stage: live-tests
   image: ubuntu:18.04
   only:
     - master
@@ -307,7 +267,7 @@ live-tests:
     
 
 jupyter-old:
-  stage: deploy-production
+  stage: deprecated
   image: ubuntu:18.04
   when: manual
   only:
