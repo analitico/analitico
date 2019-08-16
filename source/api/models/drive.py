@@ -40,7 +40,7 @@ assert HETZNER_PASSWORD
 assert HETZNER_ENDPOINT.startswith("https://")
 
 # maximum time we're willing to wait for hetzner to setup a newly created subaccount
-HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS = 60 * 1000
+HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS = 120 * 1000
 
 
 def generate_drive_id():
