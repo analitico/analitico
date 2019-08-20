@@ -376,8 +376,11 @@ class FilesViewSetMixin:
                     # https://docs.djangoproject.com/en/2.2/ref/files/uploads/
                     data = files[0].chunks(chunk_size=CHUNK_SIZE)
             else:
-                # request acts as a file-like object
-                data = request.stream
+                # request acts as a file-like object. note that we could pass request.stream
+                # directly here but it would generate a byte by byte stream which would be
+                # extremely slow and end up generating timeouts on large files. instead we
+                # create an iterator which reads the contents in larger chunk sizes but still streams it
+                data = iter(lambda: request.read(size=CHUNK_SIZE), b'')
 
             # upload, overwrite if there and reset metadata if any
             driver.upload(data, path, metadata=None)
