@@ -88,7 +88,7 @@ class ItemViewSetMixin:
 
         # users can add an avatar.jpg or avatar.png image to the recipe, dataset or notebook files
         # access to item's avatar requires proper permissions for the item
-        # the route is open so that users can retrieve avatars for the public 
+        # the route is open so that users can retrieve avatars for the public
         # gallery anonymously
         image = None
         for image_name in ("/avatar.png", "/avatar.jpg"):
