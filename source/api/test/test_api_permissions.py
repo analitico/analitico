@@ -480,17 +480,14 @@ class PermissionsTests(AnaliticoApiTestCase):
     ##
 
     def test_permissions_gallery(self):
-        ws_gallery = Workspace(id="ws_gallery", title="Gallery")
-        ws_gallery.save()
-
         # regular user can retrieve gallery specifically
         self.auth_token(self.token2)
-        url = reverse("api:workspace-detail", args=(ws_gallery.id,))
+        url = reverse("api:workspace-detail", args=(self.ws_gallery.id,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = response.data
         self.assertEqual(data["id"], "ws_gallery")
-        self.assertEqual(data["attributes"]["title"], "Gallery")
+        self.assertEqual(data["attributes"]["title"], "Gallery Workspace")
         # regular user CANNOT alter gallery
         data["attributes"]["title"] = "New Gallery"
         response = self.client.put(url, data)
@@ -504,7 +501,7 @@ class PermissionsTests(AnaliticoApiTestCase):
 
         # check permissions on regular items in the gallery
         for item_class in (Dataset, Recipe, Notebook):
-            item = item_class(workspace=ws_gallery)
+            item = item_class(workspace=self.ws_gallery)
             item.save()
 
             item_url = reverse(f"api:{item.type}-detail", args=(item.id,))
