@@ -5,6 +5,7 @@ import pytest
 import random
 import string
 
+from PIL import Image
 from django.conf import settings
 from django.test import TestCase, tag
 from django.urls import reverse
@@ -1336,3 +1337,132 @@ class WebdavTests(AnaliticoApiTestCase):
         finally:
             if item:
                 item.delete()
+
+    ##
+    ## Avatar
+    ## ./manage.py test api.test.test_api_webdav.WebdavTests --tag=avatar
+    ##
+
+    def create_item_with_avatar(self, item_class, workspace):
+        item = item_class(workspace=workspace)
+        item.save()
+        try:
+            avatar_path = os.path.join(ASSETS_PATH, "avatar.png")
+            item.upload(avatar_path, "avatar.png")
+            return item
+        except Exception:
+            item.delete()
+
+    def retrieve_avatar_image(self, item, query, status_code=status.HTTP_200_OK, check_color=(155, 196, 171, 255)):
+        url = reverse(f"api:{item.type}-avatar", args=(item.id,)) + query
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if response.status_code == status.HTTP_200_OK:
+            with tempfile.NamedTemporaryFile(suffix=".png") as f:
+                f.write(response.content)
+                f.seek(0)
+                image = Image.open(f)
+                image.load()
+
+                if check_color:
+                    pixel_color = image.getpixel((5, 5))
+                    self.assertEqual(pixel_color, check_color)
+
+                return image
+        return response
+
+    @tag("avatar")
+    def test_avatar_basics(self):
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Recipe, self.ws1)
+        try:
+            image = self.retrieve_avatar_image(item, "")
+            self.assertEqual(image.mode, "RGBA")
+            self.assertEqual(image.height, 1080)
+            self.assertEqual(image.width, 1920)
+        finally:
+            item.delete()
+
+    @tag("avatar")
+    def test_avatar_square(self):
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Recipe, self.ws1)
+        try:
+            image = self.retrieve_avatar_image(item, "?square=100")
+            self.assertEqual(image.mode, "RGBA")
+            self.assertEqual(image.height, 100)
+            self.assertEqual(image.width, 100)
+        finally:
+            item.delete()
+
+    @tag("avatar")
+    def test_avatar_height(self):
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Recipe, self.ws1)
+        try:
+            image = self.retrieve_avatar_image(item, "?height=72")
+            self.assertEqual(image.mode, "RGBA")
+            self.assertEqual(image.height, 72)
+            self.assertEqual(image.width, 128)
+        finally:
+            item.delete()
+
+    @tag("avatar")
+    def test_avatar_wrong_token_no_avatar(self):
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Recipe, self.ws1)
+        try:
+            self.auth_token(self.token2)
+            self.retrieve_avatar_image(item, "?height=72", status_code=status.HTTP_404_NOT_FOUND)
+        finally:
+            item.delete()
+
+    @tag("avatar")
+    def test_avatar_no_token_for_gallery_avatar(self):
+        # publish in gallery
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Recipe, self.ws_gallery)
+        try:
+            # retrieve anonymously
+            self.auth_token(None)
+            image = self.retrieve_avatar_image(item, "?height=72")
+            self.assertEqual(image.height, 72)
+            self.assertEqual(image.width, 128)
+        finally:
+            item.delete()
+
+    @tag("avatar")
+    def test_avatar_dataset_default(self):
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Dataset, self.ws1)
+        try:
+            image = self.retrieve_avatar_image(item, "?height=72", check_color=(155, 196, 171, 255))
+            self.assertEqual(image.mode, "RGBA")
+            self.assertEqual(image.height, 72)
+            self.assertEqual(image.width, 128)
+        finally:
+            item.delete()
+
+    @tag("avatar")
+    def test_avatar_recipe_default(self):
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Recipe, self.ws1)
+        try:
+            image = self.retrieve_avatar_image(item, "?height=72", check_color=(155, 196, 171, 255))
+            self.assertEqual(image.mode, "RGBA")
+            self.assertEqual(image.height, 72)
+            self.assertEqual(image.width, 128)
+        finally:
+            item.delete()
+
+    @tag("avatar")
+    def test_avatar_notebook_default(self):
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Notebook, self.ws1)
+        try:
+            image = self.retrieve_avatar_image(item, "?height=72", check_color=(155, 196, 171, 255))
+            self.assertEqual(image.mode, "RGBA")
+            self.assertEqual(image.height, 72)
+            self.assertEqual(image.width, 128)
+        finally:
+            item.delete()

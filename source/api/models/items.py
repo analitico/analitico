@@ -2,6 +2,7 @@ import collections
 import os.path
 import mimetypes
 
+from pathlib import Path
 from django.db import models
 from django.utils.text import slugify
 from django.utils.timezone import now
@@ -129,6 +130,14 @@ class ItemMixin:
         driver = self.storage.driver
         assert driver, f"Storage driver for {self.id} is not configured."
         return driver.download(self.storage_base_path + remote_path, local_path_or_fileobj)
+
+    def upload(self, local_path_or_fileobj, remote_path):
+        """ Upload file from local disk or stream to item's storage. """
+        driver = self.storage.driver
+        assert driver, f"Storage driver for {self.id} is not configured."
+        folder_path = Path(self.storage_base_path + remote_path).parent
+        driver.mkdirs(folder_path)
+        return driver.upload(local_path_or_fileobj, self.storage_base_path + remote_path)
 
     def __str__(self):
         return self.type + ": " + self.id

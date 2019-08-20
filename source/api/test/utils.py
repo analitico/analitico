@@ -174,6 +174,8 @@ class AnaliticoApiTestCase(APITestCase):
         ws2 = self.read_json_asset(os.path.join(ASSETS_PATH, "ws_002.json"))
         ws3 = self.read_json_asset(os.path.join(ASSETS_PATH, "ws_003.json"))
         ws_storage_webdav = self.read_json_asset(os.path.join(ASSETS_PATH, "ws_storage_webdav.json"))
+        ws_gallery = self.read_json_asset(os.path.join(ASSETS_PATH, "ws_gallery.json"))
+
         endpoint = reverse("api:workspace-list")
         self.auth_token(self.token1)
         response_ws1 = self.client.post(endpoint, {"data": ws1}, format="json")
@@ -187,12 +189,16 @@ class AnaliticoApiTestCase(APITestCase):
         self.auth_token(self.token1)
         response_ws_storage_webdav = self.client.post(endpoint, {"data": ws_storage_webdav}, format="json")
         self.assertEqual(response_ws_storage_webdav.status_code, status.HTTP_201_CREATED)
+        self.auth_token(self.token1)
+        response_ws_gallery = self.client.post(endpoint, {"data": ws_gallery}, format="json")
+        self.assertEqual(response_ws_gallery.status_code, status.HTTP_201_CREATED)
         self.client.logout()
+
         self.ws1 = Workspace.objects.get(pk=response_ws1.data["id"])
         self.ws2 = Workspace.objects.get(pk=response_ws2.data["id"])
         self.ws3 = Workspace.objects.get(pk=response_ws3.data["id"])
-        # specific workspace that has webdav storage backing
         self.ws_storage_webdav = Workspace.objects.get(pk=response_ws_storage_webdav.data["id"])
+        self.ws_gallery = Workspace.objects.get(pk=response_ws_gallery.data["id"])
 
         # test drive
         self.drive = Drive(id="dr_box002_test", attributes=self.get_storage_conf())

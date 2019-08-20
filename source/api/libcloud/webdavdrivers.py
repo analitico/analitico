@@ -292,6 +292,8 @@ class WebdavStorageDriver(StorageDriver):
         self._send("MKCOL", path, expected_codes)
 
     def mkdirs(self, path):
+        """ Create directories structure, takes a path or Path object. """
+        path = str(path)
         dirs = [d for d in path.split("/") if d]
         if not dirs:
             return

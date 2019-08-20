@@ -211,24 +211,6 @@ class ItemsTests(AnaliticoApiTestCase):
         self.assertTrue(math.isnan(item["attributes"]["mickey"]))  # regular python nan, not a numpy nan
 
     ##
-    ## Avatar
-    ##
-
-    # test avatar square
-
-    # test avatar width
-
-    # test avatar height
-
-    # test avatar width and height
-
-    # test avatar nothing specified
-
-    # test avatar with default
-
-    # test avatar with wrong or non available image
-
-    ##
     ## Cloning items
     ##
 

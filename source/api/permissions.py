@@ -64,8 +64,13 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
     method, eg. if you're doing a delete on a notebook, the standard permission
     will be 'analitico.notebooks.delete'. 
     """
-    # anonymous users have no rights
+    # anonymous users have no rights except to read public gallery items
     if request.user.is_anonymous:
+        if request.method == "GET" or request.method == "HEAD" or request.method == "OPTIONS":
+            if Workspace == item_class:
+                return Workspace.objects.filter(id=GALLERY_WORKSPACE_ID)
+            else:
+                return item_class.objects.filter(workspace__id=GALLERY_WORKSPACE_ID)
         raise AnaliticoException(
             "Anonymous users can't access this API, please provide authentication credentials or a token.",
             status_code=status.HTTP_401_UNAUTHORIZED,

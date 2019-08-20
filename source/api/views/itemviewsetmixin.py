@@ -20,6 +20,7 @@ from api.notifications import slack_oauth_exchange_code_for_token
 from api.permissions import HasApiPermission, get_permitted_queryset, has_item_permission_or_exception
 from api.utilities import get_query_parameter, get_query_parameter_as_int, image_open, image_resize
 from api.libcloud.utilities import clone_files
+from api.factory import factory
 
 
 class filterset:
@@ -80,12 +81,15 @@ class ItemViewSetMixin:
     ##
 
     # TODO cache avatar images on disk #378
-    @action(methods=["get"], detail=True, url_name="avatar", url_path="avatar")
+    @action(methods=["get"], detail=True, url_name="avatar", url_path="avatar", permission_classes=(AllowAny,))
     def avatar(self, request, pk):
         """ Returns an item's avatar (if configured) """
         item = self.get_object()
 
         # users can add an avatar.jpg or avatar.png image to the recipe, dataset or notebook files
+        # access to item's avatar requires proper permissions for the item
+        # the route is open so that users can retrieve avatars for the public 
+        # gallery anonymously
         image = None
         for image_name in ("/avatar.png", "/avatar.jpg"):
             if not image:
