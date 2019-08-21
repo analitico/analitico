@@ -411,7 +411,7 @@ class FilesViewSetMixin:
 
         workspace = item if isinstance(item, Workspace) else item.workspace
 
-        driver = workspace.storage.driver
+        driver = workspace.storage.driver if workspace.storage else None
         if not isinstance(driver, api.libcloud.WebdavStorageDriver):
             msg = "/files is only supported on WebDAV based storage"
             raise AnaliticoException(msg, status_code=status.HTTP_501_NOT_IMPLEMENTED)
