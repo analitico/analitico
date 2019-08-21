@@ -92,6 +92,11 @@ class UserTests(AnaliticoApiTestCase):
         self.assertEqual(attributes["last_name"], "Paperino")
         self.assertEqual(attributes["shoe_size"], 14)
 
+        # check that first and last are in their custom variables, not in attributes
+        user = User.objects.get(email=TEST_USER_EMAIL)
+        self.assertEqual(user.first_name, "Paolino")
+        self.assertEqual(user.last_name, "Paperino")
+
     def test_user_create_no_email(self):
         url = reverse("api:user-list")
         self.auth_token(self.token1)

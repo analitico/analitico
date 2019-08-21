@@ -136,6 +136,8 @@ class UserViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
         user = User.objects.create_user(email, password)
         user.is_staff = False
         user.is_superuser = False
+        user.first_name = data["attributes"].pop("first_name", None)
+        user.last_name = data["attributes"].pop("last_name", None)
         user.attributes = data["attributes"]
         user.save()
         return Response(self.serializer_class(user).data, status=status.HTTP_201_CREATED)
