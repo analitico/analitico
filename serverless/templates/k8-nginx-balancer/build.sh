@@ -6,9 +6,9 @@ cp ../../../../analitico-ci/ssl/analitico.ai.crt .
 cp ../../../../analitico-ci/ssl/analitico.ai.key .
 
 if [[ "$1" == 'staging' ]]; then
-    docker build -t eu.gcr.io/analitico-api/k8-nginx-staging-balancer -f DockerfileStaging .
+    docker build --no-cache -t eu.gcr.io/analitico-api/k8-nginx-staging-balancer -f DockerfileStaging .
 else
-    docker build -t eu.gcr.io/analitico-api/k8-nginx-balancer .
+    docker build --no-cache -t eu.gcr.io/analitico-api/k8-nginx-balancer .
 fi
 
 rm analitico.ai.crt 

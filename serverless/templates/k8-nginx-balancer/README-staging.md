@@ -18,7 +18,10 @@ Login gcloud registry
 `docker login -u oauth2accesstoken eu.gcr.io/analitico-api/k8-nginx-staging-balancer`
 
 To run the image we need to map external ports
-`docker run -d -p 80:80 -p 443:443 -p 6443:6443 --restart always --name=analitico-k8-nginx-staging-balancer eu.gcr.io/analitico-api/k8-nginx-staging-balancer`
+`docker run -d -p 80:80 -p 443:443 -p 6443:6443 -p 19999:19999 --restart always --name=analitico-k8-nginx-staging-balancer eu.gcr.io/analitico-api/k8-nginx-staging-balancer`
+
+Run Netdata with
+`docker exec -it analitico-k8-nginx-staging-balancer /usr/sbin/netdata`
 
 Update image configuration
 
@@ -26,5 +29,6 @@ Update image configuration
 docker pull eu.gcr.io/analitico-api/k8-nginx-staging-balancer && \
 docker stop analitico-k8-nginx-staging-balancer && \
 docker rm analitico-k8-nginx-staging-balancer && \
-docker run -d -p 80:80 -p 443:443 -p 6443:6443 --restart always --name=analitico-k8-nginx-staging-balancer eu.gcr.io/analitico-api/k8-nginx-staging-balancer
+docker run -d -p 80:80 -p 443:443 -p 6443:6443 -p 19999:19999 --restart always --name=analitico-k8-nginx-staging-balancer eu.gcr.io/analitico-api/k8-nginx-staging-balancer &&
+docker exec -it analitico-k8-nginx-staging-balancer /usr/sbin/netdata
 ```
