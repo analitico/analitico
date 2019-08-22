@@ -221,7 +221,7 @@ class UserTests(AnaliticoApiTestCase):
 
         # retrieve magic token from email
         body = mail.outbox[0].body
-        url = re.search(r"https:\/\/analitico\.ai\/app\/(.*)\s", body).group(1)
+        url = re.search(r"/app\/(.*)\s", body).group(1)
         parsed_url = urllib.parse.urlparse(url)
         token = urllib.parse.parse_qs(parsed_url.query)["token"][0]
 
