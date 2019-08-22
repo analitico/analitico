@@ -185,7 +185,8 @@ class UserViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
             expiration = (timezone.now() + datetime.timedelta(hours=24)).isoformat()
             token = api.utilities.get_signed_secret(str({user.email: expiration}))
 
-            url = f"https://analitico.ai/app/users/password/update?token={urllib.parse.quote(token)}"
+            url = request.build_absolute_uri(f"/app/users/password/update?token={urllib.parse.quote(token)}")
+            url = url.replace("http://", "https://")
             api.notifications.email_send_template(user, "password-reset.yaml", url=url)
 
         except api.models.User.DoesNotExist:
