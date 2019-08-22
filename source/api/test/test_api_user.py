@@ -1,11 +1,12 @@
 import copy
+
 from base64 import b64encode
+from django.urls import reverse
+from django.core import mail
+from rest_framework import status
 
 from analitico import TYPE_PREFIX, USER_TYPE
-from django.urls import reverse
-from rest_framework import status
 from .utils import AnaliticoApiTestCase
-
 from api.models import User
 
 # conflicts with django's dynamically generated model.objects
@@ -201,6 +202,17 @@ class UserTests(AnaliticoApiTestCase):
         # now retrieve deleted user
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_password_reset_send_magic_link(self):
+        self.auth_token(None)
+        url = reverse("api:user-password-reset", args=("user2@analitico.ai",))
+        response = self.client.post(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # check that email was actually sent (to test outbox)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "Your password reset link")
+        self.assertEqual(mail.outbox[0].to[0], "user2@analitico.ai")
 
     ##
     ## Sign in, Sign up, Sign out

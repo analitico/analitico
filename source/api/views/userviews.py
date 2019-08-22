@@ -1,7 +1,10 @@
 import django.contrib.auth
 import rest_framework
+import urllib.parse
+import datetime
 
 from django.contrib.auth import models
+from django.urls import reverse
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.decorators import action, permission_classes
@@ -9,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 
 import api.models
 import api.utilities
+import api.notifications
 
 try:
     from allauth.account import app_settings as allauth_settings
@@ -17,7 +21,7 @@ try:
 except ImportError:
     raise ImportError("allauth needs to be added to INSTALLED_APPS.")
 
-from analitico import AnaliticoException
+from analitico import AnaliticoException, logger
 from api.models import User, USER_THUMBNAIL_SIZE
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
@@ -154,4 +158,59 @@ class UserViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
     def signout(self, request):
         """ Sign out user from current session. """
         django.contrib.auth.logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    ##
+    ## Password Reset
+    ##
+
+    @permission_classes((AllowAny,))
+    @action(
+        methods=["post"],
+        detail=False,
+        url_name="password-reset",
+        url_path="password/reset/(?P<email>.*)",
+        permission_classes=[AllowAny],
+    )
+    def password_reset(self, request, email):
+        try:
+            user = api.models.User.objects.get(email=email)
+
+            # token will expire 24 hours from now
+            expiration = (datetime.datetime.now() + datetime.timedelta(hours=24)).isoformat()
+            # token includes user's email address and expiration date
+            token = api.utilities.get_signed_secret(str({user.email: expiration}))
+
+            url = f"https://analitico.ai/app/users/password/update?token={urllib.parse.quote(token)}"
+            api.notifications.email_send_template(user, "password-reset.yaml", url=url)
+
+        except api.models.User.DoesNotExist:
+            url = reverse("api:user-password-reset", args=(email,))
+            logger.warning(f"{url} was called for a non existent email")
+
+        if user:
+            pass
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @permission_classes((AllowAny,))
+    @action(
+        methods=["post"],
+        detail=False,
+        url_name="password-update",
+        url_path="password/update/(?P<password>.*)",
+        permission_classes=[AllowAny],
+    )
+    def password_update(self, request, password):
+        try:
+            user = api.models.User.objects.get(email=email)
+
+            url = "https://analitico.ai/"
+            email = "ciao"
+
+        except api.models.User.DoesNotExist:
+            url = reverse("api:user-password-update", args=(email, token))
+            logger.warning(f"{url} was called for a non existent email or invalid token")
+
+        if user:
+            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
