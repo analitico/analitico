@@ -1,6 +1,38 @@
 import logging
-from api.models import ItemMixin
+import yaml
+
+from pathlib import Path
+from analitico.utilities import read_text
+from api.models import ItemMixin, User
+from api.utilities import read_yaml
 from django.core.mail import send_mail
+
+
+def email_send_template(user: User, template_name: str, **kwargs):
+    """
+    Sends a customized email to a specific user from a given template.
+    
+    Arguments:
+        user {User} -- User that we should send the email to
+        template_name {str} -- Name of the email template, eg: password-reset.yaml
+    """
+
+    kwargs["user"] = user
+    kwargs["email"] = user.email
+    kwargs["first_name"] = user.first_name
+    kwargs["last_name"] = user.last_name
+
+    template_yaml = read_yaml(Path(__file__).parent / "templates" / template_name)
+    subject = template_yaml["subject"].format(**kwargs)
+    message = template_yaml["message"].format(**kwargs)
+
+    send_mail(
+        from_email=template_yaml["from"],
+        subject=subject,
+        message=message,
+        recipient_list=(user.email,),
+        fail_silently=False,
+    )
 
 
 def email_notify(item, message, level) -> dict:

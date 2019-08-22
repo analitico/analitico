@@ -5,6 +5,6 @@ from .slack import (
     slack_notify,
 )
 
-from .email import email_notify
+from .email import email_notify, email_send_template
 
 from .notify import get_job_completion_webhook, notifications_webhook
