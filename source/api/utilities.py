@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 
 import analitico.utilities
+from analitico import logger
 from analitico.exceptions import AnaliticoException
 
 
@@ -243,3 +244,20 @@ def get_unsigned_secret(secret: str) -> str:
         raise AnaliticoException("get_unsigned_secret - the secret is missing")
     signer = Signer()
     return signer.unsign(secret)
+
+
+##
+## YAML
+##
+
+
+def read_yaml(filename):
+    """ Reads yaml from the given file. """
+    try:
+        import yaml
+
+        with open(filename, "r") as f:
+            return yaml.load(f, Loader=yaml.Loader)
+
+    except Exception as exc:
+        logger.error(f"read_yaml - error while reading {filename}, exc: {exc}")
