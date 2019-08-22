@@ -1,10 +1,15 @@
 import copy
+import re
+import urllib.parse
+import datetime
 
+from unittest import mock
 from base64 import b64encode
 from django.urls import reverse
 from django.core import mail
 from rest_framework import status
 
+from django.utils import timezone
 from analitico import TYPE_PREFIX, USER_TYPE
 from .utils import AnaliticoApiTestCase
 from api.models import User
@@ -203,7 +208,7 @@ class UserTests(AnaliticoApiTestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_user_password_reset_send_magic_link(self):
+    def test_user_password_reset(self):
         self.auth_token(None)
         url = reverse("api:user-password-reset", args=("user2@analitico.ai",))
         response = self.client.post(url, format="json")
@@ -213,6 +218,35 @@ class UserTests(AnaliticoApiTestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject, "Your password reset link")
         self.assertEqual(mail.outbox[0].to[0], "user2@analitico.ai")
+
+        # retrieve magic token from email
+        body = mail.outbox[0].body
+        url = re.search(r"https:\/\/analitico\.ai\/app\/(.*)\s", body).group(1)
+        parsed_url = urllib.parse.urlparse(url)
+        token = urllib.parse.parse_qs(parsed_url.query)["token"][0]
+
+        # request password change
+        url3 = reverse("api:user-password-update")
+        response3 = self.client.post(url3, {"data": {"token": token, "password": "newPassword!"}})
+        self.assertEqual(response3.status_code, status.HTTP_204_NO_CONTENT)
+        user = User.objects.get(email="user2@analitico.ai")
+        self.assertTrue(user.check_password("newPassword!"))
+        self.assertFalse(user.check_password("wrong!"))
+
+        # pretend we're in the future and test expired link
+        tomorrow = timezone.now() + datetime.timedelta(hours=24, minutes=1)
+        with mock.patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = tomorrow
+            response4 = self.client.post(url3, {"data": {"token": token, "password": "newPassword!"}})
+            self.assertEqual(response4.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_user_password_reset_fake_email(self):
+        self.auth_token(None)
+        url = reverse("api:user-password-reset", args=("fake1@analitico.ai",))
+        response = self.client.post(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        # check that no email was actually sent
+        self.assertEqual(len(mail.outbox), 0)
 
     ##
     ## Sign in, Sign up, Sign out

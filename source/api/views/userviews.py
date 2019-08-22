@@ -2,7 +2,11 @@ import django.contrib.auth
 import rest_framework
 import urllib.parse
 import datetime
+import dateutil.parser
+import ast
+import time
 
+from django.utils import timezone
 from django.contrib.auth import models
 from django.urls import reverse
 from rest_framework import serializers, status
@@ -164,7 +168,6 @@ class UserViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
     ## Password Reset
     ##
 
-    @permission_classes((AllowAny,))
     @action(
         methods=["post"],
         detail=False,
@@ -176,41 +179,46 @@ class UserViewSet(ItemViewSetMixin, rest_framework.viewsets.ModelViewSet):
         try:
             user = api.models.User.objects.get(email=email)
 
-            # token will expire 24 hours from now
-            expiration = (datetime.datetime.now() + datetime.timedelta(hours=24)).isoformat()
-            # token includes user's email address and expiration date
+            # token has user's email and expiration in 24 hours from now
+            # why use timezone.now and not datetime.now?
+            # https://tommikaikkonen.github.io/timezones/
+            expiration = (timezone.now() + datetime.timedelta(hours=24)).isoformat()
             token = api.utilities.get_signed_secret(str({user.email: expiration}))
 
             url = f"https://analitico.ai/app/users/password/update?token={urllib.parse.quote(token)}"
             api.notifications.email_send_template(user, "password-reset.yaml", url=url)
 
         except api.models.User.DoesNotExist:
+            # attemps to send email to non existing users are slowed down, no specific reply
             url = reverse("api:user-password-reset", args=(email,))
             logger.warning(f"{url} was called for a non existent email")
+            time.sleep(5)
 
-        if user:
-            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @permission_classes((AllowAny,))
     @action(
         methods=["post"],
         detail=False,
         url_name="password-update",
-        url_path="password/update/(?P<password>.*)",
+        url_path="password/update",
         permission_classes=[AllowAny],
     )
-    def password_update(self, request, password):
-        try:
-            user = api.models.User.objects.get(email=email)
+    def password_update(self, request):
+        data = request.data["data"]
 
-            url = "https://analitico.ai/"
-            email = "ciao"
+        # token is a signed dictionary with { email: expiration }
+        token = ast.literal_eval(api.utilities.get_unsigned_secret(data["token"]))
 
-        except api.models.User.DoesNotExist:
-            url = reverse("api:user-password-update", args=(email, token))
-            logger.warning(f"{url} was called for a non existent email or invalid token")
+        # retrieve user's email from signed token, check link expiration
+        email = next(iter(token))
+        expiration = dateutil.parser.parse(token[email])
+        if timezone.now() > expiration:
+            msg = "The password reset link expired, please get a new reset email."
+            raise AnaliticoException(msg, status_code=status.HTTP_400_BAD_REQUEST)
 
-        if user:
-            pass
+        # update user's password
+        user = api.models.User.objects.get(email=email)
+        user.set_password(data["password"])
+        user.save()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
