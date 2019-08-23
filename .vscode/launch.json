@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.test_api_billing.BillingTests",
+                "api.test.test_api_drive.DriveTests.test_drive_create_workspace_storage",
                 "-v",
                 "2"
             ],

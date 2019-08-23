@@ -162,7 +162,7 @@ class WebdavTests(AnaliticoApiTestCase):
                         f3.write(chunk)
                     elapsed_ms = max(1, time_ms(started_ms))
                     kb_sec = (size / 1024.0) / (elapsed_ms / 1000.0)
-                    msg = f"download (multipart via /files): {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
+                    msg = f"download (via /files): {size / MB_SIZE} MB in {elapsed_ms} ms, {kb_sec:.0f} KB/s"
                     logger.info(msg)
 
                     f3.seek(0)
