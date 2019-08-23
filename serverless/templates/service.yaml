@@ -14,3 +14,12 @@ spec:
           value: "{service_name}"
         - name: ANALITICO_ITEM_ID
           value: "{item_id}"
+        resources:
+          limits:
+            cpu: "4"
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi
+
+
