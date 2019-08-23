@@ -204,6 +204,8 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
             subaccount_driver = workspace.storage.driver
             with tempfile.NamedTemporaryFile() as f:
                 subaccount_driver.download("/.ssh/authorized_keys", f.name)
+            msg = f"dr_create_workspace_storage - {workspace.id} storage {subaccount_storage_conf['url']} is ready"
+            logger.info(msg)
             return True
         except Exception:
             delay_ms = time_ms(started_on)

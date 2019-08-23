@@ -59,30 +59,12 @@ class DriveTests(AnaliticoApiTestCase):
 
     @tag("slow", "live")
     def test_drive_create_workspace_storage(self):
-        delete = False
+        ws_id = "ws_testcreatestorage_" + get_random_string(4)
+        ws = Workspace.objects.create(pk=ws_id)
         try:
-            ws = Workspace.objects.create(pk="ws_testcreatestorage" + get_random_string(4))
             dr_create_workspace_storage(ws)
-            delete = True
 
-            ws.refresh_from_db()
-
-            # the storage takes a variable time to be available
-            start_time = time.time()
-            insist = True
-            driver = None
-            raised = None
-            while insist:
-                try:
-                    driver = ws.storage.driver
-                except Exception as exec:
-                    raised = exec
-                    time.sleep(10)
-                elapsed = time.time() - start_time
-                insist = not driver and elapsed < 120
-
-            self.assertIsNotNone(driver, raised)
-
+            driver = ws.storage.driver
             num_files = len(driver.ls("/"))
             driver.upload(io.BytesIO(b"This is Mickey"), "mickey.txt")
             driver.upload(io.BytesIO(b"This is Goofy"), "goofy.txt")
@@ -96,20 +78,19 @@ class DriveTests(AnaliticoApiTestCase):
             self.assertTrue(self.driver.exists(f"/{ws.id}/goofy.txt"))
 
             # delete subaccount and remove its files
-            dr_delete_workspace_storage(ws)
-            ws.refresh_from_db()
-            delete = False
+            ws.delete()
+            ws = None
 
             # main storage box driver (different driver one directory up!)
-            self.assertFalse(self.driver.exists(f"/{ws.id}/mickey.txt"))
-            self.assertFalse(self.driver.exists(f"/{ws.id}/goofy.txt"))
+            self.assertFalse(self.driver.exists(f"/{ws_id}/mickey.txt"))
+            self.assertFalse(self.driver.exists(f"/{ws_id}/goofy.txt"))
 
         except Exception as exc:
             logging.error(exc)
             raise exc
         finally:
-            if delete:
-                dr_delete_workspace_storage(ws)
+            if ws:
+                ws.delete()
 
     @tag("slow")
     def test_drive_base_rsync(self):

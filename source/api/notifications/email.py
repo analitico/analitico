@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.utils.html import strip_tags
 from django.core.mail import EmailMultiAlternatives
 
+
 def email_send_template(user: User, template_name: str, **kwargs):
     """
     Sends a customized email to a specific user from a given template.
@@ -25,9 +26,9 @@ def email_send_template(user: User, template_name: str, **kwargs):
 
     template_yaml = read_yaml(Path(__file__).parent / "templates" / template_name)
     subject = template_yaml["subject"].format(**kwargs)
-    
+
     message_html = template_yaml["message"].format(**kwargs)
-    message_text = strip_tags(message_html) # Strip the html tag. So people can see the pure text at least.
+    message_text = strip_tags(message_html)  # Strip the html tag. So people can see the pure text at least.
 
     # create the email, and attach the HTML version as well.
     msg = EmailMultiAlternatives(subject, message_text, template_yaml["from"], [user.email])
