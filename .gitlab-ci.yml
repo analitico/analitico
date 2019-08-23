@@ -70,7 +70,7 @@ build-and-test:
     - echo "$(date +'%T') - Build analitico image"
     - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
     # - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
-    - docker build -pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
+    - docker build --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
     - echo "$(date +'%T') - Finished building analitico image"
     - docker push $BUILD_ANALITICO_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico image"
