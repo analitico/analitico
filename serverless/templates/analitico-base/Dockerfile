@@ -1,33 +1,37 @@
-# Baseline is anaconda
 FROM continuumio/anaconda3:2019.07
 
-# since anaconda3:2019.07 the path is not set
+# Current production version of Kubernetes
+ARG KUBECTL_PACKAGE_VERSION=1.14.2-00
+
+ENV LANG=C.UTF-8
+ENV LC_CTYPE=C.UTF-8
+
+# Since anaconda3:2019.07 the path is not set
 # when RUN is executed and so pip is not found
 ENV PATH=$PATH:/opt/conda/bin/
 
 # Script for running the Docker deamon
 COPY dockerd-entrypoint.sh /usr/local/bin/
 
+# Utils packages
 RUN apt-get update
+RUN apt-get install -y nano less curl apt-transport-https ca-certificates software-properties-common gnupg2
+RUN apt-get install -y curl apt-transport-https ca-certificates software-properties-common gnupg2
+# missing in Anaconda3, required by docker python package
+RUN apt-get install -y python3-distutils
 
-RUN apt-get install -y nano less
-
-# Install nginx and remove configuration
-RUN  apt-get install -y gcc nginx curl apt-transport-https ca-certificates software-properties-common && rm /etc/nginx/nginx.conf 
-
-# Install node and yarn for web app
-RUN /bin/bash -c 'curl -sL https://deb.nodesource.com/setup_10.x | bash && apt-get install -y nodejs && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && apt-get update && apt-get install yarn'
-
-# Install Google Cloud SDK (this is used by workers and unit tests)
+# Install Google Cloud SDK (for storage and Docker registry)
 RUN /bin/bash -c 'echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && apt-get update && apt-get install -y google-cloud-sdk'
 
-# Install Docker Cli and deamon (this is used by builder job and unit tests )
+# Install Docker Cli and deamon (for builder job)
 RUN /bin/bash -c 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && apt-get update && apt-get install -y docker-ce-cli docker-ce'
 
-# Install KubeControl for k8 Api Server communication
-RUN /bin/bash -c 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && apt-get update && apt-get install -y kubectl'
+# Install KubeControl at the given version for k8 Api Server communication
+RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && apt-get update
+RUN apt-get install -y kubectl=$KUBECTL_PACKAGE_VERSION
 
-# create www user and add privileges as root in docker
+# Create www user and add privileges as root in docker
 RUN adduser www --disabled-login --disabled-password  --gecos "" && adduser www root
 
+ENV HOME=/home/www
 WORKDIR /home/www/analitico

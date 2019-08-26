@@ -5,10 +5,13 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
+  WORKDIR: /builds/analitico/
   BUILD_ANALITICO_IMAGE_URL: eu.gcr.io/analitico-api/analitico:$CI_COMMIT_SHA
   BUILD_ANALITICO_CLIENT_IMAGE_URL: eu.gcr.io/analitico-api/analitico-client:$CI_COMMIT_SHA
   BUILD_JUPYTER_IMAGE_URL: eu.gcr.io/analitico-api/analitico-jupyter:$CI_COMMIT_SHA 
   GIT_STRATEGY: none
+  MOUNT_PATH: /mnt/analitico-drive
+  WEBSITE_DEPLOYMENT_PATH: /mnt/analitico-drive/deployments/$CI_COMMIT_SHA
   
 services:
 - docker:dind
@@ -18,7 +21,6 @@ stages:
   - deploy-staging
   - live-tests
   - deploy-production
-  - deprecated
 
 cache:
   paths:
@@ -27,205 +29,164 @@ cache:
 build-and-test:
   stage: build
   script:
-    # install dependecies
+    ##
+    ## Install dependecies
+    ##
+
     - apk add git bash curl python
     - curl https://sdk.cloud.google.com > script.sh
     - chmod +x script.sh
     - ./script.sh --disable-prompts
     - export PATH=/root/google-cloud-sdk/bin:$PATH
-    # work directory
-    - export WORKDIR=/builds/analitico/
-    # setup the environment
+    # install samba/cifs package for mounting the 
+    # remote storage for the static website's files
+    - apk add cifs-utils util-linux
+    # install Node and Yarn for building the website
+    - curl -sL https://deb.nodesource.com/setup_10.x | bash && apt-get install -y nodejs && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - 
+    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+    - apt-get update && apt-get install yarn'
+
+    
+    ##
+    ## Setup the environment
+    ## 
+    
     # cleanup
     - cd $WORKDIR
     - rm -rf $WORKDIR/*
     # clone with submodule 
-    - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
-    - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
-    - echo "https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-sdk.git " >> /.git-credentials
+    - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
+    - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
+    - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-sdk.git " >> /.git-credentials
     # save credentials to bypass login when fetching submodules
     - git config --global credential.helper 'store --file=/.git-credentials'
-    # clone the repo
-    - git clone --recurse-submodules https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git 
+    # clone the source in /builds/analitico/analitico
+    - git clone --recurse-submodules https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git 
     - cd analitico
-    # pwd /builds/analitico/analitico
     # check out corrent commit because repo may have gone further
     - git checkout --recurse-submodules $CI_COMMIT_SHA
     # go back
     - cd ..
-    # clone secrets
-    - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    # we have /builds/analitico/analitico-ci
+    # clone secrets in /builds/analitico/analitico-ci
+    - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
     # remove credentials
     - rm /.git-credentials
-    # add commit sha to the env script
+    # append the Gihub commit sha in the environment script
     - echo export ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
     # authentication for Google Cloud Container Registry
     - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
     - gcloud -q auth configure-docker
+    # mount analitico drive for website's static files
+    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
+    - mkdir -p $WEBSITE_DEPLOYMENT_PATH
+
+    
     ##
-    # build analitico image
+    ## Build Analitico image
     ##
+
     - cd $WORKDIR
-    - echo "$(date +'%T') - Build analitico image"
+    - echo "$(date +'%T') - Build Analitico image"
     - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
-    # - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
-    - docker build --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
+    - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
     - echo "$(date +'%T') - Finished building analitico image"
     - docker push $BUILD_ANALITICO_IMAGE_URL
+    - echo "$(date +'%T') - Copy Django static files to the storage"
+    # extract django statics from the just built image 
+    # and then save the files to storage
+    - ANALITICO_IMAGE_NAME=analitico-$(date +%s)
+    - docker create -it --name $ANALITICO_IMAGE_NAME $BUILD_ANALITICO_IMAGE_URL bash
+    - docker cp $ANALITICO_IMAGE_NAME:/home/www/analitico/source/static $WEBSITE_DEPLOYMENT_PATH/static
+    - docker rm -fv $ANALITICO_IMAGE_NAME
     - echo "$(date +'%T') - Finished pushing analitico image"
+
     ##
-    # build analitico-client image
+    ## Build Analitico Website
     ##
+
+    - cd $WORKDIR
+    - echo "$(date +'%T') - Build Analitico Website"
+    # build 
+    - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico
+    - ./analitico/app/build-app.sh
+    # save build to storage
+    - cp -r $BUILD_WEBSITE_PATH/* $WEBSITE_DEPLOYMENT_PATH/
+    - echo "$(date +'%T') - Finished building the app"
+    
+    ##
+    ## Build Analitico-Client image
+    ##
+
     - cd $WORKDIR
     - echo "$(date +'%T') - Build analitico-client image"
     - build_dir=$(mktemp -d)
-    # docker image expects to find s24 in that path
+    # dockerfile expects to find s24 in that path
     - mkdir $build_dir/libraries
     - cp -Rf ./analitico/source/s24 $build_dir/libraries
     - cp -Rf ./analitico/serverless/templates/analitico-client/* $build_dir/
     - cd $build_dir
     - docker build --no-cache --pull -t $BUILD_ANALITICO_CLIENT_IMAGE_URL -f Dockerfile .
-    # cleanup
-    - rm -Rf $build_dir
     - echo "$(date +'%T') - Finished building analitico-client image"
     - docker push $BUILD_ANALITICO_CLIENT_IMAGE_URL
     - echo "$(date +'%T') - Finished pushing analitico-client image"
-    ##
-    # build jupyter image
-    ##
-    - cd $WORKDIR
-    - echo "$(date +'%T') - Build analitico-jupyter image"
-    - cp ./analitico/serverless/templates/analitico/DockerfileJupyter ./DockerfileJupyter
-    - docker build --pull -t $BUILD_JUPYTER_IMAGE_URL -f DockerfileJupyter .
-    - echo "$(date +'%T') - Finished building analitico-jupyter image"
-    - docker push $BUILD_JUPYTER_IMAGE_URL
-    - echo "$(date +'%T') - Finished pushing analitico-jupyter image"
+    # cleanup
+    - rm -Rf $build_dir
+    
     ## 
-    # remove secrets
+    ## Remove secrets and done
     ## 
     - rm -R -f analitico-ci
   only:
     - master
 
-website-s6:
-  stage: deprecated
-  image: ubuntu:18.04
-  when: manual
-  only:
-    - master
-  before_script:
-  ##
-  ## Install ssh-agent if not already installed, it is required by Docker.
-  ## (change apt-get to yum if you use an RPM-based image)
-  ##
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-
-  ##
-  ## Run ssh-agent (inside the build environment)
-  ##
-  - eval $(ssh-agent -s)
-
-  ##
-  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
-  ## We're using tr to fix line endings which makes ed25519 keys work
-  ## without extra base64 encoding.
-  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
-  ##
-  - mkdir -p ~/.ssh
-  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-add ~/.ssh/id_rsa
-  script:
-    # pull new docker image and run
-    # start 2 dockers for jupyter notebook
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
-      docker stop analitico; 
-      docker rm analitico; 
-      docker run --name=analitico --init --runtime=nvidia --restart always -d -p 80:80 -p 443:443 ${BUILD_ANALITICO_IMAGE_URL} ./scripts/website-start.sh; 
-      docker image prune -f -a;" 
-
-website-k8:
+website-api-staging:
   stage: deploy-staging
   image: google/cloud-sdk:latest
   only:
     - master
   script:
-    - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
+    # deployment stage
+    - STAGE=staging
+    - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
+    # required by kubectl for committing the service on k8
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
-    - yaml=`cat ./analitico-ci/k8/service-staging.yaml`
-    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > service-staging.yaml
-    - cat service-staging.yaml
-    - kubectl apply --filename ./service-staging.yaml
-
-website:
+    - yaml=`cat ./analitico-ci/k8/api-service-staging-template.yaml`
+    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > api-service-staging-template.yaml
+    - cat api-service-staging-template.yaml
+    - kubectl apply --filename ./api-service-staging-template.yaml
+    # wait deploy to complete
+    - kubectl wait -n cloud kservice/website-staging --for=condition=Ready --timeout=32s
+    # copy website's files to cloud storage 
+    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
+    - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
+    - # cleanup files from deployments older then 7 days
+    - find $MOUNT_PATH/$STAGE/* -mtime +7 -exec rm -rf {} \;
+    - umount $MOUNT_PATH
+  
+website-api:
   stage: deploy-production
   image: google/cloud-sdk:latest
   when: manual
   only:
     - master
   script:
-    - git clone https://giovannizorzato:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
+    # deployment stage
+    - STAGE=production
+    - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
+    # required by kubectl for committing the service on k8
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
-    - yaml=`cat ./analitico-ci/k8/service.yaml`
-    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > service.yaml
-    - cat service.yaml
-    - kubectl apply --filename ./service.yaml
-
-
-worker-production:
-  stage: deprecated
-  when: manual
-  image: ubuntu:18.04
-  only:
-    - master
-  before_script:
-  ##
-  ## Install ssh-agent if not already installed, it is required by Docker.
-  ## (change apt-get to yum if you use an RPM-based image)
-  ##
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-
-  ##
-  ## Run ssh-agent (inside the build environment)
-  ##
-  - eval $(ssh-agent -s)
-
-  ##
-  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
-  ## We're using tr to fix line endings which makes ed25519 keys work
-  ## without extra base64 encoding.
-  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
-  ##
-  - mkdir -p ~/.ssh
-  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-add ~/.ssh/id_rsa
-
-  # it creates a useless container "analitico-worker-keep-jupyter-image"
-  # to keep the image "-jupyter" that is used for the papermill dockers
-  # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
-
-  script:
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
-      docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
-      docker stop analitico-worker1; 
-      docker rm analitico-worker1; 
-      docker stop analitico-worker2; 
-      docker rm analitico-worker2; 
-      docker stop analitico-worker3; 
-      docker rm analitico-worker3; 
-      docker rm analitico-worker-keep-jupyter-image; 
-      docker run --name=analitico-worker1 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker2 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh; 
-      docker run --name=analitico-worker3 --init --runtime=nvidia --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/worker-start.sh; 
-      docker create --name=analitico-worker-keep-jupyter-image ${BUILD_JUPYTER_IMAGE_URL};
-      docker image prune -f -a;" 
-
+    - yaml=`cat ./analitico-ci/k8/api-service-template.yaml`
+    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > api-service-template.yaml
+    - cat api-service-template.yaml
+    - kubectl apply --filename ./api-service-template.yaml
+    # wait deploy to complete
+    - kubectl wait -n cloud kservice/website --for=condition=Ready --timeout=32s
+    # copy website's files to cloud storage 
+    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
+    - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
+    - # cleanup files from deployments older then 7 days
+    - find $MOUNT_PATH/$STAGE/* -mtime +7 -exec rm -rf {} \;
+    - umount $MOUNT_PATH
 
 live-tests:
   stage: live-tests
@@ -265,45 +226,3 @@ live-tests:
       docker stop analitico-live-tests; 
       docker rm  analitico-live-tests; 
       docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/live-tests.sh;"
-    
-
-jupyter-old:
-  stage: deprecated
-  image: ubuntu:18.04
-  when: manual
-  only:
-    - master
-  before_script:
-  ##
-  ## Install ssh-agent if not already installed, it is required by Docker.
-  ## (change apt-get to yum if you use an RPM-based image)
-  ##
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-
-  ##
-  ## Run ssh-agent (inside the build environment)
-  ##
-  - eval $(ssh-agent -s)
-
-  ##
-  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
-  ## We're using tr to fix line endings which makes ed25519 keys work
-  ## without extra base64 encoding.
-  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
-  ##
-  - mkdir -p ~/.ssh
-  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-add ~/.ssh/id_rsa
-  script:
-    # pull new docker image and run
-    # start 2 dockers for jupyter notebook
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_JUPYTER_IMAGE_URL}; 
-      docker stop aj-s24; 
-      docker rm aj-s24; 
-      docker stop aj-generic; 
-      docker rm aj-generic; 
-      docker run --name=aj-s24 --init --runtime=nvidia --restart always -d -p 8810:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh c4fc482ab13154d49858c69c199710bf49cb0f5bfb888af6; 
-      docker run --name=aj-generic --init --runtime=nvidia --restart always -d -p 8811:8888 ${BUILD_JUPYTER_IMAGE_URL} ./docker-jupyter.sh 60050b00887fd4032e1e9dbf8fdb7b9f8506fa6ec151cdd3; 
-      docker image prune -f -a;" 

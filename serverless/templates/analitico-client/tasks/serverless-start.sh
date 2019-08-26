@@ -13,14 +13,14 @@ fi
 
 echo "Start gunicorn"
 
-# Run the web service on container startup. Here we use the gunicorn
-# webserver, with one worker process and 8 threads.
-# For environments with multiple CPU cores, increase the number of workers
-# to be equal to the cores available.
+# (2*0.5CPU)+1, 
+# see https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
+THREADS=2 
+
+# Run the gunicorn webserver
 exec gunicorn \
     --bind :$PORT \
-    --workers 1 \
-    --threads 8 \
+    --threads $THREADS \  
     --access-logfile - \
     --log-level debug \
     app:app
