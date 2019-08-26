@@ -1,6 +1,8 @@
 # Starts from an image with default analitico packages
 FROM eu.gcr.io/analitico-api/analitico-base
 
+ENV HOME=/home/www
+
 # Analitico Source
 COPY ./analitico /home/www/analitico
 # Analitico Secrets
