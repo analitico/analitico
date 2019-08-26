@@ -1,4 +1,3 @@
-
 image: docker:latest
 
 # GitLab Build and Deploy to a Server via SSH
@@ -75,6 +74,7 @@ build-and-test:
     - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
     - gcloud -q auth configure-docker
     # mount analitico drive for website's static files
+    - mkdir -p $MOUNT_PATH
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - mkdir -p $WEBSITE_DEPLOYMENT_PATH
 
