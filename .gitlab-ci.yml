@@ -143,6 +143,10 @@ website-api-staging:
   only:
     - master
   script:
+    # install samba/cifs package for mounting the 
+    # remote storage for the static website's files
+    - apk add cifs-utils util-linux
+
     # deployment stage
     - STAGE=staging
     - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
@@ -168,6 +172,10 @@ website-api:
   only:
     - master
   script:
+    # install samba/cifs package for mounting the 
+    # remote storage for the static website's files
+    - apk add cifs-utils util-linux
+
     # deployment stage
     - STAGE=production
     - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
