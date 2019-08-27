@@ -43,7 +43,6 @@ build-and-test:
     # install tool for building the website
     - apk add nodejs yarn make g++
 
-    
     ##
     ## Setup the environment
     ## 
@@ -139,11 +138,19 @@ build-and-test:
 
 website-api-staging:
   stage: deploy-staging
-  image: google/cloud-sdk:latest
+  image: alpine:latest
   only:
     - master
   script:
-    # install samba/cifs package for mounting the 
+    ##
+    ## Install dependencies
+    ##
+    
+    - apk add git curl
+    # kubectl
+    - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+    - chmod +x /usr/bin/kubectl
+    # samba/cifs package for mounting the 
     # remote storage for the static website's files
     - apk add cifs-utils util-linux
 
@@ -157,7 +164,7 @@ website-api-staging:
     - cat api-service-staging-template.yaml
     - kubectl apply --filename ./api-service-staging-template.yaml
     # wait deploy to complete
-    - kubectl wait -n cloud kservice/website-staging --for=condition=Ready --timeout=32s
+    - kubectl wait -n cloud kservice/api-staging --for=condition=Ready --timeout=32s
     # copy website's files to cloud storage 
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
@@ -167,12 +174,20 @@ website-api-staging:
   
 website-api:
   stage: deploy-production
-  image: google/cloud-sdk:latest
+  image: alpine:latest
   when: manual
   only:
     - master
   script:
-    # install samba/cifs package for mounting the 
+    ##
+    ## Install dependencies
+    ##
+    
+    - apk add git curl
+    # kubectl
+    - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+    - chmod +x /usr/bin/kubectl
+    # samba/cifs package for mounting the 
     # remote storage for the static website's files
     - apk add cifs-utils util-linux
 
@@ -186,7 +201,7 @@ website-api:
     - cat api-service-template.yaml
     - kubectl apply --filename ./api-service-template.yaml
     # wait deploy to complete
-    - kubectl wait -n cloud kservice/website --for=condition=Ready --timeout=32s
+    - kubectl wait -n cloud kservice/api --for=condition=Ready --timeout=32s
     # copy website's files to cloud storage 
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
