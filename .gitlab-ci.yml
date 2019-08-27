@@ -166,6 +166,7 @@ website-api-staging:
     # wait deploy to complete
     - kubectl wait -n cloud kservice/api-staging --for=condition=Ready --timeout=32s
     # copy website's files to cloud storage 
+    - mkdir -p $MOUNT_PATH
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
     # cleanup files from deployments older then 7 days
@@ -203,6 +204,7 @@ website-api:
     # wait deploy to complete
     - kubectl wait -n cloud kservice/api --for=condition=Ready --timeout=32s
     # copy website's files to cloud storage 
+    - mkdir -p $MOUNT_PATH
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
     # cleanup files from deployments older then 7 days
