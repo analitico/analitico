@@ -24,6 +24,6 @@ python3 ./manage.py collectstatic --noinput
 echo "Run tests"
 # do not use docker for papermill unit tests (it is not supported on Gitlab CI)
 unset ANALITICO_PAPERMILL_DOCKER_SCRIPT
-su www -c "python3 ./manage.py test --exclude-tag=slow --exclude-tag=docker"
+python3 ./manage.py test --exclude-tag=slow --exclude-tag=docker
 
 echo "Done"
