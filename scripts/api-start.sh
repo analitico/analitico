@@ -36,7 +36,7 @@ export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
 # Start your Django Unicorn.
 # Programs meant to be run under supervisor should not daemonize themselves 
 # (do not use --daemon)
-exec gunicorn ${DJANGO_WSGI_MODULE}:application \
+gunicorn ${DJANGO_WSGI_MODULE}:application \
   --timeout 900 \
   --name $NAME \
   --workers $NUM_WORKERS \
@@ -45,5 +45,3 @@ exec gunicorn ${DJANGO_WSGI_MODULE}:application \
   --access-logfile /var/log/gunicorn/access.log \
   --error-logfile  /var/log/gunicorn/error.log \
   --access-logformat '%({X-Forwarded-For}i)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %({Content-Length}i)s %(L)s %(L)s "%(f)s" "%(a)s"' &
-
-echo "Done"
