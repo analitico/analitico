@@ -40,8 +40,8 @@ build-and-test:
     # install samba/cifs package for mounting the 
     # remote storage for the static website's files
     - apk add cifs-utils util-linux
-    # install Node and Yarn for building the website
-    - apk add nodejs yarn
+    # install tool for building the website
+    - apk add nodejs yarn make
 
     
     ##
@@ -83,20 +83,20 @@ build-and-test:
     ## Build Analitico image
     ##
 
-    - cd $WORKDIR
-    - echo "$(date +'%T') - Build Analitico image"
-    - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
-    - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
-    - echo "$(date +'%T') - Finished building analitico image"
-    - docker push $BUILD_ANALITICO_IMAGE_URL
-    - echo "$(date +'%T') - Copy Django static files to the storage"
-    # extract django statics from the just built image 
-    # and then save the files to storage
-    - ANALITICO_IMAGE_NAME=analitico-$(date +%s)
-    - docker create -it --name $ANALITICO_IMAGE_NAME $BUILD_ANALITICO_IMAGE_URL bash
-    - docker cp $ANALITICO_IMAGE_NAME:/home/www/analitico/source/static $WEBSITE_DEPLOYMENT_PATH/static
-    - docker rm -fv $ANALITICO_IMAGE_NAME
-    - echo "$(date +'%T') - Finished pushing analitico image"
+    # - cd $WORKDIR
+    # - echo "$(date +'%T') - Build Analitico image"
+    # - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
+    # - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
+    # - echo "$(date +'%T') - Finished building analitico image"
+    # - docker push $BUILD_ANALITICO_IMAGE_URL
+    # - echo "$(date +'%T') - Copy Django static files to the storage"
+    # # extract django statics from the just built image 
+    # # and then save the files to storage
+    # - ANALITICO_IMAGE_NAME=analitico-$(date +%s)
+    # - docker create -it --name $ANALITICO_IMAGE_NAME $BUILD_ANALITICO_IMAGE_URL bash
+    # - docker cp $ANALITICO_IMAGE_NAME:/home/www/analitico/source/static $WEBSITE_DEPLOYMENT_PATH/static
+    # - docker rm -fv $ANALITICO_IMAGE_NAME
+    # - echo "$(date +'%T') - Finished pushing analitico image"
 
     ##
     ## Build Analitico Website
