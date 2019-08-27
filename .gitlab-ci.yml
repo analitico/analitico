@@ -41,7 +41,7 @@ build-and-test:
     # remote storage for the static website's files
     - apk add cifs-utils util-linux
     # install tool for building the website
-    - apk add nodejs yarn make
+    - apk add nodejs yarn make g++
 
     
     ##
