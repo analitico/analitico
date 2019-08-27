@@ -82,20 +82,20 @@ build-and-test:
     ## Build Analitico image
     ##
 
-    # - cd $WORKDIR
-    # - echo "$(date +'%T') - Build Analitico image"
-    # - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
-    # - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
-    # - echo "$(date +'%T') - Finished building analitico image"
-    # - docker push $BUILD_ANALITICO_IMAGE_URL
-    # - echo "$(date +'%T') - Copy Django static files to the storage"
-    # # extract django statics from the just built image 
-    # # and then save the files to storage
-    # - ANALITICO_IMAGE_NAME=analitico-$(date +%s)
-    # - docker create -it --name $ANALITICO_IMAGE_NAME $BUILD_ANALITICO_IMAGE_URL bash
-    # - docker cp $ANALITICO_IMAGE_NAME:/home/www/analitico/source/static $WEBSITE_DEPLOYMENT_PATH/static
-    # - docker rm -fv $ANALITICO_IMAGE_NAME
-    # - echo "$(date +'%T') - Finished pushing analitico image"
+    - cd $WORKDIR
+    - echo "$(date +'%T') - Build Analitico image"
+    - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
+    - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
+    - echo "$(date +'%T') - Finished building analitico image"
+    - docker push $BUILD_ANALITICO_IMAGE_URL
+    - echo "$(date +'%T') - Copy Django static files to the storage"
+    # extract django statics from the just built image 
+    # and then save the files to storage
+    - ANALITICO_IMAGE_NAME=analitico-$(date +%s)
+    - docker create -it --name $ANALITICO_IMAGE_NAME $BUILD_ANALITICO_IMAGE_URL bash
+    - docker cp $ANALITICO_IMAGE_NAME:/home/www/analitico/source/static $WEBSITE_DEPLOYMENT_PATH/static
+    - docker rm -fv $ANALITICO_IMAGE_NAME
+    - echo "$(date +'%T') - Finished pushing analitico image"
 
     ##
     ## Build Analitico Website
@@ -146,7 +146,7 @@ website-api-staging:
     ## Install dependencies
     ##
     
-    - apk add git curl
+    - apk add git curl ca-certificates
     # kubectl
     - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
     - chmod +x /usr/bin/kubectl
@@ -166,7 +166,7 @@ website-api-staging:
     # wait deploy to complete
     - kubectl wait -n cloud kservice/api-staging --for=condition=Ready --timeout=32s
     # copy website's files to cloud storage 
-    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
+    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
     # cleanup files from deployments older then 7 days
     - find $MOUNT_PATH/$STAGE/* -mtime +7 -exec rm -rf {} \;
@@ -183,7 +183,7 @@ website-api:
     ## Install dependencies
     ##
     
-    - apk add git curl
+    - apk add git curl ca-certificates
     # kubectl
     - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
     - chmod +x /usr/bin/kubectl
@@ -203,7 +203,7 @@ website-api:
     # wait deploy to complete
     - kubectl wait -n cloud kservice/api --for=condition=Ready --timeout=32s
     # copy website's files to cloud storage 
-    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
+    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
     # cleanup files from deployments older then 7 days
     - find $MOUNT_PATH/$STAGE/* -mtime +7 -exec rm -rf {} \;
