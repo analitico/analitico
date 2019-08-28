@@ -41,8 +41,10 @@ spec:
         resources:
           requests:
             cpu: 500m
+            memory: 8Gi
           limits:
             cpu: 4
+            memory: 24Gi
 #           nvidia.com/gpu: 1
       restartPolicy: Never
       volumes:
