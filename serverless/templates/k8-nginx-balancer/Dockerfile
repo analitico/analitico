@@ -2,6 +2,12 @@
 # https://hub.docker.com/_/nginx/
 FROM nginx
 
+RUN adduser www --disabled-login --disabled-password  --gecos "" && adduser www root
+
+# Startup script
+COPY startup.sh /bin/analitico-startup
+RUN chmod +x /bin/analitico-startup
+
 ##
 ## Nginx
 ##
@@ -24,8 +30,10 @@ RUN apt-get install -y curl uuid-dev zlib1g zlib1g-dev gcc git autoconf-archive 
 
 COPY netdata-kickstart.sh .
 RUN chmod +x netdata-kickstart.sh
+# Install from the official script
 RUN bash -c ./netdata-kickstart.sh --non-interactive
-
+# Cleanup
+RUN rm ./netdata-kickstart.sh
 RUN apt-get remove -y curl uuid-dev zlib1g-dev gcc git autoconf-archive autogen libmnl-dev libuv1-dev liblz4-dev libssl-dev libjudy-dev make
 
 # To collect nginx, weblog (nginx, gunicorn): 
@@ -41,10 +49,15 @@ RUN rm /var/log/nginx/access.log /var/log/nginx/error.log
 RUN adduser netdata www
 
 ##
-## Mount for Website app's static files
+## Mount for Website's static files
 ##
 
 # Save credentials for mounting
-RUN /bin/bash -c './analitico-env.sh && echo "username=${ANALITICO_DRIVE_WEBSITE_USERNAME}\npassword=${ANALITICO_DRIVE_WEBSITE_PASSWORD}" > /etc/analitico-drive-credentials.txt'
+COPY analitico-env.sh ./analitico-env.sh
+RUN chmod +x ./analitico-env.sh
+
 # Mount on boot
-RUN echo "//${ANALITICO_DRIVE_WEBSITE_USERNAME}.your-storagebox.de/${ANALITICO_DRIVE_WEBSITE_USERNAME} /mnt/analitico-drive cifs r,iocharset=utf8,credentials=/etc/analitico-drive-credentials.txt,uid=33,gid=33,file_mode=0660,dir_mode=0770 0 0" >> /etc/fstab
+RUN mkdir /mnt/analitico-drive
+RUN /bin/bash -c 'source ./analitico-env.sh && echo "//$ANALITICO_DRIVE_WEBSITE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_WEBSITE_USERNAME /mnt/analitico-drive cifs ro,file_mode=0660,dir_mode=0770,user=$ANALITICO_DRIVE_WEBSITE_USERNAME,pass=$ANALITICO_DRIVE_WEBSITE_PASSWORD 0 0" >> /etc/fstab'
+
+RUN rm ./analitico-env.sh
