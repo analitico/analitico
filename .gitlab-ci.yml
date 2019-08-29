@@ -4,7 +4,7 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
-  # DOCKER_HOST: tcp://localhost:2375
+  DOCKER_HOST: tcp://localhost:2375
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
   WORKDIR: /builds/analitico/
