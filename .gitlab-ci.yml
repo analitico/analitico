@@ -104,7 +104,7 @@ build-and-test:
     - cd $WORKDIR
     - echo "$(date +'%T') - Build Analitico Website"
     # build 
-    - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico
+    - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico/build
     - ./analitico/app/build-app.sh
     # save build to storage
     - cp -r $BUILD_WEBSITE_PATH/* $WEBSITE_DEPLOYMENT_PATH/
