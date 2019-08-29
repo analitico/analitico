@@ -4,6 +4,8 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
+  DOCKER_HOST: tcp://localhost:2375
+  DOCKER_DRIVER: overlay
   WORKDIR: /builds/analitico/
   BUILD_ANALITICO_IMAGE_URL: eu.gcr.io/analitico-api/analitico:$CI_COMMIT_SHA
   BUILD_ANALITICO_CLIENT_IMAGE_URL: eu.gcr.io/analitico-api/analitico-client:$CI_COMMIT_SHA
