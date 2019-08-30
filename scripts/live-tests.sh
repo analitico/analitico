@@ -30,7 +30,7 @@ do
 
     # exec the command and intercept the error message
     # the `true` is required to let the loop continue on error
-    CMD_TEST="python3 ./manage.py test --tag=live"
+    CMD_TEST="./manage.py test --tag=live"
     { ERROR="$($CMD_TEST 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
     
     # notify slack in case of errors
