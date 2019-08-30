@@ -30,10 +30,12 @@ do
 
     # exec the command and intercept the error message
     # the `true` is required to let the loop continue on error
-    { ERROR="$(python3 ./manage.py test --tag=live 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
+    CMD_TEST="python3 ./manage.py test --tag=live"
+    { ERROR="$($CMD_TEST 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
     
     # notify slack in case of errors
-    if [[ $EXITSTATUS -ne 0 ]]; then
+    if $EXITSTATUS -ne 0
+    then
         echo "Tests failed"
 
         # extract test results
