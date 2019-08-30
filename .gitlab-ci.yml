@@ -238,6 +238,9 @@ live-tests:
     - yaml=`cat ./analitico-ci/k8/live-tests-template.yaml`
     # set the image url
     - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > live-tests-template.yaml
+    # set a random pod name
+    - POD_NAME="live-tests-$(date +%s)"
+    - echo "${yaml/"{pod_name}"/$POD_NAME}" > live-tests-template.yaml
     - cat live-tests-template.yaml
     - kubectl apply --filename ./live-tests-template.yaml
     # wait deploy to complete
