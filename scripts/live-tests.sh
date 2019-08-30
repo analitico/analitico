@@ -34,7 +34,7 @@ do
     { ERROR="$($CMD_TEST 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
     
     # notify slack in case of errors
-    if $EXITSTATUS -ne 0
+    if [ $EXITSTATUS -ne 0 ]
     then
         echo "Tests failed"
 

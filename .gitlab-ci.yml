@@ -242,6 +242,7 @@ live-tests:
     - pod_name="live-tests-$(date +%s)"
     - template="${template/"{pod_name}"/$pod_name}"
     # commit to kubernetes
+    - echo $template
     - echo "$template" | kubectl apply -f -
     # wait deploy to complete
-    - kubectl wait -n cloud pod/$pod_name --for=condition=Ready --timeout=32s
+    - kubectl wait -n cloud deployment/live-tests --for=condition=available --timeout=32s
