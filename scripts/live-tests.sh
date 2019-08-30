@@ -1,14 +1,26 @@
 #!/bin/bash
 
 ##
-# Start a python worker process for executing live tests
+# Execute Analitico tests tagged as `live`.
+#
+# First, is run the docker deamon used by tests that require to build images.
+# This script is run on the `analitico` image that has already installed
+# a docker deamon and the script to run the deamon.
 ##
 
+if ! pgrep dockerd
+then
+    echo "Running docker daemon..."
+    # run and wait it starts listening
+    dockerd-entrypoint.sh &> /dev/null &
+    sleep 5s
+fi
+
 BASEDIR=$(dirname "$0")
-
 source $BASEDIR/import-env.sh
-
 cd $BASEDIR/../source
+
+# start a python worker process for executing
 
 echo "Starting worker..."
 while true
@@ -18,7 +30,7 @@ do
 
     # exec the command and intercept the error message
     # the `true` is required to let the loop continue on error
-    { ERROR="$(./manage.py test --tag=live 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
+    { ERROR="$(python3 ./manage.py test --tag=live 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
     
     # notify slack in case of errors
     if [[ $EXITSTATUS -ne 0 ]]; then

@@ -4,6 +4,7 @@ image: docker:latest
 # https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4
 
 variables:
+  # Docker variables required for running docker in docker as service
   DOCKER_HOST: tcp://localhost:2375
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
@@ -219,36 +220,23 @@ live-tests:
   image: ubuntu:18.04
   only:
     - master
-  before_script:
-  ##
-  ## Install ssh-agent if not already installed, it is required by Docker.
-  ## (change apt-get to yum if you use an RPM-based image)
-  ##
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-
-  ##
-  ## Run ssh-agent (inside the build environment)
-  ##
-  - eval $(ssh-agent -s)
-
-  ##
-  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
-  ## We're using tr to fix line endings which makes ed25519 keys work
-  ## without extra base64 encoding.
-  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
-  ##
-  - mkdir -p ~/.ssh
-  - echo "$STAGING_PRIVATE_KEY" | base64 -d -w0 | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-add ~/.ssh/id_rsa
-
-  # it creates a useless container "analitico-worker-keep-jupyter-image"
-  # to keep the image "-jupyter" that is used for the papermill dockers
-  # otherwise "docker image prune -f -a" will remove the image (because it has no containers associated)
-
   script:
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$STAGING_SERVER_NAME "export PATH=/root/google-cloud-sdk/bin:$PATH; gcloud -q auth activate-service-account --key-file /gcloud/analitico-api-service-account-key.json; gcloud -q auth configure-docker;
-      docker pull ${BUILD_ANALITICO_IMAGE_URL}; 
-      docker stop analitico-live-tests; 
-      docker rm  analitico-live-tests; 
-      docker run --name=analitico-live-tests --restart always -d -v /var/run/docker.sock:/var/run/docker.sock ${BUILD_ANALITICO_IMAGE_URL} ./scripts/live-tests.sh;"
+    ##
+    ## Install dependencies
+    ##
+    
+    - apk add git curl ca-certificates
+    # kubectl
+    - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+    - chmod +x /usr/bin/kubectl
+
+    - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
+    # required by kubectl for committing the service on k8
+    - export KUBECONFIG="./analitico-ci/k8/admin.conf"
+    - yaml=`cat ./analitico-ci/k8/live-tests-template.yaml`
+    # set the image url
+    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > live-tests-template.yaml
+    - cat live-tests-template.yaml
+    - kubectl apply --filename ./live-tests-template.yaml
+    # wait deploy to complete
+    - kubectl wait -n cloud kservice/live-tests --for=condition=Ready --timeout=32s

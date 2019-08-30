@@ -175,7 +175,6 @@ class NotebooksTests(AnaliticoApiTestCase):
         response, notebook = self.process_notebook("nb_02")
 
         asset = response.data["attributes"]["data"][0]
-        self.assertEqual(asset["content_type"], "text/plain")
         self.assertEqual(asset["filename"], "file.txt")
         self.assertEqual(asset["size"], 19)
 
