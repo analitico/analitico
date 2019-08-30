@@ -235,13 +235,13 @@ live-tests:
     - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
     # required by kubectl for committing the service on k8
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
-    - yaml=`cat ./analitico-ci/k8/live-tests-template.yaml`
+    - template=`cat ./analitico-ci/k8/live-tests-template.yaml`
     # set the image url
-    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > live-tests-template.yaml
+    - template="${template/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}"
     # set a random pod name
-    - POD_NAME="live-tests-$(date +%s)"
-    - echo "${yaml/"{pod_name}"/$POD_NAME}" > live-tests-template.yaml
-    - cat live-tests-template.yaml
-    - kubectl apply --filename ./live-tests-template.yaml
+    - pod_name="live-tests-$(date +%s)"
+    - template="${template/"{pod_name}"/$pod_name}"
+    # commit to kubernetes
+    - echo "$template" | kubectl apply -f -
     # wait deploy to complete
-    - kubectl wait -n cloud kservice/live-tests --for=condition=Ready --timeout=32s
+    - kubectl wait -n cloud pod/$pod_name --for=condition=Ready --timeout=32s
