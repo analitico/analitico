@@ -218,7 +218,7 @@ website-api:
 
 live-tests:
   stage: live-tests
-  image: ubuntu:18.04
+  image: alpine:latest
   only:
     - master
   script:
