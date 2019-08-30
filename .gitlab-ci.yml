@@ -113,6 +113,7 @@ build-and-test:
     # save build to storage
     - cp -r $BUILD_WEBSITE_PATH/dist $WEBSITE_DEPLOYMENT_PATH/
     - mv $WEBSITE_DEPLOYMENT_PATH/dist/index.html $WEBSITE_DEPLOYMENT_PATH/
+    - mv $WEBSITE_DEPLOYMENT_PATH/dist/assets $WEBSITE_DEPLOYMENT_PATH/
     - echo "$(date +'%T') - Finished building the app"
     
     ##
