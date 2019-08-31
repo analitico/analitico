@@ -116,7 +116,7 @@ build-and-test:
     # this action should not be done when website's build process is setup properly.
     - mv -f $WEBSITE_DEPLOYMENT_PATH/dist/index.html $WEBSITE_DEPLOYMENT_PATH/
     - cp -rf $WEBSITE_DEPLOYMENT_PATH/dist/assets $WEBSITE_DEPLOYMENT_PATH/
-    - rm -rf WEBSITE_DEPLOYMENT_PATH/dist/assets
+    - rm -rf $WEBSITE_DEPLOYMENT_PATH/dist/assets
     - echo "$(date +'%T') - Finished building the app"
     
     ##

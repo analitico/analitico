@@ -17,8 +17,14 @@ COPY dockerd-entrypoint.sh /usr/local/bin/
 RUN apt-get update
 RUN apt-get install -y nano less curl procps apt-transport-https ca-certificates software-properties-common gnupg2
 RUN apt-get install -y curl apt-transport-https ca-certificates software-properties-common gnupg2
-# missing in Anaconda3, required by docker python package
+# Missing in Anaconda3, required by docker python package
 RUN apt-get install -y python3-distutils
+# Should not be useful anymore after this ticket
+# server / clean up and update requirements #143
+# Required because we are not using conda virtual env
+RUN export PYTHONPATH=$PYTHONPATH:/opt/conda/lib/python3.7/site-packages
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # Install Google Cloud SDK (for storage and Docker registry)
 RUN /bin/bash -c 'echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && apt-get update && apt-get install -y google-cloud-sdk'
