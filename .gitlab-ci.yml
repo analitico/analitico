@@ -111,9 +111,12 @@ build-and-test:
     - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico
     - ./analitico/app/build-app.sh
     # save build to storage
-    - cp -r $BUILD_WEBSITE_PATH/dist $WEBSITE_DEPLOYMENT_PATH/
-    - mv $WEBSITE_DEPLOYMENT_PATH/dist/index.html $WEBSITE_DEPLOYMENT_PATH/
-    - mv $WEBSITE_DEPLOYMENT_PATH/dist/assets $WEBSITE_DEPLOYMENT_PATH/
+    - cp -rf $BUILD_WEBSITE_PATH/dist $WEBSITE_DEPLOYMENT_PATH/
+    # move files to parent folder to fit their expectation. 
+    # this action should not be done when website's build process is setup properly.
+    - mv -f $WEBSITE_DEPLOYMENT_PATH/dist/index.html $WEBSITE_DEPLOYMENT_PATH/
+    - cp -rf $WEBSITE_DEPLOYMENT_PATH/dist/assets $WEBSITE_DEPLOYMENT_PATH/
+    - rm -rf WEBSITE_DEPLOYMENT_PATH/dist/assets
     - echo "$(date +'%T') - Finished building the app"
     
     ##
