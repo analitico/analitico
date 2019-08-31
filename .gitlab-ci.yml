@@ -170,7 +170,7 @@ website-api-staging:
     - cat api-service-staging-template.yaml
     - kubectl apply --filename ./api-service-staging-template.yaml
     # wait deploy to complete
-    - kubectl wait -n cloud kservice/api-staging --for=condition=Ready --timeout=32s
+    - kubectl wait -n cloud kservice/api-staging --for=condition=Ready --timeout=60s
     # copy website's files to cloud storage 
     - mkdir -p $MOUNT_PATH
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
@@ -208,7 +208,7 @@ website-api:
     - cat api-service-template.yaml
     - kubectl apply --filename ./api-service-template.yaml
     # wait deploy to complete
-    - kubectl wait -n cloud kservice/api --for=condition=Ready --timeout=32s
+    - kubectl wait -n cloud kservice/api --for=condition=Ready --timeout=60s
     # copy website's files to cloud storage 
     - mkdir -p $MOUNT_PATH
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
@@ -245,4 +245,4 @@ live-tests:
     - echo $template
     - echo "$template" | kubectl apply -f -
     # wait deploy to complete
-    - kubectl wait -n cloud deployment/live-tests --for=condition=available --timeout=32s
+    - kubectl wait -n cloud deployment/live-tests --for=condition=available --timeout=60s
