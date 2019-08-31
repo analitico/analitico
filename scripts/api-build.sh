@@ -11,8 +11,10 @@ cd /home/www/analitico
 
 echo "Installing requirements"
 pip install -r requirements.txt
-# since python 3.6 the library is no longer compatible with the standard library
-pip uninstall -y enum34
+# since python 3.6 the library is no longer compatible with the standard library.
+# it should be fixed with the ticket 
+# server / clean up and update requirements #143
+PYTHONPATH="" pip uninstall -y enum34
 
 echo "Collect static"
 cd source
