@@ -22,7 +22,7 @@ RUN apt-get install -y python3-distutils
 # Should not be useful anymore after this ticket
 # server / clean up and update requirements #143
 # Required because we are not using conda virtual env
-RUN export PYTHONPATH=$PYTHONPATH:/opt/conda/lib/python3.7/site-packages
+ENV PYTHONPATH=$PYTHONPATH:/opt/conda/lib/python3.7/site-packages
 RUN ln -sf /usr/bin/python3 /usr/bin/python && \
     ln -sf /usr/bin/pip3 /usr/bin/pip
 
