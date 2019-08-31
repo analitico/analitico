@@ -18,7 +18,7 @@ RUN /bin/bash -c 'gcloud auth activate-service-account --key-file /home/www/anal
 ENV KUBECONFIG=/home/www/analitico-ci/k8/admin.conf
 
 # Setup analitico and test
-RUN export PYTHONPATH=$PYTHONPATH:/home/www/analitico/source
+ENV PYTHONPATH=$PYTHONPATH:/home/www/analitico/source
 RUN /bin/bash -c '$HOME/analitico/scripts/api-build.sh'
 
 # Fix permissions on temp folder.
