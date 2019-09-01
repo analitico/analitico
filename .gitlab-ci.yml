@@ -230,7 +230,7 @@ live-tests:
     ## Install dependencies
     ##
     
-    - apk add git curl ca-certificates
+    - apk add git curl ca-certificates sed
     # kubectl
     - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
     - chmod +x /usr/bin/kubectl
@@ -240,12 +240,12 @@ live-tests:
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
     - template=`cat ./analitico-ci/k8/live-tests-template.yaml`
     # set the image url
-    - template="${template/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}"
+    - template=$(sed s/{docker_image}/$BUILD_ANALITICO_IMAGE_URL/g ./analitico-ci/k8/live-tests-template.yaml)
     # set a random pod name
     - pod_name="live-tests-$(date +%s)"
-    - template="${template/"{pod_name}"/$pod_name}"
+    - template=$(echo "$template" | sed s/{pod_name}/$pod_name/g)
     # commit to kubernetes
-    - echo $template
+    - echo "$template"
     - echo "$template" | kubectl apply -f -
     # wait deploy to complete
     - kubectl wait -n cloud pod -l app=${pod_name} --for=condition=Ready --timeout=60s
