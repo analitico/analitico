@@ -248,4 +248,4 @@ live-tests:
     - echo $template
     - echo "$template" | kubectl apply -f -
     # wait deploy to complete
-    - kubectl wait -n cloud pod -l app=$pod_name --for=condition=Ready --timeout=60s
+    - kubectl wait -n cloud pod -l app=${pod_name} --for=condition=Ready --timeout=60s
