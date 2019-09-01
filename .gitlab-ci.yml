@@ -240,10 +240,10 @@ live-tests:
     - export KUBECONFIG="./analitico-ci/k8/admin.conf"
     - template=`cat ./analitico-ci/k8/live-tests-template.yaml`
     # set the image url
-    - template=$(sed s/{docker_image}/$BUILD_ANALITICO_IMAGE_URL/g ./analitico-ci/k8/live-tests-template.yaml)
+    - template=$(sed 's/{docker_image}/$BUILD_ANALITICO_IMAGE_URL/g' ./analitico-ci/k8/live-tests-template.yaml)
     # set a random pod name
     - pod_name="live-tests-$(date +%s)"
-    - template=$(echo "$template" | sed s/{pod_name}/$pod_name/g)
+    - template=$(echo "$template" | sed 's/{pod_name}/$pod_name/g')
     # commit to kubernetes
     - echo "$template"
     - echo "$template" | kubectl apply -f -
