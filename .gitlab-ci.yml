@@ -37,111 +37,111 @@ build-and-test:
     ##
 
     - apk add git bash curl python
-    # - curl https://sdk.cloud.google.com > script.sh
-    # - chmod +x script.sh
-    # - ./script.sh --disable-prompts
-    # - export PATH=/root/google-cloud-sdk/bin:$PATH
-    # # install samba/cifs package for mounting the 
-    # # remote storage for the static website's files
-    # - apk add cifs-utils util-linux
-    # # install tool for building the website
-    # - apk add nodejs yarn make g++
+    - curl https://sdk.cloud.google.com > script.sh
+    - chmod +x script.sh
+    - ./script.sh --disable-prompts
+    - export PATH=/root/google-cloud-sdk/bin:$PATH
+    # install samba/cifs package for mounting the 
+    # remote storage for the static website's files
+    - apk add cifs-utils util-linux
+    # install tool for building the website
+    - apk add nodejs yarn make g++
 
-    # ##
-    # ## Setup the environment
-    # ## 
+    ##
+    ## Setup the environment
+    ## 
     
-    # # cleanup
-    # - cd $WORKDIR
-    # - rm -rf $WORKDIR/*
-    # # clone with submodule 
-    # - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
-    # - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
-    # - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-sdk.git " >> /.git-credentials
-    # # save credentials to bypass login when fetching submodules
-    # - git config --global credential.helper 'store --file=/.git-credentials'
-    # # clone the source in /builds/analitico/analitico
-    # - git clone --recurse-submodules https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git 
-    # - cd analitico
-    # # check out corrent commit because repo may have gone further
-    # - git checkout --recurse-submodules $CI_COMMIT_SHA
-    # # go back
-    # - cd ..
-    # # clone secrets in /builds/analitico/analitico-ci
-    # - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    # # remove credentials
-    # - rm /.git-credentials
-    # # append the Gihub commit sha in the environment script
-    # - echo export ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
-    # # authentication for Google Cloud Container Registry
-    # - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
-    # - gcloud -q auth configure-docker
-    # # mount analitico drive for website's static files
-    # - mkdir -p $MOUNT_PATH
-    # - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
-    # - mkdir -p $WEBSITE_DEPLOYMENT_PATH
+    # cleanup
+    - cd $WORKDIR
+    - rm -rf $WORKDIR/*
+    # clone with submodule 
+    - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git" > /.git-credentials
+    - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-app.git " >> /.git-credentials
+    - echo "https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-sdk.git " >> /.git-credentials
+    # save credentials to bypass login when fetching submodules
+    - git config --global credential.helper 'store --file=/.git-credentials'
+    # clone the source in /builds/analitico/analitico
+    - git clone --recurse-submodules https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico.git 
+    - cd analitico
+    # check out corrent commit because repo may have gone further
+    - git checkout --recurse-submodules $CI_COMMIT_SHA
+    # go back
+    - cd ..
+    # clone secrets in /builds/analitico/analitico-ci
+    - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
+    # remove credentials
+    - rm /.git-credentials
+    # append the Gihub commit sha in the environment script
+    - echo export ANALITICO_COMMIT_SHA="$CI_COMMIT_SHA" >> analitico-ci/analitico-env.sh
+    # authentication for Google Cloud Container Registry
+    - gcloud -q auth activate-service-account --key-file ./analitico-ci/gcloud/analitico-api-service-account-key.json
+    - gcloud -q auth configure-docker
+    # mount analitico drive for website's static files
+    - mkdir -p $MOUNT_PATH
+    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
+    - mkdir -p $WEBSITE_DEPLOYMENT_PATH
 
     
-    # ##
-    # ## Build Analitico image
-    # ##
+    ##
+    ## Build Analitico image
+    ##
 
-    # - cd $WORKDIR
-    # - echo "$(date +'%T') - Build Analitico image"
-    # - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
-    # - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
-    # - echo "$(date +'%T') - Finished building analitico image"
-    # - docker push $BUILD_ANALITICO_IMAGE_URL
-    # - echo "$(date +'%T') - Copy Django static files to the storage"
-    # # extract django statics from the just built image 
-    # # and then save the files to storage
-    # - ANALITICO_IMAGE_NAME=analitico-$(date +%s)
-    # - docker create -it --name $ANALITICO_IMAGE_NAME $BUILD_ANALITICO_IMAGE_URL bash
-    # - docker cp $ANALITICO_IMAGE_NAME:/home/www/analitico/source/static $WEBSITE_DEPLOYMENT_PATH/static
-    # - docker rm -fv $ANALITICO_IMAGE_NAME
-    # - echo "$(date +'%T') - Finished pushing analitico image"
+    - cd $WORKDIR
+    - echo "$(date +'%T') - Build Analitico image"
+    - cp ./analitico/serverless/templates/analitico/Dockerfile ./Dockerfile
+    - docker build --no-cache --pull -t $BUILD_ANALITICO_IMAGE_URL -f Dockerfile .
+    - echo "$(date +'%T') - Finished building analitico image"
+    - docker push $BUILD_ANALITICO_IMAGE_URL
+    - echo "$(date +'%T') - Copy Django static files to the storage"
+    # extract django statics from the just built image 
+    # and then save the files to storage
+    - ANALITICO_IMAGE_NAME=analitico-$(date +%s)
+    - docker create -it --name $ANALITICO_IMAGE_NAME $BUILD_ANALITICO_IMAGE_URL bash
+    - docker cp $ANALITICO_IMAGE_NAME:/home/www/analitico/source/static $WEBSITE_DEPLOYMENT_PATH/static
+    - docker rm -fv $ANALITICO_IMAGE_NAME
+    - echo "$(date +'%T') - Finished pushing analitico image"
 
-    # ##
-    # ## Build Analitico Website
-    # ##
+    ##
+    ## Build Analitico Website
+    ##
 
-    # - cd $WORKDIR
-    # - echo "$(date +'%T') - Build Analitico Website"
-    # # build 
-    # - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico
-    # - ./analitico/app/build-app.sh
-    # # save build to storage
-    # - cp -rf $BUILD_WEBSITE_PATH/dist $WEBSITE_DEPLOYMENT_PATH/
-    # # move files to parent folder to fit their expectation. 
-    # # this action should not be done when website's build process is setup properly.
-    # - mv -f $WEBSITE_DEPLOYMENT_PATH/dist/index.html $WEBSITE_DEPLOYMENT_PATH/
-    # - cp -rf $WEBSITE_DEPLOYMENT_PATH/dist/assets $WEBSITE_DEPLOYMENT_PATH/
-    # - rm -rf $WEBSITE_DEPLOYMENT_PATH/dist/assets
-    # - echo "$(date +'%T') - Finished building the app"
+    - cd $WORKDIR
+    - echo "$(date +'%T') - Build Analitico Website"
+    # build 
+    - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico
+    - ./analitico/app/build-app.sh
+    # save build to storage
+    - cp -rf $BUILD_WEBSITE_PATH/dist $WEBSITE_DEPLOYMENT_PATH/
+    # move files to parent folder to fit their expectation. 
+    # this action should not be done when website's build process is setup properly.
+    - mv -f $WEBSITE_DEPLOYMENT_PATH/dist/index.html $WEBSITE_DEPLOYMENT_PATH/
+    - cp -rf $WEBSITE_DEPLOYMENT_PATH/dist/assets $WEBSITE_DEPLOYMENT_PATH/
+    - rm -rf $WEBSITE_DEPLOYMENT_PATH/dist/assets
+    - echo "$(date +'%T') - Finished building the app"
     
-    # ##
-    # ## Build Analitico-Client image
-    # ##
+    ##
+    ## Build Analitico-Client image
+    ##
 
-    # - cd $WORKDIR
-    # - echo "$(date +'%T') - Build analitico-client image"
-    # - build_dir=$(mktemp -d)
-    # # dockerfile expects to find s24 in that path
-    # - mkdir $build_dir/libraries
-    # - cp -Rf ./analitico/source/s24 $build_dir/libraries
-    # - cp -Rf ./analitico/serverless/templates/analitico-client/* $build_dir/
-    # - cd $build_dir
-    # - docker build --no-cache --pull -t $BUILD_ANALITICO_CLIENT_IMAGE_URL -f Dockerfile .
-    # - echo "$(date +'%T') - Finished building analitico-client image"
-    # - docker push $BUILD_ANALITICO_CLIENT_IMAGE_URL
-    # - echo "$(date +'%T') - Finished pushing analitico-client image"
-    # # cleanup
-    # - rm -Rf $build_dir
+    - cd $WORKDIR
+    - echo "$(date +'%T') - Build analitico-client image"
+    - build_dir=$(mktemp -d)
+    # dockerfile expects to find s24 in that path
+    - mkdir $build_dir/libraries
+    - cp -Rf ./analitico/source/s24 $build_dir/libraries
+    - cp -Rf ./analitico/serverless/templates/analitico-client/* $build_dir/
+    - cd $build_dir
+    - docker build --no-cache --pull -t $BUILD_ANALITICO_CLIENT_IMAGE_URL -f Dockerfile .
+    - echo "$(date +'%T') - Finished building analitico-client image"
+    - docker push $BUILD_ANALITICO_CLIENT_IMAGE_URL
+    - echo "$(date +'%T') - Finished pushing analitico-client image"
+    # cleanup
+    - rm -Rf $build_dir
     
-    # ## 
-    # ## Remove secrets and done
-    # ## 
-    # - rm -R -f analitico-ci
+    ## 
+    ## Remove secrets and done
+    ## 
+    - rm -R -f analitico-ci
   only:
     - master
 
@@ -157,30 +157,30 @@ website-api-staging:
     
     - apk add git curl ca-certificates
     # kubectl
-    # - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
-    # - chmod +x /usr/bin/kubectl
-    # # samba/cifs package for mounting the 
-    # # remote storage for the static website's files
-    # - apk add cifs-utils util-linux
+    - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+    - chmod +x /usr/bin/kubectl
+    # samba/cifs package for mounting the 
+    # remote storage for the static website's files
+    - apk add cifs-utils util-linux
 
-    # # deployment stage
-    # - STAGE=staging
-    # - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
-    # # required by kubectl for committing the service on k8
-    # - export KUBECONFIG="./analitico-ci/k8/admin.conf"
-    # - yaml=`cat ./analitico-ci/k8/api-service-staging-template.yaml`
-    # - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > api-service-staging-template.yaml
-    # - cat api-service-staging-template.yaml
-    # - kubectl apply --filename ./api-service-staging-template.yaml
-    # # wait deploy to complete
-    # - kubectl wait -n cloud kservice/api-staging --for=condition=Ready --timeout=60s
-    # # copy website's files to cloud storage 
-    # - mkdir -p $MOUNT_PATH
-    # - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
-    # - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
-    # # cleanup files from deployments older then 7 days
-    # - find $MOUNT_PATH/$STAGE/* -mtime +7 -exec rm -rf {} \;
-    # - umount $MOUNT_PATH
+    # deployment stage
+    - STAGE=staging
+    - git clone https://gionatamettifogo:$GITHUB_PULL_TOKEN@github.com/analitico/analitico-ci.git 
+    # required by kubectl for committing the service on k8
+    - export KUBECONFIG="./analitico-ci/k8/admin.conf"
+    - yaml=`cat ./analitico-ci/k8/api-service-staging-template.yaml`
+    - echo "${yaml/"{docker_image}"/$BUILD_ANALITICO_IMAGE_URL}" > api-service-staging-template.yaml
+    - cat api-service-staging-template.yaml
+    - kubectl apply --filename ./api-service-staging-template.yaml
+    # wait deploy to complete
+    - kubectl wait -n cloud kservice/api-staging --for=condition=Ready --timeout=60s
+    # copy website's files to cloud storage 
+    - mkdir -p $MOUNT_PATH
+    - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
+    - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE
+    # cleanup files from deployments older then 7 days
+    - find $MOUNT_PATH/$STAGE/* -mtime +7 -exec rm -rf {} \;
+    - umount $MOUNT_PATH
   
 website-api:
   stage: deploy-production
