@@ -17,7 +17,8 @@ To get a token for accessing gcloud registry
 Login gcloud registry
 `docker login -u oauth2accesstoken eu.gcr.io/analitico-api/k8-nginx-balancer`
 
-To run the image we need to map external ports
+To run the image we need to map external ports and to give it the privileged level because
+the website is served from the remote storage mount as local disk.
 `docker run -d -p 80:80 -p 443:443 -p 6443:6443 -p 19999:19999 --restart always --privileged --cap-add SYS_ADMIN --name=analitico-k8-nginx-balancer eu.gcr.io/analitico-api/k8-nginx-balancer`
 
 Run Netdata with
