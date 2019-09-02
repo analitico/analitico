@@ -20,7 +20,7 @@ THREADS=2
 # Run the gunicorn webserver
 exec gunicorn \
     --bind :$PORT \
-    --threads $THREADS \  
+    --threads $THREADS \
     --access-logfile - \
     --log-level debug \
     app:app
