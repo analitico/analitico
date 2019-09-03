@@ -44,7 +44,7 @@ spec:
             memory: 8Gi
           limits:
             cpu: 4
-            memory: 24Gi
+            memory: 32Gi
 #           nvidia.com/gpu: 1
       restartPolicy: Never
       volumes:
