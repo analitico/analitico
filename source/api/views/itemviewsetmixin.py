@@ -151,7 +151,7 @@ class ItemViewSetMixin:
         # we have create permissions for the particular type of item in the target workspace
         workspace_id = api.utilities.get_query_parameter(request, "workspace_id", item.workspace.id)
         workspace = api.factory.factory.get_item(workspace_id)
-        create_permission = f"analitico.{item.type}.create"
+        create_permission = f"analitico.{item.type}s.create"
         has_item_permission_or_exception(request.user, workspace, create_permission)
 
         # clone item in target workspace
