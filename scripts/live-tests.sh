@@ -66,6 +66,5 @@ do
     # 5 min between tests
     echo "Next run in 5 minutes"
     
-    wait
     sleep 300
 done
