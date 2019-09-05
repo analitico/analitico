@@ -445,6 +445,10 @@ def k8_deploy_jupyter(workspace):
         configs["pod_name"] = pod_name
         configs["route_name"] = route_name
 
+        # memory limits displayed by nbresuse extension
+        jupyter_mem_limit_bytes = int(jupyter["settings"]["limits"]["memory"].replace("Gi", "")) * 1024*1024*1024
+        configs["jupyter_mem_limit_bytes"] = jupyter_mem_limit_bytes
+
         configs["cpu_request"] = jupyter["settings"]["requests"]["cpu"]
         configs["memory_request"] = jupyter["settings"]["requests"]["memory"]
         configs["gpu_request"] = jupyter["settings"]["requests"]["gpu"]

@@ -24,7 +24,7 @@ spec:
         analitico.ai/workspace-id: {workspace_id}
     spec:
       containers:
-      - image: {image_name}
+      - image: eu.gcr.io/analitico-api/analitico-client:jupyter-test
         name: {pod_name}
         command: ["/app/tasks/jupyter-start.sh"]
         env:
@@ -37,6 +37,8 @@ spec:
             secretKeyRef:
               name: {secret_name}
               key: token
+        - name: JUPYTER_MEM_LIMIT_BYTES
+          value: "{jupyter_mem_limit_bytes}"
         resources:
           requests:
             cpu: {cpu_request}

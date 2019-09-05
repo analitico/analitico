@@ -169,6 +169,9 @@ class WebdavStorageDriver(StorageDriver):
         elif username and password:
             self.session.auth = (username, password)
 
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.session.close()
+
     ##
     ## WebDAV direct access extensions
     ##
