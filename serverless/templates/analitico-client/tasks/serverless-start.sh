@@ -13,14 +13,12 @@ fi
 
 echo "Start gunicorn"
 
-# (2*0.5CPU)+1, 
-# see https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
-THREADS=2 
-
-# Run the gunicorn webserver
+# Run the gunicorn webserver.
+# Do not use threads because we don't know which libraries
+# are run and thus they cant be not thread-safe. 
 exec gunicorn \
     --bind :$PORT \
-    --threads $THREADS \
+    --workers 1 \
     --access-logfile - \
     --log-level debug \
     app:app
