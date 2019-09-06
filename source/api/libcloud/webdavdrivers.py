@@ -161,6 +161,8 @@ class WebdavStorageDriver(StorageDriver):
         self.session = requests.session()
         self.session.verify = verify_ssl
         self.session.stream = True
+        self.session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
+        self.session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
 
         if certificate:
             self.session.cert = certificate
