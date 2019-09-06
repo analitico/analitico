@@ -161,8 +161,14 @@ class WebdavStorageDriver(StorageDriver):
         self.session = requests.session()
         self.session.verify = verify_ssl
         self.session.stream = True
-        self.session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
-        self.session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
+
+        # This limitation avoid connections to be reused. It's forced in this way
+        # because we got connection errors to the Hetzner storage 
+        # (probably related to the limit of 100 connections).
+        # TODO: We should use the drive object in the `with` block
+        # to be sure to close the stream connection when completed.
+        self.session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=0))
+        self.session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=0))
 
         if certificate:
             self.session.cert = certificate
