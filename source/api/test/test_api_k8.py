@@ -651,21 +651,6 @@ class K8Tests(AnaliticoApiTestCase):
             # deploy jupyter
             ws2 = self.deploy_jupyter()
 
-            # wait for status to be running
-            insist = True
-            start_time = time.time()
-            while insist:
-                # ask to deploy jupyter to update the status of the deployment
-                ws2 = self.deploy_jupyter()
-
-                jupyter = ws2.get_attribute("jupyter", [])
-                phase = jupyter["servers"][0]["status"]["phase"]
-                if phase == "Running":
-                    insist = False
-                else:
-                    insist = (time.time() - start_time) <= 300
-                time.sleep(10)
-
             # attribute with jupyter deployment details
             self.assertIn("jupyter", ws2.attributes)
             jupyter = ws2.get_attribute("jupyter")
@@ -678,6 +663,23 @@ class K8Tests(AnaliticoApiTestCase):
             jupyter_service_namespace = servers[0]["namespace"]
             jupyter_url = servers[0]["url"]
             jupyter_token = servers[0]["token"]
+
+            # wait for status to be running
+            subprocess_run([
+                "kubectl",
+                "wait",
+                "pod",
+                "-l",
+                f"app={jupyter_service_name}",
+                "-n",
+                jupyter_service_namespace,
+                "--for=condition=Ready",
+                "--timeout=120s"
+            ])
+
+            # TODO: not required when closed
+            # k8s / pod / ready be sure pod is activated when it's ready #383 
+            time.sleep(60)
 
             # access denied without token (redirected to /login)
             response = requests.get(jupyter_url, allow_redirects=True)
