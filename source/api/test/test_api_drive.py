@@ -57,7 +57,8 @@ class DriveTests(AnaliticoApiTestCase):
     def test_drive_refresh_stats(self):
         dr_refresh_stats()
 
-    @tag("live")
+    # api / test / create workspace storage keeps to fail #424
+    # @tag("live")
     def test_drive_create_workspace_storage(self):
         ws_id = "ws_testcreatestorage_" + get_random_string(4)
         ws = Workspace.objects.create(pk=ws_id)

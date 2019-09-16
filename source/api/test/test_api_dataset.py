@@ -575,6 +575,7 @@ class DatasetTests(AnaliticoApiTestCase):
             for i in range(1, len(records1)):
                 p1 = records1[i - 1]["Position"]
                 p2 = records1[i]["Position"]
+                self.assertLessEqual(p1, p2)
                 if p1 == p2:
                     s1 = records1[i - 1]["Salary"]
                     s2 = records1[i]["Salary"]
@@ -586,6 +587,7 @@ class DatasetTests(AnaliticoApiTestCase):
             for i in range(1, len(records2)):
                 p1 = records1[i - 1]["Position"]
                 p2 = records1[i]["Position"]
+                self.assertLessEqual(p1, p2)
                 if p1 == p2:
                     s1 = records2[i - 1]["Salary"]
                     s2 = records2[i]["Salary"]

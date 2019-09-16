@@ -175,11 +175,17 @@ def get_file_dataframe(
     if sort:
         # eg: ?sort=Name,-Age
         columns = sort.split(",")
+        by = []
+        ascending = []
         for column in columns:
             if column.startswith("-"):
-                df.sort_values(column[1:], ascending=False, inplace=True)
+                by.append(column[1:])
+                ascending.append(False)
             else:
-                df.sort_values(column, inplace=True)
+                by.append(column)
+                ascending.append(True)
+        
+        df.sort_values(by, ascending=ascending, inplace=True)
 
     # number of total rows is unknown if we're prepaging the file
     rows = None if already_paged else len(df.index)
