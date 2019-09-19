@@ -173,6 +173,8 @@ website-api-staging:
     - mkdir -p $MOUNT_PATH
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE/
+    # cleanup files from deployments older then 7 days
+    - find $MOUNT_PATH/$STAGE/* -type f -mtime +7 -exec rm -rf "{}" \;
     - umount $MOUNT_PATH
   
 website-api:
@@ -209,6 +211,8 @@ website-api:
     - mkdir -p $MOUNT_PATH
     - mount.cifs -o username=$ANALITICO_DRIVE_USERNAME,pass=$ANALITICO_DRIVE_PASSWORD,dir_mode=0755,file_mode=0644,noperm,uid=33,gid=33 //$ANALITICO_DRIVE_USERNAME.your-storagebox.de/$ANALITICO_DRIVE_USERNAME $MOUNT_PATH
     - cp -r $WEBSITE_DEPLOYMENT_PATH/* $MOUNT_PATH/$STAGE/
+    # cleanup files from deployments older then 7 days
+    - find $MOUNT_PATH/$STAGE/* -type f -mtime +7 -exec rm -rf "{}" \;
     - umount $MOUNT_PATH
 
 live-tests:
