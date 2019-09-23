@@ -157,13 +157,34 @@ class K8ViewSetMixin:
         The API takes the following http query parameters:
         query - The Prometheus query to be performed
         """
-        service_name, service_namespace = self.get_service_name(request, pk, stage)
+        kservice_name, service_namespace = self.get_service_name(request, pk, stage)
 
         metric = api.utilities.get_query_parameter(request, "metric", "")
         start_time = api.utilities.get_query_parameter(request, "start")
         end_time = api.utilities.get_query_parameter(request, "end")
         # query resolution step width, eg: 10s, 1m, 2h, 1d, 2w, 1y
         step = api.utilities.get_query_parameter(request, "step")
+
+        # The Prometheus's regexp is not enough to filter metrics between staging and production.
+        # We need to retrieve the kubernetes service name by the knative service name 
+        # because metrics are stored with the kubernetes service name or the pod name.
+        # The service name is prefix of the pod name so we don't need to know the full pod
+        # name. Secondary, we pass through the deployment component to be sure to get 
+        # the actual deployment that handles the pods.
+        deployment, _ = subprocess_run(
+            [
+                "kubectl",
+                "get",
+                "deployment",
+                "-n",
+                service_namespace,
+                "--selector",
+                f"serving.knative.dev/service={kservice_name}",
+                "--output",
+                "json",
+            ]
+        )
+        service_name =  deployment["items"][0]["metadata"]["labels"]["app"]
 
         # metric converted in Prometheus query fixed to the given service
         metrics = {
