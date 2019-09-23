@@ -32,7 +32,7 @@ def get_namespace(request) -> str:
 def get_kubctl_response(*args):
     """ Runs kubectl command, returns result as json """
     stdout, _ = analitico.utilities.subprocess_run(args)
-    return Response(stdout, content_type="json")
+    return Response(stdout, content_type="application/json")
 
 
 class K8ViewSetMixin:
@@ -140,7 +140,7 @@ class K8ViewSetMixin:
 
         service = k8_deploy_v2(item, target, stage)
 
-        return Response(service, content_type="json")
+        return Response(service, content_type="application/json")
 
     @action(
         methods=["get"],
@@ -214,7 +214,7 @@ class K8ViewSetMixin:
             data = {"query": query, "start": start_time, "end": end_time, "step": step}
 
         prometheus_response = requests.get(django.conf.settings.PROMETHEUS_SERVICE_URL + path, params=data)
-        return Response(prometheus_response.json(), content_type="json", status=prometheus_response.status_code)
+        return Response(prometheus_response.json(), content_type="application/json", status=prometheus_response.status_code)
 
     @action(
         methods=["get"], detail=True, url_name="k8-logs", url_path=r"k8s/services/(?P<stage>staging|production)/logs"
@@ -250,7 +250,7 @@ class K8ViewSetMixin:
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elasticsearch_response = requests.get(url, params=params, headers=headers, verify=False)
-        return Response(elasticsearch_response.json(), content_type="json", status=elasticsearch_response.status_code)
+        return Response(elasticsearch_response.json(), content_type="application/json", status=elasticsearch_response.status_code)
 
     @action(methods=["get"], detail=True, url_name="k8-job-logs", url_path=r"k8s/jobs/(?P<job_id>[-\w.]{0,64})/logs")
     def job_logs(self, request: Request, pk, job_id: str):
@@ -286,4 +286,4 @@ class K8ViewSetMixin:
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elastic_search_response = requests.get(url, params=params, headers=headers, verify=False)
-        return Response(elastic_search_response.json(), content_type="json", status=elastic_search_response.status_code)
+        return Response(elastic_search_response.json(), content_type="application/json", status=elastic_search_response.status_code)

@@ -161,17 +161,17 @@ class JobViewSetMixin:
                 job_data = job_data["data"]
             notification_server_name = request.build_absolute_uri("/").replace("http://", "https://")
             job = k8_jobs_create(item, job_action, job_data, notification_server_name)
-            return Response(job, content_type="json")
+            return Response(job, content_type="application/json")
 
         job_id = job_pk
         if job_id:
             # retrieve specific job by id
             job = k8_jobs_get(item, job_id)
-            return Response(job, content_type="json")
+            return Response(job, content_type="application/json")
 
         # retrieve list of jobs
         jobs = k8_jobs_list(item)
-        return Response(jobs, content_type="json")
+        return Response(jobs, content_type="application/json")
 
 
 ##
@@ -206,4 +206,4 @@ class JobViewSet(ItemViewSetMixin, FilesViewSetMixin, rest_framework.viewsets.Mo
         any jobs to reprocess them if necessary. Cancel any stuck jobs 
         """
         jobs = api.models.job.schedule_jobs()
-        return Response(jobs, content_type="json")
+        return Response(jobs, content_type="application/json")
