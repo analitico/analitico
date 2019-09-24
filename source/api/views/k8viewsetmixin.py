@@ -42,24 +42,18 @@ class K8ViewSetMixin:
 
     def get_service_name(self, request: Request, pk: str, stage: str = api.k8.K8_STAGE_PRODUCTION) -> (str, str):
         """
-            Callers will call these APIs with an item's id as the key. The item could be and endpoint or a notebook
-            or other item that has been deployed as a knative service to the k8 cluster. We need to check that the 
-            caller has the proper permissions to access this item then we return its service name and namespace.
-            """
-        try:
-            item = self.get_object()
-            service = item.get_attribute("service")
-            if not service or not service[stage]:
-                raise AnaliticoException(
-                    f"Item {item.id} in {stage} has not been deployed as a service.",
-                    status_code=status.HTTP_404_NOT_FOUND,
-                )
-            return service[stage]["name"], service[stage]["namespace"]
-        except Exception as exc:
-            # try pk directly as service name but only if admin rights
-            if request.user.is_superuser:
-                return pk, get_namespace(request)
-            raise AnaliticoException(f"Item {pk} has not been found.", status_code=status.HTTP_404_NOT_FOUND) from exc
+        Callers will call these APIs with an item's id as the key. The item could be and endpoint or a notebook
+        or other item that has been deployed as a knative service to the k8 cluster. We need to check that the 
+        caller has the proper permissions to access this item then we return its service name and namespace.
+        """
+        item = self.get_object()
+        service = item.get_attribute("service")
+        if not service or not service[stage]:
+            raise AnaliticoException(
+                f"Item {item.id} in {stage} has not been deployed as a service.",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        return service[stage]["name"], service[stage]["namespace"]
 
     ##
     ## Services information
