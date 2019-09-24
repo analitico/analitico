@@ -251,9 +251,7 @@ def schedule_items(items, action: str) -> [dict]:
                     analitico.logger.debug(msg)
 
             except Exception as exc:
-                raise AnaliticoException(
-                    f"schedule_items: an error occoured while trying to schedule '{item.id}' using cron '{cron}'"
-                ) from exc
+                logger.error(f"schedule_items: an error occoured while trying to schedule '{item.id}' using cron '{cron}'", exc)
     return jobs
 
 

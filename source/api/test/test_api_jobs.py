@@ -363,5 +363,17 @@ class JobsTests(AnaliticoApiTestCase):
             self.assertEqual(expected_notebook_name, run_notebook_name)
         finally:
             self.cleanup(jobs)
+    
+    def test_job_schedule_continue_when_item_scheduling_fails(self):
+        try:
+            jobs = []
+            jobs = self.schedule_mock(
+                scheduled_at=CRON_DATE + timedelta(minutes=60),
+                tested_at=CRON_DATE + timedelta(minutes=119),
+                cron="cron does not accept me",
+            )
+            self.assertEqual(len(jobs), 0)
+        finally:
+            self.cleanup(jobs)
 
     # TODO test job with additional parameters?
