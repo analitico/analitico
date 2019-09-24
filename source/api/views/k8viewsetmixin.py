@@ -48,7 +48,7 @@ class K8ViewSetMixin:
         """
         item = self.get_object()
         service = item.get_attribute("service")
-        if not service or not service[stage]:
+        if not service or not stage in service:
             raise AnaliticoException(
                 f"Item {item.id} in {stage} has not been deployed as a service.",
                 status_code=status.HTTP_404_NOT_FOUND,

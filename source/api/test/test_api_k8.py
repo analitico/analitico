@@ -151,6 +151,38 @@ class K8Tests(AnaliticoApiTestCase):
     ## K8s APIs that work on specific service
     ##
 
+    @tag("k8s", "slow")
+    def test_get_service_not_deploy(self):
+        """ Test get the kservice for a stage not deployed returns not found """
+        # it deploys in K8_STAGE_STAGING
+        self.deploy_service()
+
+        # ask for K8_STAGE_PRODUCTION
+        url = reverse("api:notebook-k8-ksvc", args=(self.item_id, K8_STAGE_PRODUCTION))
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    @tag("k8s", "slow")
+    def test_get_revisions(self):
+        """ Test list of revision for a specific stage """
+        self.deploy_service()
+
+        url = reverse("api:notebook-k8-revisions", args=(self.item_id, K8_STAGE_STAGING))
+
+        # user CANNOT read logs from items he does not have access to
+        self.auth_token(self.token3)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token1)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertGreaterEqual(len(response.data["items"]), 1)
+        self.assertEqual(response.data["items"][0]["kind"], "Revision")
+        self.assertIn(self.item_id_normalized, response.data["items"][0]["metadata"]["name"])
+
     @tag("slow", "k8s")
     def test_service_metrics(self):
         self.deploy_service()
@@ -665,20 +697,22 @@ class K8Tests(AnaliticoApiTestCase):
             jupyter_token = servers[0]["token"]
 
             # wait for status to be running
-            subprocess_run([
-                "kubectl",
-                "wait",
-                "pod",
-                "-l",
-                f"app={jupyter_service_name}",
-                "-n",
-                jupyter_service_namespace,
-                "--for=condition=Ready",
-                "--timeout=120s"
-            ])
+            subprocess_run(
+                [
+                    "kubectl",
+                    "wait",
+                    "pod",
+                    "-l",
+                    f"app={jupyter_service_name}",
+                    "-n",
+                    jupyter_service_namespace,
+                    "--for=condition=Ready",
+                    "--timeout=120s",
+                ]
+            )
 
             # TODO: not required when closed
-            # k8s / pod / ready be sure pod is activated when it's ready #383 
+            # k8s / pod / ready be sure pod is activated when it's ready #383
             time.sleep(60)
 
             # access denied without token (redirected to /login)
