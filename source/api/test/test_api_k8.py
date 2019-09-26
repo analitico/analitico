@@ -377,6 +377,27 @@ class K8Tests(AnaliticoApiTestCase):
             # clean up
             k8_delete_job(job_id)
 
+    @tag("k8s")
+    def test_get_specific_k8s_job_by_workspace(self):
+        try:
+            # post a job by running a notebook
+            job_id = self.job_run_notebook()
+
+            url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, job_id))
+
+            # user without permission cannot retrieve the list
+            self.auth_token(self.token3)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            self.auth_token(self.token1)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["metadata"]["labels"]["analitico.ai/item-id"], self.item_id)
+        finally:
+            # clean up
+            k8_delete_job(job_id)
+
     @tag("slow", "k8s", "live")
     def test_k8s_job_logs(self):
         try:
