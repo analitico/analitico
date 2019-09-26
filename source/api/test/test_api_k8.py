@@ -452,6 +452,34 @@ class K8Tests(AnaliticoApiTestCase):
             k8_delete_job(another_job_id)
 
     @tag("slow", "k8s", "live")
+    def test_k8s_job_logs_from_workspace_item(self):
+        """ Test retrieves job's logs from a workspace item """
+        try:
+            # post a job by running a notebook
+            job_id = self.job_run_notebook()
+
+            url = reverse("api:workspace-k8-job-logs", args=(self.ws1.id, job_id))
+
+            # user CANNOT read logs from items he does not have access to
+            self.auth_token(self.token3)
+            response = self.client.get(url, format="json")
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # user CANNOT read logs from jobs that does not belong to the item
+            self.auth_token(self.token1)
+            another_workspace_url = reverse("api:notebook-k8-job-logs", args=(self.ws2.id, job_id))
+            response = self.client.get(another_workspace_url, format="json")
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # admin user CAN get logs
+            self.auth_token(self.token1)
+            response = self.client.get(url, format="json")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        finally:
+            # clean up
+            k8_delete_job(job_id)
+
+    @tag("slow", "k8s", "live")
     def test_k8s_jobs_run(self):
         try:
             # required utc timestamp for date comparison

@@ -25,6 +25,7 @@ from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
 from .filesviewsetmixin import FilesViewSetMixin
 from .jobviews import JobViewSetMixin
+from .k8viewsetmixin import K8ViewSetMixin
 
 ##
 ## WorkspaceSerializer
@@ -140,7 +141,7 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 ##
 
 
-class WorkspaceViewSet(ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class WorkspaceViewSet(ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, K8ViewSetMixin, rest_framework.viewsets.ModelViewSet):
     """ Views for workspaces and their access permissions. """
 
     item_class = api.models.Workspace
