@@ -152,7 +152,7 @@ class K8Tests(AnaliticoApiTestCase):
     ##
 
     @tag("k8s", "slow")
-    def test_get_service_not_deploy(self):
+    def test_get_service_not_deployed(self):
         """ Test get the kservice for a stage not deployed returns not found """
         # it deploys in K8_STAGE_STAGING
         self.deploy_service()
@@ -350,6 +350,32 @@ class K8Tests(AnaliticoApiTestCase):
     ##
     ## K8s Jobs
     ##
+
+    @tag("k8s")
+    def test_k8s_list_jobs_by_workspace(self):
+        try:
+            # post a job by running a notebook
+            job_id = self.job_run_notebook()
+
+            url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, ''))
+
+            # user without permission cannot retrieve the list
+            self.auth_token(self.token3)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            self.auth_token(self.token1)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertGreaterEqual(len(response.data["items"]), 1)
+            
+            # last job should be for our notebook
+            lastJob = len(response.data["items"]) - 1
+            lastJobItemId = response.data["items"][lastJob]["metadata"]["labels"]["analitico.ai/item-id"]
+            self.assertEqual(lastJobItemId, self.item_id)
+        finally:
+            # clean up
+            k8_delete_job(job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_job_logs(self):

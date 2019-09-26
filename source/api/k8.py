@@ -366,6 +366,9 @@ def k8_jobs_get(item: ItemMixin, job_id: str = None, request: Request = None) ->
 
 
 def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
+    # list jobs by workspace or item
+    selectBy = f"workspace-id={item.id}" if item.type == "workspace" else f"item-id={item.id}"
+
     # return list of jobs filtered by item_id
     jobs, _ = subprocess_run(
         cmd_args=[
@@ -375,9 +378,9 @@ def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
             "-n",
             "cloud",
             "--selector",
-            f"analitico.ai/item-id={item.id}",
+            f"analitico.ai/{selectBy}",
             "--sort-by",
-            ".metadata.creationTimestamp",  # TODO newer jobs first
+            ".metadata.creationTimestamp", 
             "-o",
             "json",
         ]
