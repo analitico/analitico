@@ -31,6 +31,8 @@ try:
 
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = os.environ.get("ANALITICO_DEBUG", "False").lower() == "true"
+    PRODUCTION = os.environ.get("ANALITICO_PRODUCTION", "False").lower() == "true"
+    assert not DEBUG and PRODUCTION, "SECURITY WARNING: don't run with debug turned on in production"
 
     ##
     ## Stripe billing
@@ -38,7 +40,7 @@ try:
 
     # These are test tokens, actual tokens are in secrets
     ANALITICO_STRIPE_SECRET_KEY = "sk_test_HOYuiExkdXkVdrhov3M6LwQQ"
-    if not TESTING:
+    if not TESTING and PRODUCTION:
         ANALITICO_STRIPE_SECRET_KEY = os.environ.get("ANALITICO_STRIPE_SECRET_KEY", ANALITICO_STRIPE_SECRET_KEY)
     assert ANALITICO_STRIPE_SECRET_KEY, "Are you missing the environment variable ANALITICO_STRIPE_SECRET_KEY?"
     stripe.api_key = ANALITICO_STRIPE_SECRET_KEY
