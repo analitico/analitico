@@ -32,7 +32,7 @@ try:
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = os.environ.get("ANALITICO_DEBUG", "False").lower() == "true"
     PRODUCTION = os.environ.get("ANALITICO_PRODUCTION", "False").lower() == "true"
-    assert not DEBUG and PRODUCTION, "SECURITY WARNING: don't run with debug turned on in production"
+    assert not (DEBUG and PRODUCTION), "SECURITY WARNING: don't run with debug turned on in production"
 
     ##
     ## Stripe billing
