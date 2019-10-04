@@ -50,7 +50,7 @@ class Command(BaseCommand):
         if "published" not in item_yaml:
             item_yaml["published"] = False
         # copy avatar.jpg to avatars/item_id.jpg
-        item_yaml["image"] = f"https://analitico.ai/api/{item.type}s/{item.id}/avatar?height=640"
+        item_yaml["image"] = f"https://analitico.ai/api/{item.type}s/{item.id}/avatar?square=1080"
 
         # copy attributes from yaml into item itself to keep things in sync
         for key, value in dict(item_yaml).items():
