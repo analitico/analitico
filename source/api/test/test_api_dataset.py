@@ -615,6 +615,13 @@ class DatasetTests(AnaliticoApiTestCase):
             self.assertAlmostEqual(metadata["describe"]["Salary"]["50%"], 2_839_073.0, places=2)
             self.assertAlmostEqual(metadata["describe"]["Salary"]["75%"], 6_500_000.0, places=2)
 
+    def test_metadata_from_hdf5_file_is_empty_when_missing_custom_dataframe(self):
+        url = reverse("api:dataset-files", args=("ds_sklearn", "iris_classifier_model.hdf5"))
+        self.upload_file(url, "iris_classifier_model.hdf5", "application/octet-stream", token=self.token1)
+        
+        response = self.client.get(url + "?metadata=true&refresh=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     ##
     ## Format conversions
     ##

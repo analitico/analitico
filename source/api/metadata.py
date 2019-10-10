@@ -76,33 +76,34 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
     metadata_key = f"{driver.url}{path}#{obj.hash}"
     metadata = _cache.get(metadata_key)
 
-    # should create missing metadata?
-    if metadata is None and refresh:
-        metadata = {}
+    try:
+        # should create missing metadata?
+        if metadata is None and refresh:
+            metadata = {}
 
-        # file suffix, eg: .csv, .pdf
-        suffix = Path(path).suffix.lower()
+            # file suffix, eg: .csv, .pdf
+            suffix = Path(path).suffix.lower()
 
-        # can this file be read into a pandas dataframe?
-        if suffix in analitico.PANDAS_SUFFIXES:
-            df, rows = get_file_dataframe(driver, path)
-            if df is not None:
-                metadata["total_records"] = rows
-                metadata["schema"] = analitico.schema.generate_schema(df)
-                metadata["describe"] = df.describe().to_dict()
+            # can this file be read into a pandas dataframe?
+            if suffix in analitico.PANDAS_SUFFIXES:
+                df, rows = get_file_dataframe(driver, path)
+                if df is not None:
+                    metadata["total_records"] = rows
+                    metadata["schema"] = analitico.schema.generate_schema(df)
+                    metadata["describe"] = df.describe().to_dict()
 
-        # numpy and pandas can add NaN values to the dictionary which
-        # then creates problems when these values are served in our
-        # json reply so we sanitize the metadata before we store it
-        metadata = json.loads(
-            json.dumps(metadata, skipkeys=True, ignore_nan=True, default=lambda o: "NOT-SERIALIZABLE")
-        )
+            # numpy and pandas can add NaN values to the dictionary which
+            # then creates problems when these values are served in our
+            # json reply so we sanitize the metadata before we store it
+            metadata = json.loads(
+                json.dumps(metadata, skipkeys=True, ignore_nan=True, default=lambda o: "NOT-SERIALIZABLE")
+            )
 
-        try:
             # store updated metadata in local disk cache
             _cache.set(metadata_key, metadata, expire=_cache_expire)
-        except Exception as exc:
-            logger.warning("get_file_metadata - could not save metadata for %s, exc: %s", metadata_key, exc)
+    except Exception as exc:
+        logger.warning("get_file_metadata - could not save metadata for %s, exc: %s", metadata_key, exc)
+        metadata = {}
 
     return metadata
 
