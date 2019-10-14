@@ -514,3 +514,47 @@ class PermissionsTests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, 404)  # can't DELETE
             response = self.client.get(item_url)
             self.assertEqual(response.status_code, 200)  # still there
+
+    def test_retrieval_unpublished_gallery_items(self):
+        recipe_unpublished = Recipe.objects.create(pk="rx_gallery_unpublished", workspace=self.ws_gallery)
+        recipe_unpublished.set_attribute("published", False)
+        recipe_unpublished.save()
+        recipe_published = Recipe.objects.create(pk="rx_gallery_published", workspace=self.ws_gallery)
+        recipe_published.set_attribute("published", True)
+        recipe_published.save()
+
+        url = reverse("api:recipe-list")
+
+        # admin and the owner of the workspace can retrieve the unpublished recipes
+        self.auth_token(self.token1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "rx_gallery_published")
+        self.assertContains(response, "rx_gallery_unpublished")
+
+        # the user with the proper permissions can retrieve the unpublished recipes
+        role = Role(workspace=self.ws_gallery, user=self.user2)
+        role.roles = "analitico.reader"
+        role.save()
+        self.auth_token(self.token2)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "rx_gallery_published")
+        self.assertContains(response, "rx_gallery_unpublished")
+
+        # user without specific permissions cannot retrieve unpublished recipes
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "rx_gallery_published")
+        self.assertNotContains(response, "rx_gallery_unpublished")
+
+        # TODO: api gallery recipes / allow anonymous requests #450 
+        # anonymous user can retrieve the published gallery recipes
+        # self.auth_token()
+        # response = self.client.get(url)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # self.assertContains(response, "rx_gallery_published")
+        # self.assertNotContains(response, "rx_gallery_unpublished")
+
