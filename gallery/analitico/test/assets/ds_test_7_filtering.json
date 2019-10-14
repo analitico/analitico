@@ -1,0 +1,23 @@
+{
+    "id": "ds_7",
+
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_7.csv",
+
+            "schema": {
+                "name": "A table with a schema that filters out columns and reorders them from the source csv",
+                "columns": [
+                    { "name": "indice", "type": "integer", "index": true },
+                    { "name": "name", "type": "string" },
+                    { "name": "slug", "type": "category" },
+                    { "name": "frozen", "type": "boolean" }
+                ]
+            }
+        }
+    }
+}

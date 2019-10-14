@@ -1,0 +1,144 @@
+{
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "/assets/ds_test_7.csv",
+        
+            "schema": {
+                "name": "A table with a schema",
+                "columns": [
+                    {
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "name": "slug",
+                        "type": "category"
+                    },
+                    {
+                        "name": "parent_id",
+                        "type": "float"
+                    },
+                    {
+                        "name": "depth",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "priority",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "max_weight",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "frozen",
+                        "type": "boolean"
+                    },
+                    {
+                        "name": "rate",
+                        "type": "float"
+                    },
+                    {
+                        "name": "has_ingredients_book",
+                        "type": "boolean"
+                    },
+                    {
+                        "name": "indice",
+                        "type": "integer",
+                        "index": true
+                    },
+                    {
+                        "name": "updated_at",
+                        "type": "datetime"
+                    },
+                    {
+                        "name": "elapsed",
+                        "type": "timespan"
+                    }
+                ]
+            }
+        }
+    },
+    "assets": [
+        {
+            "type": "text/csv",
+            "id": "ds_test_7.csv",
+
+            "created_at": "2019-01-29T12:24:47.276515+00:00",
+            "filename": "ds_test_7.csv",
+            "path": "workspaces/ws_test/datasets/ds_test_001/assets/ds_test_7.csv",
+            "hash": "4328ec969404e5aca370153fffc08230",
+            "size": 5227
+        }
+    ],
+    "data": [
+        {
+            "type": "text/csv",
+            "id": "data.csv",
+
+            "created_at": "2019-01-29T12:32:32.808137+00:00",
+            "filename": "data.csv",
+            "path": "workspaces/ws_test/datasets/ds_test_001/data/data.csv",
+            "hash": "4328ec969404e5aca370153fffc08230",
+            "size": 5227,
+            "schema": {
+                "name": "A table with a schema",
+                "columns": [
+                    {
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "name": "slug",
+                        "type": "category"
+                    },
+                    {
+                        "name": "parent_id",
+                        "type": "float"
+                    },
+                    {
+                        "name": "depth",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "priority",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "max_weight",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "frozen",
+                        "type": "boolean"
+                    },
+                    {
+                        "name": "rate",
+                        "type": "float"
+                    },
+                    {
+                        "name": "has_ingredients_book",
+                        "type": "boolean"
+                    },
+                    {
+                        "name": "indice",
+                        "type": "integer",
+                        "index": true
+                    },
+                    {
+                        "name": "updated_at",
+                        "type": "datetime"
+                    },
+                    {
+                        "name": "elapsed",
+                        "type": "timespan"
+                    }
+                ]
+            }
+        }
+    ]
+}

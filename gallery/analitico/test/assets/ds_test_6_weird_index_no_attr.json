@@ -1,0 +1,29 @@
+{
+    "id": "ds_6",
+
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_6_weird_index.csv",
+
+            "schema": {
+                "name": "A table of grocery categories, the index is 'indice' but is not explicitely indicated in the schema",
+                "columns": [
+                    { "name": "name", "type": "category" },
+                    { "name": "slug", "type": "category" },
+                    { "name": "parent_id", "type": "float" },
+                    { "name": "depth", "type": "integer" },
+                    { "name": "priority", "type": "integer" },
+                    { "name": "max_weight", "type": "integer" },
+                    { "name": "frozen", "type": "boolean" },
+                    { "name": "rate", "type": "float" },
+                    { "name": "has_ingredients_book", "type": "boolean" },
+                    { "name": "indice", "type": "integer" }
+                ]
+            }
+        }
+    }
+}

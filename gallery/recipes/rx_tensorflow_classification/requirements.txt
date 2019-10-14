@@ -1,0 +1,5 @@
+# These dependecies will automatically be 
+# installed in the deployed model.
+
+tensorflow==1.14.0
+keras==2.2.4

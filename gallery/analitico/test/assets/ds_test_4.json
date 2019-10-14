@@ -1,0 +1,22 @@
+{
+    "id": "ds_4",
+    
+    "plugin": {
+        "type": "analitico/plugin",
+        "name": "analitico.plugin.CsvDataframeSourcePlugin",
+
+        "source": {
+            "type": "text/csv",
+            "url": "{assets}/ds_test_4.csv",
+
+            "schema": {
+                "name": "A test schema used for unit testing",
+                "columns": [
+                    { "name": "First", "type": "integer" },
+                    { "name": "Second", "type": "string" },
+                    { "name": "Third", "type": "datetime" }
+                ]
+            }
+        }
+    }
+}

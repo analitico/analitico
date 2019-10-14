@@ -1,0 +1,4 @@
+# These dependecies will automatically be 
+# installed in the deployed model.
+
+torch

@@ -1,0 +1,15 @@
+date: 2019-07-21 10:10:00
+description: Build a classifier with TensorFlow and deploy in minutes.
+home: true
+image: /assets/avatars/rx-tensorflow-classification.jpg
+position: 3
+tags:
+- gallery
+- tutorial
+- '101'
+- tensorflow
+- keras
+- classification
+title: '101: TensorFlow classifier'
+type: recipe
+published: true

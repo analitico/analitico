@@ -1,0 +1,207 @@
+id,name,slug,parent_id,depth,priority,max_weight,frozen,rate,has_ingredients_book
+1,Carne e Pesce,carne-pesce,NULL,0,54,0,0,NULL,0
+3,Frutta e Verdura,frutta-verdura,NULL,0,56,0,0,NULL,0
+4,Formaggi e Salumi,formaggi-salumi,NULL,0,52,0,0,NULL,0
+6,"Latte, Burro e Yogurt",latte-burro-yogurt,NULL,0,50,0,0,NULL,0
+8,Pane e Pasticceria,pane-pasticceria,NULL,0,48,0,0,NULL,0
+9,Gastronomia,gastronomia,NULL,0,17,0,0,NULL,0
+10,"Caffè, Tè e Zucchero",caffe-te-zucchero,NULL,0,41,0,0,NULL,0
+11,"Colazione, Dolciumi e Snack",colazione-dolciumi-snack,NULL,0,40,0,0,NULL,0
+12,"Pasta, Riso e Cereali",pasta-riso-cereali,NULL,0,46,0,0,NULL,0
+13,Altre categorie...,altro,NULL,0,32,0,0,NULL,0
+15,Surgelati e gelati,surgelati-gelati,NULL,0,39,0,0,NULL,0
+16,"Acqua, Bibite e Alcolici",acqua-bibite-alcolici,NULL,0,38,0,0,NULL,0
+17,Amici Animali,amici-animali,NULL,0,33,0,0,NULL,0
+18,Bimbi e Infanzia,bimbi-infanzia,NULL,0,34,0,0,NULL,0
+19,Igiene e Cura Personale,igiene-cura-personale,NULL,0,37,0,0,NULL,0
+20,Pulizia della casa,pulizia-casa,NULL,0,36,0,0,NULL,0
+21,Accessori casa e cucina,accessori-casa-cucina,NULL,0,35,0,0,NULL,0
+22,Alluminio e Pellicole,alluminio-pellicole,NULL,0,4,0,0,NULL,0
+23,Tessile e Casalinghi,tessile-casalinghi,NULL,0,3,0,0,NULL,0
+24,Deodoranti e Candele,deodoranti-candele,NULL,0,2,0,0,NULL,0
+25,Lampadine e Pile,lampadine-pile,NULL,0,1,0,0,NULL,0
+26,Giardinaggio e Insetticidi,giardinaggio-insetticidi,NULL,0,0,0,0,NULL,0
+27,"Sughi, Scatolame, Condimenti",sughi-scatolame-condimenti,NULL,0,43,0,0,NULL,0
+28,"Uova, Farine e Preparati",uova-farine-preparati,NULL,0,42,0,0,NULL,0
+29,Specialità natalizie,specialita-natalizie,NULL,0,1,0,0,NULL,0
+30,Specialità pasquali,specialita-pasquali,NULL,0,1,0,0,NULL,0
+31,Pasta Fresca e Brodi,pasta-fresca-brodi,NULL,0,255,0,0,NULL,0
+32,Vegetariano e Vegano,vegetariano-vegano,NULL,0,44,0,0,NULL,0
+33,Vini bianchi,vini-bianchi-sv,NULL,0,7,24,0,NULL,0
+34,Vini rossi,vini-rossi-sv,NULL,0,6,24,0,NULL,0
+35,Vini rosati,vini-rosati-sv,NULL,0,5,24,0,NULL,0
+36,Vini da dessert,vini-dessert-sv,NULL,0,4,24,0,NULL,0
+37,Bollicine,bollicine-sv,NULL,0,3,24,0,NULL,0
+38,Birre,birre-sv,NULL,0,2,24,0,NULL,0
+39,Grappe e liquori,grappe-liquori-sv,NULL,0,1,24,0,NULL,0
+40,Grandi del risparmio,grandi-risparmio,NULL,0,100,0,0,NULL,0
+41,Solari,solari,NULL,0,0,0,0,NULL,0
+42,Gelati,gelati,NULL,0,0,0,0,NULL,0
+43,Pesce Intero e filetti,sdm-pesce-intero-filetti,NULL,0,14,0,0,NULL,0
+44,Molluschi,sdm-molluschi,NULL,0,13,0,0,NULL,0
+45,Crostacei,sdm-crostacei,NULL,0,12,0,0,NULL,0
+46,"Affumicati, marinati e carpacci",sdm-affumicati-marinati-carpacci,NULL,0,11,0,0,NULL,0
+47,Pesce sott'olio e in scatola,sdm-pesce-sottolio-scatola,NULL,0,10,0,0,NULL,0
+48,Piatti pronti,sdm-piatti-pronti,NULL,0,9,0,0,NULL,0
+49,Verdure e aromi surgelati,sdm-verdure-aromi-surgelati,NULL,0,8,0,0,NULL,0
+50,Pane e pasticceria,sdm-pane-pasticceria,NULL,0,7,0,0,NULL,0
+51,Gelati,sdm-gelati,NULL,0,6,0,0,NULL,0
+52,Pasta e riso,sdm-pasta-riso,NULL,0,5,0,0,NULL,0
+53,"Legumi, Cereali e farina",sdm-legumi-cereali-farina,NULL,0,4,0,0,NULL,0
+54,Sughi e salse,sdm-sughi-salse,NULL,0,3,0,0,NULL,0
+55,Condimenti e sottoli,sdm-condimenti-sottoli,NULL,0,2,0,0,NULL,0
+56,Vino e altri alcolici,sdm-vino-altri-alcolici,NULL,0,1,0,0,NULL,0
+57,"Formaggi, latticini e salumi",alt-formaggi-latticini-salumi,NULL,0,11,0,0,NULL,0
+58,"Pasta, cereali e legumi",alt-pasta-cereali-legumi,NULL,0,10,0,0,NULL,0
+59,"Condimenti, spezie e sottoli",alt-condimenti-spezie-sottoli,NULL,0,9,0,0,NULL,0
+60,Caffè,alt-caffe,NULL,0,8,0,0,NULL,0
+61,"Tè, infusi e tisane",alt-te-infusi-tisane,NULL,0,7,0,0,NULL,0
+62,Preparati e ingredienti per dolci,alt-preparati-ingredienti-dolci,NULL,0,6,0,0,NULL,0
+63,"Colazione, dolciumi e snack",alt-colazione-dolciumi-snack,NULL,0,5,0,0,NULL,0
+64,Bibite e alcolici,alt-bibite-alcolici,NULL,0,4,24,0,NULL,0
+65,Igiene e cura personale,alt-igiene-cura-personale,NULL,0,3,0,0,NULL,0
+66,Detersivi,alt-detersivi,NULL,0,2,0,0,NULL,0
+67,Ricorrenze,alt-ricorrenze,NULL,0,1,0,0,NULL,0
+201,Manzo Americano,carne-manzo-americano,100278,2,4,0,0,10,0
+202,Scottona,carne-scottona-piemontese,100278,2,3,0,0,10,0
+203,Bovino adulto,carne-bovino-adulto,100278,2,2,0,0,10,1
+204,Vitello,carne-vitello,100278,2,1,0,0,10,0
+205,Tacchino,carne-tacchino,100102,2,2,0,0,10,0
+206,Pollo,carne-pollo,100102,2,3,0,0,10,0
+207,Altro pollame,carne-altro-pollame,100102,2,1,0,0,10,0
+208,Maiale,carne-maiale,100103,2,1,0,0,10,0
+209,Carne di Coniglio,carne-coniglio,100280,2,2,0,0,10,0
+210,Carne Ovina,carne-ovina,100280,2,1,0,0,10,0
+212,Carni pronte da cuocere,carne-pronte-da-cuocere,100282,2,4,0,0,10,0
+213,Carni Impanate,carne-impanate,100282,2,3,0,0,10,0
+214,Insaporitori e preparati,insaporitori-preparati,100161,2,1,0,0,10,0
+227,Molluschi e Crostacei,crostacei-molluschi,100286,2,1,0,0,10,0
+228,Pesce Pronto Crudo,pesce-pronto-crudo,100288,2,3,0,0,10,0
+229,Pesce Pronto Cotto,pesce-pronto-cotto,100288,2,2,0,0,10,0
+230,Sushi,sushi,100288,2,1,0,0,10,0
+251,Agrumi,agrumi,100112,2,5,0,0,4,0
+252,Mele e Pere,mele-pere,100112,2,4,0,0,4,0
+253,Pesche e Albicocche,pesche-albicocche,100112,2,3,0,0,4,0
+254,Altra frutta,altra-frutta,100112,2,2,0,0,4,0
+257,Mousse di frutta,mousse-frutta,100112,2,1,0,0,4,0
+258,Aglio e Cipolle,aglio-cipolle,100113,2,1,0,0,4,0
+260,Pomodori,pomodori,100113,2,5,0,0,4,0
+261,Altre Verdure,altre-verdure,100113,2,3,0,0,4,0
+262,Verdura in Busta,verdura-busta,100272,2,2,0,0,4,0
+263,Verdura Cotta,verdura-cotta,100272,2,1,0,0,4,0
+264,Insalate e radicchi,insalate-insalata-radicchi,100113,2,4,0,0,4,0
+265,Insalate Pulite e Lavate,insalate-insalata-lavate,100272,2,3,0,0,4,0
+266,Condimenti per insalata,condimenti-insalata,NULL,2,0,0,0,10,0
+267,Aromi freschi,aromi-freschi,100115,2,1,0,0,5,0
+268,Patate,patate-funghi,100113,2,2,0,0,4,0
+269,Olive e Lupini,olive-e-lupini,NULL,2,0,0,0,10,0
+281,Formaggi vari da Banco,formaggi-banco-vari,100118,2,1,0,0,4,1
+282,Crescenze,crescenze,100290,2,15,0,0,4,0
+283,Emmental,emmental,100290,2,10,0,0,4,0
+284,Grana e Parmigiano,grana-parmigiano,100290,2,12,0,0,4,0
+285,Grattugiati,grattugiati,100290,2,13,0,0,4,0
+286,Specialità di Formaggi,specialita-formaggi,100290,2,8,0,0,4,0
+287,Pecorini,pecorini,100290,2,3,0,0,4,0
+288,Spalmabili,spalmabili,100290,2,16,0,0,4,0
+289,Muffettati,muffettati,100290,2,5,0,0,4,0
+290,Formaggini,formaggini,100290,2,9,0,0,4,0
+291,Fusi/A fette,fusia-fette,100290,2,11,0,0,4,0
+292,Formaggi di Capra,formaggi-capra,NULL,2,1,0,0,4,0
+293,Gorgonzola,gorgonzola,100290,2,4,0,0,4,0
+294,Mozzarella di Bufala,mozzarella-bufala,100290,2,17,0,0,4,0
+295,Mozzarella Vaccina,mozzarella-vaccina,100290,2,18,0,0,4,0
+296,Provoloni e Scamorze,provoloni-scamorze,100290,2,7,0,0,4,0
+297,Ricotta,ricotta,100290,2,14,0,0,4,0
+298,"Robiole, Tomini e Caprini",robiole-tomini-caprini,100290,2,6,0,0,4,0
+299,Taleggio e Quartirolo,taleggio-quartirolo,100290,2,2,0,0,4,0
+300,Salumi da Banco,salumi-banco-freschi,100136,2,1,0,0,10,1
+301,Salami,salami,100137,2,2,0,0,10,1
+302,Prosciutto Crudo,prosciutto-crudo,100138,2,9,0,0,10,1
+303,Prosciutto Cotto,prosciutto-cotto,100138,2,8,0,0,10,1
+304,Salame,salame,100138,2,7,0,0,10,1
+305,Bresaola,bresaola,100138,2,6,0,0,10,1
+306,Mortadella,mortadella,100138,2,5,0,0,10,1
+307,"Speck, Coppa e Pancetta",speck-coppa-pancetta,100138,2,4,0,0,10,1
+309,A Cubetti,cubetti,100138,2,3,0,0,10,1
+310,Altri salumi,altri-salumi,100138,2,2,0,0,10,1
+311,Snack,snack-salumi,100138,2,1,0,0,10,1
+312,Wurstel,carne-wurstel,100282,2,2,0,0,10,0
+313,Cotechini e Zamponi,carne-cotechini-zamponi,100282,2,1,0,0,10,0
+321,Latte fresco,latte-fresco,100139,2,3,0,0,4,0
+322,Latte a Lunga Conservazione,latte-lunga-conservazione,100139,2,2,0,0,10,0
+323,Burro,burro,100292,2,2,0,0,4,0
+324,Margarina,margarina,100292,2,1,0,0,4,0
+325,Besciamella,besciamella,100294,2,2,0,0,10,0
+326,Panna da cucina,panna-cucina,100294,2,4,0,0,10,0
+327,Panna dolce,panna-dolce,100294,2,3,0,0,10,0
+328,Bevande Vegetali,bevande-vegetali,100140,2,1,0,0,10,0
+329,Uova,uova-fresche,100141,2,1,0,0,10,0
+331,Yogurt e Snack Bimbo,yogurt-snack-bimbo2,100142,2,1,0,0,10,0
+332,Dessert e Budini,dessert-budini,100298,2,1,0,0,10,0
+333,Yogurt da Bere,yogurt-bere,100144,2,2,0,0,10,0
+334,Yogurt Benessere,yogurt-benessere-vari,100144,2,1,0,0,10,0
+335,Yogurt intero bianco,yogurt-intero-bianco,100144,2,7,0,0,10,0
+336,Yogurt magro bianco,yogurt-magro-bianco,100144,2,6,0,0,10,0
+337,Yogurt intero ai gusti,yogurt-intero-gusti,100144,2,5,0,0,10,0
+338,Yogurt magro ai gusti,yogurt-magro-gusti,100144,2,4,0,0,10,0
+339,Yogurt Mix,yogurt-mix,100144,2,3,0,0,10,0
+351,Pane,pane,100300,2,4,0,0,4,1
+352,Pane a Fette,pane-tramezzini,100146,2,1,0,0,4,0
+353,Piadine,piadine-piadina,100306,2,1,0,0,4,0
+354,Pizze e Focacce,pizze-pizza-focacce-focaccia,100300,2,3,0,0,4,1
+355,Sostitutivi,sostitutivi,100302,2,1,0,0,4,0
+356,Pane grattugiato,pane-grattugiato,100304,2,1,0,0,4,0
+357,Lievito per salati,lievito-per-salati,100324,2,1,0,0,10,0
+358,Pasticceria Secca,pasticceria-secca,100300,2,2,0,0,10,1
+359,Pasticceria Fresca,pasticceria-fresca,100300,2,1,0,0,10,1
+381,Antipasti,antipasti-gastronomici,100148,2,4,0,0,10,1
+382,Primi piatti,primi-piatti-gastronomici,100148,2,3,0,0,10,1
+383,Secondi piatti,secondi-piatti-gastronomici,100148,2,2,0,0,10,1
+384,Contorni,contorni-gastronomici,100148,2,1,0,0,10,1
+385,Piatti pronti e vegetali,piatti-pronti-e-vegetali,NULL,2,0,0,0,10,0
+386,Sandwiches e piadine,sandwiches-e-piadine,NULL,2,0,0,0,4,0
+387,Salse e sughi freschi,salse-e-sughi-freschi,100150,2,1,0,0,10,0
+388,Gnocchi,gnocchi,100151,2,2,0,0,4,0
+389,Ravioli e Tortellini,ravioli-e-tortellini,100151,2,1,0,0,4,0
+390,Pasta all'uovo fresca,pasta-uovo-fresca,100152,2,2,0,0,4,0
+391,Pasta di semola fresca,pasta-semola-fresca,100152,2,1,0,0,4,0
+392,Primi pronti - minestre,primi-pronti-minestre,100314,2,1,0,0,10,0
+393,Basi e sfoglie salate,basi-e-sfoglie-salate,100316,2,2,0,0,4,0
+394,Basi e sfoglie dolci,basi-e-sfoglie-dolci,100316,2,1,0,0,10,0
+397,Specialità ittiche,specialita-ittiche,NULL,2,0,0,0,10,0
+401,Cereali e fiocchi,cereali-e-fiocchi,100154,2,4,0,0,10,0
+402,Cereali benessere,cereali-benessere,100154,2,3,0,0,10,0
+403,Muesli,muesli,100154,2,2,0,0,10,0
+404,Barrette,barrette,100154,2,1,0,0,10,0
+405,Biscotti secchi,biscotti-secchi,100155,2,5,0,0,10,0
+406,Biscotti frollini,biscotti-frollini,100155,2,4,0,0,10,0
+407,Biscotti benessere,biscotti-benessere,100155,2,3,0,0,10,0
+408,Biscotti pasticceria,biscotti-pasticceria,100155,2,1,0,0,10,0
+409,Fette biscottate,fette-biscottate,100155,2,0,0,0,4,0
+412,Merendine,merendine,100334,2,2,0,0,10,0
+413,Caffè macinato,caffe-macinato,100156,2,5,0,0,22,0
+414,Caffè in grani,caffe-in-grani,100156,2,4,0,0,22,0
+415,Cialde e capsule,cialde-e-capsule,100156,2,3,0,0,22,0
+416,Caffè solubile,caffe-solubile,100156,2,2,0,0,22,0
+418,Caffè decaffeinato,caffe-decaffeinato,100156,2,1,0,0,22,0
+419,Orzo macinato e solubile,orzo-macinato-e-solubile,100326,2,1,0,0,4,0
+420,Latte condensato,latte-condensato,100139,2,1,0,0,4,0
+421,Camomilla,camomilla,100330,2,2,0,0,22,0
+422,Infusi e tisane,infusi-e-tisane,100330,2,1,0,0,22,0
+423,Tè classico,te-classico,100328,2,4,0,0,22,0
+424,Tè aromatizzato,te-aromatizzato,100328,2,3,0,0,22,0
+425,Tè deteinato,te-deteinato,100328,2,2,0,0,22,0
+426,Zucchero,zucchero,100332,2,2,0,0,10,0
+427,Confetture,confetture,100157,2,3,0,0,10,0
+428,Miele,miele,100157,2,2,0,0,10,0
+431,Cioccolatini e praline,cioccolatini-e-praline,100158,2,2,0,0,10,0
+432,Tavolette di cioccolato,tavolette-di-cioccolato,100158,2,1,0,0,10,0
+433,Snack Dolci,snack-dolci-vari,100338,2,1,0,0,10,0
+434,Creme e spalmabili,creme-spalmabili,100157,2,1,0,0,10,0
+435,Cacao in polvere,cacao-polvere,100336,2,1,0,0,10,0
+442,Chewing gum,chewing-gum,100159,2,0,0,0,10,0
+450,Pomodori pelati,pomodori-pelati,100160,2,4,0,0,4,0
+451,Polpa di pomodoro,polpa-di-pomodoro,100160,2,3,0,0,4,0
+452,Passata di pomodoro,passata-di-pomodoro,100160,2,2,0,0,4,0
+453,Concentrato di pomodoro,concentrato-di-pomodoro,100160,2,1,0,0,4,0
+454,Sughi pronti,sughi-pronti-primi-piatti,100150,2,2,0,0,10,0
