@@ -10,6 +10,6 @@ tags:
 - tensorflow
 - keras
 - classification
-title: '101: TensorFlow classifier'
+title: '101: TensorFlow classification tutorial'
 type: recipe
 published: true

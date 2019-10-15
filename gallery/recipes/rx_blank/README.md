@@ -1,1 +1,0 @@
-# Recipe README template

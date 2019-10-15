@@ -1,4 +1,4 @@
-# 101: TensorFlow classification
+# 101: TensorFlow classification tutorial
 
 In this tutorial we'll learn how to train and easily deploy a machine learning model in production with Analitico. The Analitico workflow comes to help and simplify the process where all data scientists get stuck: the deployment.
   
@@ -49,32 +49,32 @@ model.fit(x=X,
 Now it's time to run the model.  
 In the [Notebook](https://analitico.ai/app/recipes/rx_tensorflow_classification/notebook) tab, press the `Play` button to execute the notebook on Analitico.
 
-![analitico-run](https://analitico.ai/api/recipes/rx_tensorflow_classification/files/assets/run-notebook.png "Analitico Run Notebook")
+![analitico-run](https://analitico.ai/assets/gallery/run-notebook.png "Analitico Run Notebook")
 
 When the execution completes we are ready to make the Snapshot. The Snapshot contains the model and all the generated artifacts. 
 Press the `Actions` button and `Make a Snapshot`. 
 
-![analitico-make-snapshot](https://analitico.ai/api/recipes/rx_tensorflow_classification/files/assets/make-snapshot.png "Analitico Make s Snapshot")
+![analitico-make-snapshot](https://analitico.ai/assets/gallery/make-snapshot.png "Analitico Make s Snapshot")
 
 ## Deploy the model
 
 Ready for the best part. Go to the [Snapshots](https://analitico.ai/app/recipes/rx_tensorflow_classification/snapshots) page.  
 In this page you see the list of models ready to be deployed.
 
-![analitico-snapshots](https://analitico.ai/api/recipes/rx_tensorflow_classification/files/assets/snapshots.png "Analitico Snapshots page")
+![analitico-snapshots](https://analitico.ai/assets/gallery/snapshots.png "Analitico Snapshots page")
 
 You can compare the metrics of the models trained over time and choose the best one to candidate for production.
 To see the model's generated metrics click the `Actions` button and then `Show Metrics`.
 
-![analitico-show-metrics](https://analitico.ai/api/recipes/rx_tensorflow_classification/files/assets/show-metrics.png "Analitico Show Metrics")
+![analitico-show-metrics](https://analitico.ai/assets/gallery/show-metrics.png "Analitico Show Metrics")
 
-![analitico-metrics](https://analitico.ai/api/recipes/rx_tensorflow_classification/files/assets/metrics.png "Analitico Snapshot's metrics")
+![analitico-metrics](https://analitico.ai/assets/gallery/metrics.png "Analitico Snapshot's metrics")
 
 Now we are ready to deploy the model into production.  
 Press the `Actions` and select `Deploy to Production`.  
 Nota: if you prefer to test your model before put it in production, use the `staging` environment instead.  
 
-![analitico-deploy](https://analitico.ai/api/recipes/rx_tensorflow_classification/files/assets/deploy.png "Analitico Deployment")
+![analitico-deploy](https://analitico.ai/assets/gallery/deploy.png "Analitico Deployment")
 
 
 #### That's it!
