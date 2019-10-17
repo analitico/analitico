@@ -45,7 +45,7 @@ build-and-test:
     # remote storage for the static website's files
     - apk add cifs-utils util-linux
     # install tool for building the website
-    - apk add nodejs yarn make g++
+    - apk add nodejs npm make g++
 
     ##
     ## Setup the environment
@@ -108,7 +108,7 @@ build-and-test:
     - cd $WORKDIR
     - echo "$(date +'%T') - Build Analitico Website"
     # build 
-    - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico
+    - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/
     - cd ./analitico/app
     - npm install
     - npm run build
