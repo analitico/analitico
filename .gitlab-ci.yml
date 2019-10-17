@@ -109,7 +109,10 @@ build-and-test:
     - echo "$(date +'%T') - Build Analitico Website"
     # build 
     - BUILD_WEBSITE_PATH=$WORKDIR/analitico/app/applications/analitico
-    - ./analitico/app/build-app.sh
+    - cd ./analitico/app
+    - npm install
+    - npm run build
+    - rm -rf node_modules
     # save build to storage
     - cp -rf $BUILD_WEBSITE_PATH/dist/* $WEBSITE_DEPLOYMENT_PATH/
     - echo "$(date +'%T') - Finished building the app"
