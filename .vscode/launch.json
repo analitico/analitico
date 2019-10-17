@@ -5,18 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run file (python)",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "cwd": "${workspaceFolder}/source",
-            "envPath": "${workspaceFolder}/dev.env",
-            "console": "integratedTerminal",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/source"
-            }
-        },
-        {
             "name": "Run server (django)",
             "type": "python",
             "request": "launch",
@@ -32,6 +20,18 @@
             "django": true,
             "justMyCode": false,
             "logToFile": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/source"
+            }
+        },
+        {
+            "name": "Run file (python)",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}/source",
+            "envPath": "${workspaceFolder}/dev.env",
+            "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/source"
             }
@@ -72,31 +72,6 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/source"
             }
-        },
-        {
-            "name": "Worker",
-            "type": "python",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/source",
-            "program": "${workspaceFolder}/source/manage.py",
-            "console": "integratedTerminal",
-            "args": [
-                "worker",
-            ],
-            "django": true
-        },
-        {
-            "name": "Worker (single job)",
-            "type": "python",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/source",
-            "program": "${workspaceFolder}/source/manage.py",
-            "console": "integratedTerminal",
-            "args": [
-                "worker",
-                "jb_0rwHrO8vpTig"
-            ],
-            "django": true
         },
         {
             "name": "Builder",

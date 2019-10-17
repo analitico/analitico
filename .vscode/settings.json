@@ -1,20 +1,4 @@
 {
-    "python.venvPath": "${workspaceFolder}",
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "${workspaceFolder}/source",
-        "-p",
-        "test*.py"
-    ],
-    "python.testing.pytestEnabled": true,
-    "python.testing.nosetestsEnabled": false,
     "python.pythonPath": "venv/bin/python",
-    "python.envFile": "${workspaceFolder}/source/.env",
-    "python.testing.cwd": "${workspaceFolder}/source",
-    "python.linting.pylintEnabled": true,
-    "python.testing.pytestArgs": [
-        "source"
-    ],
-    "python.testing.unittestEnabled": false
+    "python.envFile": "${workspaceFolder}/source/.env"
 }

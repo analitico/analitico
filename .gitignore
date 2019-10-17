@@ -9,15 +9,14 @@ _*.pyx
 .ipynb_checkpoints
 venv
 **/.ropeproject
+.idea
 
 /source/venv
 /source/django
 
 source/static
 source/website/settings_secrets.py
-source/.pytest_cache/v/cache/stepwise
-source/.pytest_cache/v/cache/lastfailed
-source/.pytest_cache/v/cache/nodeids
+.pytest_cache
 
 htmlcov
 .coverage
