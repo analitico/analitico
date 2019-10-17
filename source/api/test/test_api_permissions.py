@@ -516,6 +516,7 @@ class PermissionsTests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, 200)  # still there
 
     def test_retrieval_unpublished_gallery_items(self):
+        recipe_nostatus = Recipe.objects.create(pk="rx_gallery_nostatus", workspace=self.ws_gallery)
         recipe_unpublished = Recipe.objects.create(pk="rx_gallery_unpublished", workspace=self.ws_gallery)
         recipe_unpublished.set_attribute("published", False)
         recipe_unpublished.save()
@@ -531,6 +532,7 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "rx_gallery_published")
         self.assertContains(response, "rx_gallery_unpublished")
+        self.assertContains(response, "rx_gallery_nostatus")
 
         # the user with the proper permissions can retrieve the unpublished recipes
         role = Role(workspace=self.ws_gallery, user=self.user2)
@@ -542,6 +544,7 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "rx_gallery_published")
         self.assertContains(response, "rx_gallery_unpublished")
+        self.assertContains(response, "rx_gallery_nostatus")
 
         # user without specific permissions cannot retrieve unpublished recipes
         self.auth_token(self.token3)
@@ -549,6 +552,8 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "rx_gallery_published")
         self.assertNotContains(response, "rx_gallery_unpublished")
+        # without explicit published=true it is considered unpublished
+        self.assertNotContains(response, "rx_gallery_nostatus")
 
         # TODO: api gallery recipes / allow anonymous requests #450 
         # anonymous user can retrieve the published gallery recipes
@@ -557,4 +562,5 @@ class PermissionsTests(AnaliticoApiTestCase):
         # self.assertEqual(response.status_code, status.HTTP_200_OK)
         # self.assertContains(response, "rx_gallery_published")
         # self.assertNotContains(response, "rx_gallery_unpublished")
+        # self.assertNotContains(response, "rx_gallery_nostatus")
 
