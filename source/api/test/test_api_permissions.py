@@ -502,6 +502,7 @@ class PermissionsTests(AnaliticoApiTestCase):
         # check permissions on regular items in the gallery
         for item_class in (Dataset, Recipe, Notebook):
             item = item_class(workspace=self.ws_gallery)
+            item.set_attribute('published', True)
             item.save()
 
             item_url = reverse(f"api:{item.type}-detail", args=(item.id,))
