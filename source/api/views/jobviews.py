@@ -44,7 +44,7 @@ from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.models import ItemMixin
 from api.models.job import Job, timeout_jobs
 from api.factory import factory
-from api.k8 import k8_jobs_create, k8_jobs_get, k8_jobs_list
+from api.k8 import k8_jobs_create, k8_jobs_get, k8_jobs_list, k8_delete_job
 
 from .itemviewsetmixin import filterset, ItemViewSetMixin
 
@@ -138,20 +138,24 @@ class JobViewSetMixin:
     ## Kubernetes jobs and service deployment APIs
     ##
 
-    @action(methods=["get", "post"], detail=True, url_name="k8-jobs", url_path=r"k8s/jobs/(?P<job_pk>[-\w.]{0,64})$")
+    @action(methods=["get", "post", "delete"], detail=True, url_name="k8-jobs", url_path=r"k8s/jobs/(?P<job_pk>[-\w.]{0,64})$")
     def k8jobs(self, request: Request, pk: str, job_pk: str) -> Response:
         """
-        Create a job, retrieve a specific job, retrieve all jobs for item.
+        Create a job, delete a job, retrieve a specific job, retrieve all jobs for item.
         
         Arguments:
             request {Request} -- The request being posted.
             pk {str} -- The item that we're reading or creating jobs for.
-            job_pk {str} -- The job id when getting a specific job, or the job action when creating a job.
+            job_pk {str} -- The job id when getting or deleting a specific job, or the job action when creating a job.
         
         Returns:
             Response -- The k8s job that was create or retrieve or a list of jobs for this item.
         """
         item = self.get_object()
+
+        if self.request.method == "DELETE":
+            job = k8_delete_job(job_pk)
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
         # create a new job
         if self.request.method == "POST":

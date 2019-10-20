@@ -76,7 +76,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.ws2.refresh_from_db()
         return self.ws2
 
-    def job_run_notebook(self, item_id=None):
+    def job_run_notebook(self, item_id=None) -> (str, dict):
         if item_id is None:
             item_id = self.item_id
         self.post_notebook("notebook11.ipynb", item_id)
@@ -91,7 +91,7 @@ class K8Tests(AnaliticoApiTestCase):
         # wait for deployment
         time.sleep(15)
 
-        return job_id
+        return job_id, response.data
 
     # TODO cannot run this in CI/CD pipeline, should be added to live testing?
     @tag("slow", "docker", "k8s")
@@ -355,7 +355,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8s_list_jobs_by_workspace(self):
         try:
             # post a job by running a notebook
-            job_id = self.job_run_notebook()
+            job_id, _ = self.job_run_notebook()
 
             url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, ''))
 
@@ -381,7 +381,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_get_specific_k8s_job_by_workspace(self):
         try:
             # post a job by running a notebook
-            job_id = self.job_run_notebook()
+            job_id, _ = self.job_run_notebook()
 
             url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, job_id))
 
@@ -402,7 +402,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8s_job_logs(self):
         try:
             # run a job to generate logs
-            job_id = self.job_run_notebook()
+            job_id, _ = self.job_run_notebook()
             # wait for logs to be collected
             time.sleep(30)
 
@@ -415,7 +415,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             # user CANNOT read logs from jobs that does not belong to the item
             self.auth_token(self.token1)
-            another_job_id = self.job_run_notebook("nb_anothernotebook")
+            another_job_id, _ = self.job_run_notebook("nb_anothernotebook")
             another_job_url = reverse("api:notebook-k8-job-logs", args=(self.item_id, another_job_id))
             response = self.client.get(another_job_url, format="json")
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -456,7 +456,7 @@ class K8Tests(AnaliticoApiTestCase):
         """ Test retrieves job's logs from a workspace item """
         try:
             # post a job by running a notebook
-            job_id = self.job_run_notebook()
+            job_id, _ = self.job_run_notebook()
 
             url = reverse("api:workspace-k8-job-logs", args=(self.ws1.id, job_id))
 
@@ -744,13 +744,25 @@ class K8Tests(AnaliticoApiTestCase):
 
     def test_get_job_that_does_not_exist(self):
         """ Expect 404 not found when a job does not exist """
-        job_id = self.job_run_notebook()
-        url = reverse("api:notebook-k8-jobs", args={self.item_id, "jb-imafakejob"})
+        self.auth_token(self.token1)
+        url = reverse("api:notebook-k8-jobs", args=(self.item_id, "jb-imafakejob"))
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # clean up
-        k8_delete_job(job_id)
+    @tag("k8s")
+    def test_delete_job(self):
+        job_id, job = self.job_run_notebook()
+        self.auth_token(self.token1)
+        
+        url = reverse("api:notebook-k8-jobs", args=(self.item_id, job_id))
+        response = self.client.delete(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # wait for the pod's default grace period of 30secs
+        time.sleep(5)
+        url = reverse("api:notebook-k8-jobs", args=(self.item_id, job_id))
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     @tag("slow", "k8s", "live")
     def test_deploy_jupyter(self):

@@ -60,6 +60,41 @@ def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
 
 
+def k8_wait_for_condition(resource: str, namespace: str, condition: str, timeout: int = 60):
+    """ 
+    Wait the resource for the given condition. Command fails when the timeout expires. 
+    
+    Parameters
+    ----------
+    resource : str
+        Kubernetes resource name and group with the following sintax: resource.group/resource.name.
+        Eg: kservice/api-staging
+    namespace : str
+        Kubernetes resource namespace. Eg: cloud
+    condition : str
+        The pod condition to wait for:
+            - delete
+            - condition=condition-name eg, "condition=Ready"
+    timeout : int, optional
+        Timeout in seconds before give up.
+        Zero-value means check once and don't wait.
+
+    Returns
+    -------
+    Tuple (stdout, stderr)
+        from the run command
+    """
+    try:
+        return subprocess_run(
+            ["kubectl", "wait", "-n", namespace, resource, f"--for={condition}", f"--timeout={timeout}s"]
+        )
+    except Exception as exec:
+        raise AnaliticoException(
+            f"The resource {resource} cannot be retrieved or not found", status_code=status.HTTP_404_NOT_FOUND
+        ) from exec
+
+
+
 def get_image_commit_sha():
     """ 
     Return the git commit SHA the running image is built from. 
@@ -381,7 +416,7 @@ def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
             "--selector",
             f"analitico.ai/{selectBy}",
             "--sort-by",
-            ".metadata.creationTimestamp", 
+            ".metadata.creationTimestamp",
             "-o",
             "json",
         ]
@@ -425,7 +460,7 @@ def k8_deploy_jupyter(workspace):
                     "cpu": 4,  # number of CPUs limit
                     "memory": "8Gi",  # memory size limit
                     "gpu": 0,  # number of GPUs requested
-                }
+                },
             }
         }
 
@@ -450,7 +485,7 @@ def k8_deploy_jupyter(workspace):
         configs["route_name"] = route_name
 
         # memory limits displayed by nbresuse extension
-        jupyter_mem_limit_bytes = int(jupyter["settings"]["limits"]["memory"].replace("Gi", "")) * 1024*1024*1024
+        jupyter_mem_limit_bytes = int(jupyter["settings"]["limits"]["memory"].replace("Gi", "")) * 1024 * 1024 * 1024
         configs["jupyter_mem_limit_bytes"] = jupyter_mem_limit_bytes
 
         configs["cpu_request"] = jupyter["settings"]["requests"]["cpu"]

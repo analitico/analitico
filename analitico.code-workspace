@@ -39,6 +39,7 @@
 		"python.testing.pytestArgs": [
 			"${workspaceFolder}/source"
 		],
-		"python.testing.pytestEnabled": true
+		"python.testing.pytestEnabled": true,
+		"python.dataScience.debugJustMyCode": false
 	}
 }

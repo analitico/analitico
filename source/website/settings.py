@@ -26,7 +26,13 @@ try:
 
     # Covers pytest, regular testing and django-coverage
     TESTING = False
-    if sys.argv[0].endswith("pytest.py") or ("test" in sys.argv) or ("test_coverage" in sys.argv):
+    if (
+        sys.argv[0].endswith("pytest.py")
+        or sys.argv[0].endswith("testlauncher.py")
+        or ("pytest.py" in sys.argv)
+        or ("test" in sys.argv)
+        or ("test_coverage" in sys.argv)
+    ):
         TESTING = True
 
     # SECURITY WARNING: don't run with debug turned on in production!
