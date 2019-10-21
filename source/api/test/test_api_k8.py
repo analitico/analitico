@@ -752,16 +752,26 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("k8s")
     def test_delete_job(self):
         job_id, job = self.job_run_notebook()
-        self.auth_token(self.token1)
-        
         url = reverse("api:notebook-k8-jobs", args=(self.item_id, job_id))
+
+        # user without permission cannot retrieve the list
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token1)
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         # wait for the pod's default grace period of 30secs
         time.sleep(5)
-        url = reverse("api:notebook-k8-jobs", args=(self.item_id, job_id))
+
+        # job is deleted
         response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # try to delete job again but it's not find
+        response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     @tag("slow", "k8s", "live")

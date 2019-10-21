@@ -426,7 +426,12 @@ def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
 
 def k8_delete_job(job_id: str):
     """ Delete the job on Kubernetes """
-    subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
+    try:
+        subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
+    except Exception as exec:
+        raise AnaliticoException(
+            f"Job {job_id} cannot be deleted or not found", status_code=status.HTTP_404_NOT_FOUND
+        ) from exec
 
 
 ##
