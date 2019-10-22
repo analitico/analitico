@@ -3,8 +3,15 @@ kind: Service
 metadata:
   name: {service_name}
   namespace: {service_namespace}
+  labels:
+    analitico.ai/workspace-id: {workspace_id}
+    analitico.ai/item-id: {item_id}
 spec:
   template:
+    metadata:
+      labels:
+        analitico.ai/workspace-id: {workspace_id}
+        analitico.ai/item-id: {item_id}
     spec:
       containers:
       - image: {docker_image}

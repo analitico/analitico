@@ -230,7 +230,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
     one can call for status on the k8s service later and obtain an updated status.
     
     Arguments:
-        item {ItemMixin} -- An item to be deployed, normally a Model or Notebook.
+        item {ItemMixin} -- An item to be deployed, normally a Model.
         stage {str} -- K8_STAGE_PRODUCTION or K8_STAGE_STAGING
     
     Returns:
@@ -253,6 +253,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             service_yaml = service_yaml.format(
                 service_name=service_name,
                 service_namespace=service_namespace,
+                workspace_id=item.workspace.id if item.workspace else "",
                 item_id=item.id,
                 docker_image=docker_image,
             )

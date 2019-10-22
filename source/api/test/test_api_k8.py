@@ -93,7 +93,6 @@ class K8Tests(AnaliticoApiTestCase):
 
         return job_id, response.data
 
-    # TODO cannot run this in CI/CD pipeline, should be added to live testing?
     @tag("slow", "docker", "k8s")
     def test_k8_deploy_docker(self):
         """ Test building a docker from a notebook then deploying it """
