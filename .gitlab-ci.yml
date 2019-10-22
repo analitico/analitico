@@ -114,7 +114,7 @@ build-and-test:
     - npm run build
     - rm -rf node_modules
     # save build to storage
-    - cp -rf $BUILD_WEBSITE_PATH/dist/* $WEBSITE_DEPLOYMENT_PATH/
+    - cp -rf $BUILD_WEBSITE_PATH/build/* $WEBSITE_DEPLOYMENT_PATH/
     - echo "$(date +'%T') - Finished building the app"
     
     ##
