@@ -70,7 +70,7 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
             if Workspace == item_class:
                 return Workspace.objects.filter(id=GALLERY_WORKSPACE_ID)
             else:
-                return item_class.objects.filter(workspace__id=GALLERY_WORKSPACE_ID, attributes__icontains='"published":true')
+                return item_class.objects.filter(workspace__id=GALLERY_WORKSPACE_ID)
         raise AnaliticoException(
             "Anonymous users can't access this API, please provide authentication credentials or a token.",
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -108,7 +108,7 @@ def get_permitted_queryset(request: Request, item_class: str, permission=None):
             ff = ff | Q(workspace__roles__user=request.user, workspace__roles__roles__icontains=role)
         # add readonly access to ws_gallery which is available to all user
         if request.method == "GET" or request.method == "HEAD" or request.method == "OPTIONS":
-            ff = ff | (Q(workspace__id="ws_gallery") & Q(attributes__icontains='"published":true'))
+            ff = ff | (Q(workspace__id="ws_gallery"))
 
     # remove multiple copies of items, sort newer to older
     queryset = item_class.objects.filter(ff).distinct().order_by("-created_at")
