@@ -1,5 +1,3 @@
-# Dataset Blank
+# Dataset README template
 
-This file can be used to document the dataset, etc...
-
-
+Here you can use the _markdown syntax_ to document your *dataset and notebook*.

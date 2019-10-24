@@ -55,7 +55,7 @@ To see the model's generated metrics click the `Actions` button and then `Show M
 
 ![analitico-show-metrics](https://analitico.ai/assets/gallery/show-metrics.png "Analitico Show Metrics")
 
-![analitico-metrics](https://analitico.ai/assets/gallery/metrics.png "Analitico Snapshot's metrics")
+![analitico-metrics](https://analitico.ai/assets/gallery/metrics-classification-report.png "Analitico Snapshot's metrics")
 
 Now we are ready to deploy the model into production.  
 Press the `Actions` and select `Deploy to Production`.  
