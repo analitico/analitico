@@ -5,6 +5,9 @@ from PIL import Image
 from pathlib import Path
 from django.http.response import HttpResponse
 from django.shortcuts import redirect
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -77,10 +80,11 @@ class ItemViewSetMixin:
         return get_permitted_queryset(self.request, self.item_class)
 
     ##
-    ## Avatar action
+    ## Avatar action - render avatar from file assets and cache locally
+    ## https://docs.djangoproject.com/en/2.2/topics/cache/#the-per-view-cache
     ##
 
-    # TODO cache avatar images on disk #378
+    @method_decorator(cache_page(15 * 60))  # cache for 15 minutes
     @action(methods=["get"], detail=True, url_name="avatar", url_path="avatar", permission_classes=(AllowAny,))
     def avatar(self, request, pk):
         """ Returns an item's avatar (if configured) """

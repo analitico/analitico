@@ -41,6 +41,20 @@ try:
     assert not (DEBUG and PRODUCTION), "SECURITY WARNING: don't run with debug turned on in production"
 
     ##
+    ## Django cache is based on local file system and is temporary
+    ## https://docs.djangoproject.com/en/2.2/topics/cache/#cache-arguments
+    ##
+
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": os.path.join(tempfile.gettempdir(), "analitico_djang_temp"),
+            "TIMEOUT": 30 * 60,
+            "OPTIONS": {"MAX_ENTRIES": 5000},
+        }
+    }
+
+    ##
     ## Stripe billing
     ##
 
