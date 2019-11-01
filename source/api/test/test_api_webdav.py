@@ -1408,6 +1408,21 @@ class WebdavTests(AnaliticoApiTestCase):
             item.delete()
 
     @tag("avatar")
+    def test_avatar_caching(self):
+        """ Test avatar caching having the proper caching headers to help reduce client reloads """
+        self.auth_token(self.token1)
+        item = self.create_item_with_avatar(api.models.Recipe, self.ws1)
+        try:
+            url = reverse(f"api:{item.type}-avatar", args=(item.id,)) + "?height=72"
+            response = self.client.get(url)
+
+            self.assertTrue(response.has_header("ETag"))
+            self.assertTrue(response.has_header("Expires"))
+            self.assertEqual(response["Cache-Control"], "max-age=900")
+        finally:
+            item.delete()
+
+    @tag("avatar")
     def test_avatar_wrong_token_no_avatar(self):
         self.auth_token(self.token1)
         item = self.create_item_with_avatar(api.models.Recipe, self.ws1)
@@ -1422,7 +1437,7 @@ class WebdavTests(AnaliticoApiTestCase):
         # publish in gallery
         self.auth_token(self.token1)
         item = self.create_item_with_avatar(api.models.Recipe, self.ws_gallery)
-        item.set_attribute('published', True)
+        item.set_attribute("published", True)
         item.save()
         try:
             # retrieve anonymously

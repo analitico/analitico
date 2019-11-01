@@ -7,6 +7,10 @@ This project includes analitico's website, APIs and libraries. A number of exper
 Environment
 ---
 
+Install runtime secrets: 
+`source ../analitico-ci/analitico-env.sh`
+
+
 Create the virtual environment   
 `python3 -m venv venv`   
 
