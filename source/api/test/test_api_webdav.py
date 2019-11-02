@@ -1437,7 +1437,6 @@ class WebdavTests(AnaliticoApiTestCase):
         # publish in gallery
         self.auth_token(self.token1)
         item = self.create_item_with_avatar(api.models.Recipe, self.ws_gallery)
-        item.set_attribute("published", True)
         item.save()
         try:
             # retrieve anonymously
