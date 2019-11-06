@@ -36,7 +36,9 @@
         },
         "python.linting.pylintEnabled": false,
         "python.testing.cwd": "${workspaceFolder}/source",
-        "python.testing.pytestArgs": ["${workspaceFolder}/source"],
+        "python.testing.pytestArgs": [
+            "${workspaceFolder}/source"
+        ],
         "python.testing.pytestEnabled": true,
         "python.dataScience.debugJustMyCode": false,
         "editor.formatOnSave": true,
@@ -50,6 +52,17 @@
                 "source.organizeImports": true
             }
         },
-        "eslint.validate": ["javascript", "javascriptreact", { "language": "typescript", "autoFix": true }, { "language": "typescriptreact", "autoFix": true }]
+        "eslint.validate": [
+            "javascript",
+            "javascriptreact",
+            {
+                "language": "typescript",
+                "autoFix": true
+            },
+            {
+                "language": "typescriptreact",
+                "autoFix": true
+            }
+        ]
     }
 }
