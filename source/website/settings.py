@@ -55,6 +55,15 @@ try:
     }
 
     ##
+    ## Cookies
+    ##
+
+    # The session id and the CSFR token are used by JupyterHub authenticator
+    # thus these cookies must be available to subdomains
+    SESSION_COOKIE_DOMAIN = ".analitico.ai" if not TESTING else None
+    CSRF_COOKIE_DOMAIN = ".analitico.ai" if not TESTING else None
+
+    ##
     ## Stripe billing
     ##
 
