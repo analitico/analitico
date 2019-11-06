@@ -117,8 +117,10 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
                 instance.set_attribute(key, value)
 
         # only the owner of the workspace and add or remove users and update their rights
+        # the dictionary of permissions has the user's emails as keys. the dictionary could
+        # also be empty meaning that permissions should be reset to owner only.
         permissions = validated_data.get("permissions", None)
-        if permissions:
+        if permissions is not None:
             user = self.context["request"].user
             has_item_permission_or_exception(user, instance, "analitico.workspaces.admin")
             # user has been invited to workspace and only sees his own rights
@@ -141,7 +143,9 @@ class WorkspaceSerializer(AttributeSerializerMixin, serializers.ModelSerializer)
 ##
 
 
-class WorkspaceViewSet(ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, K8ViewSetMixin, rest_framework.viewsets.ModelViewSet):
+class WorkspaceViewSet(
+    ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, K8ViewSetMixin, rest_framework.viewsets.ModelViewSet
+):
     """ Views for workspaces and their access permissions. """
 
     item_class = api.models.Workspace

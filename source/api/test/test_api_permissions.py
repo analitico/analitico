@@ -180,6 +180,60 @@ class PermissionsTests(AnaliticoApiTestCase):
         self.assertEqual(data["attributes"]["permissions"]["user4@analitico.ai"]["permissions"][1], "permission2a")
         self.assertEqual(data["attributes"]["permissions"]["user4@analitico.ai"]["permissions"][2], "permission3a")
 
+    def test_permissions_add_then_remove_user(self):
+        self.auth_token(self.token1)
+        url = reverse("api:workspace-detail", args=("ws_001",))
+
+        # GET the workspace as it is now, no permissions specified
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+
+        # PUT with new roles and permissions for user2@analitico.ai
+        data = response.data
+        data["attributes"]["permissions"] = {
+            "user2@analitico.ai": {"roles": ["role1", "role2"], "permissions": ["permission1", "permission2"]}
+        }
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(len(data["attributes"]["permissions"].keys()), 1)
+        self.assertEqual(len(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"][0], "role1")
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["roles"][1], "role2")
+        self.assertEqual(len(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"]), 2)
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"][0], "permission1")
+        self.assertEqual(data["attributes"]["permissions"]["user2@analitico.ai"]["permissions"][1], "permission2")
+
+        # PUT with new roles and permissions for user2 and user3@analitico.ai
+        data = response.data
+        data["attributes"]["permissions"] = {
+            "user2@analitico.ai": {"roles": ["role1", "role2"], "permissions": ["permission1", "permission2"]},
+            "user3@analitico.ai": {"roles": ["role1", "role2"], "permissions": ["permission1", "permission2"]},
+        }
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(len(data["attributes"]["permissions"].keys()), 2)
+
+        # PUT with new roles and permissions for user3@analitico.ai
+        data = response.data
+        data["attributes"]["permissions"] = {
+            "user3@analitico.ai": {"roles": ["role1", "role2"], "permissions": ["permission1", "permission2"]}
+        }
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(len(data["attributes"]["permissions"].keys()), 1)
+
+        # PATCH with new roles removing permissions for user2@analitico.ai (should remain with 0 users)
+        data = response.data
+        data["attributes"]["permissions"] = {}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        data = response.data
+        self.assertEqual(len(data["attributes"]["permissions"].keys()), 0)
+
     def test_permissions_setting_to_someone_elses_workspace(self):
         url = reverse("api:workspace-detail", args=("ws_002",))
         # this is a long story so bear with me...
