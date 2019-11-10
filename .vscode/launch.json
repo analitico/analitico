@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.test_api_drive.DriveTests.test_drive_create_workspace_storage",
+                "api.test.test_api_k8.K8Tests.test_k8_wait_for_condition",
                 "-v",
                 "2"
             ],

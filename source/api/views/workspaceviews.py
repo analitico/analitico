@@ -160,7 +160,6 @@ class WorkspaceViewSet(
     def jupyter(self, request, pk):
         """ Allocate a Jupyter server if needed, update workspace and return it. """
         workspace = self.get_object()
-        k8_deploy_jupyter(workspace)
+        data = k8_deploy_jupyter(workspace)
 
-        serializer = WorkspaceSerializer(workspace, context={"request": request})
-        return Response(serializer.data)
+        return Response(data)

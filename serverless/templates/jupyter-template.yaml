@@ -5,7 +5,12 @@ metadata:
   namespace: {service_namespace}
   labels:
     app: {service_name}
+    analitico.ai/service: jupyter
     analitico.ai/workspace-id: {workspace_id}
+  annotations:
+    analitico.ai/jupyter-url: "{service_url}"
+    analitico.ai/cooloff-enabled: "{cooloff_enabled}"
+    analitico.ai/cooloff-interval: "{cooloff_interval}"
   ownerReferences:
   - apiVersion: v1
     blockOwnerDeletion: true
@@ -16,11 +21,13 @@ spec:
   selector:
     matchLabels:
       app: {service_name}
+  replicas: 1
   template:
     metadata:
       namespace: {service_namespace}
       labels:
         app: {service_name}
+        analitico.ai/service: "jupyter"
         analitico.ai/workspace-id: {workspace_id}
     spec:
       containers:
@@ -66,10 +73,11 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: {route_name}
-  namespace: knative-serving
+  name: {virtualservice_name}
+  namespace: {service_namespace}
   labels:
     app: {service_name}
+    analitico.ai/service: "jupyter"
     analitico.ai/workspace-id: {workspace_id}
   ownerReferences:
   - apiVersion: v1

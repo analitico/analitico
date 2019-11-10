@@ -41,7 +41,7 @@ class K8Tests(AnaliticoApiTestCase):
     item_id = "nb_K8Tests_test_k8"  # help registry cleanups
     item_id_normalized = "nb-k8tests-test-k8-staging"
 
-    def deploy_service(self):
+    def deploy_service(self, wait=15):
         self.auth_token(self.token1)
         self.post_notebook("notebook11.ipynb", self.item_id)
         notebook = Notebook.objects.get(pk=self.item_id)
@@ -63,7 +63,8 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEquals(service["namespace"], "cloud")
         self.assertIn("url", service)
 
-        time.sleep(15)
+        if wait:
+            time.sleep(wait)
         return service
 
     def deploy_jupyter(self):
@@ -356,7 +357,7 @@ class K8Tests(AnaliticoApiTestCase):
             # post a job by running a notebook
             job_id, _ = self.job_run_notebook()
 
-            url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, ''))
+            url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, ""))
 
             # user without permission cannot retrieve the list
             self.auth_token(self.token3)
@@ -367,7 +368,7 @@ class K8Tests(AnaliticoApiTestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertGreaterEqual(len(response.data["items"]), 1)
-            
+
             # last job should be for our notebook
             lastJob = len(response.data["items"]) - 1
             lastJobItemId = response.data["items"][lastJob]["metadata"]["labels"]["analitico.ai/item-id"]
@@ -865,3 +866,19 @@ class K8Tests(AnaliticoApiTestCase):
             # cleanup
             self.ws2.refresh_from_db()
             k8_deallocate_jupyter(self.ws2)
+
+    @tag("k8s")
+    def test_k8_wait_for_condition(self):
+        # non existent resource
+        try:
+            k8_wait_for_condition("pod/fake", "cloud", "condition=Ready", timeout=2)
+            self.fail("Expected not found exception")
+        except AnaliticoException:
+            pass
+
+        # ready resource
+        service = self.deploy_service(wait=0)
+        status, _ = k8_wait_for_condition(
+            "pod", "cloud", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
+        )
+        self.assertIn("condition met", status)

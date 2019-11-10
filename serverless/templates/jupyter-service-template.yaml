@@ -5,7 +5,10 @@ metadata:
   namespace: {service_namespace}
   labels:
     app: {service_name}
+    analitico.ai/service: jupyter
     analitico.ai/workspace-id: {workspace_id}
+  annotations:
+    analitico.ai/jupyter-url: "{service_url}"
 spec:
   selector:
     app: {service_name}
