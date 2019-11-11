@@ -18,7 +18,7 @@ from rest_framework import status
 
 from api.models import *
 from api.models.job import *
-from api.k8 import k8_delete_job
+from api.k8 import k8_job_delete
 from .utils import AnaliticoApiTestCase
 
 # baseline date for tests faking cron based item scheduling
@@ -30,7 +30,7 @@ class JobsTests(AnaliticoApiTestCase):
 
     def cleanup(self, jobs: []):
         for job in jobs:
-            k8_delete_job(job["metadata"]["name"])
+            k8_job_delete(job["metadata"]["name"])
 
     def test_job_notebook_process(self):
         response = self.post_notebook("notebook10.ipynb", "nb_01")
@@ -363,7 +363,7 @@ class JobsTests(AnaliticoApiTestCase):
             self.assertEqual(expected_notebook_name, run_notebook_name)
         finally:
             self.cleanup(jobs)
-    
+
     def test_job_schedule_continue_when_item_scheduling_fails(self):
         try:
             jobs = []

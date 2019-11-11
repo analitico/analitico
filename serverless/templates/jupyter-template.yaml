@@ -65,7 +65,7 @@ spec:
           driver: "fstab/cifs"
           fsType: "cifs"
           secretRef:
-            name: analitico-drive-{workspace_id_slug}
+            name: {analitico_drive}
           options:
             networkPath: {volume_network_path}
             mountOptions: dir_mode=0755,file_mode=0644,noperm

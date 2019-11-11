@@ -9,6 +9,7 @@ import base64
 import string
 import collections
 import urllib.parse
+import sys
 
 import subprocess
 from subprocess import PIPE
@@ -30,6 +31,7 @@ from analitico.utilities import (
     read_json,
     copy_directory,
     id_generator,
+    size_to_bytes
 )
 from api.factory import factory
 from api.models import ItemMixin, Job, Recipe, Model, Workspace
@@ -60,6 +62,16 @@ def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
 
 
+def kubectl(namespace: str, action: str, resource: str, output: str = "json", args: [] = []) -> (str, str):
+    """ Exec operation on Kubernetes using Kubectl command """
+    try:
+        return subprocess_run(["kubectl", action, "--namespace", namespace, resource, "--output", output, *args])
+    except Exception as exec:
+        raise AnaliticoException(
+            f"Resource not found or invalid request", status_code=status.HTTP_404_NOT_FOUND
+        ) from exec
+
+
 def k8_wait_for_condition(resource: str, namespace: str, condition: str, labels: str = None, timeout: int = 60):
     """ 
     Wait the resource for the given condition. Command fails when the timeout expires. 
@@ -67,7 +79,7 @@ def k8_wait_for_condition(resource: str, namespace: str, condition: str, labels:
     Parameters
     ----------
     resource : str
-        Kubernetes resource name and group with the following sintax: resource.group/resource.name.
+        Kubernetes resource group and name with the following sintax: resource.group/resource.name.
         Eg: kservice/api-staging
         If labels are provided resource is only resource.group
     namespace : str
@@ -439,7 +451,7 @@ def k8_jobs_list(item: ItemMixin, request: Request = None) -> [dict]:
     return jobs
 
 
-def k8_delete_job(job_id: str):
+def k8_job_delete(job_id: str):
     """ Delete the job on Kubernetes """
     try:
         subprocess_run(cmd_args=["kubectl", "delete", "job", job_id, "-n", "cloud"])
@@ -454,7 +466,175 @@ def k8_delete_job(job_id: str):
 ##
 
 
-def k8_deploy_jupyter(workspace):
+def k8_jupyter_get(workspace: ItemMixin, jupyter_name: str = None) -> [dict]:
+    """ List of Jupyter deployments created for the workspace """
+    if jupyter_name:
+        response, _ = kubectl(
+            K8_DEFAULT_NAMESPACE,
+            "get",
+            "deployment",
+            args=[
+                "--selector",
+                f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id},app={jupyter_name}",
+            ],
+        )
+        # kubectl selectors returns an array of items
+        response = response["items"][0]
+    else:
+        response, _ = kubectl(
+            K8_DEFAULT_NAMESPACE,
+            "get",
+            "deployment",
+            args=["--selector", "analitico.ai/service=jupyter,analitico.ai/workspace-id=" + workspace.id],
+        )
+
+    return response
+
+
+def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None):
+    """
+    Deploy a new Jupyter instance or update the existing one with the given settings.
+    If settings are not provided are used those from the workspace or the default one. 
+    
+    Arguments:
+        workspace {Workspace} -- The workspace for which we're allocating Jupyter.
+        settings {} -- Settings for deploying the Jupyter, like resources
+    
+    Returns:
+        dict -- The jupyter dictionary containing the Kubernetes deployment object
+    """
+    settings_limits = workspace.get_attribute("jupyter")
+    if not settings_limits:
+        # default configuration for Jupyter instances
+        settings_limits = {
+            "settings": {
+                "max-instances": 1,
+                "cooloff-enabled": "true",
+                "cooloff-interval": 60,
+                "requests": {
+                    "cpu": 0.5,  # number of CPUs requested
+                    "memory": "8Gi",  # memory size requested
+                    "gpu": 0,  # number of GPUs requested
+                },
+                "limits": {
+                    "cpu": 4,  # number of CPUs limit
+                    "memory": "8Gi",  # memory size limit
+                    "gpu": 0,  # number of GPUs requested
+                }
+            }
+        }
+
+    # a workspace can deploy a limited number of Jupyter 
+    # instances depending on the workspace's billing plan
+    total_instances = len(k8_jupyter_get(workspace))
+    max_instances = int(settings_limits["settings"]["max-instances"])
+    if total_instances >= max_instances:
+        raise AnaliticoException(
+            f"The maximum number of Jupyter instances has been reached (max {max_instances} / current {total_instances})",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
+    # resources can be customized by the user but they are
+    # considered as resource limit for a Jupyter and the values
+    # are limited by those from the billing plan (saved in the workspace)
+    if settings is None:
+        settings = {}
+    memory = size_to_bytes(get_dict_dot(settings, "settings.memory", sys.maxint))
+    cpu = size_to_bytes(get_dict_dot(settings, "settings.cpu", sys.maxint))
+    gpu = size_to_bytes(get_dict_dot(settings, "settings.gpu", sys.maxint))
+    memory_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.memory"))
+    cpu_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.cpu"))
+    gpu_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.gpu"))
+
+    memory_limit = min(memory_limit, memory)
+    cpu_limit = min(cpu_limit, cpu)
+    gpu_limit = min(gpu_limit, gpu)
+    memory_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.memory"))
+    cpu_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.cpu"))
+    gpu_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.gpu"))
+
+    # jupyter nomencleture
+    # use the given Jupyter name in order to update the settings
+    # of the Jupyter with the new specifications. Otherwise a new 
+    # Jupyter is deployed
+    name = id_generator() if not jupyter_name else jupyter_name
+    service_name = f"jupyter-{name}"
+    service_namespace = K8_DEFAULT_NAMESPACE
+    deployment_name = f"{service_name}-deployment"
+    secret_name = f"analitico-jupyter-{name}"
+
+    url = f"https://{service_name}.{service_namespace}.analitico.ai"
+
+    # in case of error the instance must be deployed
+    # start from storage config and all the rest
+    configs = k8_get_storage_volume_configuration(workspace)
+
+    pod_name = f"{deployment_name}-{id_generator(5)}"
+    virtualservice_name = f"{service_name}"
+
+    configs["service_name"] = service_name
+    configs["service_namespace"] = service_namespace
+    configs["analitico_drive"] = f"analitico-drive-{k8_normalize_name(workspace.id)}"
+    configs["workspace_id"] = workspace.id
+    configs["deployment_name"] = deployment_name
+    configs["pod_name"] = pod_name
+    configs["virtualservice_name"] = virtualservice_name
+    configs["service_url"] = url
+
+    # memory limits displayed by nbresuse extension
+    configs["jupyter_mem_limit_bytes"] = memory_limit
+
+    # resources
+    configs["cpu_request"] = cpu_request
+    configs["memory_request"] = memory_request
+    configs["gpu_request"] = gpu_request
+    configs["cpu_limit"] = cpu_limit
+    configs["memory_limit"] = memory_limit
+    configs["gpu_limit"] = gpu_limit
+
+    # cooloff
+    configs["cooloff_enabled"] = get_dict_dot(settings_limits, "settings.cooloff-enabled")
+    configs["cooloff_interval"] = get_dict_dot(settings_limits, "settings.cooloff-interval")
+
+    image_tag = get_image_commit_sha()
+    configs["image_name"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
+
+    # generate a jupyter token for login
+    token = id_generator(16)
+
+    # k8s secret containing the credentials for the workspace mount
+    configs["jupyter_token"] = str(base64.b64encode(token.encode()), "ascii")
+    configs["secret_name"] = secret_name
+
+    # k8s secret containing the credentials for the workspace mount
+    secret_template = os.path.join(K8_TEMPLATE_DIR, "drive-secret-template.yaml")
+    secret = k8_customize_and_apply(secret_template, **configs)
+    assert secret, "kubectl did not apply the drive secret"
+
+    # jupyter kubernetes service
+    secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-service-template.yaml")
+    service = k8_customize_and_apply(secret_template, **configs)
+    assert service, "kubectl did not apply the jupyter service"
+
+    configs["owner_uid"] = service["metadata"]["uid"]
+
+    # jupyter token
+    secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-secret-template.yaml")
+    secret = k8_customize_and_apply(secret_template, **configs)
+    assert secret, "kubectl did not apply the jupyter secret"
+
+    service_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-template.yaml")
+    template = k8_customize_and_apply(service_template, **configs)
+    assert template, "kubectl did not apply jupyter"
+
+    # wait for pod to be started, deployed or restored to one replica
+    k8_wait_for_condition(f"pod", service_namespace, "condition=Ready", labels=f"app={service_name}", timeout=30)
+
+    deployment = k8_jupyter_get(workspace, jupyter_name)
+
+    return deployment
+
+def k8_jupyter_kickoff(workspace, specs: dict = None):
     """
     This method checks if the given workspace has been allocated one or more Jupyter servers.
     If the workspace doesn't have a server running or the server has cooled down, it will be
@@ -466,126 +646,41 @@ def k8_deploy_jupyter(workspace):
     Returns:
         dict -- The jupyter dictionary containing configurations and servers info.
     """
-    jupyter = workspace.get_attribute("jupyter")
-    if not jupyter:
-        # default configuration for Jupyter servers
-        jupyter = {
-            "settings": {
-                "cooloff-enabled": "true",
-                "cooloff-interval": "60",
-                "requests": {
-                    "cpu": 0.5,  # number of CPUs requested
-                    "memory": "8Gi",  # memory size requested
-                    "gpu": 0,  # number of GPUs requested
-                },
-                "limits": {
-                    "cpu": 4,  # number of CPUs limit
-                    "memory": "8Gi",  # memory size limit
-                    "gpu": 0,  # number of GPUs requested
-                },
-            }
-        }
+    # update deployment with replicas=1
+    subprocess_run(
+        ["kubectl", "scale", "--namespace", service_namespace, "--replicas=1", f"deployment/{deployment_name}"]
+    )
 
-    # jupyter nomencleture
-    workspace_id_slug = k8_normalize_name(workspace.id)
-    service_name = f"jupyter-{workspace_id_slug}"
-    service_namespace = K8_DEFAULT_NAMESPACE
-    deployment_name = f"{service_name}-deployment"
-    secret_name = f"analitico-jupyter-{workspace_id_slug}"
+    # todo: annotate operazione con data
 
-    url = f"https://{service_name}.{service_namespace}.analitico.ai"
-
-    try:
-        # update deployment with replicas=1
-        subprocess_run(
-            ["kubectl", "scale", "--namespace", service_namespace, "--replicas=1", f"deployment/{deployment_name}"]
-        )
-
-        secret, _ = subprocess_run(
-            ["kubectl", "get", "secret", "--namespace", service_namespace, secret_name, "--output", "json"]
-        )
-        token = base64.b64decode(secret["data"]["token"]).decode("UTF-8")
-    except Exception as e:
-        # in case of error the instance must be deployed
-        # start from storage config and all the rest
-        configs = k8_get_storage_volume_configuration(workspace)
-
-        pod_name = f"{deployment_name}-{id_generator(5)}"
-        virtualservice_name = f"{service_name}"
-
-        configs["service_name"] = service_name
-        configs["service_namespace"] = service_namespace
-        configs["workspace_id_slug"] = workspace_id_slug
-        configs["workspace_id"] = workspace.id
-        configs["deployment_name"] = deployment_name
-        configs["pod_name"] = pod_name
-        configs["virtualservice_name"] = virtualservice_name
-        configs["service_url"] = url
-
-        # memory limits displayed by nbresuse extension
-        jupyter_mem_limit_bytes = int(jupyter["settings"]["limits"]["memory"].replace("Gi", "")) * 1024 * 1024 * 1024
-        configs["jupyter_mem_limit_bytes"] = jupyter_mem_limit_bytes
-
-        # resources
-        configs["cpu_request"] = jupyter["settings"]["requests"]["cpu"]
-        configs["memory_request"] = jupyter["settings"]["requests"]["memory"]
-        configs["gpu_request"] = jupyter["settings"]["requests"]["gpu"]
-        configs["cpu_limit"] = jupyter["settings"]["limits"]["cpu"]
-        configs["memory_limit"] = jupyter["settings"]["limits"]["memory"]
-        configs["gpu_limit"] = jupyter["settings"]["limits"]["gpu"]
-
-        # cooloff
-        configs["cooloff_enabled"] = jupyter["settings"]["cooloff-enabled"]
-        configs["cooloff_interval"] = jupyter["settings"]["cooloff-interval"]
-
-        image_tag = get_image_commit_sha()
-        configs["image_name"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
-
-        # generate a jupyter token for login
-        token = id_generator(16)
-
-        # k8s secret containing the credentials for the workspace mount
-        configs["jupyter_token"] = str(base64.b64encode(token.encode()), "ascii")
-        configs["secret_name"] = secret_name
-
-        # k8s secret containing the credentials for the workspace mount
-        secret_template = os.path.join(K8_TEMPLATE_DIR, "drive-secret-template.yaml")
-        secret = k8_customize_and_apply(secret_template, **configs)
-        assert secret, "kubectl did not apply the drive secret"
-
-        # jupyter kubernetes service
-        secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-service-template.yaml")
-        service = k8_customize_and_apply(secret_template, **configs)
-        assert service, "kubectl did not apply the jupyter service"
-
-        configs["owner_uid"] = service["metadata"]["uid"]
-
-        # jupyter token
-        secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-secret-template.yaml")
-        secret = k8_customize_and_apply(secret_template, **configs)
-        assert secret, "kubectl did not apply the jupyter secret"
-
-        service_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-template.yaml")
-        template = k8_customize_and_apply(service_template, **configs)
-        assert template, "kubectl did not apply jupyter"
-
-    # wait for pod to be started, deployed or restored to one replica
-    k8_wait_for_condition(f"pod", service_namespace, "condition=Ready", labels=f"app={service_name}", timeout=30)
-
-    return {
-        "name": service_name,
-        "namespace": service_namespace,
-        "url": f"https://{service_name}.{service_namespace}.analitico.ai",
-        "token": token,
-    }
+    secret, _ = subprocess_run(
+        ["kubectl", "get", "secret", "--namespace", service_namespace, secret_name, "--output", "json"]
+    )
+    token = base64.b64decode(secret["data"]["token"]).decode("UTF-8")
+    pass
 
 
 def k8_cooloff():
     # todo: get deployment con cooloff-enabled = true
-    # todo: if no pod creation time is > cooloff interval
-    # todo controlla cpu/requests last cooloff interval
-    # tood no activity -> scale to replicas=0
-    pass
+    response = subprocess_run(
+        [
+            "kubectl",
+            "get",
+            "deployment",
+            "--namespace",
+            "cloud",
+            "--selector",
+            "analitico.ai/cooloff-enabled=true",
+            "--output",
+            "json",
+        ]
+    )
+    for deployment in response["items"]:
+        # todo: if no pod creation time is > cooloff interval
+
+        # todo controlla cpu/requests last cooloff interval
+        # tood no activity -> scale to replicas=0
+        pass
 
 
 def k8_deallocate_jupyter(workspace):

@@ -19,7 +19,6 @@ import api.notifications
 from analitico.utilities import logger, get_dict_dot, comma_separated_to_array, array_to_comma_separated, set_dict_dot
 from api.models import Workspace, Dataset, Role, User
 from api.permissions import has_item_permission, has_item_permission_or_exception
-from api.k8 import k8_deploy_jupyter
 
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin
@@ -155,11 +154,3 @@ class WorkspaceViewSet(
     def permissions(self, request):
         """ Returns roles and permissions configurations. """
         return Response(api.permissions.get_configurations())
-
-    @action(methods=["get"], detail=True, url_name="jupyter", url_path="jupyter")
-    def jupyter(self, request, pk):
-        """ Allocate a Jupyter server if needed, update workspace and return it. """
-        workspace = self.get_object()
-        data = k8_deploy_jupyter(workspace)
-
-        return Response(data)

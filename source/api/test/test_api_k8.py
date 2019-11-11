@@ -68,6 +68,7 @@ class K8Tests(AnaliticoApiTestCase):
         return service
 
     def deploy_jupyter(self):
+        # todo: fix
         url = reverse("api:workspace-jupyter", args=(self.ws2.id,))
 
         self.auth_token(self.token2)
@@ -375,7 +376,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(lastJobItemId, self.item_id)
         finally:
             # clean up
-            k8_delete_job(job_id)
+            k8_job_delete(job_id)
 
     @tag("k8s")
     def test_get_specific_k8s_job_by_workspace(self):
@@ -396,7 +397,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.data["metadata"]["labels"]["analitico.ai/item-id"], self.item_id)
         finally:
             # clean up
-            k8_delete_job(job_id)
+            k8_job_delete(job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_job_logs(self):
@@ -448,8 +449,8 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(len(data["hits"]["hits"]), 0)
         finally:
             # clean up
-            k8_delete_job(job_id)
-            k8_delete_job(another_job_id)
+            k8_job_delete(job_id)
+            k8_job_delete(another_job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_job_logs_from_workspace_item(self):
@@ -477,7 +478,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
         finally:
             # clean up
-            k8_delete_job(job_id)
+            k8_job_delete(job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_run(self):
@@ -536,7 +537,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up
             if "job_id" in locals():
-                k8_delete_job(job_id)
+                k8_job_delete(job_id)
 
     @tag("slow", "k8s", "live")
     def test_k8s_jobs_build(self):
@@ -611,7 +612,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up job, model and image
             if job_id:
-                k8_delete_job(job_id)
+                k8_job_delete(job_id)
                 url = reverse("api:model-detail", args=(target_id,))
                 requests.delete(server + url, headers=headers)
                 if "docker" in locals() and "image" in docker:
@@ -728,7 +729,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             # clean up job, model and image
             if job_id:
-                k8_delete_job(job_id)
+                k8_job_delete(job_id)
                 url = reverse("api:model-detail", args=(target_id,))
                 requests.delete(server + url, headers=headers)
                 if "docker" in locals() and "image" in docker:
@@ -750,7 +751,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     @tag("k8s")
-    def test_delete_job(self):
+    def test_job_delete(self):
         job_id, job = self.job_run_notebook()
         url = reverse("api:notebook-k8-jobs", args=(self.item_id, job_id))
 
@@ -773,6 +774,48 @@ class K8Tests(AnaliticoApiTestCase):
         # try to delete job again but it's not find
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    @tag("k8s")
+    def test_k8_wait_for_condition(self):
+        # non existent resource
+        try:
+            k8_wait_for_condition("pod/fake", "cloud", "condition=Ready", timeout=2)
+            self.fail("Expected not found exception")
+        except AnaliticoException:
+            pass
+
+        # ready resource
+        service = self.deploy_service(wait=0)
+        status, _ = k8_wait_for_condition(
+            "pod", "cloud", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
+        )
+        self.assertIn("condition met", status)
+
+    ##
+    ## Test Jupyter
+    ##
+
+    @tag("k8s", "slow")
+    def test_k8_jupyter_get(self):
+        # user CANNOT retrieve Jupyters from workspaces he does not have access to
+        self.auth_token(self.token2)
+        url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, None))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # TODO: expect both jupyters to be in the response
+        # self.deploy_jupyter()
+        # self.deploy_jupyter()
+        # self.auth_token(self.token1)
+        # url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, ))
+        # response = self.client.get(url)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # todo check
+
+        # TODO: get single jupyter
+
+        # TODO: finally destroy jupyter
 
     @tag("slow", "k8s", "live")
     def test_deploy_jupyter(self):
@@ -866,19 +909,3 @@ class K8Tests(AnaliticoApiTestCase):
             # cleanup
             self.ws2.refresh_from_db()
             k8_deallocate_jupyter(self.ws2)
-
-    @tag("k8s")
-    def test_k8_wait_for_condition(self):
-        # non existent resource
-        try:
-            k8_wait_for_condition("pod/fake", "cloud", "condition=Ready", timeout=2)
-            self.fail("Expected not found exception")
-        except AnaliticoException:
-            pass
-
-        # ready resource
-        service = self.deploy_service(wait=0)
-        status, _ = k8_wait_for_condition(
-            "pod", "cloud", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
-        )
-        self.assertIn("condition met", status)

@@ -281,3 +281,23 @@ class K8ViewSetMixin:
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elastic_search_response = requests.get(url, params=params, headers=headers, verify=False)
         return Response(elastic_search_response.json(), content_type="application/json", status=elastic_search_response.status_code)
+
+    ##
+    ## Jupyter
+    ## 
+
+    @action(methods=["get"], detail=True, url_name="k8-jupyters", url_path="k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})")
+    def jupyters_get(self, request, pk, jupyter_name: str):
+        """ List of Jupyter instances created for the workspace or the specific one """
+        workspace = self.get_object()
+        jupyters = k8_jupyter_get(workspace, jupyter_name=jupyter_name)
+
+        return Response(jupyters)
+
+    @action(methods=["post"], detail=True, url_name="k8-deploy-jupyter", url_path="k8s/jupyters")
+    def jupyter_deploy(self, request, pk):
+        """ """
+        workspace = self.get_object()
+        data = k8_jupyter_deploy(workspace)
+
+        return Response(data)
