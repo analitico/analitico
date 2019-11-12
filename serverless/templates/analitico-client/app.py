@@ -17,6 +17,7 @@ from analitico import AnaliticoException, logger
 import flask
 from flask import Flask
 from flask import request, Response
+from flask_cors import CORS
 
 try:
     # This module is dinamically generated from the customer's
@@ -69,6 +70,8 @@ logging.getLogger().setLevel(logging.DEBUG)
 # startup flask web server
 app = Flask(__name__)
 app.logger.info("Starting Flask")
+# enable CORS requests for all domains on all routes
+CORS(app)
 
 
 def is_json(presumed_json: str):
