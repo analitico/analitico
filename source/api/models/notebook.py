@@ -334,7 +334,8 @@ NB_SERVERLESS_TAGS = ["serverless", "handle", "predict", "prediction"]
 
 def nb_extract_serverless(nb: dict) -> (str, str):
     """ Extract source code and scripts from notebook for docker packaging """
-    source, script = "", ""
+    source = ""
+    script = "set -e\n" # stop the script as soon as a command fails
 
     # scan all cells in the notebook but consider only code cells
     for i, cell in enumerate(nb["cells"]):
