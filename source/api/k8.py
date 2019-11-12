@@ -33,6 +33,7 @@ from analitico.utilities import (
     copy_directory,
     id_generator,
     size_to_bytes,
+    cpu_unit_to_fractional,
 )
 from api.factory import factory
 from api.models import ItemMixin, Job, Recipe, Model, Workspace
@@ -467,7 +468,7 @@ def k8_job_delete(job_id: str):
 ##
 
 
-def k8_jupyter_get(workspace: ItemMixin, jupyter_name: str = None) -> [dict]:
+def k8_jupyter_get(workspace: Workspace, jupyter_name: str = None) -> [dict]:
     """ List of Jupyter deployments created for the workspace """
     if jupyter_name:
         response, _ = kubectl(
@@ -482,7 +483,7 @@ def k8_jupyter_get(workspace: ItemMixin, jupyter_name: str = None) -> [dict]:
         # kubectl selectors returns an array of items
         items = response.get("items", [])
         if len(items) > 0:
-            response = items[0] 
+            response = items[0]
         else:
             raise AnaliticoException(f"Resource not found", status_code=status.HTTP_404_NOT_FOUND)
     else:
@@ -496,13 +497,14 @@ def k8_jupyter_get(workspace: ItemMixin, jupyter_name: str = None) -> [dict]:
     return response
 
 
-def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None):
+def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None):
     """
     Deploy a new Jupyter instance or update the existing one with the given settings.
     If settings are not provided are used those from the workspace or the default one. 
     
     Arguments:
         workspace {Workspace} -- The workspace for which we're allocating Jupyter.
+        jupyter_name string -- Name of the Jupyter to update its configuration
         settings {} -- Settings for deploying the Jupyter, like resources
     
     Returns:
@@ -515,7 +517,7 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
             "settings": {
                 "max-instances": 1,
                 "cooloff-enabled": "true",
-                "cooloff-interval": 60,
+                "cooloff-interval": "60",
                 "requests": {
                     "cpu": "500m",  # number of CPUs requested
                     "memory": "8Gi",  # memory size requested
@@ -529,32 +531,37 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
             }
         }
 
-    # a workspace can deploy a limited number of Jupyter
-    # instances depending on the workspace's billing plan
-    total_instances = len(k8_jupyter_get(workspace).get("items", []))
-    max_instances = int(settings_limits["settings"]["max-instances"])
-    if total_instances >= max_instances:
-        raise AnaliticoException(
-            f"The maximum number of Jupyter instances has been reached (max {max_instances} / current {total_instances})",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        )
+    if jupyter_name:
+        # check the given jupyter exists, exception otherwise
+        jupyter = k8_jupyter_get(workspace, jupyter_name)
+        assert jupyter
+    else:
+        # a workspace can deploy a limited number of Jupyter
+        # instances depending on the workspace's billing plan
+        total_instances = len(k8_jupyter_get(workspace).get("items", []))
+        max_instances = int(settings_limits["settings"]["max-instances"])
+        if total_instances >= max_instances:
+            raise AnaliticoException(
+                f"The maximum number of Jupyter instances has been reached (max {max_instances} / current {total_instances})",
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
 
     # resources can be customized by the user but they are
     # considered as resource limit for a Jupyter and the values
     # are limited by those from the billing plan (saved in the workspace)
     if settings is None:
         settings = {}
-    cpu = get_dict_dot(settings, "settings.cpu", sys.maxsize)
-    memory = size_to_bytes(get_dict_dot(settings, "settings.memory", sys.maxsize))
-    gpu = get_dict_dot(settings, "settings.gpu", sys.maxsize)
-    cpu_limit = get_dict_dot(settings_limits, "settings.limits.cpu")
+    cpu = cpu_unit_to_fractional(get_dict_dot(settings, "limits.cpu", sys.maxsize))
+    memory = size_to_bytes(get_dict_dot(settings, "limits.memory", sys.maxsize))
+    gpu = get_dict_dot(settings, "limits.gpu", sys.maxsize)
+    cpu_limit = cpu_unit_to_fractional(get_dict_dot(settings_limits, "settings.limits.cpu"))
     memory_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.memory"))
     gpu_limit = get_dict_dot(settings_limits, "settings.limits.gpu")
 
-    memory_limit = min(memory_limit, memory)
     cpu_limit = min(cpu_limit, cpu)
+    memory_limit = min(memory_limit, memory)
     gpu_limit = min(gpu_limit, gpu)
-    cpu_request = get_dict_dot(settings_limits, "settings.requests.cpu")
+    cpu_request = cpu_unit_to_fractional(get_dict_dot(settings_limits, "settings.requests.cpu"))
     memory_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.memory"))
     gpu_request = get_dict_dot(settings_limits, "settings.requests.gpu")
 
@@ -615,30 +622,26 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
     # k8s secret containing the credentials for the workspace mount
     secret_template = os.path.join(K8_TEMPLATE_DIR, "drive-secret-template.yaml")
     secret = k8_customize_and_apply(secret_template, **configs)
-    assert secret, "kubectl did not apply the drive secret"
 
     # jupyter kubernetes service
     secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-service-template.yaml")
     service = k8_customize_and_apply(secret_template, **configs)
-    assert service, "kubectl did not apply the jupyter service"
 
     configs["owner_uid"] = service["metadata"]["uid"]
 
     # jupyter token
     secret_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-secret-template.yaml")
     secret = k8_customize_and_apply(secret_template, **configs)
-    assert secret, "kubectl did not apply the jupyter secret"
 
     service_template = os.path.join(K8_TEMPLATE_DIR, "jupyter-template.yaml")
     template = k8_customize_and_apply(service_template, **configs)
-    assert template, "kubectl did not apply jupyter"
 
     # wait for pod to be started, deployed or restored to one replica
     k8_wait_for_condition(f"pod", service_namespace, "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
 
     deployment = k8_jupyter_get(workspace, jupyter_name)
 
-    # set the token to access to Jupyter
+    # set the jupyter access token
     annotations = get_dict_dot(deployment, "metadata.annotations", {})
     annotations["analitico.ai/jupyter-token"] = token
     set_dict_dot(deployment, "metadata.annotations", annotations)
@@ -646,7 +649,7 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
     return deployment
 
 
-def k8_jupyter_kickoff(workspace, specs: dict = None):
+def k8_jupyter_kickoff(workspace, jupyter_name: str, settings: dict = None):
     """
     This method checks if the given workspace has been allocated one or more Jupyter servers.
     If the workspace doesn't have a server running or the server has cooled down, it will be
@@ -658,18 +661,31 @@ def k8_jupyter_kickoff(workspace, specs: dict = None):
     Returns:
         dict -- The jupyter dictionary containing configurations and servers info.
     """
-    # update deployment with replicas=1
-    subprocess_run(
-        ["kubectl", "scale", "--namespace", service_namespace, "--replicas=1", f"deployment/{deployment_name}"]
-    )
+    if settings:
+        # kickoff is performed by the update of the configuration
+        deployment = k8_jupyter_deploy(workspace, jupyter_name=jupyter_name, settings=settings)
+    else:
+        # update deployment with replicas=1
+        response, _ = kubectl(
+            K8_DEFAULT_NAMESPACE,
+            "scale",
+            "deployment",
+            args=["--replicas=1", "--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"],
+        )
+        # kubectl selector return an array of items
+        deployment = response["items"][0]
 
-    # todo: annotate operazione con data
+        # todo: annotate operazione con data
 
-    secret, _ = subprocess_run(
-        ["kubectl", "get", "secret", "--namespace", service_namespace, secret_name, "--output", "json"]
-    )
-    token = base64.b64decode(secret["data"]["token"]).decode("UTF-8")
-    pass
+        # set the jupyter access token
+        response, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "secret", args=["--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"])
+        secret = response["items"][0]
+        token = base64.b64decode(get_dict_dot(secret, "data.token")).decode("UTF-8")
+        annotations = get_dict_dot(deployment, "metadata.annotations", {})
+        annotations["analitico.ai/jupyter-token"] = token
+        set_dict_dot(deployment, "metadata.annotations", annotations)
+
+    return deployment
 
 
 def k8_cooloff():

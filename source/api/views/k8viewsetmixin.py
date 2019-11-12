@@ -298,6 +298,24 @@ class K8ViewSetMixin:
     def jupyter_deploy(self, request, pk):
         """ """
         workspace = self.get_object()
-        data = k8_jupyter_deploy(workspace)
+        custom_settings = request.data
+        
+        if custom_settings:
+            custom_settings = custom_settings.get("data", None)
+
+        data = k8_jupyter_deploy(workspace, settings=custom_settings)
+
+        return Response(data)
+
+    @action(methods=["put"], detail=True, url_name="k8-jupyter-kickoff", url_path="k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})")
+    def jupyter_kickoff(self, request, pk, jupyter_name: str):
+        """ """
+        workspace = self.get_object()
+        custom_settings = request.data
+        
+        if custom_settings:
+            custom_settings = custom_settings.get("data", None)
+        
+        data = k8_jupyter_kickoff(workspace, settings=custom_settings)
 
         return Response(data)
