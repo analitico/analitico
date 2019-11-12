@@ -170,3 +170,4 @@ websocket-client==0.56.0
 widgetsnbextension==3.4.2
 wrapt==1.10.11
 xlrd
+binary==1.0.0
