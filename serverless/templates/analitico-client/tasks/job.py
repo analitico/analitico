@@ -87,7 +87,7 @@ try:
         logging.info("Notebook directory: " + os.getcwd())
         logging.info("Running papermill to process notebook")
 
-        papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir)
+        papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir, log_output=True)
     except Exception as exc:
         raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
 except Exception:

@@ -50,9 +50,9 @@ class K8Tests(AnaliticoApiTestCase):
             "docker",
             {
                 "type": "analitico/docker",
-                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon@sha256:bd5feff21345f0a9d3ae855a925442487936d85968b823fddb92d10c287892e3",
-                "image_name": "eu.gcr.io/analitico-api/rx-fvdmbmon:K8Tests_test_k8_deploy",
-                "image_id": "sha256:bd5feff21345f0a9d3ae855a925442487936d85968b823fddb92d10c287892e3",
+                "image": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml_cmbn7j6b",
+                "image_name": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml_cmbn7j6b",
+                "image_id": "sha256:66890fb99da9c2b0d411636418e08377a49f1d9781bf723ce41921c1e3f9b10f",
             },
         )
         notebook.save()
@@ -63,6 +63,9 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEquals(service["namespace"], "cloud")
         self.assertIn("url", service)
 
+        # k8_wait_for_condition(
+        #     "pod", K8_DEFAULT_CONCURRENCY, "condition=Ready", labels=f"serving.knative.dev/service=" + service["name"]
+        # )
         time.sleep(15)
         return service
 
@@ -149,6 +152,25 @@ class K8Tests(AnaliticoApiTestCase):
     ##
     ## K8s APIs that work on specific service
     ##
+
+    @tag("slow", "docker", "k8s")
+    def test_serverless_CORS_header(self):
+        """ Test CORS headers on a serverless endpoint """
+
+        service = self.deploy_service()
+
+        # serverless url
+        url = service["url"].replace("http://", "https://")
+        # check CORS headers for the OPTIONS method
+        response = requests.options(url, headers={"Origin": "https://sample.com"})
+        self.assertStatusCode(response)
+        self.assertIn("GET", response.headers.get("allow"))
+        self.assertIn("HEAD", response.headers.get("allow"))
+        self.assertIn("OPTIONS", response.headers.get("allow"))
+        self.assertIn("POST", response.headers.get("allow"))
+
+        response = requests.post(url, headers={"Origin": "https://sample.com"})
+        self.assertStatusCode(response)
 
     @tag("k8s", "slow")
     def test_get_service_not_deployed(self):
@@ -356,7 +378,7 @@ class K8Tests(AnaliticoApiTestCase):
             # post a job by running a notebook
             job_id, _ = self.job_run_notebook()
 
-            url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, ''))
+            url = reverse("api:workspace-k8-jobs", args=(self.ws1.id, ""))
 
             # user without permission cannot retrieve the list
             self.auth_token(self.token3)
@@ -367,7 +389,7 @@ class K8Tests(AnaliticoApiTestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertGreaterEqual(len(response.data["items"]), 1)
-            
+
             # last job should be for our notebook
             lastJob = len(response.data["items"]) - 1
             lastJobItemId = response.data["items"][lastJob]["metadata"]["labels"]["analitico.ai/item-id"]
