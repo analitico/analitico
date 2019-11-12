@@ -8,6 +8,7 @@ metadata:
     analitico.ai/service: jupyter
     analitico.ai/workspace-id: {workspace_id}
   annotations:
+    analitico.ai/jupyter-title: "{jupyter_title}"
     analitico.ai/jupyter-url: "{service_url}"
     analitico.ai/cooloff-enabled: "{cooloff_enabled}"
     analitico.ai/cooloff-interval: "{cooloff_interval}"
@@ -65,7 +66,7 @@ spec:
           driver: "fstab/cifs"
           fsType: "cifs"
           secretRef:
-            name: {analitico_drive}
+            name: analitico-drive-{workspace_id_slug}
           options:
             networkPath: {volume_network_path}
             mountOptions: dir_mode=0755,file_mode=0644,noperm
@@ -87,19 +88,14 @@ metadata:
     uid: {owner_uid}
 spec:
   gateways:
-  - knative-ingress-gateway
-  - mesh
+  - knative-serving/knative-ingress-gateway
   hosts:
   - "{service_name}.cloud.analitico.ai"
   - "{service_name}.cloud.svc.cluster.local"
   http:
   - match:
     - authority:
-        regex: ^{service_name}\.cloud(?::\d{{1,5}})?$
-    - authority:
         regex: ^{service_name}\.cloud\.analitico\.ai(?::\d{{1,5}})?$
-    - authority:
-        regex: ^{service_name}\.cloud\.svc(?::\d{{1,5}})?$
     - authority:
         regex: ^{service_name}\.cloud\.svc\.cluster\.local(?::\d{{1,5}})?$
     retries:

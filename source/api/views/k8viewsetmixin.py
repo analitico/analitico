@@ -294,7 +294,7 @@ class K8ViewSetMixin:
 
         return Response(jupyters)
 
-    @action(methods=["post"], detail=True, url_name="k8-deploy-jupyter", url_path="k8s/jupyters")
+    @action(methods=["post"], detail=True, url_name="k8-jupyter-deploy", url_path="k8s/jupyters")
     def jupyter_deploy(self, request, pk):
         """ """
         workspace = self.get_object()

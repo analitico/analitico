@@ -17,7 +17,7 @@ from rest_framework import status
 # pylint: disable=unused-wildcard-import
 
 from analitico.constants import ACTION_PROCESS, ACTION_DEPLOY
-from analitico.utilities import read_json, subprocess_run
+from analitico.utilities import read_json, subprocess_run, size_to_bytes
 
 import api
 
@@ -67,16 +67,14 @@ class K8Tests(AnaliticoApiTestCase):
             time.sleep(wait)
         return service
 
-    def deploy_jupyter(self):
-        # todo: fix
-        url = reverse("api:workspace-jupyter", args=(self.ws2.id,))
+    def deploy_jupyter(self, custom_settings: dict = None):
+        url = reverse("api:workspace-k8-jupyter-deploy", args=(self.ws1.id,))
 
-        self.auth_token(self.token2)
-        response = self.client.get(url)
+        self.auth_token(self.token1)
+        response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.ws2.refresh_from_db()
-        return self.ws2
+        return response.json().get("data")
 
     def job_run_notebook(self, item_id=None) -> (str, dict):
         if item_id is None:
@@ -803,57 +801,80 @@ class K8Tests(AnaliticoApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # TODO: expect both jupyters to be in the response
-        # self.deploy_jupyter()
-        # self.deploy_jupyter()
-        # self.auth_token(self.token1)
-        # url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, ))
-        # response = self.client.get(url)
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        try:
+            deployment = self.deploy_jupyter(self.ws1)
+            jupyter_name = get_dict_dot(deployment, "metadata.labels.app")
 
-        # todo check
+            # all jupyters in the workspace
+            self.auth_token(self.token1)
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, ""))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            items = get_dict_dot(response.json(), "data.items", [])
+            self.assertEqual(1, len(items))
+            self.assertEqual(get_dict_dot(deployment, "metadata.name"), get_dict_dot(items[0], "metadata.name"))
 
-        # TODO: get single jupyter
+            # user cannot retrieve a specific jupyter from workspaces he does not have access to
+            self.auth_token(self.token2)
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # TODO: finally destroy jupyter
+            # get specific jupyter
+            self.auth_token(self.token1)
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
+            response = self.client.get(url)
+            actual_jupyter = response.json().get("data")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(get_dict_dot(deployment, "metadata.name"), get_dict_dot(actual_jupyter, "metadata.name"))
+
+            # user cannot retrieve a specific jupyter from another workspace he does not have access to
+            self.auth_token(self.token2)
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws2.id, jupyter_name))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        finally:
+            k8_jupyter_deallocate(self.ws1)
 
     @tag("slow", "k8s", "live")
-    def test_deploy_jupyter(self):
+    def test_deploy_jupyter_default_settings(self):
         try:
             # deploy jupyter
-            ws2 = self.deploy_jupyter()
+            deployment = self.deploy_jupyter(self.ws1)
 
-            # attribute with jupyter deployment details
-            self.assertIn("jupyter", ws2.attributes)
-            jupyter = ws2.get_attribute("jupyter")
+            deployment_name = get_dict_dot(deployment, "metadata.name")
+            labels = get_dict_dot(deployment, "metadata.labels")
+            jupyter_name = labels["app"] 
+            # eg, jupyter-123abc-deployment
+            self.assertIn(labels["app"], deployment_name)
+            self.assertEqual(labels["analitico.ai/service"], "jupyter")
+            self.assertEqual(labels["analitico.ai/workspace-id"], self.ws1.id)
 
-            self.assertIn("servers", jupyter)
-            servers = jupyter["servers"]
+            annotations = get_dict_dot(deployment, "metadata.annotations")
+            jupyter_url = annotations["analitico.ai/jupyter-url"]
+            self.assertEqual(jupyter_url, f"https://{jupyter_name}.cloud.analitico.ai")
+            self.assertEqual(annotations["analitico.ai/cooloff-enabled"], "true")
+            self.assertEqual(annotations["analitico.ai/cooloff-interval"], "60")
 
-            self.assertGreaterEqual(1, len(servers))
-            jupyter_service_name = servers[0]["name"]
-            jupyter_service_namespace = servers[0]["namespace"]
-            jupyter_url = servers[0]["url"]
-            jupyter_token = servers[0]["token"]
+            token = annotations.get("analitico.ai/jupyter-token", "")
+            self.assertTrue(token != "")
 
-            # wait for status to be running
-            subprocess_run(
-                [
-                    "kubectl",
-                    "wait",
-                    "pod",
-                    "-l",
-                    f"app={jupyter_service_name}",
-                    "-n",
-                    jupyter_service_namespace,
-                    "--for=condition=Ready",
-                    "--timeout=120s",
-                ]
+            # todo: controlla annotations, url, name, risorse, token
+            container = get_dict_dot(deployment, "spec.template.spec.containers")[0]
+            resources = container["resources"]
+            self.assertEqual("500m", resources["requests"]["cpu"])
+            self.assertEqual(str(size_to_bytes("8Gi")), resources["requests"]["memory"])
+            self.assertEqual("0", resources["requests"]["nvidia.com/gpu"])
+
+            self.assertEqual("4", resources["limits"]["cpu"])
+            self.assertEqual(str(size_to_bytes("8Gi")), resources["limits"]["memory"])
+            self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
+
+            # Jupyter should be ready when we get the response
+            k8_wait_for_condition(
+                "pod", K8_DEFAULT_NAMESPACE, "condition=Ready", labels="app=" + jupyter_name, timeout=2
             )
-
-            # TODO: not required when closed
-            # k8s / pod / ready be sure pod is activated when it's ready #383
-            time.sleep(60)
 
             # access denied without token (redirected to /login)
             response = requests.get(jupyter_url, allow_redirects=True)
@@ -861,51 +882,43 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertIn("/login", response.url)
 
             # jupyter runs and logins (redirected to /tree)
-            url = f"{jupyter_url}?token={jupyter_token}"
+            url = f"{jupyter_url}?token={token}"
             response = requests.get(url, allow_redirects=True)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("/tree", response.url)
 
             # delete jupyter when workspace is removed
-            ws2.delete()
-            # wait for pod termination
-            time.sleep(90)
+            self.ws1.delete()
+            k8_wait_for_condition(
+                "pod", K8_DEFAULT_NAMESPACE, "delete", labels="app=" + jupyter_name, timeout=90
+            )
+
             # check all deployed resources to be deleted
-            response = subprocess_run(
-                [
-                    "kubectl",
-                    "get",
-                    "deployment,service,virtualService,pod,secret",
-                    "-l",
-                    f"app={jupyter_service_name}",
-                    "-n",
-                    jupyter_service_namespace,
-                    "-ojson",
-                ]
+            response, _ = kubectl(
+                K8_DEFAULT_NAMESPACE,
+                "get",
+                "deployment,service,virtualService,pod,secret",
+                args=["--selector", f"app={jupyter_name}"],
             )
             # all resources removed
-            self.assertEqual(0, len(response[0]["items"]))
-        except Exception as ex:
-            self.ws2.refresh_from_db()
-            k8_deallocate_jupyter(self.ws2)
-            raise ex
+            self.assertEqual(0, len(response["items"]))
+        finally:
+            k8_jupyter_deallocate(self.ws1)
 
     @tag("slow", "k8s", "live")
-    def test_jupyter_is_not_deployed_twice(self):
-        try:
-            ws2 = self.deploy_jupyter()
-            jupyter = ws2.get_attribute("jupyter")
-            token = jupyter["servers"][0]["token"]
+    def test_jupyter_deploy_workspace_settings(self):
+        pass
 
-            time.sleep(10)
+    @tag("slow", "k8s", "live")
+    def test_jupyter_deploy_custom_settings(self):
+        pass
 
-            # deploy another jupyter on the same workspace
-            ws2 = self.deploy_jupyter()
-            jupyter = ws2.get_attribute("jupyter")
-            token_redeployed = jupyter["servers"][0]["token"]
+    @tag("slow", "k8s", "live")
+    def test_jupyter_deploy_update_deployment(self):
+        pass
 
-            self.assertEqual(token, token_redeployed)
-        finally:
-            # cleanup
-            self.ws2.refresh_from_db()
-            k8_deallocate_jupyter(self.ws2)
+    def test_jupyter_deploy_max_instances_reached(self):
+        pass
+
+    def test_jupyter_deploy_custom_settings_limits_from_workspace(self):
+        pass

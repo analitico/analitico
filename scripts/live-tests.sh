@@ -64,7 +64,7 @@ do
     echo "Run completd in $(($COMPLETEDTIME - STARTTIME)) seconds."
 
     # 5 min between tests
-    echo "Next run in 5 minutes"
+    echo "Next run in 60 minutes"
     
-    sleep 300
+    sleep 3600
 done

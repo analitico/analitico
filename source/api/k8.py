@@ -27,11 +27,12 @@ from analitico.utilities import (
     save_text,
     read_text,
     get_dict_dot,
+    set_dict_dot,
     subprocess_run,
     read_json,
     copy_directory,
     id_generator,
-    size_to_bytes
+    size_to_bytes,
 )
 from api.factory import factory
 from api.models import ItemMixin, Job, Recipe, Model, Workspace
@@ -479,7 +480,11 @@ def k8_jupyter_get(workspace: ItemMixin, jupyter_name: str = None) -> [dict]:
             ],
         )
         # kubectl selectors returns an array of items
-        response = response["items"][0]
+        items = response.get("items", [])
+        if len(items) > 0:
+            response = items[0] 
+        else:
+            raise AnaliticoException(f"Resource not found", status_code=status.HTTP_404_NOT_FOUND)
     else:
         response, _ = kubectl(
             K8_DEFAULT_NAMESPACE,
@@ -512,7 +517,7 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
                 "cooloff-enabled": "true",
                 "cooloff-interval": 60,
                 "requests": {
-                    "cpu": 0.5,  # number of CPUs requested
+                    "cpu": "500m",  # number of CPUs requested
                     "memory": "8Gi",  # memory size requested
                     "gpu": 0,  # number of GPUs requested
                 },
@@ -520,13 +525,13 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
                     "cpu": 4,  # number of CPUs limit
                     "memory": "8Gi",  # memory size limit
                     "gpu": 0,  # number of GPUs requested
-                }
+                },
             }
         }
 
-    # a workspace can deploy a limited number of Jupyter 
+    # a workspace can deploy a limited number of Jupyter
     # instances depending on the workspace's billing plan
-    total_instances = len(k8_jupyter_get(workspace))
+    total_instances = len(k8_jupyter_get(workspace).get("items", []))
     max_instances = int(settings_limits["settings"]["max-instances"])
     if total_instances >= max_instances:
         raise AnaliticoException(
@@ -539,47 +544,48 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
     # are limited by those from the billing plan (saved in the workspace)
     if settings is None:
         settings = {}
-    memory = size_to_bytes(get_dict_dot(settings, "settings.memory", sys.maxint))
-    cpu = size_to_bytes(get_dict_dot(settings, "settings.cpu", sys.maxint))
-    gpu = size_to_bytes(get_dict_dot(settings, "settings.gpu", sys.maxint))
+    cpu = get_dict_dot(settings, "settings.cpu", sys.maxsize)
+    memory = size_to_bytes(get_dict_dot(settings, "settings.memory", sys.maxsize))
+    gpu = get_dict_dot(settings, "settings.gpu", sys.maxsize)
+    cpu_limit = get_dict_dot(settings_limits, "settings.limits.cpu")
     memory_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.memory"))
-    cpu_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.cpu"))
-    gpu_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.gpu"))
+    gpu_limit = get_dict_dot(settings_limits, "settings.limits.gpu")
 
     memory_limit = min(memory_limit, memory)
     cpu_limit = min(cpu_limit, cpu)
     gpu_limit = min(gpu_limit, gpu)
+    cpu_request = get_dict_dot(settings_limits, "settings.requests.cpu")
     memory_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.memory"))
-    cpu_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.cpu"))
-    gpu_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.gpu"))
+    gpu_request = get_dict_dot(settings_limits, "settings.requests.gpu")
 
     # jupyter nomencleture
     # use the given Jupyter name in order to update the settings
-    # of the Jupyter with the new specifications. Otherwise a new 
+    # of the Jupyter with the new specifications. Otherwise a new
     # Jupyter is deployed
-    name = id_generator() if not jupyter_name else jupyter_name
-    service_name = f"jupyter-{name}"
+    name = id_generator() if not jupyter_name else k8_normalize_name(jupyter_name)
+    jupyter_name = f"jupyter-{name}"
     service_namespace = K8_DEFAULT_NAMESPACE
-    deployment_name = f"{service_name}-deployment"
-    secret_name = f"analitico-jupyter-{name}"
+    deployment_name = f"{jupyter_name}-deployment"
+    secret_name = f"analitico-{jupyter_name}"
 
-    url = f"https://{service_name}.{service_namespace}.analitico.ai"
+    url = f"https://{jupyter_name}.{service_namespace}.analitico.ai"
 
     # in case of error the instance must be deployed
     # start from storage config and all the rest
     configs = k8_get_storage_volume_configuration(workspace)
 
     pod_name = f"{deployment_name}-{id_generator(5)}"
-    virtualservice_name = f"{service_name}"
+    virtualservice_name = f"{jupyter_name}"
 
-    configs["service_name"] = service_name
+    configs["service_name"] = jupyter_name
     configs["service_namespace"] = service_namespace
-    configs["analitico_drive"] = f"analitico-drive-{k8_normalize_name(workspace.id)}"
     configs["workspace_id"] = workspace.id
+    configs["workspace_id_slug"] = k8_normalize_name(workspace.id)
     configs["deployment_name"] = deployment_name
     configs["pod_name"] = pod_name
     configs["virtualservice_name"] = virtualservice_name
     configs["service_url"] = url
+    configs["jupyter_title"] = get_dict_dot(settings, "settings.title", jupyter_name)
 
     # memory limits displayed by nbresuse extension
     configs["jupyter_mem_limit_bytes"] = memory_limit
@@ -628,11 +634,17 @@ def k8_jupyter_deploy(workspace, settings: dict = None, jupyter_name: str = None
     assert template, "kubectl did not apply jupyter"
 
     # wait for pod to be started, deployed or restored to one replica
-    k8_wait_for_condition(f"pod", service_namespace, "condition=Ready", labels=f"app={service_name}", timeout=30)
+    k8_wait_for_condition(f"pod", service_namespace, "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
 
     deployment = k8_jupyter_get(workspace, jupyter_name)
 
+    # set the token to access to Jupyter
+    annotations = get_dict_dot(deployment, "metadata.annotations", {})
+    annotations["analitico.ai/jupyter-token"] = token
+    set_dict_dot(deployment, "metadata.annotations", annotations)
+
     return deployment
+
 
 def k8_jupyter_kickoff(workspace, specs: dict = None):
     """
@@ -683,10 +695,8 @@ def k8_cooloff():
         pass
 
 
-def k8_deallocate_jupyter(workspace):
+def k8_jupyter_deallocate(workspace):
     """ This method is called when a workspace is deleted to deallocate its Jupyter servers (if any). """
-    workspace_id_normalized = k8_normalize_name(workspace.id)
-    assert workspace_id_normalized
     subprocess_run(
         [
             "kubectl",
@@ -695,7 +705,7 @@ def k8_deallocate_jupyter(workspace):
             "--namespace",
             "cloud",
             "--selector",
-            f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace_id_normalized}",
+            f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}",
         ]
     )
 
