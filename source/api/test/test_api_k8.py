@@ -154,23 +154,39 @@ class K8Tests(AnaliticoApiTestCase):
     ##
 
     @tag("slow", "docker", "k8s")
-    def test_serverless_CORS_header(self):
-        """ Test CORS headers on a serverless endpoint """
-
-        service = self.deploy_service()
+    def test_serverless_cors_header(self):
+        """ 
+        Test CORS headers on a serverless endpoint 
+        If the serverless image changes, deploy a new model of this recipe.
+        """
 
         # serverless url
-        url = service["url"].replace("http://", "https://")
-        # check CORS headers for the OPTIONS method
-        response = requests.options(url, headers={"Origin": "https://sample.com"})
-        self.assertStatusCode(response)
-        self.assertIn("GET", response.headers.get("allow"))
-        self.assertIn("HEAD", response.headers.get("allow"))
-        self.assertIn("OPTIONS", response.headers.get("allow"))
-        self.assertIn("POST", response.headers.get("allow"))
+        url = "https://rx-qx1ek6jb-staging.cloud.analitico.ai"
 
-        response = requests.post(url, headers={"Origin": "https://sample.com"})
+        # check CORS headers for the OPTIONS method
+        response = requests.options(
+            url,
+            headers={
+                "Origin": "https://sample.com",
+                "Referer": "https://sample.com/",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
         self.assertStatusCode(response)
+        self.assertIn("GET", response.headers.get("access-control-allow-methods"))
+        self.assertIn("HEAD", response.headers.get("access-control-allow-methods"))
+        self.assertIn("OPTIONS", response.headers.get("access-control-allow-methods"))
+        self.assertIn("POST", response.headers.get("access-control-allow-methods"))
+        self.assertIn("DELETE", response.headers.get("access-control-allow-methods"))
+        self.assertEqual("https://sample.com", response.headers.get("access-control-allow-origin"))
+        self.assertEqual("content-type", response.headers.get("access-control-allow-headers"))
+
+        response = requests.post(
+            url, data="{}", headers={"Origin": "https://sample.com", "Content-Type": "application/json;charset=utf-8"}
+        )
+        self.assertStatusCode(response)
+        self.assertEqual("https://sample.com", response.headers.get("access-control-allow-origin"))
 
     @tag("k8s", "slow")
     def test_get_service_not_deployed(self):
