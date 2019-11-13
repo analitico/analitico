@@ -19,6 +19,7 @@ import sys
 import tempfile
 import stripe
 
+import analitico.logging
 from analitico.utilities import save_text, read_json
 from rest_framework.exceptions import APIException
 
@@ -99,16 +100,21 @@ try:
                 "version": 1,
                 "disable_existing_loggers": False,
                 "formatters": {
-                    "console": {
-                        # exact format is not important, this is the minimum information
-                        "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-                        "datefmt": "%H:%M:%S",
+                    # format messages as json in a way that is easily readable by our fluentd
+                    # while preserving the log messages' metadata (eg. level, function, line, logger, etc)
+                    "json": {"()": analitico.logging.FluentdFormatter, "format": "%(asctime)s %(message)s"}
+                },
+                "handlers": {
+                    "json": {
+                        "level": "INFO",
+                        "class": "logging.StreamHandler",
+                        "formatter": "json",
+                        "stream": "ext://sys.stderr",
                     }
                 },
-                "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "console"}},
                 "loggers": {
                     # root logger
-                    "": {"level": "INFO", "handlers": ["console"]}
+                    "": {"level": "INFO", "handlers": ["json"]}
                 },
             }
         )
