@@ -479,17 +479,11 @@ def subprocess_run(cmd_args, job=None, timeout=3600, cwd=None, shell=False) -> (
     )
 
     elapsed_ms = time_ms(started_on)
-    message = (
-        f"completed in {elapsed_ms} ms, returned code: {response.returncode}\n\n{response.stdout}\n\n{response.stderr}"
-    )
-    logger.info(message)
-    if job:
-        job.append_logs(message)
+    logger.info(f"completed in {elapsed_ms} ms, returned code: {response.returncode}")
+    logger.info(response.stdout)
 
     if response.returncode:
         message = f"An error occoured while executing '{command}'."
-        if response.stdout:
-            message += "\nResponse.stdout:\n" + response.stdout
         if response.stderr:
             message += "\nResponse.stderr:\n" + response.stderr
         logger.error(message)
