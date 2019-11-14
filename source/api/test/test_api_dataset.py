@@ -830,3 +830,15 @@ class DatasetTests(AnaliticoApiTestCase):
         self.assertEqual(response4.status_code, status.HTTP_200_OK)
 
         item.delete()
+
+    def test_skip_metadata_large_dataset(self):
+        # change the limit for the purpose of this test
+        api.metadata.DATAFRAME_OPEN_SIZE_LIMIT_MB = 1
+
+        # upload a dataframe to represent a large file (~2.5MB)
+        url = self.upload_large_random_data("ds_titanic_4", 1000*1000, suffix=".parquet") + "?records=true"
+
+        # try to generate file metadata to calculate dataframe rows
+        self.auth_token(self.token1)
+        response = self.client.get(url + "?metadata=true&refresh=true")
+        self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)

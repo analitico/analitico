@@ -44,6 +44,9 @@ if not os.path.isdir(_cache_directory):
 # cache object is global so it stays open
 _cache = diskcache.Cache(_cache_directory)
 
+# dataframe size limit for exploring, quering and generating metadata
+DATAFRAME_OPEN_SIZE_LIMIT_MB = 2000
+
 
 ##
 ## Public methods
@@ -131,6 +134,15 @@ def get_file_dataframe(
         pd.DataFrame -- Records as a Pandas dataframe.
         int -- Number of rows in dataframe (if known).
     """
+    # skip metadata for big files otherwise request can stuck
+    ls = driver.ls(path)
+    if len(ls) == 1 and isinstance(ls[0], libcloud.storage.base.Object):
+        obj = ls[0]
+        if obj.size > analitico.utilities.size_to_bytes(f"{DATAFRAME_OPEN_SIZE_LIMIT_MB}MB"):
+            raise AnaliticoException(
+                f"Dataframe is too large to be opened (limit set to {DATAFRAME_OPEN_SIZE_LIMIT_MB}MB)",
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
 
     obj_stream = driver.download_as_stream(path)
     obj_io = api.libcloud.iterio.IterIO(obj_stream)
@@ -185,7 +197,7 @@ def get_file_dataframe(
             else:
                 by.append(column)
                 ascending.append(True)
-        
+
         df.sort_values(by, ascending=ascending, inplace=True)
 
     # number of total rows is unknown if we're prepaging the file

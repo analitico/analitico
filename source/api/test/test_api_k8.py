@@ -41,7 +41,7 @@ class K8Tests(AnaliticoApiTestCase):
     item_id = "nb_K8Tests_test_k8"  # help registry cleanups
     item_id_normalized = "nb-k8tests-test-k8-staging"
 
-    def deploy_service(self, wait=15):
+    def deploy_service(self, wait=True):
         self.auth_token(self.token1)
         self.post_notebook("notebook11.ipynb", self.item_id)
         notebook = Notebook.objects.get(pk=self.item_id)
@@ -50,9 +50,9 @@ class K8Tests(AnaliticoApiTestCase):
             "docker",
             {
                 "type": "analitico/docker",
-                "image": "eu.gcr.io/analitico-api/rx-fvdmbmon@sha256:bd5feff21345f0a9d3ae855a925442487936d85968b823fddb92d10c287892e3",
-                "image_name": "eu.gcr.io/analitico-api/rx-fvdmbmon:K8Tests_test_k8_deploy",
-                "image_id": "sha256:bd5feff21345f0a9d3ae855a925442487936d85968b823fddb92d10c287892e3",
+                "image": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml_cmbn7j6b",
+                "image_name": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml_cmbn7j6b",
+                "image_id": "sha256:66890fb99da9c2b0d411636418e08377a49f1d9781bf723ce41921c1e3f9b10f",
             },
         )
         notebook.save()
@@ -64,7 +64,9 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("url", service)
 
         if wait:
-            time.sleep(wait)
+            # k8_wait_for_condition(
+            #     "pod", K8_DEFAULT_CONCURRENCY, "condition=Ready", labels=f"serving.knative.dev/service=" + service["name"]
+            # )
         return service
 
     def deploy_jupyter(self, jupyter_name: str = None, custom_settings: dict = None):
@@ -154,6 +156,41 @@ class K8Tests(AnaliticoApiTestCase):
     ##
     ## K8s APIs that work on specific service
     ##
+
+    @tag("slow", "docker", "k8s")
+    def test_serverless_cors_header(self):
+        """ 
+        Test CORS headers on a serverless endpoint 
+        If the serverless image changes, deploy a new model of this recipe.
+        """
+
+        # serverless url
+        url = "https://rx-qx1ek6jb-staging.cloud.analitico.ai"
+
+        # check CORS headers for the OPTIONS method
+        response = requests.options(
+            url,
+            headers={
+                "Origin": "https://sample.com",
+                "Referer": "https://sample.com/",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        self.assertStatusCode(response)
+        self.assertIn("GET", response.headers.get("access-control-allow-methods"))
+        self.assertIn("HEAD", response.headers.get("access-control-allow-methods"))
+        self.assertIn("OPTIONS", response.headers.get("access-control-allow-methods"))
+        self.assertIn("POST", response.headers.get("access-control-allow-methods"))
+        self.assertIn("DELETE", response.headers.get("access-control-allow-methods"))
+        self.assertEqual("https://sample.com", response.headers.get("access-control-allow-origin"))
+        self.assertEqual("content-type", response.headers.get("access-control-allow-headers"))
+
+        response = requests.post(
+            url, data="{}", headers={"Origin": "https://sample.com", "Content-Type": "application/json;charset=utf-8"}
+        )
+        self.assertStatusCode(response)
+        self.assertEqual("https://sample.com", response.headers.get("access-control-allow-origin"))
 
     @tag("k8s", "slow")
     def test_get_service_not_deployed(self):

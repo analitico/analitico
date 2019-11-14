@@ -8,6 +8,8 @@ import json
 import argparse
 import requests
 
+import analitico.logging
+
 # python libraries search path
 os.environ["PYTHONPATH"] = os.path.expandvars("$PYTHONPATH:$ANALITICO_ITEM_PATH")
 
@@ -17,6 +19,26 @@ parser.add_argument(
     "notebooks", metavar="N", type=str, nargs="+", default="notebook.ipynb", help="a notebook file to be processed"
 )
 args = parser.parse_args()
+
+# setup logging so that we replace python's root logger with a new handler that
+# can format messages as json in a way that is easily readable by our fluentd
+# while preserving the log messages' metadata (eg. level, function, line, logger, etc)
+
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"json": {"()": analitico.logging.FluentdFormatter, "format": "%(asctime)s %(message)s"}},
+    "handlers": {
+        "default": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+            "stream": "ext://sys.stderr",
+        }
+    },
+    "root": {"handlers": ["default"]},
+}
+logging.config.dictConfig(LOGGING_CONFIG)
 
 
 def try_request_notification(notification_url):
@@ -87,7 +109,7 @@ try:
         logging.info("Notebook directory: " + os.getcwd())
         logging.info("Running papermill to process notebook")
 
-        papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir)
+        papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir, log_output=True)
     except Exception as exc:
         raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
 except Exception:

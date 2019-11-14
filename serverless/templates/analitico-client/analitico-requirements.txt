@@ -11,6 +11,7 @@
 ## Required by serverless
 # Flask is already installed in the base image
 gunicorn==19.9.0
+flask-cors==3.0.8
 # No specific version for the sdk package because we are young 
 # and we want to keep the image updated to the last version
 analitico
