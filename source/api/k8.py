@@ -9,10 +9,6 @@ import base64
 import string
 import collections
 import urllib.parse
-import sys
-
-import subprocess
-from subprocess import PIPE
 
 import django.utils
 from rest_framework import status
@@ -74,18 +70,18 @@ def kubectl(namespace: str, action: str, resource: str, output: str = "json", ar
         ) from exec
 
 
-def k8_wait_for_condition(resource: str, namespace: str, condition: str, labels: str = None, timeout: int = 60):
+def k8_wait_for_condition(namespace: str, resource: str, condition: str, labels: str = None, timeout: int = 60):
     """ 
     Wait the resource for the given condition. Command fails when the timeout expires. 
     
     Parameters
     ----------
+    namespace : str
+        Kubernetes resource namespace. Eg: cloud
     resource : str
         Kubernetes resource group and name with the following sintax: resource.group/resource.name.
         Eg: kservice/api-staging
         If labels are provided resource is only resource.group
-    namespace : str
-        Kubernetes resource namespace. Eg: cloud
     condition : str
         The pod condition to wait for:
             - delete
@@ -510,10 +506,10 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     Returns:
         dict -- The jupyter dictionary containing the Kubernetes deployment object
     """
-    settings_limits = workspace.get_attribute("jupyter")
-    if not settings_limits:
+    settings_default = workspace.get_attribute("jupyter")
+    if not settings_default:
         # default configuration for Jupyter instances
-        settings_limits = {
+        settings_default = {
             "settings": {
                 "max-instances": 1,
                 "cooloff-enabled": "true",
@@ -521,12 +517,12 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
                 "requests": {
                     "cpu": "500m",  # number of CPUs requested
                     "memory": "8Gi",  # memory size requested
-                    "gpu": 0,  # number of GPUs requested
+                    "nvidia.com/gpu": 0,  # number of GPUs requested
                 },
                 "limits": {
                     "cpu": 4,  # number of CPUs limit
                     "memory": "8Gi",  # memory size limit
-                    "gpu": 0,  # number of GPUs requested
+                    "nvidia.com/gpu": 0,  # number of GPUs requested
                 },
             }
         }
@@ -534,12 +530,12 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     if jupyter_name:
         # check the given jupyter exists, exception otherwise
         jupyter = k8_jupyter_get(workspace, jupyter_name)
-        assert jupyter
+        assert jupyter_name == get_dict_dot(jupyter, "metadata.labels.app")
     else:
         # a workspace can deploy a limited number of Jupyter
         # instances depending on the workspace's billing plan
         total_instances = len(k8_jupyter_get(workspace).get("items", []))
-        max_instances = int(settings_limits["settings"]["max-instances"])
+        max_instances = int(settings_default["settings"]["max-instances"])
         if total_instances >= max_instances:
             raise AnaliticoException(
                 f"The maximum number of Jupyter instances has been reached (max {max_instances} / current {total_instances})",
@@ -551,19 +547,19 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     # are limited by those from the billing plan (saved in the workspace)
     if settings is None:
         settings = {}
-    cpu = cpu_unit_to_fractional(get_dict_dot(settings, "limits.cpu", sys.maxsize))
-    memory = size_to_bytes(get_dict_dot(settings, "limits.memory", sys.maxsize))
-    gpu = get_dict_dot(settings, "limits.gpu", sys.maxsize)
-    cpu_limit = cpu_unit_to_fractional(get_dict_dot(settings_limits, "settings.limits.cpu"))
-    memory_limit = size_to_bytes(get_dict_dot(settings_limits, "settings.limits.memory"))
-    gpu_limit = get_dict_dot(settings_limits, "settings.limits.gpu")
+    cpu_limit = cpu_unit_to_fractional(get_dict_dot(settings_default, "settings.limits.cpu"))
+    memory_limit = size_to_bytes(get_dict_dot(settings_default, "settings.limits.memory"))
+    gpu_limit = get_dict_dot(settings_default, "settings.limits", {}).get("nvidia.com/gpu")
+    cpu = cpu_unit_to_fractional(get_dict_dot(settings, "settings.limits.cpu", cpu_limit))
+    memory = size_to_bytes(get_dict_dot(settings, "settings.limits.memory", memory_limit))
+    gpu = get_dict_dot(settings, "settings.limits", {}).get("nvidia.com/gpu", gpu_limit)
 
     cpu_limit = min(cpu_limit, cpu)
     memory_limit = min(memory_limit, memory)
     gpu_limit = min(gpu_limit, gpu)
-    cpu_request = cpu_unit_to_fractional(get_dict_dot(settings_limits, "settings.requests.cpu"))
-    memory_request = size_to_bytes(get_dict_dot(settings_limits, "settings.requests.memory"))
-    gpu_request = get_dict_dot(settings_limits, "settings.requests.gpu")
+    cpu_request = cpu_unit_to_fractional(get_dict_dot(settings_default, "settings.requests.cpu"))
+    memory_request = size_to_bytes(get_dict_dot(settings_default, "settings.requests.memory"))
+    gpu_request = get_dict_dot(settings_default, "settings.requests", {}).get("nvidia.com/gpu")
 
     # jupyter nomencleture
     # use the given Jupyter name in order to update the settings
@@ -606,8 +602,12 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     configs["gpu_limit"] = gpu_limit
 
     # cooloff
-    configs["cooloff_enabled"] = get_dict_dot(settings_limits, "settings.cooloff-enabled")
-    configs["cooloff_interval"] = get_dict_dot(settings_limits, "settings.cooloff-interval")
+    cooloff_enabled = get_dict_dot(settings_default, "settings.cooloff-enabled")
+    cooloff_interval = int(get_dict_dot(settings_default, "settings.cooloff-interval"))
+    configs["cooloff_enabled"] = get_dict_dot(settings, "settings.cooloff-enabled", cooloff_enabled)
+    configs["cooloff_interval"] = min(
+        int(get_dict_dot(settings, "settings.cooloff-interval", cooloff_interval)), cooloff_interval
+    )
 
     image_tag = get_image_commit_sha()
     configs["image_name"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
@@ -637,7 +637,7 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     template = k8_customize_and_apply(service_template, **configs)
 
     # wait for pod to be started, deployed or restored to one replica
-    k8_wait_for_condition(f"pod", service_namespace, "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
+    k8_wait_for_condition(service_namespace, "pod", "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
 
     deployment = k8_jupyter_get(workspace, jupyter_name)
 
@@ -678,7 +678,12 @@ def k8_jupyter_kickoff(workspace, jupyter_name: str, settings: dict = None):
         # todo: annotate operazione con data
 
         # set the jupyter access token
-        response, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "secret", args=["--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"])
+        response, _ = kubectl(
+            K8_DEFAULT_NAMESPACE,
+            "get",
+            "secret",
+            args=["--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"],
+        )
         secret = response["items"][0]
         token = base64.b64decode(get_dict_dot(secret, "data.token")).decode("UTF-8")
         annotations = get_dict_dot(deployment, "metadata.annotations", {})

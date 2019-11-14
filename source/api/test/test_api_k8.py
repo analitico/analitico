@@ -64,9 +64,12 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("url", service)
 
         if wait:
-            # k8_wait_for_condition(
-            #     "pod", K8_DEFAULT_CONCURRENCY, "condition=Ready", labels=f"serving.knative.dev/service=" + service["name"]
-            # )
+            k8_wait_for_condition(
+                K8_DEFAULT_CONCURRENCY,
+                "pod",
+                "condition=Ready",
+                labels=f"serving.knative.dev/service=" + service["name"],
+            )
         return service
 
     def deploy_jupyter(self, jupyter_name: str = None, custom_settings: dict = None):
@@ -819,15 +822,15 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8_wait_for_condition(self):
         # non existent resource
         try:
-            k8_wait_for_condition("pod/fake", "cloud", "condition=Ready", timeout=2)
+            k8_wait_for_condition("cloud", "pod/fake", "condition=Ready", timeout=2)
             self.fail("Expected not found exception")
         except AnaliticoException:
             pass
 
         # ready resource
-        service = self.deploy_service(wait=0)
+        service = self.deploy_service(wait=False)
         status, _ = k8_wait_for_condition(
-            "pod", "cloud", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
+            "cloud", "pod", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
         )
         self.assertIn("condition met", status)
 
@@ -844,6 +847,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         try:
+            # jupyter deployed in workspace `ws1`
             deployment = self.deploy_jupyter()
             jupyter_name = get_dict_dot(deployment, "metadata.labels.app")
 
@@ -915,7 +919,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             # Jupyter should be ready when we get the response
             k8_wait_for_condition(
-                "pod", K8_DEFAULT_NAMESPACE, "condition=Ready", labels="app=" + jupyter_name, timeout=2
+                K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="app=" + jupyter_name, timeout=2
             )
 
             # access denied without token (redirected to /login)
@@ -931,7 +935,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             # delete jupyter when workspace is removed
             self.ws1.delete()
-            k8_wait_for_condition("pod", K8_DEFAULT_NAMESPACE, "delete", labels="app=" + jupyter_name, timeout=90)
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name, timeout=90)
 
             # check all deployed resources to be deleted
             response, _ = kubectl(
@@ -955,8 +959,8 @@ class K8Tests(AnaliticoApiTestCase):
                     "max-instances": 1,
                     "cooloff-enabled": "false",
                     "cooloff-interval": "30",
-                    "requests": {"cpu": "100m", "memory": "100M", "gpu": 0},
-                    "limits": {"cpu": "2", "memory": "200Mi", "gpu": 0},
+                    "requests": {"cpu": "100m", "memory": "100M", "nvidia.com/gpu": 0},
+                    "limits": {"cpu": "2", "memory": "200Mi", "nvidia.com/gpu": 0},
                 }
             }
             self.ws1.set_attribute("jupyter", settings)
@@ -987,14 +991,20 @@ class K8Tests(AnaliticoApiTestCase):
     def test_jupyter_deploy_custom_settings(self):
         try:
             # custom settings are limited by those specified in the workspace
-            settings = {"limits": {"cpu": "1", "memory": "32Gi", "gpu": 1}}
+            settings = {
+                "settings": {
+                    "cooloff-enabled": "false",
+                    "cooloff-interval": "120",
+                    "limits": {"cpu": "1", "memory": "32Gi", "nvidia.com/gpu": 1},
+                }
+            }
             deployment = self.deploy_jupyter(custom_settings=settings)
 
             # expect jupyter to be deployed with the settings
             # specified above except for the memory and the GPU
 
             annotations = get_dict_dot(deployment, "metadata.annotations")
-            self.assertEqual(annotations["analitico.ai/cooloff-enabled"], "true")
+            self.assertEqual(annotations["analitico.ai/cooloff-enabled"], "false")
             self.assertEqual(annotations["analitico.ai/cooloff-interval"], "60")
 
             container = get_dict_dot(deployment, "spec.template.spec.containers")[0]
@@ -1021,8 +1031,8 @@ class K8Tests(AnaliticoApiTestCase):
                     "max-instances": 1,
                     "cooloff-enabled": "false",
                     "cooloff-interval": "30",
-                    "requests": {"cpu": "100m", "memory": "100M", "gpu": 0},
-                    "limits": {"cpu": "2", "memory": "200Mi", "gpu": 0},
+                    "requests": {"cpu": "100m", "memory": "100M", "nvidia.com/gpu": 0},
+                    "limits": {"cpu": "2", "memory": "200Mi", "nvidia.com/gpu": 0},
                 }
             }
             self.ws1.set_attribute("jupyter", settings)
@@ -1040,34 +1050,100 @@ class K8Tests(AnaliticoApiTestCase):
             k8_jupyter_deallocate(self.ws1)
 
     @tag("slow", "k8s", "live")
-    def test_jupyter_deploy_update_deployment(self):
+    def test_jupyter_update_deployment(self):
         try:
-            # deploy fails when the given jupyter does not exist
+            # deploy update fails when the given jupyter does not exist
             jupyter_name = "fake-jupyter"
-            url = reverse("api:workspace-k8-jupyter-deploy", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
             self.auth_token(self.token1)
             response = self.client.put(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-            # custom settings are limited by those specified in the workspace
-            # settings = {"limits": {"cpu": "1", "memory": "32Gi", "gpu": 1}}
-            # deployment = self.deploy_jupyter(custom_settings=settings)
+            # deploy a jupyter for the workspace `ws1`
+            deployment = self.deploy_jupyter()
+            jupyter_name = get_dict_dot(deployment, "metadata.labels.app")
+            
+            # user cannot update jupyter that he doesn't have access to
+            self.auth_token(self.token2)
+            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws2.id, jupyter_name))
+            response = self.client.put(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-            # # expect jupyter to be deployed with the settings
-            # # specified above except for the memory and the GPU
+            # user cannot update jupyter from a workspace he doesn't have access to
+            self.auth_token(self.token2)
+            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            response = self.client.put(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-            # annotations = get_dict_dot(deployment, "metadata.annotations")
-            # self.assertEqual(annotations["analitico.ai/cooloff-enabled"], "true")
-            # self.assertEqual(annotations["analitico.ai/cooloff-interval"], "60")
+            # user can update his jupyter deployment specs while kicking it off.
+            # scale to zero to test kickoff on jupyter update
+            response, _ = kubectl(
+                K8_DEFAULT_NAMESPACE,
+                "scale",
+                "deployment/" + get_dict_dot(deployment, "metadata.name"),
+                args=["--replicas=0"],
+            )
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name)
 
-            # container = get_dict_dot(deployment, "spec.template.spec.containers")[0]
-            # resources = container["resources"]
-            # self.assertEqual("500m", resources["requests"]["cpu"])
-            # self.assertEqual(str(size_to_bytes("8Gi")), resources["requests"]["memory"])
-            # self.assertEqual("0", resources["requests"]["nvidia.com/gpu"])
+            # update jupyter with these settings
+            custom_settings={
+                    "settings": {"cooloff-interval": "20", "limits": {"cpu": "1", "memory": "8Gi", "nvidia.com/gpu": 0}}
+                }
+            self.auth_token(self.token1)
+            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            response = self.client.put(url, data=custom_settings)
+            self.assertStatusCode(response)
+            
+            deployment = response.json().get("data", {})
 
-            # self.assertEqual("1", resources["limits"]["cpu"])
-            # self.assertEqual(str(size_to_bytes("8Gi")), resources["limits"]["memory"])
-            # self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
+            # jupyter instance has been kicked off (scaled up)
+            self.assertEqual(1, get_dict_dot(deployment, "spec.replicas"))
+
+            # jupyter configuration has been updated
+            annotations = get_dict_dot(deployment, "metadata.annotations")
+            self.assertEqual(annotations["analitico.ai/cooloff-enabled"], "true")
+            self.assertEqual(annotations["analitico.ai/cooloff-interval"], "20")
+
+            container = get_dict_dot(deployment, "spec.template.spec.containers")[0]
+            resources = container["resources"]
+            self.assertEqual("1", resources["limits"]["cpu"])
+            self.assertEqual(str(size_to_bytes("8Gi")), resources["limits"]["memory"])
+            self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
         finally:
             k8_jupyter_deallocate(self.ws1)
+
+    def test_jupyter_kickoff_and_access_to_jupyter(self):
+        deployment = self.deploy_jupyter()
+        jupyter_name = get_dict_dot(deployment, "metadata.labels.app")
+
+        # just request access information to jupyter and 
+        # do a kickoff if it's not running.
+        # scale to zero to test kickoff
+        response, _ = kubectl(
+            K8_DEFAULT_NAMESPACE,
+            "scale",
+            "deployment/" + get_dict_dot(deployment, "metadata.name"),
+            args=["--replicas=0"],
+        )
+        k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name)
+
+        self.auth_token(self.token1)
+        url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+        response = self.client.put(url)
+        self.assertStatusCode(response)
+        
+        deployment = response.json().get("data", {})
+
+        # jupyter instance has been kicked off (scaled up)
+        self.assertEqual(1, get_dict_dot(deployment, "spec.replicas"))
+
+        # jupyter is up and running
+        annotations = get_dict_dot(deployment, "metadata.annotations")
+        jupyter_url = annotations["analitico.ai/jupyter-url"]
+        response = requests.get(url, allow_redirects=True)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_jupyter_cooloff(self):
+        # todo: cooloff and then just kickoff
+        # todo: cooloff and then kickoff with custom settings
+        pass

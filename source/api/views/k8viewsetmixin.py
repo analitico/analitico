@@ -316,6 +316,11 @@ class K8ViewSetMixin:
         if custom_settings:
             custom_settings = custom_settings.get("data", None)
         
-        data = k8_jupyter_kickoff(workspace, settings=custom_settings)
+        data = k8_jupyter_kickoff(workspace, jupyter_name, settings=custom_settings)
 
         return Response(data)
+
+    @action(methods=["delete"], detail=True, url_name="k8-jupyter-delete", url_path="k8s/jupyters/(P<jupyter_name>[-\w.]{0,64})")
+    def jupyter_delete(self, request, pk, jupyter_name: str):
+        # todo
+        pass
