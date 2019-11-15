@@ -182,16 +182,16 @@ class K8ViewSetMixin:
 
         # metric converted in Prometheus query fixed to the given service
         metrics = {
-            "istio_requests_total": f'istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
-            "istio_request_duration_seconds_count": f'istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
-            "istio_request_duration_seconds_sum": f'istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
-            "istio_requests_rate": f'rate(istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m])',
+            "istio_requests_total": f'istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
+            "istio_request_duration_seconds_count": f'istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
+            "istio_request_duration_seconds_sum": f'istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
+            "istio_requests_rate": f'rate(istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m])',
             "istio_request_latency": (
-                f'rate(istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m]) / '
-                f'rate(istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m])'
+                f'rate(istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m]) / '
+                f'rate(istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m])'
             ),
-            "container_memory_usage_bytes": f'container_memory_usage_bytes{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}',
-            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}[1m])',
+            "container_memory_usage_bytes": f'container_memory_usage_bytes{{container_name="", namespace="{service_namespace}", pod=~"{service_name}.*"}}',
+            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container_name="", namespace="{service_namespace}", pod=~"{service_name}.*"}}[1m])',
         }
 
         query = metrics.get(metric)
