@@ -190,8 +190,8 @@ class K8ViewSetMixin:
                 f'rate(istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m]) / '
                 f'rate(istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m])'
             ),
-            "container_memory_usage_bytes": f'container_memory_usage_bytes{{container_name="", namespace="{service_namespace}", pod=~"{service_name}.*"}}',
-            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container_name="", namespace="{service_namespace}", pod=~"{service_name}.*"}}[1m])',
+            "container_memory_usage_bytes": f'container_memory_usage_bytes{{container="", namespace="{service_namespace}", pod=~"{service_name}.*"}}',
+            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container="", namespace="{service_namespace}", pod=~"{service_name}.*"}}[1m])',
         }
 
         query = metrics.get(metric)
