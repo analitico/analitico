@@ -90,20 +90,20 @@ class K8ViewSetMixin:
     @action(methods=["get"], detail=True, url_name="k8-pods", url_path="k8s/pods")
     def pods(self, request, pk):
         """ Returns a list of pods owned by the service """
-        service_name, service_namespace = self.get_service_name(request, pk)
+        item = self.get_object()
+        # list jobs by workspace or item
+        selectBy = f"workspace-id={item.id}" if item.type == "workspace" else f"item-id={item.id}"
         # kubectl get pods -l serving.knative.dev/service={service_name} -n {service_namespace} -o json
         return get_kubctl_response(
             "kubectl",
             "get",
             "pods",
-            "-l",
-            f"serving.knative.dev/service={service_name}",
-            "-n",
-            service_namespace,
-            "-o",
-            "json",
+            "--selector",
+            f"analitico.ai/{selectBy}",
             "--sort-by",
             ".metadata.creationTimestamp",
+            "-o",
+            "json",
         )
 
     @action(methods=["post"], detail=True, url_name="k8-deploy", url_path=r"k8s/deploy/(?P<stage>staging|production)$")
@@ -160,10 +160,10 @@ class K8ViewSetMixin:
         step = api.utilities.get_query_parameter(request, "step")
 
         # The Prometheus's regexp is not enough to filter metrics between staging and production.
-        # We need to retrieve the kubernetes service name by the knative service name 
+        # We need to retrieve the kubernetes service name by the knative service name
         # because metrics are stored with the kubernetes service name or the pod name.
         # The service name is prefix of the pod name so we don't need to know the full pod
-        # name. Secondary, we pass through the deployment component to be sure to get 
+        # name. Secondary, we pass through the deployment component to be sure to get
         # the actual deployment that handles the pods.
         deployment, _ = subprocess_run(
             [
@@ -178,20 +178,20 @@ class K8ViewSetMixin:
                 "json",
             ]
         )
-        service_name =  deployment["items"][0]["metadata"]["labels"]["app"]
+        service_name = deployment["items"][0]["metadata"]["labels"]["app"]
 
         # metric converted in Prometheus query fixed to the given service
         metrics = {
-            "istio_requests_total": f'istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
-            "istio_request_duration_seconds_count": f'istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
-            "istio_request_duration_seconds_sum": f'istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}',
-            "istio_requests_rate": f'rate(istio_requests_total{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m])',
+            "istio_requests_total": f'istio_requests_total{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
+            "istio_request_duration_seconds_count": f'istio_request_duration_seconds_count{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
+            "istio_request_duration_seconds_sum": f'istio_request_duration_seconds_sum{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
+            "istio_requests_rate": f'rate(istio_requests_total{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m])',
             "istio_request_latency": (
-                f'rate(istio_request_duration_seconds_sum{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m]) / '
-                f'rate(istio_request_duration_seconds_count{{destination_workload=~"{service_name}.*", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}.*"}}[1m])'
+                f'rate(istio_request_duration_seconds_sum{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m]) / '
+                f'rate(istio_request_duration_seconds_count{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m])'
             ),
-            "container_memory_usage_bytes": f'container_memory_usage_bytes{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}',
-            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container_name="user-container", namespace="{service_namespace}", pod_name=~"{service_name}.*"}}[1m])',
+            "container_memory_usage_bytes": f'container_memory_usage_bytes{{container="", namespace="{service_namespace}", pod=~"{service_name}-.*"}}',
+            "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container="", namespace="{service_namespace}", pod=~"{service_name}-.*"}}[1m])',
         }
 
         query = metrics.get(metric)
@@ -208,7 +208,9 @@ class K8ViewSetMixin:
             data = {"query": query, "start": start_time, "end": end_time, "step": step}
 
         prometheus_response = requests.get(django.conf.settings.PROMETHEUS_SERVICE_URL + path, params=data)
-        return Response(prometheus_response.json(), content_type="application/json", status=prometheus_response.status_code)
+        return Response(
+            prometheus_response.json(), content_type="application/json", status=prometheus_response.status_code
+        )
 
     @action(
         methods=["get"], detail=True, url_name="k8-logs", url_path=r"k8s/services/(?P<stage>staging|production)/logs"
@@ -244,7 +246,9 @@ class K8ViewSetMixin:
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elasticsearch_response = requests.get(url, params=params, headers=headers, verify=False)
-        return Response(elasticsearch_response.json(), content_type="application/json", status=elasticsearch_response.status_code)
+        return Response(
+            elasticsearch_response.json(), content_type="application/json", status=elasticsearch_response.status_code
+        )
 
     @action(methods=["get"], detail=True, url_name="k8-job-logs", url_path=r"k8s/jobs/(?P<job_id>[-\w.]{0,64})/logs")
     def job_logs(self, request: Request, pk, job_id: str):
