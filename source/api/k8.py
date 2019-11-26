@@ -83,7 +83,9 @@ def kubectl(namespace: str, action: str, resource: str, output: str = "json", ar
         ) from exec
 
 
-def k8_wait_for_condition(namespace: str, resource: str, condition: str, labels: str = None, output: str = None, timeout: int = 60):
+def k8_wait_for_condition(
+    namespace: str, resource: str, condition: str, labels: str = None, output: str = None, timeout: int = 60
+):
     """ 
     Wait the resource for the given condition. Command fails when the timeout expires. 
     
@@ -710,16 +712,23 @@ def k8_jupyter_deallocate(workspace, jupyter_name: str = None):
         )
 
 
-def k8_scale_to_zero(controllers: []) -> (int, int):
+def k8_scale_to_zero(controllers: [] = None) -> (int, int):
     """ 
     Scale to zero services which enabled this feature and they are in idle for a period of time 
     
     Arguments:
-        controllers [] -- Array of Kubernetes controllers objects like StatefulSet, Deployment...
+    ----------
+        controllers : [], optional -- 
+            Array of Kubernetes controllers resources to check like StatefulSet, Deployment...
 
     Returns:
-        Tuple (int, int) -- number of services scaled to zero and number of services with error
+    --------
+        Tuple : (int, int) -- number of services scaled to zero and number of services with error
     """
+    if not controllers:
+        controllers, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "statefulSet")
+        controllers = controllers["items"]
+
     total_scaled = total_scaled_unabled = 0
 
     for controller in controllers:

@@ -1,3 +1,41 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {virtualservice_name}
+  namespace: {service_namespace}
+  labels:
+    app: {service_name}
+    analitico.ai/service: "jupyter"
+    analitico.ai/workspace-id: {workspace_id}
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    kind: Service
+    name: {service_name}
+    uid: {owner_uid}
+spec:
+  gateways:
+  - knative-serving/knative-ingress-gateway
+  hosts:
+  - "{service_name}.cloud.analitico.ai"
+  - "{service_name}.cloud.svc.cluster.local"
+  http:
+  - match:
+    - authority:
+        regex: ^{service_name}\.cloud\.analitico\.ai(?::\d{{1,5}})?$
+    - authority:
+        regex: ^{service_name}\.cloud\.svc\.cluster\.local(?::\d{{1,5}})?$
+    retries:
+      attempts: 3
+      perTryTimeout: 10m0s
+    route:
+    - destination:
+        host: "{service_name}.cloud.svc.cluster.local"
+        port:
+          number: 80
+    timeout: 10m0s
+    websocketUpgrade: true
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -75,42 +113,4 @@ spec:
           options:
             networkPath: {volume_network_path}
             mountOptions: dir_mode=0755,file_mode=0644,noperm
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: {virtualservice_name}
-  namespace: {service_namespace}
-  labels:
-    app: {service_name}
-    analitico.ai/service: "jupyter"
-    analitico.ai/workspace-id: {workspace_id}
-  ownerReferences:
-  - apiVersion: v1
-    blockOwnerDeletion: true
-    kind: Service
-    name: {service_name}
-    uid: {owner_uid}
-spec:
-  gateways:
-  - knative-serving/knative-ingress-gateway
-  hosts:
-  - "{service_name}.cloud.analitico.ai"
-  - "{service_name}.cloud.svc.cluster.local"
-  http:
-  - match:
-    - authority:
-        regex: ^{service_name}\.cloud\.analitico\.ai(?::\d{{1,5}})?$
-    - authority:
-        regex: ^{service_name}\.cloud\.svc\.cluster\.local(?::\d{{1,5}})?$
-    retries:
-      attempts: 3
-      perTryTimeout: 10m0s
-    route:
-    - destination:
-        host: "{service_name}.cloud.svc.cluster.local"
-        port:
-          number: 80
-    timeout: 10m0s
-    websocketUpgrade: true
 ---

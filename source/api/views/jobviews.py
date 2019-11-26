@@ -220,6 +220,11 @@ class JobViewSet(ItemViewSetMixin, FilesViewSetMixin, rest_framework.viewsets.Mo
         """ 
         Check for datasets, recipes or notebook that have cron schedules and creates 
         any jobs to reprocess them if necessary. Cancel any stuck jobs 
+        Plus it checks if there are Jupyter instances in idle to be scaled to zero.
         """
         jobs = api.models.job.schedule_jobs()
+
+        # scale to zero idle Jupyter instances
+        api.k8.k8_scale_to_zero()
+
         return Response(jobs, content_type="application/json")
