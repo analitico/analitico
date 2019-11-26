@@ -83,7 +83,7 @@ class K8Tests(AnaliticoApiTestCase):
             # deploy a new jupyter
             url = reverse("api:workspace-k8-jupyter-deploy", args=(self.ws1.id,))
             response = self.client.post(url, data=custom_settings, format="json")
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         return response.json().get("data")
@@ -844,7 +844,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8_jupyter_get(self):
         # user CANNOT retrieve Jupyters from workspaces he does not have access to
         self.auth_token(self.token2)
-        url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, ))
+        url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -855,7 +855,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             # all Jupyters in the workspace
             self.auth_token(self.token1)
-            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, ))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             items = get_dict_dot(response.json(), "data.items", [])
@@ -1174,7 +1174,13 @@ class K8Tests(AnaliticoApiTestCase):
             k8_jupyter_deallocate(self.ws1)
 
     @tag("slow", "k8s", "live")
-    def test_jupyter_scale_to_zero(self):
+    def test_jupyter_scale_to_zero_is_up_and_running(self):
+        """ 
+        This test is a live test, it deploys a Jupyter and waits for it
+        to be scaled to zero. 
+        It means that the test requires an up-and-running cron that checks
+        and performs scale to zero on enabled services. 
+        """
         try:
             # deploy Jupyter with 1 min grace period
             settings = {
@@ -1182,15 +1188,15 @@ class K8Tests(AnaliticoApiTestCase):
             }
             jupyter = self.deploy_jupyter(custom_settings=settings)
 
-            annotations = get_dict_dot(jupyter, "metadata.annotations")
             name = get_dict_dot(jupyter, "metadata.name")
             namespace = get_dict_dot(jupyter, "metadata.namespace")
-            url = annotations["analitico.ai/jupyter-url"]
-            app = annotations["app"]
+            url = get_dict_dot(jupyter, "metadata.annotations").get("analitico.ai/jupyter-url")
+            app = get_dict_dot(jupyter, "metadata.labels.app")
 
             # call Jupyter to generate http and cpu metric
             # and wait for the autoscaler to bring it to zero
-            requests.get(url)
+            response = requests.get(url)
+            self.assertApiResponse(response)
             # it should take around 1/2 minutes, timeout to 5 minutes for mercy
             k8_wait_for_condition(
                 namespace, "pod", "delete", labels=f"app={app},analitico.ai/workspace-id={self.ws1.id}", timeout=300
@@ -1199,5 +1205,48 @@ class K8Tests(AnaliticoApiTestCase):
             # confirm replicas set to 0
             jupyter = kubectl(namespace, "get", "statefulset/" + name)
             self.assertEqual(0, get_dict_dot("spec.replicas"))
+        finally:
+            k8_jupyter_deallocate(self.ws1)
+
+    @tag("slow", "k8s")
+    def test_k8_scale_to_zero(self):
+        """ Deploy a Jupyter with scale to zero enabled and check synchronous for it to be actually scaled. """
+        try:
+            # deploy Jupyter with 1 min grace period
+            settings = {
+                "settings": {"max_instances": 1, "enable_scale_to_zero": "true", "scale_to_zero_grace_period": "1"}
+            }
+            jupyter = self.deploy_jupyter(custom_settings=settings)
+
+            name = get_dict_dot(jupyter, "metadata.name")
+            namespace = get_dict_dot(jupyter, "metadata.namespace")
+            url = get_dict_dot(jupyter, "metadata.annotations").get("analitico.ai/jupyter-url")
+            app = get_dict_dot(jupyter, "metadata.labels.app")
+
+            # call Jupyter to generate http and cpu metric
+            # and wait for the autoscaler to bring it to zero
+            response = requests.get(url)
+            self.assertApiResponse(response)
+
+            # run autoscaler
+            # todo: pass a list of statefulsets
+            retry = True
+            start = time.time()
+            attempts = 0
+            while retry:
+                attempts = attempts + 1
+                scaled, unable = k8_scale_to_zero()
+                # it should take around 1/2 minutes, timeout to 5 minutes for mercy
+                retry = scaled == 0 and unable == 0 and time.time() - start < 300
+                if retry:
+                    time.sleep(40)
+
+            # at least two attempts if it's respected the grace period of 1 minute
+            self.assertGreaterEqual(attempts, 2, "scale to zero is not respecting the grace period")
+
+            # confirm replicas set to 0
+            self.assertEqual(1, scaled)
+            jupyter, _ = kubectl(namespace, "get", "statefulset/" + name)
+            self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
         finally:
             k8_jupyter_deallocate(self.ws1)

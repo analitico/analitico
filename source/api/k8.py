@@ -704,24 +704,27 @@ def k8_jupyter_deallocate(workspace):
     )
 
 
-def k8_scale_to_zero():
-    """ Scale to zero services which enabled this feature when they are in idle for a period of time """
-    # jupyter statefulset with scale to zero enabled
+def k8_scale_to_zero() -> (int, int):
+    """ Scale to zero services which enabled this feature and they are in idle for a period of time """
+    # statefulset with scale to zero enabled
     statefulsets, _ = kubectl(
-        K8_DEFAULT_NAMESPACE, "get", "statefulset", args=["--selector", "analitico.ai/enable-scale-to-zero=true"]
+        K8_DEFAULT_NAMESPACE, "get", "statefulSet"
     )
 
+    total_scaled = total_scaled_unabled = 0
+
     for statefulset in statefulsets["items"]:
+        enabled = bool(statefulset["metadata"]["annotations"]["analitico.ai/enable-scale-to-zero"])
         replicas = statefulset["spec"]["replicas"]
         statefulset_name = statefulset["metadata"]["name"]
         try:
-            if replicas > 0:
+            if enabled and replicas > 0:
                 desired_replicas = 0
                 logger.info("evaluate scale to zero condition for " + statefulset_name)
 
-                app = statefulset["metadata"]["annotations"]["app"]
-                workspace_id = statefulset["metadata"]["annotations"]["analitico.ai/workspace-id"]
-                grace_period = statefulset["metadata"]["annotations"]["analitico.ai/scale-to-zero-grace-period"]
+                app = statefulset["metadata"]["labels"]["app"]
+                workspace_id = statefulset["metadata"]["labels"]["analitico.ai/workspace-id"]
+                grace_period = int(statefulset["metadata"]["annotations"]["analitico.ai/scale-to-zero-grace-period"])
                 namespace = statefulset["metadata"]["namespace"]
                 assert app and workspace_id and grace_period
 
@@ -738,8 +741,8 @@ def k8_scale_to_zero():
                 now = datetime.utcnow()
                 # eg: 2019-11-25T11:16:04Z
                 running_since = datetime.strptime(pod["metadata"]["creationTimestamp"], "%Y-%m-%dT%H:%M:%SZ")
-                running_for = (now - running_since).total_seconds
-                logger.info(f"{statefulset_name} has been running since {running_since} ({running_for * 60 } mins)")
+                running_for = round((now - running_since).total_seconds())
+                logger.info(f"{statefulset_name} has been running since {running_since}Z ({round(running_for / 60)} minutes)")
 
                 is_enable_to_scale = running_for > (grace_period * 60)
 
@@ -751,8 +754,8 @@ def k8_scale_to_zero():
                         {
                             "name": "max_http_requests_last_period",
                             "query": f'sum(max_over_time(container_cpu_usage_seconds_total_irate1m{{pod="{pod_name}",container=""}}[{grace_period}m])) by (pod)',
-                            # cpu usage in the last period (target millisecs)
-                            "target": 100,
+                            # cpu usage in the last period (target in cpu time)
+                            "target": 0.1,
                             # in both cases, we cannot make any evaulation without the actual value
                             "replicas_missing_metric": 1,
                             "replicas_status_error": 1,
@@ -800,29 +803,33 @@ def k8_scale_to_zero():
                                     status_code=response.status_code,
                                     extra=result,
                                 )
-                            value = result.get("value")[1]
+                            value = result[0].get("value")[1]
 
-                            replicas = 0 if value < target else 1
+                            replicas = 0 if float(value) < float(target) else 1
                         except AnaliticoException as e:
                             # metric returned no value
                             if e.status_code == status.HTTP_200_OK:
-                                replicas = 0
+                                replicas = replicas_missing_metric
                                 logger.warning(f"metric {name} is missing. Replicas set to {replicas}")
                             else:
                                 # error contacting Prometheus
-                                replicas = 1
+                                replicas = replicas_status_error
                                 logger.warning(f"metric {name} cannot be evaluated. Replicas set to {replicas}")
+                        
                         desired_replicas = max(desired_replicas, replicas)
 
-                    logger.info(f"desired replicas for {statefulset_name} set to {desired_replicas}")
+                    logger.info(f"desired replicas for {statefulset_name} is {desired_replicas}")
                     if desired_replicas == 0:
                         # do scale to zero
                         kubectl(K8_DEFAULT_NAMESPACE, "scale", f"statefulset/{statefulset_name}", args=["--replicas=0"])
+                        total_scaled = total_scaled + 1
                         logger.info(f"{statefulset_name} is scaled to zero successfully")
 
         except Exception as exception:
+            total_scaled_unabled = total_scaled_unabled + 1
             logger.error(f"cannot perform evaluation of scale to zero for {statefulset_name}. Skip.\n{str(exception)}")
 
+    return total_scaled, total_scaled_unabled
 
 ##
 ## Utilities
