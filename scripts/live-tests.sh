@@ -33,8 +33,11 @@ do
     CMD_TEST="./manage.py test --tag=live"
     { ERROR="$($CMD_TEST 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
     
+    COMPLETEDTIME="$(date -u +%s)"
+    RUNNING_TIME_MIN="$((($COMPLETEDTIME - STARTTIME) / 60))"
+
     # notify slack in case of errors
-    if [ $EXITSTATUS -ne 0 ]
+    if [[ $EXITSTATUS -ne 0 ]]
     then
         echo "Tests failed"
 
@@ -50,18 +53,20 @@ do
                 "Live tests failed" \
                 "${ERROR}" \
                 "danger")"
-        
-        curl --silent \
+    else 
+        CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": "%s", "color": "%s" } ] }' \
+                "Live tests completed" \
+                "Live tests completed with success in ${RUNNING_TIME_MIN} minutes" \
+                "good")"
+    fi
+
+    curl --silent \
              -X POST \
              -H "Accept: application/json" \
              -H "Content-Type:application/json" \
              --data "${CONTENT}" ${ANALITICO_SLACK_INTERNAL_WEBHOOK} || true
-    else 
-        echo "Tests completed with success."
-    fi
     
-    COMPLETEDTIME="$(date -u +%s)"
-    echo "Run completd in $(($COMPLETEDTIME - STARTTIME)) seconds."
+    echo "Run completd in ${RUNNING_TIME_MIN} minutes."
 
     # 5 min between tests
     echo "Next run in 60 minutes"
