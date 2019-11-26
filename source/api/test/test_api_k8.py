@@ -1188,7 +1188,7 @@ class K8Tests(AnaliticoApiTestCase):
             }
             jupyter = self.deploy_jupyter(custom_settings=settings)
 
-            name = get_dict_dot(jupyter, "metadata.name")
+            jupyter_name = get_dict_dot(jupyter, "metadata.name")
             namespace = get_dict_dot(jupyter, "metadata.namespace")
             url = get_dict_dot(jupyter, "metadata.annotations").get("analitico.ai/jupyter-url")
             app = get_dict_dot(jupyter, "metadata.labels.app")
@@ -1203,8 +1203,8 @@ class K8Tests(AnaliticoApiTestCase):
             )
 
             # confirm replicas set to 0
-            jupyter = kubectl(namespace, "get", "statefulset/" + name)
-            self.assertEqual(0, get_dict_dot("spec.replicas"))
+            jupyter, _ = kubectl(namespace, "get", "statefulset/" + jupyter_name)
+            self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
         finally:
             k8_jupyter_deallocate(self.ws1)
 
@@ -1229,13 +1229,12 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertApiResponse(response)
 
             # run autoscaler
-            # todo: pass a list of statefulsets
             retry = True
             start = time.time()
             attempts = 0
             while retry:
                 attempts = attempts + 1
-                scaled, unable = k8_scale_to_zero()
+                scaled, unable = k8_scale_to_zero([jupyter])
                 # it should take around 1/2 minutes, timeout to 5 minutes for mercy
                 retry = scaled == 0 and unable == 0 and time.time() - start < 300
                 if retry:
@@ -1248,5 +1247,33 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(1, scaled)
             jupyter, _ = kubectl(namespace, "get", "statefulset/" + name)
             self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
+        finally:
+            k8_jupyter_deallocate(self.ws1)
+
+    def test_k8_jupyter_delete(self):
+        try:
+            # Jupyter deployed in workspace `ws1`
+            jupyter = self.deploy_jupyter()
+
+            namespace = get_dict_dot(jupyter, "metadata.namespace")
+            jupyter_name = get_dict_dot(jupyter, "metadata.labels.app")
+
+            # user cannot delete a Jupyter from a workspace he doesn't have access to
+            url = reverse("api:workspace-k8-jupyter-delete", args=(self.ws1.id, jupyter_name))
+            self.auth_token(self.token2)
+            response = self.client.delete(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # user cannot delete a Jupyter he doesn't have access to
+            url = reverse("api:workspace-k8-jupyter-delete", args=(self.ws2.id, jupyter_name))
+            self.auth_token(self.token2)
+            response = self.client.delete(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # delete specific jupyter
+            url = reverse("api:workspace-k8-jupyter-delete", args=(self.ws1.id, jupyter_name))
+            self.auth_token(self.token1)
+            response = self.client.delete(url)
+            self.assertApiResponse(response, status_code=status.HTTP_204_NO_CONTENT)
         finally:
             k8_jupyter_deallocate(self.ws1)

@@ -50,8 +50,7 @@ class K8ViewSetMixin:
         service = item.get_attribute("service")
         if not service or not stage in service:
             raise AnaliticoException(
-                f"Item {item.id} in {stage} has not been deployed as a service.",
-                status_code=status.HTTP_404_NOT_FOUND,
+                f"Item {item.id} in {stage} has not been deployed as a service.", status_code=status.HTTP_404_NOT_FOUND
             )
         return service[stage]["name"], service[stage]["namespace"]
 
@@ -284,13 +283,17 @@ class K8ViewSetMixin:
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elastic_search_response = requests.get(url, params=params, headers=headers, verify=False)
-        return Response(elastic_search_response.json(), content_type="application/json", status=elastic_search_response.status_code)
+        return Response(
+            elastic_search_response.json(), content_type="application/json", status=elastic_search_response.status_code
+        )
 
     ##
     ## Jupyter
-    ## 
+    ##
 
-    @action(methods=["get"], detail=True, url_name="k8-jupyters", url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})?")
+    @action(
+        methods=["get"], detail=True, url_name="k8-jupyters", url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})?"
+    )
     def jupyters_get(self, request, pk, jupyter_name: str = None):
         """ List of Jupyter instances created for the workspace or the specific one """
         workspace = self.get_object()
@@ -300,10 +303,10 @@ class K8ViewSetMixin:
 
     @action(methods=["post"], detail=True, url_name="k8-jupyter-deploy", url_path="k8s/jupyters")
     def jupyter_deploy(self, request, pk):
-        """ """
+        """ Deploy a new instace of Jupyter. """
         workspace = self.get_object()
         custom_settings = request.data
-        
+
         if custom_settings:
             custom_settings = custom_settings.get("data", None)
 
@@ -311,20 +314,47 @@ class K8ViewSetMixin:
 
         return Response(data)
 
-    @action(methods=["put"], detail=True, url_name="k8-jupyter-kickoff", url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})/")
+    @action(
+        methods=["put"],
+        detail=True,
+        url_name="k8-jupyter-kickoff",
+        url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})/",
+    )
     def jupyter_kickoff(self, request, pk, jupyter_name: str):
-        """ """
+        """ 
+        Retrieve the Jupyter StatefulSet object ensuring before that
+        the Jupyter pod is running.
+        The instance is also updated if some settings are provided,
+        (like the Jupyter title or resources)
+        """
         workspace = self.get_object()
         custom_settings = request.data
-        
+
         if custom_settings:
             custom_settings = custom_settings.get("data", None)
-        
+
         data = k8_jupyter_kickoff(workspace, jupyter_name, settings=custom_settings)
 
         return Response(data)
 
-    @action(methods=["delete"], detail=True, url_name="k8-jupyter-delete", url_path="k8s/jupyters/(P<jupyter_name>[-\w.]{0,64})")
+    @action(
+        methods=["delete"],
+        detail=True,
+        url_name="k8-jupyter-delete",
+        url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})/",
+    )
     def jupyter_delete(self, request, pk, jupyter_name: str):
-        # todo
-        pass
+        """ Delete the Jupyter service from Kubernetes """
+        workspace = self.get_object()
+
+        # test that jupyter is owned by the workspace
+        jupyter, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "service/" + jupyter_name)
+        if (
+            "jupyter" != jupyter["metadata"]["labels"]["analitico.ai/service"]
+            or workspace.id != jupyter["metadata"]["labels"]["analitico.ai/workspace-id"]
+        ):
+            raise AnaliticoException("jupyter service not found", status_code=status.HTTP_404_NOT_FOUND)
+
+        k8_jupyter_deallocate(workspace, jupyter_name)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

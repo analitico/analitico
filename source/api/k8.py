@@ -59,9 +59,21 @@ def k8_normalize_name(name: str):
 
 
 def kubectl(namespace: str, action: str, resource: str, output: str = "json", args: [] = []) -> (str, str):
-    """ Exec operation on Kubernetes using Kubectl command """
+    """ 
+    Exec operation on Kubernetes using Kubectl command 
+    
+    Arguments:
+        namespace str -- 
+        action str --
+        resource str --
+        output str or None -- 
+
+    Returns:
+        Tuple (str, str) -- 
+    """
     try:
-        return subprocess_run(["kubectl", action, "--namespace", namespace, resource, "--output", output, *args])
+        output_args = ["--output", output] if output else []
+        return subprocess_run(["kubectl", action, "--namespace", namespace, resource, *output_args, *args])
     except Exception as exec:
         raise AnaliticoException(
             f"Resource not found or invalid request", status_code=status.HTTP_404_NOT_FOUND
@@ -561,7 +573,7 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     # of the Jupyter with the new specifications. Otherwise a new
     # Jupyter is deployed
     workspace_id_slug = k8_normalize_name(workspace.id)
-    jupyter_name = f"jupyter-{workspace_id_slug}-{id_generator()}" if not jupyter_name else jupyter_name
+    jupyter_name = f"jupyter-{id_generator()}" if not jupyter_name else jupyter_name
     service_namespace = K8_DEFAULT_NAMESPACE
     controller_name = jupyter_name
     secret_name = f"analitico-{jupyter_name}"
@@ -689,46 +701,53 @@ def k8_jupyter_kickoff(workspace, jupyter_name: str, settings: dict = None):
     return jupyter
 
 
-def k8_jupyter_deallocate(workspace):
-    """ This method is called when a workspace is deleted to deallocate its Jupyter servers (if any). """
-    subprocess_run(
-        [
-            "kubectl",
+def k8_jupyter_deallocate(workspace, jupyter_name: str = None):
+    """ Deallocate the Jupyters for a given workspace or a specific one. """
+    if jupyter_name:
+        kubectl(
+            K8_DEFAULT_NAMESPACE,
+            "delete",
+            "service/" + jupyter_name,
+            output=None,
+        )
+    else:
+        kubectl(
+            K8_DEFAULT_NAMESPACE,
             "delete",
             "service",
-            "--namespace",
-            "cloud",
-            "--selector",
-            f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}",
-        ]
-    )
+            output=None,
+            args=["--selector", f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}"],
+        )
 
 
-def k8_scale_to_zero() -> (int, int):
-    """ Scale to zero services which enabled this feature and they are in idle for a period of time """
-    # statefulset with scale to zero enabled
-    statefulsets, _ = kubectl(
-        K8_DEFAULT_NAMESPACE, "get", "statefulSet"
-    )
+def k8_scale_to_zero(controllers: []) -> (int, int):
+    """ 
+    Scale to zero services which enabled this feature and they are in idle for a period of time 
+    
+    Arguments:
+        controllers [] -- Array of Kubernetes controllers objects like StatefulSet, Deployment...
 
+    Returns:
+        Tuple (int, int) -- number of services scaled to zero and number of services with error
+    """
     total_scaled = total_scaled_unabled = 0
 
-    for statefulset in statefulsets["items"]:
-        enabled = bool(statefulset["metadata"]["annotations"]["analitico.ai/enable-scale-to-zero"])
-        replicas = statefulset["spec"]["replicas"]
-        statefulset_name = statefulset["metadata"]["name"]
+    for controller in controllers:
+        enabled = bool(controller["metadata"]["annotations"]["analitico.ai/enable-scale-to-zero"])
+        replicas = controller["spec"]["replicas"]
+        controller_name = controller["metadata"]["name"]
         try:
             if enabled and replicas > 0:
                 desired_replicas = 0
-                logger.info("evaluate scale to zero condition for " + statefulset_name)
+                logger.info("evaluate scale to zero condition for " + controller_name)
 
-                app = statefulset["metadata"]["labels"]["app"]
-                workspace_id = statefulset["metadata"]["labels"]["analitico.ai/workspace-id"]
-                grace_period = int(statefulset["metadata"]["annotations"]["analitico.ai/scale-to-zero-grace-period"])
-                namespace = statefulset["metadata"]["namespace"]
+                app = controller["metadata"]["labels"]["app"]
+                workspace_id = controller["metadata"]["labels"]["analitico.ai/workspace-id"]
+                grace_period = int(controller["metadata"]["annotations"]["analitico.ai/scale-to-zero-grace-period"])
+                namespace = controller["metadata"]["namespace"]
                 assert app and workspace_id and grace_period
 
-                logger.info(f"{statefulset_name} has scale to zero grace period set to {grace_period} minutes")
+                logger.info(f"{controller_name} has scale to zero grace period set to {grace_period} minutes")
 
                 pod, _ = kubectl(
                     namespace, "get", "pod", args=["--selector", f"app={app},analitico.ai/workspace-id={workspace_id}"]
@@ -741,8 +760,10 @@ def k8_scale_to_zero() -> (int, int):
                 now = datetime.utcnow()
                 # eg: 2019-11-25T11:16:04Z
                 running_since = datetime.strptime(pod["metadata"]["creationTimestamp"], "%Y-%m-%dT%H:%M:%SZ")
-                running_for = round((now - running_since).total_seconds())
-                logger.info(f"{statefulset_name} has been running since {running_since}Z ({round(running_for / 60)} minutes)")
+                running_for = (now - running_since).total_seconds()
+                logger.info(
+                    f"{controller_name} has been running since {running_since}Z ({round(running_for / 60)} minutes)"
+                )
 
                 is_enable_to_scale = running_for > (grace_period * 60)
 
@@ -815,21 +836,22 @@ def k8_scale_to_zero() -> (int, int):
                                 # error contacting Prometheus
                                 replicas = replicas_status_error
                                 logger.warning(f"metric {name} cannot be evaluated. Replicas set to {replicas}")
-                        
+
                         desired_replicas = max(desired_replicas, replicas)
 
-                    logger.info(f"desired replicas for {statefulset_name} is {desired_replicas}")
+                    logger.info(f"desired replicas for {controller_name} is {desired_replicas}")
                     if desired_replicas == 0:
                         # do scale to zero
-                        kubectl(K8_DEFAULT_NAMESPACE, "scale", f"statefulset/{statefulset_name}", args=["--replicas=0"])
+                        kubectl(K8_DEFAULT_NAMESPACE, "scale", f"statefulset/{controller_name}", args=["--replicas=0"])
                         total_scaled = total_scaled + 1
-                        logger.info(f"{statefulset_name} is scaled to zero successfully")
+                        logger.info(f"{controller_name} is scaled to zero successfully")
 
         except Exception as exception:
             total_scaled_unabled = total_scaled_unabled + 1
-            logger.error(f"cannot perform evaluation of scale to zero for {statefulset_name}. Skip.\n{str(exception)}")
+            logger.error(f"cannot perform evaluation of scale to zero for {controller_name}. Skip.\n{str(exception)}")
 
     return total_scaled, total_scaled_unabled
+
 
 ##
 ## Utilities

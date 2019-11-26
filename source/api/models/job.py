@@ -258,14 +258,16 @@ def schedule_items(items, action: str) -> [dict]:
 def schedule_jobs() -> [dict]:
     """ 
     Checks to see if any datasets, recipes or notebooks need to run 
-    on a schedule and generates the necessary jobs. Returns an array
-    of jobs that were scheduled (or None if no job was generated).
-    Also scan 
+    on a schedule and generates the necessary jobs. 
+    Plus it checks if there are Jupyter instances in idle to be scaled to zero.
+    Returns an array of jobs that were scheduled or Jupyters that were scaled
+    (or None if no job was generated).
     """
     # filter only items that contain "schedule" in their attributes
     # and may possibly be configured for automatic cron scheduling
     # pylint: disable=no-member
     from api.models import Dataset, Recipe, Notebook
+    from api.k8 import kubectl, K8_DEFAULT_NAMESPACE, k8_scale_to_zero
 
     ds = Dataset.objects.filter(attributes__icontains='"schedule"')
     ds_jobs = schedule_items(ds, ACTION_RUN)
@@ -276,5 +278,9 @@ def schedule_jobs() -> [dict]:
     nb = Notebook.objects.filter(attributes__icontains='"schedule"')
     nb_jobs = schedule_items(nb, ACTION_RUN)
 
+    # scale to zero idle Jupyter instances
+    controllers, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "statefulSet")
+    scaled, unable = k8_scale_to_zero(controllers["items"])
+
     # also cancel stuck jobs
-    return nb_jobs + ds_jobs + rx_jobs
+    return nb_jobs + ds_jobs + rx_jobs + scaled
