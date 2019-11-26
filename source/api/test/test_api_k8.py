@@ -797,6 +797,7 @@ class K8Tests(AnaliticoApiTestCase):
 
     @tag("k8s")
     def test_job_delete(self):
+        # job posted on workspace `ws1`
         job_id, job = self.job_run_notebook()
         url = reverse("api:notebook-k8-jobs", args=(self.item_id, job_id))
 
@@ -1137,6 +1138,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1)
 
+    @tag("slow", "k8s", "live")
     def test_jupyter_kickoff_and_contact_jupyter(self):
         """ 
         Deploy a Jupyter with zero replicas then kick it off
@@ -1250,6 +1252,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1)
 
+    @tag("k8s")
     def test_k8_jupyter_delete(self):
         try:
             # Jupyter deployed in workspace `ws1`

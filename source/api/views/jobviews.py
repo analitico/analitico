@@ -10,6 +10,7 @@ import api.models
 import api.utilities
 
 from api.models import Dataset, Job
+from api.k8 import K8_DEFAULT_NAMESPACE, kubectl
 
 from .filesviewsetmixin import FilesViewSetMixin
 from .attributeserializermixin import AttributeSerializerMixin
@@ -39,6 +40,7 @@ from rest_framework import status
 
 from analitico.status import STATUS_CREATED, STATUS_RUNNING, STATUS_COMPLETED, STATUS_COMPLETED
 from analitico.utilities import logger, get_dict_dot
+from analitico import AnaliticoException
 
 from api.utilities import get_query_parameter, get_query_parameter_as_bool
 from api.models import ItemMixin
@@ -159,6 +161,11 @@ class JobViewSetMixin:
         item = self.get_object()
 
         if self.request.method == "DELETE":
+            # test that the job is owned by the item
+            job, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "job/" + job_pk)
+            if item.id != job["metadata"]["labels"]["analitico.ai/item-id"]:
+                raise AnaliticoException("job not found", status_code=status.HTTP_404_NOT_FOUND)
+
             job = k8_job_delete(job_pk)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
