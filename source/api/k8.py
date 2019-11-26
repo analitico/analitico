@@ -63,13 +63,16 @@ def kubectl(namespace: str, action: str, resource: str, output: str = "json", ar
     Exec operation on Kubernetes using Kubectl command 
     
     Arguments:
-        namespace str -- 
-        action str --
-        resource str --
-        output str or None -- 
+    ----------
+        namespace : str -- Kubernetes resource namespace. Eg: cloud
+        action : str -- eg: get, delete ...
+        resource : str -- Kubernetes resource specification, eg: service, kservice/api-staging
+        output : str or None -- eg: json, yaml
+        args : [], optional -- more command specific arguments, eg: ["--selector", "app=api"]
 
     Returns:
-        Tuple (str, str) -- 
+    --------
+        Tuple : (str, str) -- from the run command
     """
     try:
         output_args = ["--output", output] if output else []
@@ -80,11 +83,11 @@ def kubectl(namespace: str, action: str, resource: str, output: str = "json", ar
         ) from exec
 
 
-def k8_wait_for_condition(namespace: str, resource: str, condition: str, labels: str = None, timeout: int = 60):
+def k8_wait_for_condition(namespace: str, resource: str, condition: str, labels: str = None, output: str = None, timeout: int = 60):
     """ 
     Wait the resource for the given condition. Command fails when the timeout expires. 
     
-    Parameters
+    Arguments:
     ----------
     namespace : str
         Kubernetes resource namespace. Eg: cloud
@@ -99,29 +102,21 @@ def k8_wait_for_condition(namespace: str, resource: str, condition: str, labels:
     labels : str
         Comma separeted key=value labels
         Eg: analitico.ai/service=jupyer,app=jupyer-ws-test
+    output : str
+        Eg, json in order to return the wait resource
     timeout : int, optional
         Timeout in seconds before give up.
         Zero-value means check once and don"t wait.
 
     Returns
     -------
-    Tuple (stdout, stderr)
+    Tuple : (stdout, stderr)
         from the run command
     """
     try:
-        selector = "--selector" if labels is not None else ""
-        return subprocess_run(
-            [
-                "kubectl",
-                "wait",
-                "-n",
-                namespace,
-                resource,
-                selector,
-                labels,
-                f"--for={condition}",
-                f"--timeout={timeout}s",
-            ]
+        selector = ["--selector", labels] if labels is not None else []
+        return kubectl(
+            namespace, "wait", resource, output=output, args=[f"--for={condition}", f"--timeout={timeout}s", *selector]
         )
     except Exception as exec:
         raise AnaliticoException(
@@ -704,12 +699,7 @@ def k8_jupyter_kickoff(workspace, jupyter_name: str, settings: dict = None):
 def k8_jupyter_deallocate(workspace, jupyter_name: str = None):
     """ Deallocate the Jupyters for a given workspace or a specific one. """
     if jupyter_name:
-        kubectl(
-            K8_DEFAULT_NAMESPACE,
-            "delete",
-            "service/" + jupyter_name,
-            output=None,
-        )
+        kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + jupyter_name, output=None)
     else:
         kubectl(
             K8_DEFAULT_NAMESPACE,
