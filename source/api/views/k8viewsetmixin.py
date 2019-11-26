@@ -290,8 +290,8 @@ class K8ViewSetMixin:
     ## Jupyter
     ## 
 
-    @action(methods=["get"], detail=True, url_name="k8-jupyters", url_path="k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})")
-    def jupyters_get(self, request, pk, jupyter_name: str):
+    @action(methods=["get"], detail=True, url_name="k8-jupyters", url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})?")
+    def jupyters_get(self, request, pk, jupyter_name: str = None):
         """ List of Jupyter instances created for the workspace or the specific one """
         workspace = self.get_object()
         jupyters = k8_jupyter_get(workspace, jupyter_name=jupyter_name)
@@ -311,7 +311,7 @@ class K8ViewSetMixin:
 
         return Response(data)
 
-    @action(methods=["put"], detail=True, url_name="k8-jupyter-kickoff", url_path="k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})")
+    @action(methods=["put"], detail=True, url_name="k8-jupyter-kickoff", url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})/")
     def jupyter_kickoff(self, request, pk, jupyter_name: str):
         """ """
         workspace = self.get_object()

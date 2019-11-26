@@ -1,7 +1,7 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: {deployment_name}
+  name: {controller_name}
   namespace: {service_namespace}
   labels:
     app: {service_name}
@@ -10,8 +10,8 @@ metadata:
   annotations:
     analitico.ai/jupyter-title: "{jupyter_title}"
     analitico.ai/jupyter-url: "{service_url}"
-    analitico.ai/cooloff-enabled: "{cooloff_enabled}"
-    analitico.ai/cooloff-interval: "{cooloff_interval}"
+    analitico.ai/enable-scale-to-zero: "{enable_scale_to_zero}"
+    analitico.ai/scale-to-zero-grace-period: "{scale_to_zero_grace_period}"
   ownerReferences:
   - apiVersion: v1
     blockOwnerDeletion: true
@@ -22,7 +22,8 @@ spec:
   selector:
     matchLabels:
       app: {service_name}
-  replicas: 1
+  replicas: {replicas}
+  serviceName: {service_name}
   template:
     metadata:
       namespace: {service_namespace}
@@ -60,6 +61,10 @@ spec:
         - name: analitico-drive
           mountPath: /mnt/analitico-drive
           readOnly: false
+        readinessProbe:
+          httpGet:
+            path: /login
+            port: 8080
       volumes:
       - name: analitico-drive
         flexVolume:
