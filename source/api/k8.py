@@ -794,8 +794,7 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                         {
                             "name": "max_http_requests_last_period",
                             "query": f'sum(max_over_time(istio_requests_total_rate1m{{destination_service_name="{app}",container=""}}[{grace_period}m])) by (destination_service_name)',
-                            # at least one http request in the grace period
-                            "target": 1,
+                            "target": 0,
                             # when there are no metrics it might mean that it's not
                             # been made any requests to the service or problems with Prometheus.
                             # In any case we can consider it as zero requests.
@@ -836,7 +835,7 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                                 )
                             value = result[0].get("value")[1]
 
-                            replicas = 0 if float(value) < float(target) else 1
+                            replicas = 0 if float(value) <= float(target) else 1
                             logger.info(f"{controller_name} status - {name} (current / target): {round(float(value), 4)} / {target} - replicas: {replicas}")
                         except AnaliticoException as e:
                             # metric returned no value
