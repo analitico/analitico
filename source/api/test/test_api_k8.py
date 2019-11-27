@@ -65,10 +65,7 @@ class K8Tests(AnaliticoApiTestCase):
 
         if wait:
             k8_wait_for_condition(
-                K8_DEFAULT_NAMESPACE,
-                "pod",
-                "condition=Ready",
-                labels=f"serving.knative.dev/service=" + service["name"],
+                K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=f"serving.knative.dev/service=" + service["name"]
             )
         return service
 
@@ -77,7 +74,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.auth_token(self.token1)
         if jupyter_name:
             # update existing jupyter configuration
-            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             response = self.client.put(url, data=custom_settings, format="json")
         else:
             # deploy a new jupyter
@@ -1058,7 +1055,7 @@ class K8Tests(AnaliticoApiTestCase):
         try:
             # deploy update fails when the given jupyter does not exist
             jupyter_name = "fake-jupyter"
-            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             self.auth_token(self.token1)
             response = self.client.put(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -1069,13 +1066,13 @@ class K8Tests(AnaliticoApiTestCase):
 
             # user cannot update jupyter that he doesn't have access to
             self.auth_token(self.token2)
-            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws2.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws2.id, jupyter_name))
             response = self.client.put(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
             # user cannot update jupyter from a workspace he doesn't have access to
             self.auth_token(self.token2)
-            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             response = self.client.put(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -1097,7 +1094,7 @@ class K8Tests(AnaliticoApiTestCase):
                 }
             }
             self.auth_token(self.token1)
-            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             response = self.client.put(url, data=custom_settings)
             self.assertStatusCode(response)
 
@@ -1128,7 +1125,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             # stop Jupyter by setting replicas to zero
             settings = {"settings": {"replicas": 0}}
-            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             response = self.client.put(url, data=settings, format="json")
             self.assertApiResponse(response)
             jupyter = response.json().get("data")
@@ -1158,7 +1155,7 @@ class K8Tests(AnaliticoApiTestCase):
             k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name)
 
             self.auth_token(self.token1)
-            url = reverse("api:workspace-k8-jupyter-kickoff", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             response = self.client.put(url)
             self.assertStatusCode(response)
 
@@ -1176,8 +1173,9 @@ class K8Tests(AnaliticoApiTestCase):
             k8_jupyter_deallocate(self.ws1)
 
     @tag("slow", "k8s", "live")
-    def test_jupyter_scale_to_zero_is_up_and_running(self):
+    def test_jupyter_autoscaler_cron_is_up_and_running(self):
         """ 
+        Test the scale to zero functionality. 
         This test is a live test, it deploys a Jupyter and waits for it
         to be scaled to zero. 
         It means that the test requires an up-and-running cron that checks
@@ -1262,19 +1260,19 @@ class K8Tests(AnaliticoApiTestCase):
             jupyter_name = get_dict_dot(jupyter, "metadata.labels.app")
 
             # user cannot delete a Jupyter from a workspace he doesn't have access to
-            url = reverse("api:workspace-k8-jupyter-delete", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             self.auth_token(self.token2)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
             # user cannot delete a Jupyter he doesn't have access to
-            url = reverse("api:workspace-k8-jupyter-delete", args=(self.ws2.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws2.id, jupyter_name))
             self.auth_token(self.token2)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
             # delete specific jupyter
-            url = reverse("api:workspace-k8-jupyter-delete", args=(self.ws1.id, jupyter_name))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             self.auth_token(self.token1)
             response = self.client.delete(url)
             self.assertApiResponse(response, status_code=status.HTTP_204_NO_CONTENT)

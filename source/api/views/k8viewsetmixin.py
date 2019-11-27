@@ -292,8 +292,21 @@ class K8ViewSetMixin:
     ##
 
     @action(
-        methods=["get"], detail=True, url_name="k8-jupyters", url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})?"
+        methods=["get", "put", "delete"],
+        detail=True,
+        url_name="k8-jupyters",
+        url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})",
     )
+    def jupyters(self, request, pk, jupyter_name: str):
+        if request.method == "GET":
+            return self.jupyters_get(request, pk, jupyter_name)
+
+        if request.method == "PUT":
+            return self.jupyter_kickoff(request, pk, jupyter_name)
+
+        if request.method == "DELETE":
+            return self.jupyter_delete(request, pk, jupyter_name)
+
     def jupyters_get(self, request, pk, jupyter_name: str = None):
         """ List of Jupyter instances created for the workspace or the specific one """
         workspace = self.get_object()
@@ -314,12 +327,6 @@ class K8ViewSetMixin:
 
         return Response(data)
 
-    @action(
-        methods=["put"],
-        detail=True,
-        url_name="k8-jupyter-kickoff",
-        url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})/",
-    )
     def jupyter_kickoff(self, request, pk, jupyter_name: str):
         """ 
         Retrieve the Jupyter StatefulSet object ensuring before that
@@ -327,6 +334,7 @@ class K8ViewSetMixin:
         The instance is also updated if some settings are provided,
         (like the Jupyter title or resources)
         """
+        assert jupyter_name
         workspace = self.get_object()
         custom_settings = request.data
 
@@ -337,14 +345,9 @@ class K8ViewSetMixin:
 
         return Response(data)
 
-    @action(
-        methods=["delete"],
-        detail=True,
-        url_name="k8-jupyter-delete",
-        url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})/",
-    )
     def jupyter_delete(self, request, pk, jupyter_name: str):
         """ Delete the Jupyter service from Kubernetes """
+        assert jupyter_name
         workspace = self.get_object()
 
         # test that jupyter is owned by the workspace

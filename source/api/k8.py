@@ -9,6 +9,7 @@ import string
 import collections
 import urllib.parse
 import requests
+import time
 from datetime import datetime, timedelta
 import django.conf
 
@@ -643,6 +644,9 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
 
     # wait for pod to be started, deployed or restored to one replica
     k8_wait_for_condition(service_namespace, "pod", "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
+    # k8s / pod / ready be sure pod is activated when it's ready #383 
+    # wait a little more
+    time.sleep(5)
 
     jupyter = k8_jupyter_get(workspace, jupyter_name)
 
@@ -677,6 +681,12 @@ def k8_jupyter_kickoff(workspace, jupyter_name: str, settings: dict = None):
             "statefulSet",
             args=["--replicas=1", "--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"],
         )
+
+        # wait for pod to be started, deployed or restored to one replica
+        k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
+        # k8s / pod / ready be sure pod is activated when it's ready #383 
+        # wait a little more
+        time.sleep(5)
 
         # the Jupyter specs returned by the scale operation refers to the
         # component before the operation. Request fresh specs of Jupyter instance.
