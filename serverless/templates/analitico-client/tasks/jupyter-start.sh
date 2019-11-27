@@ -20,6 +20,7 @@ jupyter notebook \
     --NotebookApp.allow_origin='*' \
     --NotebookApp.disable_check_xsrf=True \
     --NotebookApp.allow_password_change=False \
+    --NotebookApp.tornado_settings="{'headers': {'Content-Security-Policy': \"frame-ancestors 'self' https://analitico.ai\"}}" \
     --NotebookApp.token="${ANALITICO_JUPYTER_TOKEN}" \
     --ResourceUseDisplay.mem_warning_threshold=0.1 \
     --ResourceUseDisplay.mem_limit=${JUPYTER_MEM_LIMIT_BYTES}
