@@ -4,6 +4,7 @@ import json
 import time
 import requests
 import dateutil.parser
+from datetime import datetime
 
 from django.test import tag
 from django.urls import reverse
@@ -526,7 +527,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8s_jobs_run(self):
         try:
             # required utc timestamp for date comparison
-            test_start_time = datetime.datetime.utcnow().timestamp()
+            test_start_time = datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
@@ -557,7 +558,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 300
+                    insist = (datetime.utcnow().timestamp() - test_start_time) <= 300
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])
@@ -701,7 +702,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8s_jobs_run_and_build(self, notebook_name=None):
         try:
             # required utc timestamp for date comparison
-            test_start_time = datetime.datetime.utcnow().timestamp()
+            test_start_time = datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
             receipe_id = "rx_x5b1npmn"
@@ -734,7 +735,7 @@ class K8Tests(AnaliticoApiTestCase):
                     insist = False
                 else:
                     time.sleep(5)
-                    insist = (datetime.datetime.utcnow().timestamp() - test_start_time) <= 900
+                    insist = (datetime.utcnow().timestamp() - test_start_time) <= 900
 
             self.assertIn("succeeded", content["data"]["status"])
             self.assertEqual(1, content["data"]["status"]["succeeded"])

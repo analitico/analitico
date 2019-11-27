@@ -768,7 +768,8 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                 # check creation time to respect the minimum availability
                 now = datetime.utcnow()
                 # eg: 2019-11-25T11:16:04Z
-                running_since = datetime.strptime(pod["metadata"]["creationTimestamp"], "%Y-%m-%dT%H:%M:%SZ")
+                creation_time = get_dict_dot(pod, "metadata.creationTimestamp")
+                running_since = datetime.strptime(creation_time, "%Y-%m-%dT%H:%M:%SZ") if creation_time else datetime.utcnow()
                 running_for = (now - running_since).total_seconds()
                 logger.info(
                     f"{controller_name} has been running since {running_since}Z ({round(running_for / 60)} minutes)"
@@ -782,7 +783,7 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                     # check for scaling status against the following metrics
                     metrics = [
                         {
-                            "name": "max_http_requests_last_period",
+                            "name": "max_cpu_usage_last_period",
                             "query": f'sum(max_over_time(container_cpu_usage_seconds_total_irate1m{{pod="{pod_name}",container=""}}[{grace_period}m])) by (pod)',
                             # cpu usage in the last period (target in cpu time)
                             "target": 0.1,
@@ -820,7 +821,7 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                             )
                             if response.status_code != 200:
                                 raise AnaliticoException(
-                                    f"failed to retrieve metric from Prometheus. Metric: {query}",
+                                    f"failed to retrieve metric from Prometheus - metric: {name}",
                                     status_code=response.status_code,
                                     extra=response.json(),
                                 )
@@ -829,26 +830,27 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                             # we expect one point only
                             if len(result) != 1:
                                 raise AnaliticoException(
-                                    f"invalid metric result. Metric: {query}",
+                                    f"invalid metric result - metric: {name}",
                                     status_code=response.status_code,
                                     extra=result,
                                 )
                             value = result[0].get("value")[1]
 
                             replicas = 0 if float(value) < float(target) else 1
+                            logger.info(f"{controller_name} status - {name} (current / target): {round(float(value), 4)} / {target} - replicas: {replicas}")
                         except AnaliticoException as e:
                             # metric returned no value
                             if e.status_code == status.HTTP_200_OK:
                                 replicas = replicas_missing_metric
-                                logger.warning(f"metric {name} is missing. Replicas set to {replicas}")
+                                logger.warning(f"metric {name} is missing - replicas set to {replicas}")
                             else:
                                 # error contacting Prometheus
                                 replicas = replicas_status_error
-                                logger.warning(f"metric {name} cannot be evaluated. Replicas set to {replicas}")
+                                logger.warning(f"metric {name} cannot be evaluated - replicas set to {replicas}")
 
                         desired_replicas = max(desired_replicas, replicas)
 
-                    logger.info(f"desired replicas for {controller_name} is {desired_replicas}")
+                    logger.info(f"{controller_name} desired replicas is {desired_replicas}")
                     if desired_replicas == 0:
                         # do scale to zero
                         kubectl(K8_DEFAULT_NAMESPACE, "scale", f"statefulset/{controller_name}", args=["--replicas=0"])
