@@ -564,7 +564,8 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     gpu_limit = min(gpu_limit, gpu)
     cpu_request = cpu_unit_to_fractional(get_dict_dot(settings_default, "requests.cpu"))
     memory_request = size_to_bytes(get_dict_dot(settings_default, "requests.memory"))
-    gpu_request = settings_default.get("requests", {}).get("nvidia.com/gpu")
+    # currently they both have to be equals. GPU cannot be shared.
+    gpu_request = gpu_limit
 
     # jupyter nomencleture
     # use the given Jupyter name in order to update the settings
