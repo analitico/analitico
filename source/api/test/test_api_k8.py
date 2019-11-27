@@ -828,8 +828,12 @@ class K8Tests(AnaliticoApiTestCase):
         except AnaliticoException:
             pass
 
-        # ready resource
+        # delete then deploy the service and the pod otherwise no pod will be ready
+        kubectl("cloud", "delete", "kservice/" + self.item_id_normalized, output=None)
         service = self.deploy_service(wait=False)
+        # wait pod to be created
+        time.sleep(5)
+        # wait for pod to be ready
         status, _ = k8_wait_for_condition(
             "cloud", "pod", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
         )
