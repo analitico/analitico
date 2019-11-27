@@ -63,7 +63,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.test_api_k8.K8Tests.test_k8_wait_for_condition",
+                "api.test.test_api_k8.K8Tests.test_k8s_job_logs",
                 "-v",
                 "2"
             ],
