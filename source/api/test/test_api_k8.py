@@ -1063,7 +1063,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
             self.assertEqual(
                 response.json().get("error").get("title"),
-                "The maximum number of Jupyter instances has been reached (max 1 / current 1)",
+                "The maximum number of Jupyter servers has been reached (max 1 / current 1)",
             )
         finally:
             k8_jupyter_deallocate(self.ws1)
