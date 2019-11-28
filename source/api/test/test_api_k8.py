@@ -76,11 +76,11 @@ class K8Tests(AnaliticoApiTestCase):
         if jupyter_name:
             # update existing jupyter configuration
             url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
-            response = self.client.put(url, data=custom_settings, format="json")
+            response = self.client.put(url, data={"data": custom_settings}, format="json")
         else:
             # deploy a new jupyter
             url = reverse("api:workspace-k8-jupyter-deploy", args=(self.ws1.id,))
-            response = self.client.post(url, data=custom_settings, format="json")
+            response = self.client.post(url, data={"data": custom_settings}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -847,7 +847,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8_jupyter_get(self):
         # user CANNOT retrieve Jupyters from workspaces he does not have access to
         self.auth_token(self.token2)
-        url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,))
+        url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,""))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -858,7 +858,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             # all Jupyters in the workspace
             self.auth_token(self.token1)
-            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,""))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             items = get_dict_dot(response.json(), "data.items", [])
@@ -996,7 +996,8 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("slow", "k8s", "live")
     def test_jupyter_deploy_custom_settings(self):
         try:
-            # custom settings are limited by those specified in the workspace
+            # custom settings cannot exceed those specified in the workspace
+            # (defaults settings for this test case)
             settings = {
                 "settings": {
                     "enable_scale_to_zero": "false",
@@ -1004,10 +1005,22 @@ class K8Tests(AnaliticoApiTestCase):
                     "limits": {"cpu": "1", "memory": "32Gi", "nvidia.com/gpu": 1},
                 }
             }
+            url = reverse("api:workspace-k8-jupyter-deploy", args=(self.ws1.id,))
+            self.auth_token(self.token1)
+            response = self.client.post(url, data=settings, format="json")
+            self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+            settings = {
+                "settings": {
+                    "enable_scale_to_zero": "false",
+                    "scale_to_zero_grace_period": "120",
+                    "limits": {"cpu": "2", "memory": "4Gi", "nvidia.com/gpu": 0},
+                }
+            }
             deployment = self.deploy_jupyter(custom_settings=settings)
 
-            # expect jupyter to be deployed with the settings
-            # specified above except for the memory and the GPU
+            # expect Jupyter to be deployed with the specified limits
+            # and the requested resources reduced below the limits
 
             annotations = get_dict_dot(deployment, "metadata.annotations")
             self.assertEqual(annotations["analitico.ai/enable-scale-to-zero"], "false")
@@ -1016,11 +1029,11 @@ class K8Tests(AnaliticoApiTestCase):
             container = get_dict_dot(deployment, "spec.template.spec.containers")[0]
             resources = container["resources"]
             self.assertEqual("500m", resources["requests"]["cpu"])
-            self.assertEqual(str(size_to_bytes("8Gi")), resources["requests"]["memory"])
+            self.assertEqual(str(size_to_bytes("4Gi")), resources["requests"]["memory"])
             self.assertEqual("0", resources["requests"]["nvidia.com/gpu"])
 
-            self.assertEqual("1", resources["limits"]["cpu"])
-            self.assertEqual(str(size_to_bytes("8Gi")), resources["limits"]["memory"])
+            self.assertEqual("2", resources["limits"]["cpu"])
+            self.assertEqual(str(size_to_bytes("4Gi")), resources["limits"]["memory"])
             self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
         finally:
             k8_jupyter_deallocate(self.ws1)
@@ -1056,46 +1069,48 @@ class K8Tests(AnaliticoApiTestCase):
             k8_jupyter_deallocate(self.ws1)
 
     @tag("slow", "k8s", "live")
-    def test_jupyter_update_deployment(self):
+    def test_jupyter_update_status(self):
         try:
-            # deploy update fails when the given jupyter does not exist
+            # deploy update fails when the given Jupyter does not exist
             jupyter_name = "fake-jupyter"
             url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             self.auth_token(self.token1)
             response = self.client.put(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-            # deploy a jupyter for the workspace `ws1`
-            deployment = self.deploy_jupyter()
-            jupyter_name = get_dict_dot(deployment, "metadata.labels.app")
+            # deploy a Jupyter for the workspace `ws1`
+            jupyter = self.deploy_jupyter()
+            jupyter_name = get_dict_dot(jupyter, "metadata.labels.app")
 
-            # user cannot update jupyter that he doesn't have access to
+            # user cannot update Jupyter that he doesn't have access to
             self.auth_token(self.token2)
             url = reverse("api:workspace-k8-jupyters", args=(self.ws2.id, jupyter_name))
             response = self.client.put(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-            # user cannot update jupyter from a workspace he doesn't have access to
+            # user cannot update Jupyter from a workspace he doesn't have access to
             self.auth_token(self.token2)
             url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
             response = self.client.put(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-            # user can update his jupyter deployment specs while kicking it off.
-            # scale to zero to test kickoff on jupyter update
-            response, _ = kubectl(
+            # user cannot update his Jupyter resource, but can stop it and change the title
+            # scale to zero to test Jupyter is started on update
+            kubectl(
                 K8_DEFAULT_NAMESPACE,
                 "scale",
-                "statefulSet/" + get_dict_dot(deployment, "metadata.name"),
+                "statefulSet/" + get_dict_dot(jupyter, "metadata.name"),
+                output=None,
                 args=["--replicas=0"],
             )
             k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name)
 
-            # update jupyter with these settings
+            # request to update Jupyter with these settings
             custom_settings = {
                 "settings": {
+                    "title": "this is a new title",
                     "scale_to_zero_grace_period": "20",
-                    "limits": {"cpu": "1", "memory": "8Gi", "nvidia.com/gpu": 0},
+                    "limits": {"cpu": "700m", "memory": "3Gi", "nvidia.com/gpu": 0},
                 }
             }
             self.auth_token(self.token1)
@@ -1103,20 +1118,22 @@ class K8Tests(AnaliticoApiTestCase):
             response = self.client.put(url, data=custom_settings)
             self.assertStatusCode(response)
 
-            deployment = response.json().get("data", {})
+            jupyter = response.json().get("data", {})
 
-            # jupyter instance has been kicked off (scaled up)
-            self.assertEqual(1, get_dict_dot(deployment, "spec.replicas"))
+            # Jupyter instance has been scaled up because no replicas=0 has been specified
+            self.assertEqual(1, get_dict_dot(jupyter, "spec.replicas"))
 
-            # jupyter configuration has been updated
-            annotations = get_dict_dot(deployment, "metadata.annotations")
+            # only Jupyter title is changed
+            annotations = get_dict_dot(jupyter, "metadata.annotations")
+            self.assertEqual(annotations["analitico.ai/jupyter-title"], "this is a new title")
             self.assertEqual(annotations["analitico.ai/enable-scale-to-zero"], "true")
-            self.assertEqual(annotations["analitico.ai/scale-to-zero-grace-period"], "20")
+            self.assertEqual(annotations["analitico.ai/scale-to-zero-grace-period"], "60")
 
-            container = get_dict_dot(deployment, "spec.template.spec.containers")[0]
+            # resources should not have changed
+            container = get_dict_dot(jupyter, "spec.template.spec.containers")[0]
             resources = container["resources"]
-            self.assertEqual("1", resources["limits"]["cpu"])
-            self.assertEqual(str(size_to_bytes("8Gi")), resources["limits"]["memory"])
+            self.assertNotEqual("700m", resources["limits"]["cpu"])
+            self.assertNotEqual(str(size_to_bytes("3Gi")), resources["limits"]["memory"])
             self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
         finally:
             k8_jupyter_deallocate(self.ws1)
@@ -1141,7 +1158,7 @@ class K8Tests(AnaliticoApiTestCase):
             k8_jupyter_deallocate(self.ws1)
 
     @tag("slow", "k8s", "live")
-    def test_jupyter_kickoff_and_contact_jupyter(self):
+    def test_jupyter_start_and_contact_jupyter(self):
         """ 
         Deploy a Jupyter with zero replicas then kick it off
         and expect it to be up and running
@@ -1189,7 +1206,7 @@ class K8Tests(AnaliticoApiTestCase):
         try:
             # deploy Jupyter with 1 min grace period
             settings = {
-                "settings": {"max-instances": 1, "enable-scale-to-zero": "true", "scale-to-zero-grace-period": "1"}
+                "settings": {"max_instances": 1, "enable_scale_to_zero": "true", "scale_to_zero_grace_period": "1"}
             }
             jupyter = self.deploy_jupyter(custom_settings=settings)
 

@@ -93,17 +93,14 @@ class K8ViewSetMixin:
         # list jobs by workspace or item
         selectBy = f"workspace-id={item.id}" if item.type == "workspace" else f"item-id={item.id}"
         # kubectl get pods -l serving.knative.dev/service={service_name} -n {service_namespace} -o json
-        return get_kubctl_response(
-            "kubectl",
+        pods, _ = kubectl(
+            K8_DEFAULT_NAMESPACE,
             "get",
             "pods",
-            "--selector",
-            f"analitico.ai/{selectBy}",
-            "--sort-by",
-            ".metadata.creationTimestamp",
-            "-o",
-            "json",
+            args=["--selector", f"analitico.ai/{selectBy}", "--sort-by", ".metadata.creationTimestamp"],
         )
+
+        return Response(pods, content_type="application/json")
 
     @action(methods=["post"], detail=True, url_name="k8-deploy", url_path=r"k8s/deploy/(?P<stage>staging|production)$")
     def k8deploy(self, request: Request, pk: str, stage: str) -> Response:
@@ -302,7 +299,7 @@ class K8ViewSetMixin:
             return self.jupyters_get(request, pk, jupyter_name)
 
         if request.method == "PUT":
-            return self.jupyter_kickoff(request, pk, jupyter_name)
+            return self.jupyter_update_status(request, pk, jupyter_name)
 
         if request.method == "DELETE":
             return self.jupyter_delete(request, pk, jupyter_name)
@@ -312,38 +309,36 @@ class K8ViewSetMixin:
         workspace = self.get_object()
         jupyters = k8_jupyter_get(workspace, jupyter_name=jupyter_name)
 
-        return Response(jupyters)
+        return Response(jupyters, content_type="application/json")
 
     @action(methods=["post"], detail=True, url_name="k8-jupyter-deploy", url_path="k8s/jupyters")
     def jupyter_deploy(self, request, pk):
         """ Deploy a new instace of Jupyter. """
         workspace = self.get_object()
-        custom_settings = request.data
 
-        if custom_settings:
-            custom_settings = custom_settings.get("data", None)
+        custom_settings = request.data
+        if custom_settings and "data" in custom_settings:
+            custom_settings = custom_settings["data"]
 
         data = k8_jupyter_deploy(workspace, settings=custom_settings)
 
-        return Response(data)
+        return Response(data, content_type="application/json")
 
-    def jupyter_kickoff(self, request, pk, jupyter_name: str):
+    def jupyter_update_status(self, request, pk, jupyter_name: str):
         """ 
-        Retrieve the Jupyter StatefulSet object ensuring before that
-        the Jupyter pod is running.
-        The instance is also updated if some settings are provided,
-        (like the Jupyter title or resources)
+        Change the status of the Jupyter (start or stop) and other few things 
+        like the Jupyter title. Jupyter's resources cannot be changed.
         """
         assert jupyter_name
         workspace = self.get_object()
+
         custom_settings = request.data
+        if custom_settings and "data" in custom_settings:
+            custom_settings = custom_settings["data"]
 
-        if custom_settings:
-            custom_settings = custom_settings.get("data", None)
+        data = k8_jupyter_update_status(workspace, jupyter_name, settings=custom_settings)
 
-        data = k8_jupyter_kickoff(workspace, jupyter_name, settings=custom_settings)
-
-        return Response(data)
+        return Response(data, content_type="application/json")
 
     def jupyter_delete(self, request, pk, jupyter_name: str):
         """ Delete the Jupyter service from Kubernetes """
@@ -356,8 +351,8 @@ class K8ViewSetMixin:
             "jupyter" != jupyter["metadata"]["labels"]["analitico.ai/service"]
             or workspace.id != jupyter["metadata"]["labels"]["analitico.ai/workspace-id"]
         ):
-            raise AnaliticoException("jupyter service not found", status_code=status.HTTP_404_NOT_FOUND)
+            raise AnaliticoException("Jupyter service not found", status_code=status.HTTP_404_NOT_FOUND)
 
-        k8_jupyter_deallocate(workspace, jupyter_name)
+        k8_jupyter_deallocate(workspace, jupyter_name, wait_for_deletion=True)
 
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -473,7 +473,7 @@ def k8_job_delete(job_id: str):
 
 
 def k8_jupyter_get(workspace: Workspace, jupyter_name: str = None) -> [dict]:
-    """ List of Jupyter StatefulSets created for the workspace """
+    """ List of Jupyter StatefulSets created for the workspace. """
     if jupyter_name:
         response, _ = kubectl(
             K8_DEFAULT_NAMESPACE,
@@ -501,18 +501,19 @@ def k8_jupyter_get(workspace: Workspace, jupyter_name: str = None) -> [dict]:
     return response
 
 
-def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None):
+def k8_jupyter_deploy(workspace: Workspace, settings: dict = None) -> dict:
     """
-    Deploy a new Jupyter instance or update the existing one with the given settings.
+    Deploy a new Jupyter instance with the given settings.
     If settings are not provided are used those from the workspace or the default one. 
     
     Arguments:
-        workspace {Workspace} -- The workspace for which we're allocating Jupyter.
-        jupyter_name string -- Name of the Jupyter to update its configuration
-        settings {} -- Settings for deploying the Jupyter, like resources
+    ----------
+        workspace : Workspace -- The workspace for which we're allocating Jupyter.
+        settings : dict -- Settings for deploying the Jupyter, like resource limits.
     
     Returns:
-        dict -- The jupyter dictionary containing the Kubernetes StatefulSet object
+    --------
+        dict -- The jupyter dictionary containing the Kubernetes StatefulSet object.
     """
     settings_default = workspace.get_attribute("jupyter")
     if not settings_default:
@@ -537,20 +538,16 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     settings_default = settings_default["settings"]
     settings = get_dict_dot(settings, "settings", {})
 
-    if jupyter_name:
-        # check the given jupyter exists, exception otherwise
-        jupyter = k8_jupyter_get(workspace, jupyter_name)
-        assert jupyter_name == get_dict_dot(jupyter, "metadata.labels.app")
-    else:
-        # a workspace can deploy a limited number of Jupyter
-        # instances depending on the workspace's billing plan
-        total_instances = len(k8_jupyter_get(workspace).get("items", []))
-        max_instances = int(settings_default["max_instances"])
-        if total_instances >= max_instances:
-            raise AnaliticoException(
-                f"The maximum number of Jupyter instances has been reached (max {max_instances} / current {total_instances})",
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
+    # a workspace can deploy a limited number of Jupyter
+    # instances depending on the workspace's billing plan
+    total_instances = len(k8_jupyter_get(workspace).get("items", []))
+    max_instances = int(settings_default["max_instances"])
+    if total_instances >= max_instances:
+        raise AnaliticoException(
+            f"The maximum number of Jupyter servers has been reached (max {max_instances} / current {total_instances})",
+            args={"max_instances": max_instances, "current_instances": total_instances},
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
 
     cpu_limit = cpu_unit_to_fractional(get_dict_dot(settings_default, "limits.cpu"))
     memory_limit = size_to_bytes(get_dict_dot(settings_default, "limits.memory"))
@@ -559,20 +556,33 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     memory = size_to_bytes(get_dict_dot(settings, "limits.memory", memory_limit))
     gpu = settings.get("limits", {}).get("nvidia.com/gpu", gpu_limit)
 
-    cpu_limit = min(cpu_limit, cpu)
-    memory_limit = min(memory_limit, memory)
-    gpu_limit = min(gpu_limit, gpu)
-    cpu_request = cpu_unit_to_fractional(get_dict_dot(settings_default, "requests.cpu"))
-    memory_request = size_to_bytes(get_dict_dot(settings_default, "requests.memory"))
-    # currently they both have to be equals. GPU cannot be shared.
-    gpu_request = gpu_limit
+    if cpu > cpu_limit or memory > memory_limit or gpu > gpu_limit:
+        raise AnaliticoException(
+            f"The requested Jupyter server exceedes the resources limits for the workspace",
+            args={
+                "cpu_limit": cpu_limit,
+                "memory_limit": memory_limit,
+                "gpu_limit": gpu_limit,
+                "cpu_requested": cpu,
+                "memory_requested": memory,
+                "gpu_requested": gpu,
+            },
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
+    cpu_limit = cpu
+    memory_limit = memory
+    gpu_limit = gpu
+    cpu_request = min(cpu_limit, cpu_unit_to_fractional(get_dict_dot(settings_default, "requests.cpu")))
+    memory_request = min(memory_limit, size_to_bytes(get_dict_dot(settings_default, "requests.memory")))
+    gpu_request = gpu_limit  # currently they both have to be equals. GPU cannot be shared.
 
     # jupyter nomencleture
     # use the given Jupyter name in order to update the settings
     # of the Jupyter with the new specifications. Otherwise a new
     # Jupyter is deployed
     workspace_id_slug = k8_normalize_name(workspace.id)
-    jupyter_name = f"jupyter-{id_generator()}" if not jupyter_name else jupyter_name
+    jupyter_name = f"jupyter-{id_generator()}"
     service_namespace = K8_DEFAULT_NAMESPACE
     controller_name = jupyter_name
     secret_name = f"analitico-{jupyter_name}"
@@ -645,7 +655,7 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
 
     # wait for pod to be started, deployed or restored to one replica
     k8_wait_for_condition(service_namespace, "pod", "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
-    # k8s / pod / ready be sure pod is activated when it's ready #383 
+    # k8s / pod / ready be sure pod is activated when it's ready #383
     # wait a little more
     time.sleep(5)
 
@@ -659,73 +669,91 @@ def k8_jupyter_deploy(workspace, jupyter_name: str = None, settings: dict = None
     return jupyter
 
 
-def k8_jupyter_kickoff(workspace, jupyter_name: str, settings: dict = None):
+def k8_jupyter_update_status(workspace, jupyter_name: str, settings: dict = None):
     """
-    This method checks if the given workspace has been allocated one or more Jupyter servers.
-    If the workspace doesn't have a server running or the server has cooled down, it will be
-    reallocated.
+    Start Jupyter if not running (set replicas=1) or stop it (replicas=0) when requested 
+    by the settings.
+    If specified in the settings, some information like the title can be updated.
     
     Arguments:
-        workspace {Workspace} -- The workspace for which we're allocating Jupyter.
+    ----------
+        workspace : Workspace -- The workspace for which we're updating Jupyter.
+        settings : dict -- Dictionary of customizable settings (eg, title).
     
     Returns:
+    --------
         dict -- The jupyter dictionary containing configurations and servers info.
     """
-    if settings:
-        # kickoff is performed by the update of the configuration
-        jupyter = k8_jupyter_deploy(workspace, jupyter_name=jupyter_name, settings=settings)
-    else:
-        # update Jupyter with replicas=1
+    k8_selector = f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"
+
+    title = get_dict_dot(settings, "settings.title")
+    if title:
         kubectl(
             K8_DEFAULT_NAMESPACE,
-            "scale",
+            "annotate",
             "statefulSet",
-            args=["--replicas=1", "--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"],
+            output=None,
+            args=["--selector", k8_selector, f"analitico.ai/jupyter-title={title}", "--overwrite"],
         )
 
-        # wait for pod to be started, deployed or restored to one replica
-        k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
-        # k8s / pod / ready be sure pod is activated when it's ready #383 
-        # wait a little more
+    # start or stop Jupyter, start it by default
+    replicas = max(0, min(1, int(get_dict_dot(settings, "settings.replicas", 1))))
+    kubectl(
+        K8_DEFAULT_NAMESPACE,
+        "scale",
+        "statefulSet",
+        output=None,
+        args=[f"--replicas={replicas}", "--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"],
+    )
+
+    if replicas == 1:
+        # wait for pod to be started
+        k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=k8_selector, timeout=20)
+        # k8s / pod / ready be sure pod is activated when it's ready #383
         time.sleep(5)
 
-        # the Jupyter specs returned by the scale operation refers to the
-        # component before the operation. Request fresh specs of Jupyter instance.
-        jupyter = k8_jupyter_get(workspace, jupyter_name)
+    # the Jupyter specs returned by the scale operation refers to the
+    # component before the operation. Request fresh specs of Jupyter instance.
+    jupyter = k8_jupyter_get(workspace, jupyter_name)
 
-        # set the Jupyter access token
-        response, _ = kubectl(
-            K8_DEFAULT_NAMESPACE,
-            "get",
-            "secret",
-            args=["--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"],
-        )
-        secret = response["items"][0]
-        token = base64.b64decode(get_dict_dot(secret, "data.token")).decode("UTF-8")
-        annotations = get_dict_dot(jupyter, "metadata.annotations", {})
-        annotations["analitico.ai/jupyter-token"] = token
-        set_dict_dot(jupyter, "metadata.annotations", annotations)
+    # attach the Jupyter access token
+    response, _ = kubectl(
+        K8_DEFAULT_NAMESPACE,
+        "get",
+        "secret",
+        args=["--selector", f"analitico.ai/workspace-id={workspace.id},app={jupyter_name}"],
+    )
+    secret = response["items"][0]
+    token = base64.b64decode(get_dict_dot(secret, "data.token")).decode("UTF-8")
+    annotations = get_dict_dot(jupyter, "metadata.annotations", {})
+    annotations["analitico.ai/jupyter-token"] = token
+    set_dict_dot(jupyter, "metadata.annotations", annotations)
 
     return jupyter
 
 
-def k8_jupyter_deallocate(workspace, jupyter_name: str = None):
+def k8_jupyter_deallocate(workspace, jupyter_name: str = None, wait_for_deletion: bool = False):
     """ Deallocate the Jupyters for a given workspace or a specific one. """
     if jupyter_name:
         kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + jupyter_name, output=None)
+        labels = f"app={jupyter_name}"
     else:
+        labels = f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}"
         kubectl(
             K8_DEFAULT_NAMESPACE,
             "delete",
             "service",
             output=None,
-            args=["--selector", f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}"],
+            args=["--selector", labels],
         )
+
+    if wait_for_deletion:
+        k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels=labels)
 
 
 def k8_scale_to_zero(controllers: [] = None) -> (int, int):
     """ 
-    Scale to zero services which enabled this feature and they are in idle for a period of time 
+    Scale to zero services which enabled this feature and they are in idle for a period of time.
     
     Arguments:
     ----------
@@ -734,7 +762,7 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
 
     Returns:
     --------
-        Tuple : (int, int) -- number of services scaled to zero and number of services with error
+        Tuple : (int, int) -- number of services scaled to zero and number of services with error.
     """
     if not controllers:
         controllers, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "statefulSet")
@@ -770,7 +798,9 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                 now = datetime.utcnow()
                 # eg: 2019-11-25T11:16:04Z
                 creation_time = get_dict_dot(pod, "metadata.creationTimestamp")
-                running_since = datetime.strptime(creation_time, "%Y-%m-%dT%H:%M:%SZ") if creation_time else datetime.utcnow()
+                running_since = (
+                    datetime.strptime(creation_time, "%Y-%m-%dT%H:%M:%SZ") if creation_time else datetime.utcnow()
+                )
                 running_for = (now - running_since).total_seconds()
                 logger.info(
                     f"{controller_name} has been running since {running_since}Z ({round(running_for / 60)} minutes)"
@@ -837,7 +867,9 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                             value = result[0].get("value")[1]
 
                             replicas = 0 if float(value) <= float(target) else 1
-                            logger.info(f"{controller_name} status - {name} (current / target): {round(float(value), 4)} / {target} - replicas: {replicas}")
+                            logger.info(
+                                f"{controller_name} status - {name} (current / target): {round(float(value), 4)} / {target} - replicas: {replicas}"
+                            )
                         except AnaliticoException as e:
                             # metric returned no value
                             if e.status_code == status.HTTP_200_OK:
