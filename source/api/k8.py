@@ -707,10 +707,13 @@ def k8_jupyter_update_status(workspace, jupyter_name: str, settings: dict = None
     )
 
     if replicas == 1:
-        # wait for pod to be started
-        k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=k8_selector, timeout=20)
-        # k8s / pod / ready be sure pod is activated when it's ready #383
-        time.sleep(5)
+        wait_condition = "condition=Ready"
+    else:
+        wait_condition = "delete"
+    # wait for pod to be started pr stopped
+    k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", wait_condition, labels=k8_selector)
+    # k8s / pod / ready be sure pod is activated when it's ready #383
+    time.sleep(5)
 
     # the Jupyter specs returned by the scale operation refers to the
     # component before the operation. Request fresh specs of Jupyter instance.
