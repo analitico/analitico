@@ -886,7 +886,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_deploy_jupyter_default_settings(self):
@@ -952,7 +952,7 @@ class K8Tests(AnaliticoApiTestCase):
             # all resources removed
             self.assertEqual(0, len(response["items"]))
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_jupyter_deploy_workspace_settings(self):
@@ -991,7 +991,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(str(size_to_bytes("200Mi")), resources["limits"]["memory"])
             self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_jupyter_deploy_custom_settings(self):
@@ -1036,7 +1036,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(str(size_to_bytes("4Gi")), resources["limits"]["memory"])
             self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_jupyter_deploy_max_instances_reached(self):
@@ -1066,7 +1066,7 @@ class K8Tests(AnaliticoApiTestCase):
                 "The maximum number of Jupyter servers has been reached (max 1 / current 1)",
             )
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_jupyter_update_status(self):
@@ -1136,7 +1136,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertNotEqual(str(size_to_bytes("3Gi")), resources["limits"]["memory"])
             self.assertEqual("0", resources["limits"]["nvidia.com/gpu"])
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_jupyter_stop_manually(self):
@@ -1155,7 +1155,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
             k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name)
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_jupyter_start_and_contact_jupyter(self):
@@ -1192,7 +1192,7 @@ class K8Tests(AnaliticoApiTestCase):
             response = requests.get(jupyter_url, allow_redirects=True)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s", "live")
     def test_jupyter_autoscaler_cron_is_up_and_running(self):
@@ -1228,7 +1228,7 @@ class K8Tests(AnaliticoApiTestCase):
             jupyter, _ = kubectl(namespace, "get", "statefulset/" + jupyter_name)
             self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("slow", "k8s")
     def test_k8_scale_to_zero(self):
@@ -1270,7 +1270,7 @@ class K8Tests(AnaliticoApiTestCase):
             jupyter, _ = kubectl(namespace, "get", "statefulset/" + name)
             self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
     @tag("k8s")
     def test_k8_jupyter_delete(self):
@@ -1299,4 +1299,4 @@ class K8Tests(AnaliticoApiTestCase):
             response = self.client.delete(url)
             self.assertApiResponse(response, status_code=status.HTTP_204_NO_CONTENT)
         finally:
-            k8_jupyter_deallocate(self.ws1)
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
