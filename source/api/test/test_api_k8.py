@@ -1023,7 +1023,7 @@ class K8Tests(AnaliticoApiTestCase):
             # and the requested resources reduced below the limits
 
             annotations = get_dict_dot(deployment, "metadata.annotations")
-            self.assertEqual(annotations["analitico.ai/enable-scale-to-zero"], "false")
+            self.assertEqual(annotations["analitico.ai/enable-scale-to-zero"], "true")
             self.assertEqual(annotations["analitico.ai/scale-to-zero-grace-period"], "60")
 
             container = get_dict_dot(deployment, "spec.template.spec.containers")[0]
@@ -1154,6 +1154,12 @@ class K8Tests(AnaliticoApiTestCase):
 
             self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
             k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name)
+
+            # Jupyter is stopped and so pod is missing, delete it and expect it to don't raise not found
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
+            self.auth_token(self.token1)
+            response = self.client.delete(url)
+            self.assertApiResponse(response, status_code=status.HTTP_204_NO_CONTENT)
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 

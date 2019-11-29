@@ -621,10 +621,8 @@ def k8_jupyter_deploy(workspace: Workspace, settings: dict = None) -> dict:
     # scale to zero
     enable_scale_to_zero = settings_default.get("enable_scale_to_zero")
     scale_to_zero_grace_period = int(settings_default.get("scale_to_zero_grace_period"))
-    configs["enable_scale_to_zero"] = settings.get("enable_scale_to_zero", enable_scale_to_zero)
-    configs["scale_to_zero_grace_period"] = min(
-        int(settings.get("scale_to_zero_grace_period", scale_to_zero_grace_period)), scale_to_zero_grace_period
-    )
+    configs["enable_scale_to_zero"] = enable_scale_to_zero
+    configs["scale_to_zero_grace_period"] = scale_to_zero_grace_period
 
     image_tag = get_image_commit_sha()
     configs["image_name"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
@@ -751,7 +749,12 @@ def k8_jupyter_deallocate(workspace, jupyter_name: str = None, wait_for_deletion
         )
 
     if wait_for_deletion:
-        k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels=labels)
+        try:
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels=labels)
+        except AnaliticoException as e:
+            # when Jupyter is stopped kubectl doesn't find any pod to wait for
+            if e.status_code != status.HTTP_404_NOT_FOUND:
+                raise e
 
 
 def k8_scale_to_zero(controllers: [] = None) -> (int, int):
