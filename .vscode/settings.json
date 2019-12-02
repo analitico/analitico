@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "venv/bin/python",
+    "python.pythonPath": "/opt/conda/bin/python",
     "python.envFile": "${workspaceFolder}/source/.env"
 }

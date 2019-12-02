@@ -5,13 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Run server (django)",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/source",
             "program": "${workspaceFolder}/source/manage.py",
             "console": "integratedTerminal",
-            "debugOptions": [ "Django"],
+            "debugOptions": [
+                "Django"
+            ],
             "envPath": "${workspaceFolder}/dev.env",
             "args": [
                 "runserver",
