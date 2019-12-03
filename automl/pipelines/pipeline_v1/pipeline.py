@@ -58,7 +58,7 @@ _module_file = os.path.join(_iris_root, "pipeline_utils.py")
 _tfx_root = os.path.join(_iris_root, "tfx")
 
 # Path which can be listened to by the model server.  Pusher will output the trained model here.
-_serving_model_dir = os.path.join(_tfx_root, "tfx/serving_model", _pipeline_name)
+_serving_model_dir = os.path.join(_tfx_root, "serving_model", _pipeline_name)
 
 _pipeline_root = os.path.join(_tfx_root, "pipelines", _pipeline_name)
 # Sqlite ML-metadata db path.
