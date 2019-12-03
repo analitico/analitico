@@ -58,11 +58,12 @@ _module_file = os.path.join(_iris_root, "pipeline_utils.py")
 _tfx_root = os.path.join(_iris_root, "tfx")
 
 # Path which can be listened to by the model server.  Pusher will output the trained model here.
-_serving_model_dir = os.path.join(_tfx_root, "serving_model", _pipeline_name)
+_serving_model_dir = os.path.join(_tfx_root, "serving_model")
 
-_pipeline_root = os.path.join(_tfx_root, "pipelines", _pipeline_name)
+_pipeline_root = os.path.join(_tfx_root, "pipelines")
+
 # Sqlite ML-metadata db path.
-_metadata_path = os.path.join(_tfx_root, "metadata", _pipeline_name, "metadata.db")
+_metadata_path = os.path.join(_tfx_root, "metadata.db")
 
 
 def _create_pipeline(
@@ -129,7 +130,7 @@ def _create_pipeline(
             model_validator,
             pusher,
         ],
-        enable_cache=False,
+        enable_cache=True,
         metadata_connection_config=metadata.sqlite_metadata_connection_config(metadata_path),
     )
 
