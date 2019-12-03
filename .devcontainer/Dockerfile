@@ -48,8 +48,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     #
     # Analitico additions to VS code generated Dockerfile:
-    # Switch to Python 3.6 + Tensorflow 2.0 + TFX
-    && conda install -q python=3.6 \
+    # Tensorflow 2.0 + TFX
     && conda install -q psutil \
     && conda install -q black \
     && pip install absl-py \
