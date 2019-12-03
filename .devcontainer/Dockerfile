@@ -51,6 +51,7 @@ RUN apt-get update \
     # Switch to Python 3.6 + Tensorflow 2.0 + TFX
     && conda install -q python=3.6 \
     && conda install -q psutil \
+    && conda install -q black \
     && pip install absl-py \
     && pip install tfx==0.15.0 \ 
     && pip install tensorflow==2.0 \ 
