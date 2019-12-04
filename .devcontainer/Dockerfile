@@ -55,7 +55,8 @@ RUN apt-get update \
     && pip install tfx==0.15.0 \ 
     && pip install tensorflow==2.0 \ 
     && pip install tensorboard==2.0.0 \ 
-    && pip install grpcio==1.24.3
+    && pip install grpcio==1.24.3 \
+    && pip install -q kfp
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
