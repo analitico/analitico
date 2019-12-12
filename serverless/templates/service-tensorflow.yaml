@@ -1,0 +1,21 @@
+apiVersion: serving.kubeflow.org/v1alpha2
+kind: InferenceService
+metadata:
+  name: {service_name}
+  namespace: {service_namespace}
+  labels:
+    analitico.ai/workspace-id: {workspace_id}
+    analitico.ai/item-id: {item_id}
+    analitico.ai/serving-name: {serving_name}
+spec:
+  default:
+    predictor:
+      tensorflow:
+        storageUri: pvc://analitico-drive-{workspace_id_slug}-claim/automl/{item_id}/serving
+        resources:
+          limits:
+            cpu: 4
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi

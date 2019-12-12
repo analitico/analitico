@@ -103,6 +103,37 @@ class K8Tests(AnaliticoApiTestCase):
 
         return job_id, response.data
 
+    def kf_run_pipeline(self, recipe_id: str = None) -> Model:
+        """ """
+        if not recipe_id:
+            recipe_id = "rx_test_iris"
+
+        # create a recipe with automl configs
+        recipe = Recipe.objects.create(pk=recipe_id, workspace_id=self.ws1.id)
+        recipe.set_attribute(
+            "automl",
+            {
+                "workspace_id": "ws_001",
+                "recipe_id": recipe_id,
+                "data_item_id": "rx_iris",
+                "data_path": "data",
+                "prediction_type": "regression",
+                "target_column": "target",
+            },
+        )
+        recipe.save()
+        # upload dataset used by pipeline
+        self.auth_token(self.token1)
+        data_url = url = reverse("api:recipe-files", args=(recipe.id, "data/iris.csv"))
+        self.upload_file(
+            data_url,
+            "../../../../automl/mount/recipes/rx_iris/data/iris.csv",
+            content_type="text/csv",
+            token=self.token1,
+        )
+
+        return k8_automl_run(recipe)
+
     @tag("slow", "docker", "k8s")
     def test_k8_deploy_docker(self):
         """ Test building a docker from a notebook then deploying it """
@@ -530,13 +561,13 @@ class K8Tests(AnaliticoApiTestCase):
             test_start_time = datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
-            receipe_id = "rx_x5b1npmn"
+            recipe_id = "rx_x5b1npmn"
             notebook_name = "notebook.ipynb"
             server = "https://staging.analitico.ai"
             headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
             # run the recipe
-            url = reverse("api:recipe-k8-jobs", args=(receipe_id, analitico.ACTION_RUN))
+            url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_RUN))
             response = requests.post(
                 server + url, data=json.dumps({"data": {"notebook": notebook_name}}), headers=headers
             )
@@ -544,7 +575,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             content = response.json()
             job_id = content["data"]["metadata"]["name"]
-            url = reverse("api:recipe-k8-jobs", args=(receipe_id, job_id))
+            url = reverse("api:recipe-k8-jobs", args=(recipe_id, job_id))
 
             # wait to complete
             insist = True
@@ -564,7 +595,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(1, content["data"]["status"]["succeeded"])
             self.assertEqual(notebook_name, content["data"]["metadata"]["annotations"]["analitico.ai/notebook-name"])
 
-            url = reverse("api:recipe-files", args=(receipe_id, notebook_name))
+            url = reverse("api:recipe-files", args=(recipe_id, notebook_name))
             response = requests.get(server + url, headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -587,13 +618,13 @@ class K8Tests(AnaliticoApiTestCase):
         test_start_time = time.time()
 
         # named: K8Tests.test_k8s_jobs_run
-        receipe_id = "rx_x5b1npmn"
+        recipe_id = "rx_x5b1npmn"
         notebook_name = "notebook.ipynb"
         server = "https://staging.analitico.ai"
         headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
         # build the recipe
-        url = reverse("api:recipe-k8-jobs", args=(receipe_id, analitico.ACTION_BUILD))
+        url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_BUILD))
         response = requests.post(server + url, data=json.dumps({"data": {"notebook": notebook_name}}), headers=headers)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -601,7 +632,7 @@ class K8Tests(AnaliticoApiTestCase):
             content = response.json()
             job_id = content["data"]["metadata"]["name"]
             target_id = content["data"]["metadata"]["labels"]["analitico.ai/target-id"]
-            url = reverse("api:recipe-k8-jobs", args=(receipe_id, job_id))
+            url = reverse("api:recipe-k8-jobs", args=(recipe_id, job_id))
 
             # wait to complete
             insist = True
@@ -650,7 +681,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertIn("scores", metadata)
             self.assertIn("number_of_lines", metadata["scores"])
 
-            self.k8s_deploy_and_test(target_id, receipe_id)
+            self.k8s_deploy_and_test(target_id, recipe_id)
 
         finally:
             # clean up job, model and image
@@ -663,7 +694,7 @@ class K8Tests(AnaliticoApiTestCase):
                         "gcloud container images delete --force-delete-tags --quiet " + docker["image"], shell=True
                     )
 
-    def k8s_deploy_and_test(self, model_id, receipe_id):
+    def k8s_deploy_and_test(self, model_id, recipe_id):
         """ This test is called by the test `test_k8s_jobs_build`. """
         server = "https://staging.analitico.ai"
         headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9"}
@@ -681,7 +712,7 @@ class K8Tests(AnaliticoApiTestCase):
 
         try:
             # retrieve deployed service info
-            url = reverse("api:recipe-k8-ksvc", args=(receipe_id, K8_STAGE_STAGING))
+            url = reverse("api:recipe-k8-ksvc", args=(recipe_id, K8_STAGE_STAGING))
             response = requests.get(server + url, headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             content = response.json()
@@ -705,14 +736,14 @@ class K8Tests(AnaliticoApiTestCase):
             test_start_time = datetime.utcnow().timestamp()
 
             # named: K8Tests.test_k8s_jobs_run
-            receipe_id = "rx_x5b1npmn"
+            recipe_id = "rx_x5b1npmn"
             # default or custom name
             notebook_name = "notebook.ipynb" if not notebook_name else notebook_name
             server = "https://staging.analitico.ai"
             headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
             # run and build the recipe
-            url = reverse("api:recipe-k8-jobs", args=(receipe_id, analitico.ACTION_RUN_AND_BUILD))
+            url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_RUN_AND_BUILD))
             response = requests.post(
                 server + url, data=json.dumps({"data": {"notebook": notebook_name}}), headers=headers
             )
@@ -721,7 +752,7 @@ class K8Tests(AnaliticoApiTestCase):
             content = response.json()
             job_id = content["data"]["metadata"]["name"]
             target_id = content["data"]["metadata"]["labels"]["analitico.ai/target-id"]
-            url = reverse("api:recipe-k8-jobs", args=(receipe_id, job_id))
+            url = reverse("api:recipe-k8-jobs", args=(recipe_id, job_id))
 
             # wait to complete
             insist = True
@@ -741,7 +772,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual(1, content["data"]["status"]["succeeded"])
             self.assertEqual(notebook_name, content["data"]["metadata"]["annotations"]["analitico.ai/notebook-name"])
 
-            url = reverse("api:recipe-files", args=(receipe_id, notebook_name))
+            url = reverse("api:recipe-files", args=(recipe_id, notebook_name))
             response = requests.get(server + url, headers=headers)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -847,7 +878,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8_jupyter_get(self):
         # user CANNOT retrieve Jupyters from workspaces he does not have access to
         self.auth_token(self.token2)
-        url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,""))
+        url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, ""))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -858,7 +889,7 @@ class K8Tests(AnaliticoApiTestCase):
 
             # all Jupyters in the workspace
             self.auth_token(self.token1)
-            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id,""))
+            url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, ""))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             items = get_dict_dot(response.json(), "data.items", [])
@@ -1306,3 +1337,109 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertApiResponse(response, status_code=status.HTTP_204_NO_CONTENT)
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
+
+    ##
+    ## Test Kubeflow
+    ##
+
+    @tag("k8s", "kf")
+    def test_kf_pipeline_runs(self):
+        # run a pipeline for testing
+        model = self.kf_run_pipeline()
+        recipe_id = model.get_attribute("recipe_id")
+        run_id = model.get_attribute("automl.run_id")
+
+        # user cannot retrieve runs if he doesn't have access
+        # to the related analitico item
+        self.auth_token(self.token2)
+        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-kf-pipeline-runs", args=("rx_fake_id", run_id))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # retrieve the specific run
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
+        response = self.client.get(url)
+        self.assertApiResponse(response)
+        data = response.json()
+        self.assertEqual(data["data"]["run"]["id"], run_id)
+
+        # user cannot retrieve pipeline ran in an experiment
+        # not releated to the given item id.
+        # Create a new recipe and replace the experiment id
+        # from the other run
+        invalid_recipe_id = "rx_test_runs"
+        self.kf_run_pipeline(invalid_recipe_id)
+        invalid_recipe = Recipe.objects.get(pk=invalid_recipe_id)
+        invalid_recipe.set_attribute("automl.experiment_id", model.get_attribute("automl.experiment_id"))
+        invalid_recipe.save()
+
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-kf-pipeline-runs", args=(invalid_recipe_id, ""))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # retrieve the list of runs for a given item id
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, ""))
+        response = self.client.get(url)
+        self.assertApiResponse(response)
+        data = response.json().get("data")
+        self.assertGreaterEqual(len(data["runs"]), 1)
+
+    @tag("k8s", "kf", "live")
+    def test_kf_serving_deploy(self):
+        """ Deploy a TensorFlow model with Knative """
+        service_name = None
+        try:
+            # artifact loaded in
+            # //u212674.your-storagebox.de/ws_y1ehlz2e/automl/rx_testk8_test_kf_serving_deploy/serving
+            recipe_id = "rx_testk8_test_kf_serving_deploy"
+            recipe = Recipe.objects.create(pk=recipe_id, workspace=self.ws1)
+            recipe.set_attribute(
+                "automl",
+                {
+                    "workspace_id": "ws_y1ehlz2e",
+                    "recipe_id": recipe_id,
+                    "data_item_id": "rx_iris",
+                    "data_path": "data",
+                    "prediction_type": "regression",
+                    "target_column": "target",
+                },
+            )
+            recipe.save()
+
+            self.auth_token(self.token1)
+            url = reverse("api:recipe-k8-deploy", args=(recipe_id, K8_STAGE_STAGING))
+            response = self.client.post(url)
+            self.assertApiResponse(response)
+
+            data = response.json().get("data")
+            service_name = data.get("name")
+
+            # wait for pod to be scheduled
+            time.sleep(3)
+            k8_wait_for_condition(
+                api.k8.K8_DEFAULT_NAMESPACE,
+                "pod",
+                "condition=Ready",
+                labels="serving.kubeflow.org/inferenceservice=" + service_name,
+            )
+
+            # retrieve service information from kubernetes cluster
+            service, _ = kubectl(api.k8.K8_DEFAULT_NAMESPACE, "get", "inferenceService/" + service_name)
+
+            self.assertEquals(service["apiVersion"], "serving.kubeflow.org/v1alpha2")
+            self.assertEquals(service["kind"], "InferenceService")
+            self.assertIn("metadata", service)
+            self.assertIn("spec", service)
+            self.assertIn("status", service)
+        finally:
+            if service_name:
+                kubectl(api.k8.K8_DEFAULT_NAMESPACE, "delete", "inferenceService/" + service_name, output=None)
+

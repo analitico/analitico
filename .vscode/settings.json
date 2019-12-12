@@ -1,4 +1,5 @@
 {
-    "python.pythonPath": "/opt/conda/bin/python",
-    "python.envFile": "${workspaceFolder}/source/.env"
+    "python.pythonPath": "venv/bin/python",
+    "python.envFile": "${workspaceFolder}/source/.env",
+    "python.dataScience.debugJustMyCode": false
 }

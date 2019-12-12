@@ -16,6 +16,8 @@ from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, I
 from .jobviews import JobViewSetMixin, JobSerializer
 from .notebookviews import NotebookViewSetMixin
 from .k8viewsetmixin import K8ViewSetMixin
+from .automlviewsetmixin import AutomlViewSetMixin
+from .kubeflowviewsetmixin import KubeflowViewSetMixin
 
 ##
 ## RecipeSerializer
@@ -43,6 +45,8 @@ class RecipeViewSet(
     JobViewSetMixin,
     NotebookViewSetMixin,
     K8ViewSetMixin,
+    AutomlViewSetMixin,
+    KubeflowViewSetMixin,
     rest_framework.viewsets.ModelViewSet,
 ):
     """
