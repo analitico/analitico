@@ -10,7 +10,7 @@ from api.kubeflow import kf_pipeline_runs_get, kf_serving_deploy
 
 class KubeflowViewSetMixin:
 
-    @action(methods=["GET"], detail=True, url_name="kf-pipeline-runs", url_path=r"/kf/pipeline/runs/(?P<run_id>[-\w.]{0,64})")
+    @action(methods=["GET"], detail=True, url_name="kf-pipeline-runs", url_path=r"kf/pipeline/runs/(?P<run_id>[-\w.]{0,64})")
     def pipeline_runs(self, request, pk, run_id: str = None):
         item = self.get_object()
 
