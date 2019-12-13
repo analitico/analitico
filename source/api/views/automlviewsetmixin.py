@@ -5,7 +5,8 @@ from rest_framework.request import Request
 
 from api.views.modelviews import ModelSerializer
 
-from api.k8 import k8_automl_run
+from api.kubeflow import automl_run
+
 
 class AutomlViewSetMixin:
     """ """
@@ -14,7 +15,7 @@ class AutomlViewSetMixin:
     def run(self, request, pk):
         item = self.get_object()
 
-        model = k8_automl_run(item)
+        model = automl_run(item)
 
         serializer = ModelSerializer(model)
         return Response(serializer.data)

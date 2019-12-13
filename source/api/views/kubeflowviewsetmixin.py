@@ -6,7 +6,7 @@ from rest_framework.request import Request
 from api.views.modelviews import ModelSerializer
 from api.utilities import get_query_parameter
 
-from api.k8 import kf_pipeline_runs_get, kf_serving_deploy
+from api.kubeflow import kf_pipeline_runs_get, kf_serving_deploy
 
 class KubeflowViewSetMixin:
 
