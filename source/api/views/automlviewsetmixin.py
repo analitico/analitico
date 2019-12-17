@@ -9,10 +9,10 @@ from api.kubeflow import automl_run
 
 
 class AutomlViewSetMixin:
-    """ """
 
     @action(methods=["POST"], detail=True, url_name="automl-run", url_path="automl")
     def run(self, request, pk):
+        """ Execute an Automl configuration specified in the item """
         item = self.get_object()
 
         model = automl_run(item)

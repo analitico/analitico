@@ -42,7 +42,7 @@ google-auth==1.7.2
 google-cloud==0.34.0
 google-cloud-core==1.1.0
 google-cloud-storage==1.23.0
-google-resumable-media==0.5.0
+google-resumable-media==0.4.1
 googleapis-common-protos==1.6.0
 GPUtil==1.4.0
 gunicorn==19.9.0
@@ -168,8 +168,10 @@ webencodings==0.5.1
 websocket-client==0.56.0
 widgetsnbextension==3.4.2
 wrapt==1.11.2
-xlrd
+xlrd==1.2.0
 binary==1.0.0
 tfx==0.15.0
 kfp==0.1.37
 absl-py==0.8.1
+protobuf==3.11.1
+tensorflow-serving-api==2.0.0

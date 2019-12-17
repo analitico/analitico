@@ -71,7 +71,7 @@ spec:
         analitico.ai/workspace-id: {workspace_id}
     spec:
       containers:
-      - image: eu.gcr.io/analitico-api/analitico-client:jupyter-test
+      - image: {image_name}
         name: {pod_name}
         command: ["/app/tasks/jupyter-start.sh"]
         env:
