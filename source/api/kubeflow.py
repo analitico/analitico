@@ -12,8 +12,8 @@ from api.k8 import k8_normalize_name, kubectl, K8_DEFAULT_NAMESPACE, K8_STAGE_PR
 from analitico.utilities import save_json, save_text, read_text, subprocess_run, id_generator, get_dict_dot
 
 import kfp
-from analitico.automl import AutomlConfig
-from analitico.automl import pipelines
+from analitico_automl import AutomlConfig
+from analitico_automl import pipelines
 
 
 ##
