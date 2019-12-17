@@ -49,7 +49,7 @@ class KubeflowTests(AnaliticoApiTestCase):
     ##
 
     @tag("k8s", "kf")
-    def test_kf_pipeline_runs(self):
+    def OFF_test_kf_pipeline_runs(self):
         # run a pipeline for testing
         model = self.kf_run_pipeline()
         recipe_id = model.get_attribute("recipe_id")
@@ -99,7 +99,7 @@ class KubeflowTests(AnaliticoApiTestCase):
         self.assertGreaterEqual(len(data["runs"]), 1)
 
     @tag("k8s", "kf", "live")
-    def test_kf_serving_deploy(self):
+    def OFF_test_kf_serving_deploy(self):
         """ Deploy a TensorFlow model with Knative """
         service_name = None
         try:
