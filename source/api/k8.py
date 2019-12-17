@@ -373,7 +373,6 @@ def k8_jobs_create(
     if (
         job_action == analitico.ACTION_BUILD
         or job_action == analitico.ACTION_RUN_AND_BUILD
-        or job_action == analitico.ACTION_BUILD_AUTOML
     ):
         # create a model which will host the built recipe which will contain a snapshot
         # of the assets in the recipe at the moment when the model is built. the recipe's
@@ -401,11 +400,6 @@ def k8_jobs_create(
 
     if job_action == analitico.ACTION_RUN_AND_BUILD:
         configs["job_template"] = os.path.join(TEMPLATE_DIR, "job-run-and-build-template.yaml")
-
-    if job_action == analitico.ACTION_BUILD_AUTOML:
-        configs["build_command"] = str(
-            ["/home/www/analitico/scripts/builder-automl-start.sh", item.id, model.id, notebook_name]
-        )
 
     if not "job_template" in configs:
         raise AnaliticoException(f"Unknown job action: {job_action}")
