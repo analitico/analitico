@@ -8,7 +8,7 @@ from .utils import AnaliticoApiTestCase
 
 class AutomlTests(AnaliticoApiTestCase):
 
-    def OFF_est_automl_run(self):
+    def test_automl_run(self):
         # create a recipe with automl configs
         recipe = Recipe.objects.create(pk="rx_iris", workspace_id=self.ws1.id)
         recipe.set_attribute(
