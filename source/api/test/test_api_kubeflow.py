@@ -149,7 +149,7 @@ class KubeflowTests(AnaliticoApiTestCase):
             if service_name:
                 kubectl(K8_DEFAULT_NAMESPACE, "delete", "inferenceService/" + service_name, output=None)
 
-    def test_kf_update_tensorflow_model_config(self):
+    def OFF_test_kf_update_tensorflow_model_config(self):
         recipe = Recipe.objects.create(pk="rx_automl_model_config", workspace=self.ws1)
         recipe.save()
 
