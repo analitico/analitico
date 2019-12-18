@@ -1236,7 +1236,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s")
+    @tag("slow", "k8s", "live")
     def test_k8_scale_to_zero(self):
         """ Deploy a Jupyter with scale to zero enabled and check synchronous for it to be actually scaled. """
         try:
@@ -1278,7 +1278,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("k8s")
+    @tag("slow", "k8s", "live")
     def test_k8_jupyter_delete(self):
         try:
             # Jupyter deployed in workspace `ws1`

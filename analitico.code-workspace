@@ -31,7 +31,6 @@
             "**/.pytest_cache": true,
             "**/analitico.egg-info": true,
             "**/catboost_info": true,
-            "**/venv": true,
             "sdk/build": true
         },
         "python.linting.pylintEnabled": false,
