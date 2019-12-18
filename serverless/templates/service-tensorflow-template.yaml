@@ -1,0 +1,161 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: tensorflow-serving-config-{workspace_id_slug}
+  namespace: {service_namespace}
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    kind: Service
+    name: {service_name}
+    uid: {owner_uid}  
+data:
+  # see specs: https://www.tensorflow.org/tfx/serving/serving_config#model_server_configuration
+  models.config: |-
+    {protobuf_model_config}
+    # model_config_list {
+    #   config {
+    #     name: 'rx_iris'
+    #     base_path: '/mnt/automl/rx_iris/serving'
+    #     model_platform: 'tensorflow'
+    #   }
+    #   config {
+    #     name: 'rx_testk8_test_kf_serving_deploy'
+    #     base_path: '/mnt/automl/rx_testk8_test_kf_serving_deploy/serving'
+    #     model_platform: 'tensorflow'
+    #   }
+    # }
+  batching.config: |- 
+    max_batch_size { value: 128 }
+    batch_timeout_micros { value: 0 }
+    max_enqueued_batches { value: 1000000 }
+    num_batch_threads { value: 8 }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {service_name}
+  name: {service_name}-metrics
+  namespace: {service_namespace}
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    kind: Service
+    name: {service_name}
+    uid: {owner_uid}  
+spec:
+    ports:
+    - name: metrics
+      port: 9090
+      protocol: TCP
+      targetPort: queue-metrics
+    - name: user-metrics
+      port: 9091
+      protocol: TCP
+      targetPort: user-metrics
+    selector:
+      app: {service_name}
+    type: ClusterIP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {workspace_id_slug}
+  namespace: {service_namespace}
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    kind: Service
+    name: {service_name}
+    uid: {owner_uid}
+spec:
+  gateways:
+  - knative-serving/cluster-local-gateway
+  - knative-serving/knative-ingress-gateway
+  hosts:
+  - {workspace_id_slug}.{service_namespace}
+  - {workspace_id_slug}.{service_namespace}.analitico.ai
+  - {workspace_id_slug}.{service_namespace}.svc
+  - {workspace_id_slug}.{service_namespace}.svc.cluster.local
+  http:
+  - match:
+    - authority:
+        regex: ^{workspace_id_slug}\.{service_namespace}\.analitico\.ai(?::\d{1,5})?$
+        gateways:
+        - knative-serving/knative-ingress-gateway
+    - authority:
+        regex: ^{workspace_id_slug}\.{service_namespace}(\.svc(\.cluster\.local)?)?(?::\d{1,5})?$
+        gateways:
+        - knative-serving/cluster-local-gateway
+    retries:
+        attempts: 3
+        perTryTimeout: 10m0s
+    route:
+    - destination:
+        host: {service_name}.{service_namespace}.svc.cluster.local
+        port:
+            number: 80
+        weight: 100
+    timeout: 10m0s
+    websocketUpgrade: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {controller_name}
+  namespace: {service_namespace}
+  labels:
+    app: {service_name}
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    kind: Service
+    name: {service_name}
+    uid: {owner_uid}
+spec:
+  selector:
+    matchLabels:
+      app: {service_name}
+  template:
+    metadata:
+      namespace: {service_namespace}
+      labels:
+        app: {service_name}
+    spec:
+      containers:
+      - name: tensorflow-container
+        image: {image_name}
+        command:
+        - /usr/bin/tensorflow_model_server
+        args:
+        - '--port=9000'
+        - '--rest_api_port=8080'
+        - '--model_config_file=/models/models.config'
+        - '--model_config_file_poll_wait_seconds=30'
+        # Currently disabled
+        # - '--enable_batching'
+        # - '--batching_parameters_file=/models/batching.config'
+        ports:
+        - containerPort: 9000
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 2
+            memory: 8Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi
+        volumeMounts:
+        - name: tensorflow-serving-config
+          readOnly: true
+          mountPath: /models
+        - name: analitico-drive
+          mountPath: /mnt
+      volumes:
+      - name: tensorflow-serving-config
+        configMap:
+          name: tensorflow-serving-config-{workspace_id_slug}
+      - name: analitico-drive
+        persistentVolumeClaim:
+          claimName: analitico-drive-{workspace_id_slug}-claim
