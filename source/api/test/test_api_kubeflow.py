@@ -100,7 +100,7 @@ class KubeflowTests(AnaliticoApiTestCase):
         data = response.json().get("data")
         self.assertGreaterEqual(len(data["runs"]), 1)
 
-    @tag("k8s", "kf", "live")
+    @tag("k8s", "kf", "live", "slow")
     def test_tensorflow_serving_deploy(self):
         """ Test deploy of a TensorFlow model with Knative """
         try:
@@ -137,9 +137,10 @@ class KubeflowTests(AnaliticoApiTestCase):
             )
 
             # test endpoint
-            # url = "https://ws-001.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
-            url = "https://ws-001.cloud.cloud-staging.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
-            response = requests.get(url, verify=False)
+            url = "https://ws-001.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            # url = "https://ws-001.cloud.cloud-staging.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            response = requests.get(url)
+            # response = requests.get(url, verify=False)
             self.assertApiResponse(response)
         finally:
             try:
