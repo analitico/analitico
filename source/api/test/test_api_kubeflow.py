@@ -1,5 +1,6 @@
 import time
 import json
+import requests
 from django.urls import reverse
 
 from rest_framework import status
@@ -14,7 +15,7 @@ from api.k8 import kubectl, k8_wait_for_condition, K8_DEFAULT_NAMESPACE
 
 class KubeflowTests(AnaliticoApiTestCase):
     def kf_run_pipeline(self, recipe_id: str = None) -> Model:
-        """ """
+        """ Execute an Automl pipeline for testing """
         if not recipe_id:
             recipe_id = "rx_test_iris"
 
@@ -48,8 +49,9 @@ class KubeflowTests(AnaliticoApiTestCase):
     ## Test Kubeflow
     ##
 
-    @tag("k8s", "kf")
+    @tag("k8s", "kf", "slow")
     def test_kf_pipeline_runs(self):
+        """ Test Kubeflow get and list pipeline run objects """ 
         # run a pipeline for testing
         model = self.kf_run_pipeline()
         recipe_id = model.get_attribute("recipe_id")
@@ -99,13 +101,12 @@ class KubeflowTests(AnaliticoApiTestCase):
         self.assertGreaterEqual(len(data["runs"]), 1)
 
     @tag("k8s", "kf", "live")
-    def OFF_test_kf_serving_deploy(self):
-        """ Deploy a TensorFlow model with Knative """
-        service_name = None
+    def test_tensorflow_serving_deploy(self):
+        """ Test deploy of a TensorFlow model with Knative """
         try:
             # artifact loaded in
-            # //u212674.your-storagebox.de/ws_y1ehlz2e/automl/rx_testk8_test_kf_serving_deploy/serving
-            recipe_id = "rx_testk8_test_kf_serving_deploy"
+            # //u212674.your-storagebox.de/ws_y1ehlz2e/automl/rx_testk8_test_tensorflow_serving_deploy/serving
+            recipe_id = "rx_testk8_test_tensorflow_serving_deploy"
             recipe = Recipe.objects.create(pk=recipe_id, workspace=self.ws1)
             recipe.set_attribute(
                 "automl",
@@ -120,13 +121,11 @@ class KubeflowTests(AnaliticoApiTestCase):
             )
             recipe.save()
 
-            self.auth_token(self.token1)
-            url = reverse("api:recipe-k8-deploy", args=(recipe_id, K8_STAGE_STAGING))
-            response = self.client.post(url)
-            self.assertApiResponse(response)
+            model = Model.objects.create(pk="ml_testk8_test_tensorflow_serving_deploy", workspace=self.ws1)
+            model.save()
+            result = tensorflow_serving_deploy(recipe, model)
 
-            data = response.json().get("data")
-            service_name = data.get("name")
+            service_name = result.get("name")
 
             # wait for pod to be scheduled
             time.sleep(3)
@@ -134,23 +133,42 @@ class KubeflowTests(AnaliticoApiTestCase):
                 K8_DEFAULT_NAMESPACE,
                 "pod",
                 "condition=Ready",
-                labels="serving.kubeflow.org/inferenceservice=" + service_name,
+                labels="app=" + service_name,
             )
 
-            # retrieve service information from kubernetes cluster
-            service, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "inferenceService/" + service_name)
-
-            self.assertEquals(service["apiVersion"], "serving.kubeflow.org/v1alpha2")
-            self.assertEquals(service["kind"], "InferenceService")
-            self.assertIn("metadata", service)
-            self.assertIn("spec", service)
-            self.assertIn("status", service)
+            # test endpoint
+            # url = "https://ws-001.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            url = "https://ws-001.cloud.cloud-staging.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            response = requests.get(url, verify=False)
+            self.assertApiResponse(response)
         finally:
-            if service_name:
-                kubectl(K8_DEFAULT_NAMESPACE, "delete", "inferenceService/" + service_name, output=None)
+            try:
+                kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + service_name, output=None)
+            except:
+                pass
 
-    def OFF_test_kf_update_tensorflow_model_config(self):
+    def test_kf_update_tensorflow_models_config(self):
+        # from empty config
         recipe = Recipe.objects.create(pk="rx_automl_model_config", workspace=self.ws1)
         recipe.save()
 
-        kf_update_tensorflow_model_config(recipe)
+        config = kf_update_tensorflow_models_config(recipe, "")
+        self.assertIn('name: "rx_automl_model_config"', config)
+        self.assertIn('base_path: "/mnt/automl/rx_automl_model_config/serving"', config)
+        self.assertIn('model_platform: "tensorflow"', config)
+
+        # from an existing config
+        recipe2 = Recipe.objects.create(pk="rx_automl_model_config_2", workspace=self.ws1)
+        recipe2.save()
+
+        config = kf_update_tensorflow_models_config(recipe2, config)
+        self.assertIn('name: "rx_automl_model_config_2"', config)
+        self.assertIn('base_path: "/mnt/automl/rx_automl_model_config_2/serving"', config)
+        self.assertIn('model_platform: "tensorflow"', config)
+
+        # from an existing config re-add an existing item's model
+        config = kf_update_tensorflow_models_config(recipe2, config)
+        self.assertEqual(config.count('name: "rx_automl_model_config_2"'), 1, "model should not be present twice")
+        self.assertEqual(config.count('base_path: "/mnt/automl/rx_automl_model_config_2/serving'), 1, "model should not be present twice")
+
+

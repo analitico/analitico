@@ -11,10 +11,12 @@ from api.models import ItemMixin, Recipe, Model, Workspace
 from api.k8 import k8_normalize_name, kubectl, K8_DEFAULT_NAMESPACE, K8_STAGE_PRODUCTION, K8_STAGE_STAGING, TEMPLATE_DIR
 from analitico.utilities import save_json, save_text, read_text, subprocess_run, id_generator, get_dict_dot
 
-import kfp
-from tensorflow_serving.config import model_server_config_pb2
 from analitico_automl import AutomlConfig
 from analitico_automl import pipelines
+
+import kfp
+from tensorflow_serving.config import model_server_config_pb2
+from google.protobuf import text_format
 
 
 ##
@@ -22,10 +24,18 @@ from analitico_automl import pipelines
 ##
 
 
-def automl_run(item: ItemMixin) -> dict:
+def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
     """ 
     Request the execution on Kubeflow of the automl pipeline specified in the item object. 
     Create and return the model object to map the execution in the Analitico flow.
+
+    Arguments:
+    ---------
+        item : ItemMixin
+            Analitico item object.
+        serving_endpoint : bool
+            When true, it's deployed a Tensorflow Serving image on Kubernetes for REST API prediction.
+    
     """
     automl_config = item.get_attribute("automl")
     if not automl_config:
@@ -70,6 +80,10 @@ def automl_run(item: ItemMixin) -> dict:
     model.set_attribute("automl", automl_config)
     model.save()
 
+    # deploy endpoint for serving all workspace's automl models
+    if serving_endpoint:
+        tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
+
     return model
 
 
@@ -77,42 +91,39 @@ def automl_run(item: ItemMixin) -> dict:
 ## Kubeflow
 ##
 
-def kf_update_tensorflow_model_config(item: ItemMixin):
+def kf_update_tensorflow_models_config(item: ItemMixin, current_models_config: str):
     """ 
-    Models are defined in a configuration file on a Kubernetes ConfigMap. 
-    The format expected by Tensorflow is a Google Protobuf. 
-    This method update the config file with the new recipe's model specs.
+    Models are defined in a configuration file on a Kubernetes 
+    ConfigMap in a format called Google Protobuf. 
+    This method update the config from the Probuf format by 
+    defining the details of the item's model name and path if not already set.
+
+    Arguments:
+    ----------
+        item : ItemMixin
+            Analitico item object the model is related to.
+        current_models_config : str 
+            Protobuf format of ModelServerConfig config.
+            See: https://www.tensorflow.org/tfx/serving/serving_config#model_server_config_details
     """
-    # load or create configmap
-    # f = open("/home/daniele/analitico/source/modelconfigprotobuf.proto", "rb")
-    config_content = """model_config_list {
-    config {
-        name: 'rx_iris'
-        base_path: '/mnt/automl/rx_iris/serving'
-        model_platform: 'tensorflow'
-    }
-    config {
-        name: 'rx_testk8_test_kf_serving_deploy'
-        base_path: '/mnt/automl/rx_testk8_test_kf_serving_deploy/serving'
-        model_platform: 'tensorflow'
-    }
-}"""
+    model_server_config = model_server_config_pb2.ModelServerConfig()
+    text_format.Parse(current_models_config, model_server_config)
 
-    # parse
-    config_model_list = model_server_config_pb2.ModelConfigList()
-    config_model_list.ParseFromString(config_content.encode('utf-8'))
-    # config_model_list.ParseFromString(f.read())
+    exists = False
+    for config in model_server_config.model_config_list.config:
+        if config.name == item.id:
+            exists = True
+            
+    if not exists:
+        # define model's specs
+        config_model = model_server_config.model_config_list.config.add()
+        config_model.name = item.id
+        config_model.base_path = f"/mnt/automl/{item.id}/serving"
+        config_model.model_platform = "tensorflow"
 
-    # create spec
-    config_model = config_model_list.config.add()
-    config_model.name = k8_normalize_name(item.item_id)
-    config_model.base_path = f"/mnt/automl/{item.id}/serving"
-    config_model.model_platform = model_server_config_pb2.TENSORFLOW
-
-    # save
-    config_content = config_model_list.SerializeToString()
-    # todo
-    pass
+    config_content = text_format.MessageToString(model_server_config)
+    return config_content
+    
 
 def kf_pipeline_runs_get(item: ItemMixin, run_id: str = None, list_page_token: str = "") -> dict:
     """ 
@@ -148,31 +159,48 @@ def kf_pipeline_runs_get(item: ItemMixin, run_id: str = None, list_page_token: s
         return runs.to_dict()
 
 
-def kf_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODUCTION) -> dict:
-    """ Deploy a KFServing Inference Service for a recipe built with a TensorFlow model """
+def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODUCTION) -> dict:
+    """ Deploy a Tensorflow Serving image for a recipe built with a TensorFlow model """
     try:
         assert item.workspace
+        workspace_id = item.workspace.id
+
         from api.k8 import k8_customize_and_apply
 
         # name of service we are deploying
-        name = f"{target.id}-{stage}" if stage != K8_STAGE_PRODUCTION else target.id
+        stage_suffix = "-{stage}" if stage != K8_STAGE_PRODUCTION else ""
+        name = workspace_id + stage_suffix
         service_name = k8_normalize_name(name)
         service_namespace = "cloud"
-
-        config = []
+        
+        config = collections.OrderedDict()
         config["service_name"] = service_name
         config["service_namespace"] = service_namespace
-        config["workspace_id"] = item.workspace.id
-        config["workspace_id_slug"] = k8_normalize_name(item.workspace.id)
+        config["workspace_id"] = workspace_id
+        config["workspace_id_slug"] = k8_normalize_name(workspace_id)
         config["item_id"] = item.id
         config["controller_name"] = f"{service_name}-{id_generator(5)}"
         # TensorFlow Serving 1.15.0
         config["image_name"] = "tensorflow/serving@sha256:c25e808561b6983031f1edf080d63d5a2a933b47e374ce6913342f5db4d1280c"
-        config["protobuf_model_config"] = ""
+        
+        try:
+            config_map, _ = kubectl(service_namespace, "get", f"configMap/tensorflow-serving-config-{workspace_id}")
+            current_models_config = get_dict_dot(config_map, "models.config", "")
+        except Exception as e:
+            if e.status_code == status.HTTP_404_NOT_FOUND:
+                # config map not found
+                current_models_config = ""
+            else:
+                raise e
+
+        protobuf_model_config = kf_update_tensorflow_models_config(item, current_models_config)
+        # align all lines in order to be correctly formatted and accepted on the yaml data attribute
+        protobuf_model_config = '    '.join(protobuf_model_config.splitlines(True))
+        config["protobuf_model_config"] = protobuf_model_config
         
         # deploy the main service resource
-        service_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-service-template.yaml")
-        service_json = k8_customize_and_apply(service_filename, **config)
+        template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-service-template.yaml")
+        service_json = k8_customize_and_apply(template_filename, **config)
 
         # retrieve existing services
         services = target.get_attribute("service", {})
@@ -180,8 +208,8 @@ def kf_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_
         config["owner_uid"] = get_dict_dot(service_json, "metadata.uid")
 
         # deploy all the other service related resources
-        service_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-template.yaml")
-        service_json = k8_customize_and_apply(service_filename, **config)
+        template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-template.yaml")
+        k8_customize_and_apply(template_filename, **config)
 
         # save deployment information inside item, endpoint and job
         attrs = collections.OrderedDict()

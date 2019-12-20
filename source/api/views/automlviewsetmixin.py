@@ -15,7 +15,7 @@ class AutomlViewSetMixin:
         """ Execute an Automl configuration specified in the item """
         item = self.get_object()
 
-        model = automl_run(item)
+        model = automl_run(item, serving_endpoint=True)
 
         serializer = ModelSerializer(model)
         return Response(serializer.data)
