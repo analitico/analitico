@@ -1,5 +1,5 @@
 # Starts from an image with default analitico packages
-FROM eu.gcr.io/analitico-api/analitico-base
+FROM eu.gcr.io/analitico-api/analitico-base:56ac2be65a24f93194a2d3bf47ba7bb4f9bbaaf6
 
 ENV HOME=/home/www
 
