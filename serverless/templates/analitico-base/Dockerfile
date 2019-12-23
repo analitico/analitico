@@ -12,8 +12,8 @@ COPY dockerd-entrypoint.sh /usr/local/bin/
 # Utils packages
 RUN apt-get update
 RUN apt-get install -y nano less curl procps
-RUN apt-get install -y curl apt-transport-https ca-certificates software-properties-common gnupg2
-# Missing in Anaconda3, required by docker python package
+RUN apt-get install -y apt-transport-https ca-certificates software-properties-common gnupg2
+# Required by docker python package
 RUN apt-get install -y python3-distutils
 # Should not be useful anymore after this ticket:
 # server / clean up and update requirements #143
