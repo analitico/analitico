@@ -211,7 +211,6 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
         except Exception as e:
             delay_ms = time_ms(started_on)
             msg = f"dr_create_workspace_storage - {workspace.id} storage {subaccount_storage_conf['url']} is NOT ready, delay: {delay_ms} ms"
-            logger.warning(e)
             if delay_ms > HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS:
                 raise AnaliticoException(msg)
             logger.warning(msg)
