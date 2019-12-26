@@ -40,7 +40,7 @@ assert HETZNER_PASSWORD
 assert HETZNER_ENDPOINT.startswith("https://")
 
 # maximum time we're willing to wait for hetzner to setup a newly created subaccount
-HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS = 120 * 1000
+HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS = 300 * 1000
 
 
 def generate_drive_id():
@@ -162,6 +162,7 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
             "ssh": "true",
             "webdav": "true",
             "readonly": "false",
+            "external_reachability": "true"
         },
     )
 
@@ -207,13 +208,14 @@ def dr_create_workspace_storage(workspace: Workspace, refresh_stats: bool = True
             msg = f"dr_create_workspace_storage - {workspace.id} storage {subaccount_storage_conf['url']} is ready"
             logger.info(msg)
             return True
-        except Exception:
+        except Exception as e:
             delay_ms = time_ms(started_on)
             msg = f"dr_create_workspace_storage - {workspace.id} storage {subaccount_storage_conf['url']} is NOT ready, delay: {delay_ms} ms"
+            logger.warning(e)
             if delay_ms > HETZNER_MAX_ACCOUNT_SETUP_DELAY_MS:
                 raise AnaliticoException(msg)
             logger.warning(msg)
-            time.sleep(2)
+            time.sleep(5)
 
 
 def dr_delete_workspace_storage(workspace: Workspace) -> bool:

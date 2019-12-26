@@ -117,16 +117,10 @@ def k8_wait_for_condition(
     Tuple : (stdout, stderr)
         from the run command
     """
-    try:
-        selector = ["--selector", labels] if labels is not None else []
-        return kubectl(
-            namespace, "wait", resource, output=output, args=[f"--for={condition}", f"--timeout={timeout}s", *selector]
-        )
-    except Exception as exec:
-        raise AnaliticoException(
-            f"The resource {resource} cannot be retrieved or not found", status_code=status.HTTP_404_NOT_FOUND
-        ) from exec
-
+    selector = ["--selector", labels] if labels is not None else []
+    return kubectl(
+        namespace, "wait", resource, output=output, args=[f"--for={condition}", f"--timeout={timeout}s", *selector]
+    )
 
 def get_image_commit_sha():
     """ 
@@ -745,20 +739,27 @@ def k8_jupyter_update_status(workspace, jupyter_name: str, settings: dict = None
 
 def k8_jupyter_deallocate(workspace, jupyter_name: str = None, wait_for_deletion: bool = False):
     """ Deallocate the Jupyters for a given workspace or a specific one. """
-    if jupyter_name:
-        kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + jupyter_name, output=None)
-        labels = f"app={jupyter_name}"
-    else:
-        labels = f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}"
-        kubectl(K8_DEFAULT_NAMESPACE, "delete", "service", output=None, args=["--selector", labels])
+    raise_exception = True
+    try:
+        if jupyter_name:
+            kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + jupyter_name, output=None)
+            labels = f"app={jupyter_name}"
+        else:
+            # do not raise errors when deallocating Jupyter 
+            # resources from a workspace being deallocating
+            raise_exception = False
+            labels = f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}"
+            kubectl(K8_DEFAULT_NAMESPACE, "delete", "service", output=None, args=["--selector", labels])
 
-    if wait_for_deletion:
-        try:
-            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels=labels)
-        except AnaliticoException as e:
-            # when Jupyter is stopped kubectl doesn't find any pod to wait for
-            if e.status_code != status.HTTP_404_NOT_FOUND:
-                raise e
+        if wait_for_deletion:
+            try:
+                # when Jupyter is stopped kubectl doesn't find any pod to wait for
+                k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels=labels)
+            except AnaliticoException:
+                pass
+    except AnaliticoException as e:
+        if raise_exception:
+            raise e
 
 
 def k8_scale_to_zero(controllers: [] = None) -> (int, int):
