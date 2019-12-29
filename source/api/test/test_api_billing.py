@@ -38,7 +38,7 @@ class BillingTests(AnaliticoApiTestCase):
         self.auth_token(None)  # no auth
         url = reverse("api:billing-plans")
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
 
         data = response.data
         for plan in data:
