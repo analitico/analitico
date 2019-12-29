@@ -26,6 +26,7 @@ TEST_BILLING_PLAN2_ID = "plan_standard_usd"
 
 
 @pytest.mark.django_db
+@tag("slow")
 class BillingTests(AnaliticoApiTestCase):
     """ Test billing APIs and webhooks. """
 
@@ -38,7 +39,7 @@ class BillingTests(AnaliticoApiTestCase):
         self.auth_token(None)  # no auth
         url = reverse("api:billing-plans")
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.data
         for plan in data:
