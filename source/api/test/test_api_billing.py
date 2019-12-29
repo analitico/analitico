@@ -26,7 +26,7 @@ TEST_BILLING_PLAN2_ID = "plan_standard_usd"
 
 
 # test / billing / disabled due to timeout error calling api.stripe.com #476 
-@tag("slow")
+#@tag("slow")
 @pytest.mark.django_db
 class BillingTests(AnaliticoApiTestCase):
     """ Test billing APIs and webhooks. """
