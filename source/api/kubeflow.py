@@ -1,8 +1,12 @@
 import os
 import tempfile
+import tempfile
 import collections
+import argparse
+import base64
 import json
 from datetime import datetime
+from cacheout import Cache
 
 from rest_framework import status
 
@@ -12,12 +16,24 @@ from api.k8 import k8_normalize_name, kubectl, K8_DEFAULT_NAMESPACE, K8_STAGE_PR
 from analitico.utilities import save_json, save_text, read_text, subprocess_run, id_generator, get_dict_dot
 
 from analitico_automl import AutomlConfig
-from analitico_automl import pipelines
+from analitico_automl import pipelines, metadata, utils
 
 import kfp
 from tensorflow_serving.config import model_server_config_pb2
-from google.protobuf import text_format
+import tensorflow as tf
+from google.protobuf import text_format, json_format
 
+from tensorflow_transform.tf_metadata import dataset_schema
+from tensorflow_transform.tf_metadata import schema_utils
+from tensorflow.python.lib.io import file_io  # pylint: disable=g-direct-tensorflow-import
+from tensorflow_metadata.proto.v0 import schema_pb2
+from tensorflow_transform import coders as tft_coders
+
+# each call to a Tensorflow predict endpoint requires the model schema to
+# convert the request from json disctionary to base64 protobuf request.
+# The memoize decorator below will cache the results of the schema file.
+# https://cacheout.readthedocs.io/en/latest/cache.html#cacheout.cache.Cache.memoize
+cache = Cache(maxsize=1024, ttl=2)
 
 ##
 ## AutoML
@@ -87,9 +103,94 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
     return model
 
 
+@cache.memoize()
+def automl_load_model_schema(item: ItemMixin, to_json: bool = False):
+    """ 
+    Retrieve and cache the Tensorflow model schema file from Analitico 
+    drive and parse it into its protobuf format.
+    """
+    # metadata_store = utils.get_kubeflow_metadata_store("metadata-db.kubeflow", "metadb", "root", "")
+    metadata_store = utils.get_metadata_store("staging1.analitico.ai", "metadb", "root", "test", mysql_port=32125)
+    schema_uri = metadata.get_pipeline_schema_uri(metadata_store, utils.get_pipeline_name(item.id), "")
+    if not schema_uri:
+        return None
+
+    # on pods, the root of the workspace storage is mount in /mnt.
+    # Here we need to strip it out from the path.
+    schema_uri = schema_uri.replace("/mnt", "")
+
+    # retrieve schema da drive
+    workspace = item.workspace
+    drive = workspace.storage.driver
+    with tempfile.NamedTemporaryFile() as schema_file:
+        # todo: cache schema file
+        drive.download(os.path.join(schema_uri, "schema.pbtxt"), schema_file.name)
+        schema = schema_pb2.Schema()
+        content = file_io.read_file_to_string(schema_file.name)
+        text_format.Parse(content, schema)
+
+    if to_json:
+        schema = json_format.MessageToJson(schema)
+
+    return schema
+
+
+def automl_convert_request_for_prediction(item: ItemMixin, content: dict) -> dict:
+    """ 
+    Convert Tensorflow instances values for prediction from json format to 
+    protobuf-serialized and base64-encoded format.
+
+    Arguments
+    ---------
+        item : ItemMixin --- Analitico item object
+        content : str
+            A json string like: 
+            { "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }
+
+    Return
+    ------
+        A json string ready to be sent to the Tensorflow model for prediction.
+        Eg:  { "instances": [ { "b64: "CmYKGAoMc2VwYWxfbGVuZ3RoEggSBgoEzczMQAoXCgtzZXBhbF93aWR0aBIIEgYKBDMzM0AKFwoLcGV0YWxfd2lkdGgSCBIGCgTNzAxAChgKDHBldGFsX2xlbmd0aBIIEgYKBDMzs0A=" } ] }
+    """
+    schema = automl_load_model_schema(item)
+    if not schema:
+        return None
+
+    instances = content.get("instances")
+    if not instances:
+        raise AnaliticoException("`instances` key not found", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    examples_base64 = []
+    if len(instances) > 0:
+        index = 0
+        serialized_examples = []
+        for instance in instances:
+            # is expected the user to specify all features required by the schem,
+            # so the prediction is made on those features given in the request
+            filtered_features = [feature for feature in schema.feature if feature.name in instances[index].keys()]
+            del schema.feature[:]
+            schema.feature.extend(filtered_features)
+
+            raw_feature_spec = schema_utils.schema_as_feature_spec(schema).feature_spec
+            raw_schema = dataset_schema.from_feature_spec(raw_feature_spec)
+            proto_coder = tft_coders.ExampleProtoCoder(raw_schema)
+
+            example = proto_coder.encode(instance)
+            serialized_examples.append(example)
+            index = index + 1
+
+        for example in serialized_examples:
+            example_bytes = base64.b64encode(example).decode("utf-8")
+            examples_base64.append('{ "b64": "%s" }' % example_bytes)
+
+    json_request = '{ "instances": [' + ",".join(examples_base64) + "]}"
+    return json_request
+
+
 ##
 ## Kubeflow
 ##
+
 
 def kf_update_tensorflow_models_config(item: ItemMixin, current_models_config: str):
     """ 
@@ -113,7 +214,7 @@ def kf_update_tensorflow_models_config(item: ItemMixin, current_models_config: s
     for config in model_server_config.model_config_list.config:
         if config.name == item.id:
             exists = True
-            
+
     if not exists:
         # define model's specs
         config_model = model_server_config.model_config_list.config.add()
@@ -123,7 +224,7 @@ def kf_update_tensorflow_models_config(item: ItemMixin, current_models_config: s
 
     config_content = text_format.MessageToString(model_server_config)
     return config_content
-    
+
 
 def kf_pipeline_runs_get(item: ItemMixin, run_id: str = None, list_page_token: str = "") -> dict:
     """ 
@@ -172,7 +273,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         name = workspace_id + stage_suffix
         service_name = k8_normalize_name(name)
         service_namespace = "cloud"
-        
+
         config = collections.OrderedDict()
         config["service_name"] = service_name
         config["service_namespace"] = service_namespace
@@ -181,8 +282,10 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         config["item_id"] = item.id
         config["controller_name"] = f"{service_name}-{id_generator(5)}"
         # TensorFlow Serving 1.15.0
-        config["image_name"] = "tensorflow/serving@sha256:c25e808561b6983031f1edf080d63d5a2a933b47e374ce6913342f5db4d1280c"
-        
+        config[
+            "image_name"
+        ] = "tensorflow/serving@sha256:c25e808561b6983031f1edf080d63d5a2a933b47e374ce6913342f5db4d1280c"
+
         try:
             config_map, _ = kubectl(service_namespace, "get", f"configMap/tensorflow-serving-config-{workspace_id}")
             current_models_config = get_dict_dot(config_map, "models.config", "")
@@ -195,9 +298,9 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
 
         protobuf_model_config = kf_update_tensorflow_models_config(item, current_models_config)
         # align all lines in order to be correctly formatted and accepted on the yaml data attribute
-        protobuf_model_config = '    '.join(protobuf_model_config.splitlines(True))
+        protobuf_model_config = "    ".join(protobuf_model_config.splitlines(True))
         config["protobuf_model_config"] = protobuf_model_config
-        
+
         # deploy the main service resource
         template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-service-template.yaml")
         service_json = k8_customize_and_apply(template_filename, **config)

@@ -171,5 +171,3 @@ class KubeflowTests(AnaliticoApiTestCase):
         config = kf_update_tensorflow_models_config(recipe2, config)
         self.assertEqual(config.count('name: "rx_automl_model_config_2"'), 1, "model should not be present twice")
         self.assertEqual(config.count('base_path: "/mnt/automl/rx_automl_model_config_2/serving'), 1, "model should not be present twice")
-
-

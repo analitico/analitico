@@ -1,24 +1,36 @@
+import json
+import requests
+
 from django.urls import reverse
 from django.test import tag
 from rest_framework import status
 
 from api.models import *
 from .utils import AnaliticoApiTestCase
-from api.k8 import kubectl
+from analitico.utilities import id_generator
+from api.k8 import kubectl, K8_STAGE_PRODUCTION, K8_DEFAULT_NAMESPACE, k8_normalize_name
+from api.kubeflow import automl_convert_request_for_prediction, tensorflow_serving_deploy
+
 
 class AutomlTests(AnaliticoApiTestCase):
+
+    # id of the recipe already run on Kubeflow Pipeline to 
+    # use for testing artifacts or predictions
+    run_recipe_id = "rx_iris_automl_unittest"
+    # run recipe's workspace id 
+    workspace_id = "ws_y1ehlz2e"
 
     @tag("live", "slow")
     def test_automl_run(self):
         try:
             # create a recipe with automl configs
-            recipe = Recipe.objects.create(pk="rx_iris", workspace_id=self.ws1.id)
+            recipe = Recipe.objects.create(pk="rx_iris_unit_test", workspace_id=self.ws1.id)
             recipe.set_attribute(
                 "automl",
                 {
-                    "workspace_id": "ws_automl",
-                    "recipe_id": "rx_iris",
-                    "data_item_id": "rx_iris",
+                    "workspace_id": self.ws1.id,
+                    "recipe_id": "rx_iris_unit_test",
+                    "data_item_id": "rx_iris_unit_test",
                     "data_path": "data",
                     "prediction_type": "regression",
                     "target_column": "target",
@@ -43,7 +55,9 @@ class AutomlTests(AnaliticoApiTestCase):
 
             # without automl_config
             self.auth_token(self.token2)
-            recipe_without_automl_config = Recipe.objects.create(pk="rx_without_automl_config", workspace_id=self.ws2.id)
+            recipe_without_automl_config = Recipe.objects.create(
+                pk="rx_without_automl_config", workspace_id=self.ws2.id
+            )
             url = reverse("api:recipe-automl-run", args=(recipe_without_automl_config.id,))
             response = self.client.post(url)
             self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -74,4 +88,71 @@ class AutomlTests(AnaliticoApiTestCase):
             except:
                 pass
 
+    @tag("slow")
+    def test_automl_convert_predict_request(self):
+        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
 
+        # single prediction
+        content = automl_convert_request_for_prediction(
+            recipe,
+            '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }',
+        )
+        content = json.loads(content)
+        self.assertIn("instances", content)
+        self.assertEqual(1, len(content["instances"]))
+        self.assertIn("b64", content["instances"][0])
+        self.assertTrue(content["instances"][0]["b64"])
+
+        # multiple predictions
+        content = automl_convert_request_for_prediction(
+            recipe,
+            '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]}, {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }',
+        )
+        content = json.loads(content)
+        self.assertIn("instances", content)
+        self.assertEqual(2, len(content["instances"]))
+        self.assertIn("b64", content["instances"][0])
+        self.assertTrue(content["instances"][0]["b64"])
+        self.assertIn("b64", content["instances"][1])
+        self.assertTrue(content["instances"][1]["b64"])
+
+    @tag("slow")
+    def test_predict(self):
+        url = f"https://api-staging.cloud.analitico.ai/api/recipes/{self.run_recipe_id}/automl/predict"
+        content = '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }'
+
+        # user cannot request prediction of an item he doesn't have access to
+        self.auth_token(self.token2)
+        response = requests.post(url, data=content, content_type="application/json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token1)
+        response = requests.post(url, data=content, content_type="application/json")
+        self.assertApiResponse(response)
+
+        prediction = response.json()
+        self.assertIn("predictions", prediction)
+        self.assertIn("scores", prediction["predictions"])
+        self.assertEqual(prediction["predictions"]["scores"], [8.24773451e-06, 0.975438833, 0.0245529674])
+        self.assertEqual(prediction["predictions"]["classes"], [0, 1, 2])
+
+    def test_model_schema(self):
+        # artifacts from the pipeline of the recipe are loaded on the ws2 drive
+        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
+        recipe.save()
+        url = reverse("api:recipe-automl-schema", args=(recipe.id, ))
+
+        # user cannot request prediction of an item he doesn't have access to
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token2)
+        response = self.client.get(url)
+        self.assertApiResponse(response)
+
+        schema = response.json()
+        self.assertIn("petal_length", schema)
+        self.assertIn("petal_width", schema)
+        self.assertIn("sepal_length", schema)
+        self.assertIn("sepal_width", schema)
