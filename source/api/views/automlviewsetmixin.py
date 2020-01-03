@@ -8,7 +8,7 @@ from rest_framework import status
 
 from api.views.modelviews import ModelSerializer
 
-from api.kubeflow import automl_run, automl_convert_request_for_prediction, automl_load_model_schema
+from api.kubeflow import automl_run, automl_convert_request_for_prediction, automl_load_model_schema, automl_load_model_statistics
 from api.k8 import k8_normalize_name
 
 
@@ -28,6 +28,7 @@ class AutomlViewSetMixin:
         json_request = automl_convert_request_for_prediction(item, content)
 
         url = f"https://{k8_normalize_name(item.workspace.id)}.cloud.cloud-staging.analitico.ai/v1/models/{item.id}:predict"
+        # url = f"http://{k8_normalize_name(item.workspace.id)}.cloud.svc.cluster.local/v1/models/{item.id}:predict"
         # url = k8_normalize_name(f"{item.ws.id}.cloud.analitico.ai/v1/models/{item.id}:predict")
         response = requests.post(url, json_request, verify=False)
         # response = requests.post(url, json_request)
@@ -42,6 +43,15 @@ class AutomlViewSetMixin:
         schema_json = automl_load_model_schema(item, to_json=True)
 
         return Response(schema_json, status=status.HTTP_200_OK, content_type="application/json")
+
+    @action(methods=["GET"], detail=True, url_name="automl-statistics", url_path="automl/statistics")
+    def model_statistics(self, request, pk):
+        """ Return the recipe's model statistics """
+        item = self.get_object()
+
+        stats_json = automl_load_model_statistics(item, to_json=True)
+
+        return Response(stats_json, status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["POST"], detail=True, url_name="automl-run", url_path="automl")
     def run(self, request, pk):

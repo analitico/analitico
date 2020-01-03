@@ -21,16 +21,16 @@ class AutomlTests(AnaliticoApiTestCase):
     workspace_id = "ws_y1ehlz2e"
 
     @tag("live", "slow")
-    def test_automl_run(self):
+    def OFF_test_automl_run(self):
         try:
             # create a recipe with automl configs
-            recipe = Recipe.objects.create(pk="rx_iris_unit_test", workspace_id=self.ws1.id)
+            recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws1.id)
             recipe.set_attribute(
                 "automl",
                 {
                     "workspace_id": self.ws1.id,
-                    "recipe_id": "rx_iris_unit_test",
-                    "data_item_id": "rx_iris_unit_test",
+                    "recipe_id": self.run_recipe_id,
+                    "data_item_id": self.run_recipe_id,
                     "data_path": "data",
                     "prediction_type": "regression",
                     "target_column": "target",
@@ -89,7 +89,7 @@ class AutomlTests(AnaliticoApiTestCase):
                 pass
 
     @tag("slow")
-    def test_automl_convert_predict_request(self):
+    def OFF_test_automl_convert_predict_request(self):
         recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
 
         # single prediction
@@ -117,7 +117,7 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertTrue(content["instances"][1]["b64"])
 
     @tag("slow")
-    def test_predict(self):
+    def OFF_test_predict(self):
         url = f"https://api-staging.cloud.analitico.ai/api/recipes/{self.run_recipe_id}/automl/predict"
         content = '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }'
 
@@ -136,13 +136,34 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertEqual(prediction["predictions"]["scores"], [8.24773451e-06, 0.975438833, 0.0245529674])
         self.assertEqual(prediction["predictions"]["classes"], [0, 1, 2])
 
-    def test_model_schema(self):
+    def OFF_test_model_schema(self):
         # artifacts from the pipeline of the recipe are loaded on the ws2 drive
-        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
+        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.workspace_id)
         recipe.save()
         url = reverse("api:recipe-automl-schema", args=(recipe.id, ))
 
-        # user cannot request prediction of an item he doesn't have access to
+        # user cannot request model schema of an item he doesn't have access to
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token1)
+        response = self.client.get(url)
+        self.assertApiResponse(response)
+
+        schema = response.json()
+        self.assertIn("petal_length", schema)
+        self.assertIn("petal_width", schema)
+        self.assertIn("sepal_length", schema)
+        self.assertIn("sepal_width", schema)
+
+    def OFF_test_model_statistics(self):
+        # artifacts from the pipeline of the recipe are loaded on the ws2 drive
+        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
+        recipe.save()
+        url = reverse("api:recipe-automl-statistics", args=(recipe.id, ))
+
+        # user cannot request model statistics of an item he doesn't have access to
         self.auth_token(self.token3)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

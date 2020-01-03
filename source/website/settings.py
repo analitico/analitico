@@ -155,6 +155,19 @@ try:
             "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "analitico.sqlite")}
         }
 
+    # Kubeflow Pipeline Metadata Store DB
+    # In cluster URI and port
+    KFP_METADATA_STORE_HOST = "metadata-db.kubeflow"
+    KFP_METADATA_STORE_PORT = 3306
+    KFP_METADATA_STORE_DB_NAME = "metadb"
+    KFP_METADATA_STORE_USER = "root"
+    KFP_METADATA_STORE_PASSWORD = "test"
+
+    if TESTING:
+        KFP_METADATA_STORE_HOST = "staging1.analitico.ai"
+        KFP_METADATA_STORE_PORT = 32125
+
+
     # WARNING: Private sql keys are included in /conf
     # They can later be easily removed and rotated out of service
     # https://dev.mysql.com/doc/refman/5.5/en/mysql-ssl-set.html
