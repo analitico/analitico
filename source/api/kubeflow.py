@@ -41,6 +41,7 @@ cache = Cache(maxsize=1024, ttl=2)
 ## AutoML
 ##
 
+
 def get_metadata_store():
     """ Kubeflow Metadata Store database service connection """
     return utils.get_metadata_store(
@@ -78,7 +79,7 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
         # setup the pipeline and generate its yaml
         pipelines.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
 
-        client = kfp.Client("staging1.analitico.ai:31061")
+        client = kfp.Client(settings.KFP_CLIENT_URL)
 
         # run name must be unique
         run_name = item.id + " " + datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -140,7 +141,7 @@ def automl_load_model_schema(item: ItemMixin, to_json: bool = False):
         text_format.Parse(content, schema)
 
     if to_json:
-        schema = json_format.MessageToJson(schema)
+        schema = json.loads(json_format.MessageToJson(schema))
 
     return schema
 
@@ -165,10 +166,10 @@ def automl_load_model_statistics(item: ItemMixin, to_json: bool = False):
     drive = workspace.storage.driver
     with tempfile.NamedTemporaryFile() as statistics_file:
         drive.download(os.path.join(statistics_uri, "stats_tfrecord"), statistics_file.name)
-        stats = tfdv.generate_statistics_from_tfrecord(data_location=statistics_file.name)
+        stats = tfdv.load_statistics(input_path=statistics_file.name)
 
     if to_json:
-        stats = json_format.MessageToJson(stats)
+        stats = json.loads(json_format.MessageToJson(stats))
 
     return stats
 
@@ -280,7 +281,7 @@ def kf_pipeline_runs_get(item: ItemMixin, run_id: str = None, list_page_token: s
             Optional. 
             Token for pagination of the list of runs.    
     """
-    client = kfp.Client("staging1.analitico.ai:31061")
+    client = kfp.Client(settings.KFP_CLIENT_URL)
     if run_id:
         run = client.get_run(run_id)
         return run.to_dict()

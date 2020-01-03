@@ -16,7 +16,7 @@ class AutomlTests(AnaliticoApiTestCase):
 
     # id of the recipe already run on Kubeflow Pipeline to 
     # use for testing artifacts or predictions
-    run_recipe_id = "rx_iris_automl_unittest"
+    run_recipe_id = "rx_iris_labeled_automl_unittest"
     # run recipe's workspace id 
     workspace_id = "ws_y1ehlz2e"
 
@@ -39,7 +39,7 @@ class AutomlTests(AnaliticoApiTestCase):
             recipe.save()
             # upload dataset used by pipeline
             self.auth_token(self.token1)
-            data_url = url = reverse("api:recipe-files", args=(recipe.id, "data/iris.csv"))
+            data_url = reverse("api:recipe-files", args=(recipe.id, "data/iris.csv"))
             self.upload_file(
                 data_url,
                 "../../../../automl/mount/recipes/rx_iris/data/iris.csv",
@@ -138,7 +138,7 @@ class AutomlTests(AnaliticoApiTestCase):
 
     def OFF_test_model_schema(self):
         # artifacts from the pipeline of the recipe are loaded on the ws2 drive
-        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.workspace_id)
+        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
         recipe.save()
         url = reverse("api:recipe-automl-schema", args=(recipe.id, ))
 
@@ -151,11 +151,12 @@ class AutomlTests(AnaliticoApiTestCase):
         response = self.client.get(url)
         self.assertApiResponse(response)
 
-        schema = response.json()
-        self.assertIn("petal_length", schema)
-        self.assertIn("petal_width", schema)
-        self.assertIn("sepal_length", schema)
-        self.assertIn("sepal_width", schema)
+        self.assertIn("data", response.json())
+        self.assertIn("feature", response.json().get("data"))
+        self.assertContains(response, "petal_length")
+        self.assertContains(response, "petal_width")
+        self.assertContains(response, "sepal_length")
+        self.assertContains(response, "sepal_width")
 
     def OFF_test_model_statistics(self):
         # artifacts from the pipeline of the recipe are loaded on the ws2 drive
@@ -168,12 +169,11 @@ class AutomlTests(AnaliticoApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        self.auth_token(self.token2)
+        self.auth_token(self.token1)
         response = self.client.get(url)
         self.assertApiResponse(response)
 
-        schema = response.json()
-        self.assertIn("petal_length", schema)
-        self.assertIn("petal_width", schema)
-        self.assertIn("sepal_length", schema)
-        self.assertIn("sepal_width", schema)
+        schema = response.json().get("data")
+        self.assertIn("datasets", schema)
+        self.assertEqual(1, len(schema["datasets"]))
+        self.assertEqual("84", schema["datasets"][0]["numExamples"])
