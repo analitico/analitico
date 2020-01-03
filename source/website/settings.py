@@ -484,10 +484,11 @@ try:
     KFP_METADATA_STORE_USER = "root"
     KFP_METADATA_STORE_PASSWORD = "test"
 
-    if TESTING:
-        KFP_METADATA_STORE_HOST = "staging1.analitico.ai"
-        KFP_METADATA_STORE_PORT = 32125
-        KFP_CLIENT_URL = "staging1.analitico.ai:31061"
+    # TODO: use these settings while Kubeflow is not in the production cluster
+    # if TESTING:
+    KFP_METADATA_STORE_HOST = "staging1.analitico.ai"
+    KFP_METADATA_STORE_PORT = 32125
+    KFP_CLIENT_URL = "staging1.analitico.ai:31061"
 
 except KeyError as exc:
     detail = (
