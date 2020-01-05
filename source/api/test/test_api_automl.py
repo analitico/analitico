@@ -118,8 +118,10 @@ class AutomlTests(AnaliticoApiTestCase):
 
     @tag("slow")
     def OFF_test_predict(self):
+        # model for prediction is served from the self.workspace_id's drive
         url = f"https://api-staging.cloud.analitico.ai/api/recipes/{self.run_recipe_id}/automl/predict"
         content = '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }'
+        headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
         # user cannot request prediction of an item he doesn't have access to
         self.auth_token(self.token2)
@@ -127,7 +129,7 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         self.auth_token(self.token1)
-        response = requests.post(url, data=content, content_type="application/json")
+        response = requests.post(url, data=content, content_type="application/json", headers=headers)
         self.assertApiResponse(response)
 
         prediction = response.json()
