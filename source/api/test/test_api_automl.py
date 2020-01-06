@@ -125,11 +125,11 @@ class AutomlTests(AnaliticoApiTestCase):
 
         # user cannot request prediction of an item he doesn't have access to
         self.auth_token(self.token2)
-        response = requests.post(url, data=content, content_type="application/json")
+        response = requests.post(url, data=content)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         self.auth_token(self.token1)
-        response = requests.post(url, data=content, content_type="application/json", headers=headers)
+        response = requests.post(url, data=content, headers=headers)
         self.assertApiResponse(response)
 
         prediction = response.json()
