@@ -7,6 +7,7 @@ import base64
 import json
 from datetime import datetime
 from cacheout import Cache
+from typing import Optional
 
 from rest_framework import status
 from django.conf import settings
@@ -30,6 +31,8 @@ from tensorflow.python.lib.io import file_io  # pylint: disable=g-direct-tensorf
 from tensorflow_metadata.proto.v0 import schema_pb2
 import tensorflow_data_validation as tfdv
 from tensorflow_transform import coders as tft_coders
+
+import numpy as np
 
 # each call to a Tensorflow predict endpoint requires the model schema to
 # convert the request from json disctionary to base64 protobuf request.
@@ -141,7 +144,7 @@ def automl_load_model_schema(item: ItemMixin, to_json: bool = False):
         text_format.Parse(content, schema)
 
     if to_json:
-        schema = json.loads(json_format.MessageToJson(schema))
+        schema = json_format.MessageToJson(schema)
 
     return schema
 
@@ -169,7 +172,7 @@ def automl_load_model_statistics(item: ItemMixin, to_json: bool = False):
         stats = tfdv.load_statistics(input_path=statistics_file.name)
 
     if to_json:
-        stats = json.loads(json_format.MessageToJson(stats))
+        stats = json_format.MessageToJson(stats)
 
     return stats
 
@@ -214,6 +217,10 @@ def automl_convert_request_for_prediction(item: ItemMixin, content: dict) -> dic
             raw_schema = dataset_schema.from_feature_spec(raw_feature_spec)
             proto_coder = tft_coders.ExampleProtoCoder(raw_schema)
 
+            # tf.Transform requires values to be represented as Tensor (eg, [5.1])
+            for feature_name in instance.keys():
+                instance[feature_name] = [instance[feature_name]]
+
             example = proto_coder.encode(instance)
             serialized_examples.append(example)
             index = index + 1
@@ -225,6 +232,66 @@ def automl_convert_request_for_prediction(item: ItemMixin, content: dict) -> dic
     json_request = '{ "instances": [' + ",".join(examples_base64) + "]}"
     return json_request
 
+def model_examples(item: ItemMixin, quantity: int, to_json: bool = False):
+    """ 
+    Retrieve some examples from the dataset used to evaluate the model.
+
+    Return
+    ------
+        Returns the tuple with examples and labels in json format if `to_json` is true,
+        otherwise it returns the tuple of examples in nparray and None.
+        Returns None in case of error.
+    """
+    metadata_store = get_metadata_store()
+    uri = metadata.get_pipeline_examples_uri(metadata_store, utils.get_pipeline_name(item.id), "", split="eval")
+    if not uri:
+        return None
+
+    target_column = item.get_attribute("automl.target_column")
+    assert target_column
+
+    # on pods, the root of the workspace storage is mount in /mnt.
+    # Here we need to strip it out from the path.
+    uri = uri.replace("/mnt", "")
+
+    # retrieve statistics from workspace's drive
+    workspace = item.workspace
+    drive = workspace.storage.driver
+    with tempfile.NamedTemporaryFile() as dataset:
+        files = drive.ls(uri)
+        if len(files) < 2:
+            return None
+        # the first item is the folder itself
+        drive.download(os.path.join(uri, files[1].name), dataset.name)
+        
+        examples = []
+        labels = None
+
+        raw_dataset = tf.data.TFRecordDataset([dataset.name], compression_type="GZIP")
+        decoder = tfdv.TFExampleDecoder()
+        for raw_record in raw_dataset.shuffle(quantity).take(quantity):
+            examples.append(decoder.decode(raw_record.numpy()))
+
+    if to_json:
+        records = examples.copy()
+        examples = []
+        labels = []
+        for record in records:
+            example = {}
+            for feature_name, feature_value in record.items():
+                value = feature_value.item(0) 
+                if feature_value.dtype == np.object:
+                    value = str(value,'utf-8')
+                # collect example features and labels separately
+                if feature_name == target_column:
+                    labels.append({ feature_name: value})
+                else:
+                    example[feature_name] = value
+            examples.append(example)
+        examples = json.dumps(examples)
+        labels = json.dumps(labels)
+
+    return examples, labels
 
 ##
 ## Kubeflow

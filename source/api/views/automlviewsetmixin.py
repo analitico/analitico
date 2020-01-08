@@ -1,14 +1,22 @@
 import requests
+import json
+from django.http import HttpResponse
 
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
 
 from api.views.modelviews import ModelSerializer
 
-from api.kubeflow import automl_run, automl_convert_request_for_prediction, automl_load_model_schema, automl_load_model_statistics
+from api.kubeflow import (
+    automl_run,
+    automl_convert_request_for_prediction,
+    automl_load_model_schema,
+    automl_load_model_statistics,
+    model_examples
+)
 from api.k8 import k8_normalize_name
 
 
@@ -16,7 +24,7 @@ class AutomlViewSetMixin:
     # All methods require prior authentication, no token, no access
     permission_classes = (IsAuthenticated,)
 
-    @action(methods=["POST"], detail=True, url_name="automl-predict", url_path="automl/predict")
+    @action(methods=["POST"], detail=True, url_name="automl-predict", url_path="automl/predict",  permission_classes=[AllowAny])
     def predict(self, request, pk):
         """ Convert Tensorflow prediction request from json format to base64 json format and
         send the request to the item's endpoint. Return the response from the prediction.  """
@@ -33,16 +41,18 @@ class AutomlViewSetMixin:
         response = requests.post(url, json_request, verify=False)
         # response = requests.post(url, json_request)
 
-        return Response(response.content, status=response.status_code, content_type=response.headers.get("content-type"))
+        return HttpResponse(
+            response.content, status=response.status_code, content_type=response.headers.get("content-type")
+        )
 
-    @action(methods=["GET"], detail=True, url_name="automl-schema", url_path="automl/schema")
+    @action(methods=["GET"], detail=True, url_name="automl-schema", url_path="automl/schema", permission_classes=[AllowAny])
     def model_schema(self, request, pk):
         """ Return the recipe's model schema """
         item = self.get_object()
 
         schema_json = automl_load_model_schema(item, to_json=True)
 
-        return Response(schema_json, status=status.HTTP_200_OK, content_type="application/json")
+        return Response(json.loads(schema_json), status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["GET"], detail=True, url_name="automl-statistics", url_path="automl/statistics")
     def model_statistics(self, request, pk):
@@ -51,7 +61,19 @@ class AutomlViewSetMixin:
 
         stats_json = automl_load_model_statistics(item, to_json=True)
 
-        return Response(stats_json, status=status.HTTP_200_OK, content_type="application/json")
+        return Response(json.loads(stats_json), status=status.HTTP_200_OK, content_type="application/json")
+
+    @action(methods=["GET"], detail=True, url_name="automl-examples", url_path="automl/examples")
+    def model_examples(self, request, pk):
+        """ Return a set of random examples from the eval dataset """
+        item = self.get_object()
+
+        quantity = 10
+        examples, labels = model_examples(item, quantity=quantity, to_json=True)
+
+        data = f'{{ "instances": {examples}, "labels": {labels} }}'
+
+        return Response(json.loads(data), status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["POST"], detail=True, url_name="automl-run", url_path="automl")
     def run(self, request, pk):

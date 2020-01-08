@@ -95,7 +95,7 @@ class AutomlTests(AnaliticoApiTestCase):
         # single prediction
         content = automl_convert_request_for_prediction(
             recipe,
-            '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }',
+            { "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] },
         )
         content = json.loads(content)
         self.assertIn("instances", content)
@@ -106,7 +106,7 @@ class AutomlTests(AnaliticoApiTestCase):
         # multiple predictions
         content = automl_convert_request_for_prediction(
             recipe,
-            '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]}, {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }',
+            { "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2}, {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] },
         )
         content = json.loads(content)
         self.assertIn("instances", content)
@@ -120,15 +120,13 @@ class AutomlTests(AnaliticoApiTestCase):
     def OFF_test_predict(self):
         # model for prediction is served from the self.workspace_id's drive
         url = f"https://api-staging.cloud.analitico.ai/api/recipes/{self.run_recipe_id}/automl/predict"
-        content = '{ "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }'
+        content = '{ "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }'
         headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
-        # user cannot request prediction of an item he doesn't have access to
-        self.auth_token(self.token2)
+        # user can request prediction even without authentication
         response = requests.post(url, data=content)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertApiResponse(response)
 
-        self.auth_token(self.token1)
         response = requests.post(url, data=content, headers=headers)
         self.assertApiResponse(response)
 
@@ -179,3 +177,35 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertIn("datasets", schema)
         self.assertEqual(1, len(schema["datasets"]))
         self.assertEqual("84", schema["datasets"][0]["numExamples"])
+
+    def OFF_test_model_examples(self):
+        # artifacts from the pipeline of the recipe are loaded on the ws2 drive
+        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
+        recipe.set_attribute("automl", { "target_column": "variety" })
+        recipe.save()
+        url = reverse("api:recipe-automl-examples", args=(recipe.id, ))
+
+        # user cannot request model examples of an item he doesn't have access to
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token1)
+        response = self.client.get(url)
+        self.assertApiResponse(response)
+
+        data = response.json().get("data")
+        self.assertIn("instances", data)
+        self.assertIn("labels", data)
+
+        instances = data.get("instances")
+        self.assertEqual(10, len(instances))
+        self.assertIn("petal_length", instances[0])
+        self.assertIn("petal_width", instances[0])
+        self.assertIn("sepal_length", instances[0])
+        self.assertIn("sepal_width", instances[0])
+        self.assertNotIn("variety", instances[0])
+
+        labels = data.get("labels")
+        self.assertEqual(10, len(labels))
+        self.assertIn("variety", labels[0])
