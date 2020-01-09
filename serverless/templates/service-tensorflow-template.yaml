@@ -133,8 +133,9 @@ spec:
             cpu: 2
             memory: 8Gi
           requests:
-            cpu: 500m
-            memory: 2Gi
+            # TODO: temporary reduced while working on cloud-staging cluster
+            cpu: 100m
+            memory: 1Gi
         volumeMounts:
         - name: tensorflow-serving-config
           readOnly: true

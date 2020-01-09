@@ -380,6 +380,8 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         assert item.workspace
         workspace_id = item.workspace.id
 
+        # TODO: temporary working on cloud-staging cluster
+        context_name = "admin@cloud-staging.analitico.ai"
         from api.k8 import k8_customize_and_apply
 
         # name of service we are deploying
@@ -417,7 +419,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
 
         # deploy the main service resource
         template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-service-template.yaml")
-        service_json = k8_customize_and_apply(template_filename, **config)
+        service_json = k8_customize_and_apply(template_filename, context_name=context_name, **config)
 
         # retrieve existing services
         services = target.get_attribute("service", {})
@@ -426,7 +428,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
 
         # deploy all the other service related resources
         template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-template.yaml")
-        k8_customize_and_apply(template_filename, **config)
+        k8_customize_and_apply(template_filename, context_name=context_name, **config)
 
         # save deployment information inside item, endpoint and job
         attrs = collections.OrderedDict()

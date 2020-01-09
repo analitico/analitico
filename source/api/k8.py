@@ -60,7 +60,9 @@ def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
 
 
-def kubectl(namespace: str, action: str, resource: str, output: str = "json", args: [] = []) -> (str, str):
+def kubectl(
+    namespace: str, action: str, resource: str, output: str = "json", context_name: str = None, args: [] = []
+) -> (str, str):
     """ 
     Exec operation on Kubernetes using Kubectl command 
     
@@ -70,6 +72,9 @@ def kubectl(namespace: str, action: str, resource: str, output: str = "json", ar
         action : str -- eg: get, delete ...
         resource : str -- Kubernetes resource specification, eg: service, kservice/api-staging
         output : str or None -- eg: json, yaml
+        context_name : str or None
+            Name of the context on which run the command.
+            Eg `admin@cloud-staging.analitico.ai` to execute in the cluster `cloud-staging.analitico.ai`
         args : [], optional -- more command specific arguments, eg: ["--selector", "app=api"]
 
     Returns:
@@ -77,8 +82,11 @@ def kubectl(namespace: str, action: str, resource: str, output: str = "json", ar
         Tuple : (str, str) -- from the run command
     """
     try:
+        namespace = ["--namespace", namespace] if namespace else []
+        resource = [resource] if resource else []
         output_args = ["--output", output] if output else []
-        return subprocess_run(["kubectl", action, "--namespace", namespace, resource, *output_args, *args])
+        context_name = ["--context", context_name] if context_name else []
+        return subprocess_run(["kubectl", action, *namespace, *resource, *output_args, *context_name, *args])
     except Exception as exec:
         raise AnaliticoException(
             f"Resource not found or invalid request", status_code=status.HTTP_404_NOT_FOUND
@@ -86,7 +94,13 @@ def kubectl(namespace: str, action: str, resource: str, output: str = "json", ar
 
 
 def k8_wait_for_condition(
-    namespace: str, resource: str, condition: str, labels: str = None, output: str = None, timeout: int = 60
+    namespace: str,
+    resource: str,
+    condition: str,
+    labels: str = None,
+    output: str = None,
+    timeout: int = 60,
+    context_name: str = None,
 ):
     """ 
     Wait the resource for the given condition. Command fails when the timeout expires. 
@@ -111,6 +125,9 @@ def k8_wait_for_condition(
     timeout : int, optional
         Timeout in seconds before give up.
         Zero-value means check once and don"t wait.
+    context_name : str or None
+        Name of the context on which run the command.
+        Eg `admin@cloud-staging.analitico.ai` to execute in the cluster `cloud-staging.analitico.ai`
 
     Returns
     -------
@@ -119,8 +136,9 @@ def k8_wait_for_condition(
     """
     selector = ["--selector", labels] if labels is not None else []
     return kubectl(
-        namespace, "wait", resource, output=output, args=[f"--for={condition}", f"--timeout={timeout}s", *selector]
+        namespace, "wait", resource, output=output, context_name=context_name, args=[f"--for={condition}", f"--timeout={timeout}s", *selector]
     )
+
 
 def get_image_commit_sha():
     """ 
@@ -364,10 +382,7 @@ def k8_jobs_create(
 
         configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
 
-    if (
-        job_action == analitico.ACTION_BUILD
-        or job_action == analitico.ACTION_RUN_AND_BUILD
-    ):
+    if job_action == analitico.ACTION_BUILD or job_action == analitico.ACTION_RUN_AND_BUILD:
         # create a model which will host the built recipe which will contain a snapshot
         # of the assets in the recipe at the moment when the model is built. the recipe's
         # notebook is not run when we build, if needed it must be run beforehand.
@@ -745,7 +760,7 @@ def k8_jupyter_deallocate(workspace, jupyter_name: str = None, wait_for_deletion
             kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + jupyter_name, output=None)
             labels = f"app={jupyter_name}"
         else:
-            # do not raise errors when deallocating Jupyter 
+            # do not raise errors when deallocating Jupyter
             # resources from a workspace being deallocating
             raise_exception = False
             labels = f"analitico.ai/service=jupyter,analitico.ai/workspace-id={workspace.id}"
@@ -912,7 +927,7 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
 ##
 
 
-def k8_customize_and_apply(template_path: str, **kwargs):
+def k8_customize_and_apply(template_path: str, context_name=None, **kwargs):
     # Deploy a k8 resource using kubectl command:
     # kubectl apply --filename item.yaml -o json
     # https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#apply
@@ -921,8 +936,10 @@ def k8_customize_and_apply(template_path: str, **kwargs):
         template_yaml = read_text(template_path)
         template_yaml = template_yaml.format(**kwargs)
         save_text(template_yaml, f.name)
-        cmd_args = ["kubectl", "apply", "--filename", f.name, "-o", "json"]
-        item_json, _ = subprocess_run(cmd_args, None)
+        cmd_args = ["--filename", f.name]
+        item_json, _ = kubectl(
+            action="apply", namespace=None, resource=None, context_name=context_name, args=cmd_args
+        )
         return item_json
 
 

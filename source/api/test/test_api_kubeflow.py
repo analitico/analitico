@@ -51,7 +51,7 @@ class KubeflowTests(AnaliticoApiTestCase):
 
     @tag("k8s", "kf", "slow")
     def test_kf_pipeline_runs(self):
-        """ Test Kubeflow get and list pipeline run objects """ 
+        """ Test Kubeflow get and list pipeline run objects """
         # run a pipeline for testing
         model = self.kf_run_pipeline()
         recipe_id = model.get_attribute("recipe_id")
@@ -141,17 +141,24 @@ class KubeflowTests(AnaliticoApiTestCase):
                 "pod",
                 "condition=Ready",
                 labels="app=" + service_name,
+                context_name="admin@cloud-staging.analitico.ai",
             )
 
             # test endpoint
-            url = "https://ws-001.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
-            # url = "https://ws-001.cloud.cloud-staging.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
-            response = requests.get(url)
-            # response = requests.get(url, verify=False)
+            # url = "https://ws-001.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            url = "https://ws-001.cloud.cloud-staging.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            # response = requests.get(url)
+            response = requests.get(url, verify=False)
             self.assertApiResponse(response)
         finally:
             try:
-                kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + service_name, output=None)
+                kubectl(
+                    K8_DEFAULT_NAMESPACE,
+                    "delete",
+                    "service/" + service_name,
+                    context_name="admin@cloud-staging.analitico.ai",
+                    output=None,
+                )
             except:
                 pass
 
@@ -177,4 +184,8 @@ class KubeflowTests(AnaliticoApiTestCase):
         # from an existing config re-add an existing item's model
         config = kf_update_tensorflow_models_config(recipe2, config)
         self.assertEqual(config.count('name: "rx_automl_model_config_2"'), 1, "model should not be present twice")
-        self.assertEqual(config.count('base_path: "/mnt/automl/rx_automl_model_config_2/serving'), 1, "model should not be present twice")
+        self.assertEqual(
+            config.count('base_path: "/mnt/automl/rx_automl_model_config_2/serving'),
+            1,
+            "model should not be present twice",
+        )
