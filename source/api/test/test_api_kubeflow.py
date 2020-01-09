@@ -64,8 +64,15 @@ class KubeflowTests(AnaliticoApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+        # recipe not found
         self.auth_token(self.token1)
         url = reverse("api:recipe-kf-pipeline-runs", args=("rx_fake_id", run_id))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # run id not found
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, "fake-run-id"))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 

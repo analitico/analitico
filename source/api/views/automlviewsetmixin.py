@@ -13,9 +13,9 @@ from api.views.modelviews import ModelSerializer
 from api.kubeflow import (
     automl_run,
     automl_convert_request_for_prediction,
-    automl_load_model_schema,
-    automl_load_model_statistics,
-    model_examples
+    automl_model_schema,
+    automl_model_statistics,
+    automl_model_examples
 )
 from api.k8 import k8_normalize_name
 
@@ -50,16 +50,16 @@ class AutomlViewSetMixin:
         """ Return the recipe's model schema """
         item = self.get_object()
 
-        schema_json = automl_load_model_schema(item, to_json=True)
+        schema_json = automl_model_schema(item, to_json=True)
 
         return Response(json.loads(schema_json), status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["GET"], detail=True, url_name="automl-statistics", url_path="automl/statistics")
     def model_statistics(self, request, pk):
-        """ Return the recipe's model statistics """
+        """ Return the recipe's dataset statistics """
         item = self.get_object()
 
-        stats_json = automl_load_model_statistics(item, to_json=True)
+        stats_json = automl_model_statistics(item, to_json=True)
 
         return Response(json.loads(stats_json), status=status.HTTP_200_OK, content_type="application/json")
 
@@ -69,7 +69,7 @@ class AutomlViewSetMixin:
         item = self.get_object()
 
         quantity = 10
-        examples, labels = model_examples(item, quantity=quantity, to_json=True)
+        examples, labels = automl_model_examples(item, quantity=quantity, to_json=True)
 
         data = f'{{ "instances": {examples}, "labels": {labels} }}'
 
