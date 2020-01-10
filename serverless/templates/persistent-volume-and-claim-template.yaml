@@ -1,0 +1,44 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: analitico-drive-{workspace_id_slug}
+  labels:
+    analitico.ai/workspace-id: {workspace_id}
+spec:
+  capacity:
+    storage: 100Gi
+  flexVolume:
+    driver: fstab/cifs
+    fsType: cifs
+    secretRef:
+      name: analitico-drive-{workspace_id_slug}
+    options:
+      mountOptions: dir_mode=0755,file_mode=0644,noperm,nobrl
+      networkPath: {volume_network_path}
+  accessModes:
+    - ReadWriteOnce
+    - ReadWriteMany
+  claimRef:
+    kind: PersistentVolumeClaim
+    namespace: {service_namespace}
+    name: analitico-drive-{workspace_id_slug}-claim
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: analitico-drive-{workspace_id_slug}-claim
+  namespace: {service_namespace}
+  labels:
+    analitico.ai/workspace-id: {workspace_id}
+spec:
+  selector:
+    matchLabels:
+      analitico.ai/workspace-id: {workspace_id}
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {pv_storage_size}
+  volumeMode: Filesystem
