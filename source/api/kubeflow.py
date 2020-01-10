@@ -18,7 +18,8 @@ from api.k8 import k8_normalize_name, kubectl, K8_DEFAULT_NAMESPACE, K8_STAGE_PR
 from analitico.utilities import save_json, save_text, read_text, subprocess_run, id_generator, get_dict_dot
 
 from analitico_automl import AutomlConfig
-from analitico_automl import pipelines, metadata, utils
+import analitico_automl.utilities
+import analitico_automl.pipelines
 
 import kfp
 import kfp_server_api.rest
@@ -50,7 +51,7 @@ cache = Cache(maxsize=1024, ttl=2)
 
 def get_metadata_store() -> metadata_store:
     """ Kubeflow Metadata Store database service connection """
-    return utils.get_metadata_store(
+    return analitico_automl.utilities.get_metadata_store(
         settings.KFP_METADATA_STORE_HOST,
         settings.KFP_METADATA_STORE_DB_NAME,
         settings.KFP_METADATA_STORE_USER,
@@ -83,7 +84,7 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
         automl_config["workspace_id"] = item.workspace_id
 
         # setup the pipeline and generate its yaml
-        pipelines.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
+        analitico_automl.pipelines.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
 
         client = kfp.Client(settings.KFP_CLIENT_URL)
 
@@ -129,7 +130,9 @@ def automl_model_schema(item: ItemMixin, to_json: bool = False):
     drive and parse it into its protobuf format.
     """
     metadata_store = get_metadata_store()
-    schema_uri = metadata.get_pipeline_schema_uri(metadata_store, utils.get_pipeline_name(item.id), "")
+    schema_uri = analitico_automl.utilities.get_pipeline_schema_uri(
+        metadata_store, analitico_automl.utilities.get_pipeline_name(item.id), ""
+    )
     if not schema_uri:
         return None
 
@@ -159,7 +162,9 @@ def automl_model_statistics(item: ItemMixin, to_json: bool = False):
     Tensorflow pipeline and parse it into its protobuf format.
     """
     metadata_store = get_metadata_store()
-    statistics_uri = metadata.get_pipeline_statistics_uri(metadata_store, utils.get_pipeline_name(item.id), "")
+    statistics_uri = analitico_automl.utilities.get_pipeline_statistics_uri(
+        metadata_store, analitico_automl.utilities.get_pipeline_name(item.id), ""
+    )
     if not statistics_uri:
         return None
 
@@ -178,6 +183,70 @@ def automl_model_statistics(item: ItemMixin, to_json: bool = False):
         stats = json_format.MessageToJson(stats)
 
     return stats
+
+
+def automl_model_examples(item: ItemMixin, quantity: int, to_json: bool = False):
+    """ 
+    Retrieve some examples from the dataset used to evaluate the model.
+
+    Return
+    ------
+        Returns the tuple with examples and labels in json format if `to_json` is true,
+        otherwise it returns the tuple of examples in nparray and None.
+        Returns None in case of error.
+    """
+    metadata_store = get_metadata_store()
+    uri = analitico_automl.utilities.get_pipeline_examples_uri(
+        metadata_store, analitico_automl.utilities.get_pipeline_name(item.id), "", split="eval"
+    )
+    if not uri:
+        return None
+
+    target_column = item.get_attribute("automl.target_column")
+    assert target_column
+
+    # on pods, the root of the workspace storage is mount in /mnt.
+    # Here we need to strip it out from the path.
+    uri = uri.replace("/mnt", "")
+
+    # retrieve statistics from workspace's drive
+    workspace = item.workspace
+    drive = workspace.storage.driver
+    with tempfile.NamedTemporaryFile() as dataset:
+        files = drive.ls(uri)
+        if len(files) < 2:
+            return None
+        # the first item is the folder itself
+        drive.download(os.path.join(uri, files[1].name), dataset.name)
+
+        examples = []
+        labels = None
+
+        raw_dataset = tf.data.TFRecordDataset([dataset.name], compression_type="GZIP")
+        decoder = tfdv.TFExampleDecoder()
+        for raw_record in raw_dataset.shuffle(quantity).take(quantity):
+            examples.append(decoder.decode(raw_record.numpy()))
+
+    if to_json:
+        records = examples.copy()
+        examples = []
+        labels = []
+        for record in records:
+            example = {}
+            for feature_name, feature_value in record.items():
+                value = feature_value.item(0)
+                if feature_value.dtype == np.object:
+                    value = str(value, "utf-8")
+                # collect example features and labels separately
+                if feature_name == target_column:
+                    labels.append({feature_name: value})
+                else:
+                    example[feature_name] = value
+            examples.append(example)
+        examples = json.dumps(examples)
+        labels = json.dumps(labels)
+
+    return examples, labels
 
 
 def automl_convert_request_for_prediction(item: ItemMixin, content: dict) -> dict:
@@ -234,68 +303,6 @@ def automl_convert_request_for_prediction(item: ItemMixin, content: dict) -> dic
 
     json_request = '{ "instances": [' + ",".join(examples_base64) + "]}"
     return json_request
-
-
-def automl_model_examples(item: ItemMixin, quantity: int, to_json: bool = False):
-    """ 
-    Retrieve some examples from the dataset used to evaluate the model.
-
-    Return
-    ------
-        Returns the tuple with examples and labels in json format if `to_json` is true,
-        otherwise it returns the tuple of examples in nparray and None.
-        Returns None in case of error.
-    """
-    metadata_store = get_metadata_store()
-    uri = metadata.get_pipeline_examples_uri(metadata_store, utils.get_pipeline_name(item.id), "", split="eval")
-    if not uri:
-        return None
-
-    target_column = item.get_attribute("automl.target_column")
-    assert target_column
-
-    # on pods, the root of the workspace storage is mount in /mnt.
-    # Here we need to strip it out from the path.
-    uri = uri.replace("/mnt", "")
-
-    # retrieve statistics from workspace's drive
-    workspace = item.workspace
-    drive = workspace.storage.driver
-    with tempfile.NamedTemporaryFile() as dataset:
-        files = drive.ls(uri)
-        if len(files) < 2:
-            return None
-        # the first item is the folder itself
-        drive.download(os.path.join(uri, files[1].name), dataset.name)
-
-        examples = []
-        labels = None
-
-        raw_dataset = tf.data.TFRecordDataset([dataset.name], compression_type="GZIP")
-        decoder = tfdv.TFExampleDecoder()
-        for raw_record in raw_dataset.shuffle(quantity).take(quantity):
-            examples.append(decoder.decode(raw_record.numpy()))
-
-    if to_json:
-        records = examples.copy()
-        examples = []
-        labels = []
-        for record in records:
-            example = {}
-            for feature_name, feature_value in record.items():
-                value = feature_value.item(0)
-                if feature_value.dtype == np.object:
-                    value = str(value, "utf-8")
-                # collect example features and labels separately
-                if feature_name == target_column:
-                    labels.append({feature_name: value})
-                else:
-                    example[feature_name] = value
-            examples.append(example)
-        examples = json.dumps(examples)
-        labels = json.dumps(labels)
-
-    return examples, labels
 
 
 ##
