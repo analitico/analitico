@@ -19,7 +19,7 @@ from analitico.utilities import save_json, save_text, read_text, subprocess_run,
 
 from analitico_automl import AutomlConfig
 import analitico_automl.utilities
-import analitico_automl.pipelines
+import analitico_automl.pipeline
 
 import kfp
 import kfp_server_api.rest
@@ -84,7 +84,7 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
         automl_config["workspace_id"] = item.workspace_id
 
         # setup the pipeline and generate its yaml
-        analitico_automl.pipelines.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
+        analitico_automl.pipeline.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
 
         client = kfp.Client(settings.KFP_CLIENT_URL)
 
