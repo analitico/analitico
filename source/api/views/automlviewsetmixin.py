@@ -24,20 +24,20 @@ class AutomlViewSetMixin:
     # All methods require prior authentication, no token, no access
     permission_classes = (IsAuthenticated,)
 
-    @action(methods=["POST"], detail=True, url_name="automl-predict", url_path="automl/predict",  permission_classes=[AllowAny])
+    @action(methods=["POST"], detail=True, url_name="automl-predict", url_path="automl/predict")
     def predict(self, request, pk):
         """ Convert Tensorflow prediction request from json format to base64 json format and
         send the request to the item's endpoint. Return the response from the prediction.  """
         item = self.get_object()
 
-        # eg: { "instances": [ {"sepal_length":[6.4], "sepal_width":[2.8], "petal_length":[5.6], "petal_width":[2.2]} ] }
+        # eg: { "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }
         content = request.data
 
         json_request = automl_convert_request_for_prediction(item, content)
 
         url = f"https://{k8_normalize_name(item.workspace.id)}.cloud.cloud-staging.analitico.ai/v1/models/{item.id}:predict"
         # url = f"http://{k8_normalize_name(item.workspace.id)}.cloud.svc.cluster.local/v1/models/{item.id}:predict"
-        # url = k8_normalize_name(f"{item.ws.id}.cloud.analitico.ai/v1/models/{item.id}:predict")
+        # url = f"https://{k8_normalize_name(item.workspace.id)}.cloud.analitico.ai/v1/models/{item.id}:predict"
         response = requests.post(url, json_request, verify=False)
         # response = requests.post(url, json_request)
 

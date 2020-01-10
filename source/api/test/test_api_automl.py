@@ -81,14 +81,13 @@ class AutomlTests(AnaliticoApiTestCase):
 
             # the run of a pipeline create the endpoint service.
             # It raises 404 exception in case of error
-            kubectl("cloud", "get", "service/ws-001")
+            kubectl("cloud", "get", "service/ws-001", context_name="admin@cloud-staging.analitico.ai")
         finally:
             try:
-                kubectl("cloud", "delete", "service/ws-001", output=None)
+                kubectl("cloud", "delete", "service/ws-001", context_name="admin@cloud-staging.analitico.ai", output=None)
             except:
                 pass
 
-    @tag("slow")
     def OFF_test_automl_convert_predict_request(self):
         recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
 
@@ -116,7 +115,6 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertIn("b64", content["instances"][1])
         self.assertTrue(content["instances"][1]["b64"])
 
-    @tag("slow")
     def OFF_test_predict(self):
         # model for prediction is served from the self.workspace_id's drive
         url = f"https://api-staging.cloud.analitico.ai/api/recipes/{self.run_recipe_id}/automl/predict"
@@ -130,15 +128,22 @@ class AutomlTests(AnaliticoApiTestCase):
         response = requests.post(url, data=content, headers=headers)
         self.assertApiResponse(response)
 
-        prediction = response.json()
-        self.assertIn("predictions", prediction)
-        self.assertIn("scores", prediction["predictions"])
-        self.assertEqual(prediction["predictions"]["scores"], [8.24773451e-06, 0.975438833, 0.0245529674])
-        self.assertEqual(prediction["predictions"]["classes"], [0, 1, 2])
+        predictions = response.json()
+        self.assertIn("predictions", predictions)
+        self.assertEqual(1, len(predictions))
+
+        prediction = predictions["predictions"][0]
+        self.assertIn("scores", prediction)
+        self.assertEqual(prediction["scores"], [0.0199055225, 0.980042815, 5.1618179e-05])
+        self.assertEqual(prediction["classes"], ['Versicolor', 'Virginica', 'Setosa'])
 
     def OFF_test_model_schema(self):
-        # artifacts from the pipeline of the recipe are loaded on the ws2 drive
-        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
+        # pre-generated artifacts are loaded in the `self.ws2` drive at:
+        # //u206378@u206378.your-storagebox.de/user5-test/automl/rx_iris_unittest_artifacts/pipelines
+        # URI to the artifacts are retrieved using `self.recipe_id` references in the mlmetadata-db.
+        # In case of new runs of `self.recipe_id`'s automl pipeline, folder id in the above location 
+        # must be changed accordingly.
+        recipe = Recipe.objects.create(pk=self.recipe_id, workspace_id=self.ws2.id)
         recipe.save()
         url = reverse("api:recipe-automl-schema", args=(recipe.id, ))
 
@@ -159,7 +164,11 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertContains(response, "sepal_width")
 
     def OFF_test_model_statistics(self):
-        # artifacts from the pipeline of the recipe are loaded on the ws2 drive
+        # pre-generated artifacts are loaded in the `self.ws2` drive at:
+        # //u206378@u206378.your-storagebox.de/user5-test/automl/rx_iris_unittest_artifacts/pipelines
+        # URI to the artifacts are retrieved using `self.run_recipe_id` references in the mlmetadata-db.
+        # In case of new runs of `self.run_recipe_id`'s automl pipeline, folder id in the above location 
+        # must be changed accordingly.        
         recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
         recipe.save()
         url = reverse("api:recipe-automl-statistics", args=(recipe.id, ))
@@ -179,7 +188,11 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertEqual("84", schema["datasets"][0]["numExamples"])
 
     def OFF_test_model_examples(self):
-        # artifacts from the pipeline of the recipe are loaded on the ws2 drive
+        # pre-generated artifacts are loaded in the `self.ws2` drive at:
+        # //u206378@u206378.your-storagebox.de/user5-test/automl/rx_iris_unittest_artifacts/pipelines
+        # URI to the artifacts are retrieved using `self.run_recipe_id` references in the mlmetadata-db.
+        # In case of new runs of `self.run_recipe_id`'s automl pipeline, folder id in the above location 
+        # must be changed accordingly.
         recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
         recipe.set_attribute("automl", { "target_column": "variety" })
         recipe.save()

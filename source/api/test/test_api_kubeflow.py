@@ -109,23 +109,12 @@ class KubeflowTests(AnaliticoApiTestCase):
 
     @tag("k8s", "kf", "live", "slow")
     def test_tensorflow_serving_deploy(self):
-        """ Test deploy of a TensorFlow model with Knative """
+        """ Test deploy of a TensorFlow model """
         try:
-            # artifact loaded in
+            # model pre-loaded in
             # //u212674.your-storagebox.de/ws_y1ehlz2e/automl/rx_testk8_test_tensorflow_serving_deploy/serving
             recipe_id = "rx_testk8_test_tensorflow_serving_deploy"
             recipe = Recipe.objects.create(pk=recipe_id, workspace=self.ws1)
-            recipe.set_attribute(
-                "automl",
-                {
-                    "workspace_id": "ws_y1ehlz2e",
-                    "recipe_id": recipe_id,
-                    "data_item_id": "rx_iris",
-                    "data_path": "data",
-                    "prediction_type": "regression",
-                    "target_column": "target",
-                },
-            )
             recipe.save()
 
             model = Model.objects.create(pk="ml_testk8_test_tensorflow_serving_deploy", workspace=self.ws1)
@@ -163,7 +152,7 @@ class KubeflowTests(AnaliticoApiTestCase):
                 pass
 
     def test_kf_update_tensorflow_models_config(self):
-        # from empty config
+        # update model config from empty config
         recipe = Recipe.objects.create(pk="rx_automl_model_config", workspace=self.ws1)
         recipe.save()
 
@@ -172,7 +161,7 @@ class KubeflowTests(AnaliticoApiTestCase):
         self.assertIn('base_path: "/mnt/automl/rx_automl_model_config/serving"', config)
         self.assertIn('model_platform: "tensorflow"', config)
 
-        # from an existing config
+        # update model config from empty config
         recipe2 = Recipe.objects.create(pk="rx_automl_model_config_2", workspace=self.ws1)
         recipe2.save()
 
@@ -181,7 +170,7 @@ class KubeflowTests(AnaliticoApiTestCase):
         self.assertIn('base_path: "/mnt/automl/rx_automl_model_config_2/serving"', config)
         self.assertIn('model_platform: "tensorflow"', config)
 
-        # from an existing config re-add an existing item's model
+        # update model config from an existing config, re-add an existing item's model
         config = kf_update_tensorflow_models_config(recipe2, config)
         self.assertEqual(config.count('name: "rx_automl_model_config_2"'), 1, "model should not be present twice")
         self.assertEqual(
