@@ -389,7 +389,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
 
         # TODO: temporary working on cloud-staging cluster
         context_name = "admin@cloud-staging.analitico.ai"
-        from api.k8 import k8_customize_and_apply
+        from api.k8 import k8_customize_and_apply, k8_get_storage_volume_configuration
 
         # name of service we are deploying
         stage_suffix = "-{stage}" if stage != K8_STAGE_PRODUCTION else ""
@@ -397,15 +397,16 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         service_name = k8_normalize_name(name)
         service_namespace = "cloud"
 
-        config = collections.OrderedDict()
-        config["service_name"] = service_name
-        config["service_namespace"] = service_namespace
-        config["workspace_id"] = workspace_id
-        config["workspace_id_slug"] = k8_normalize_name(workspace_id)
-        config["item_id"] = item.id
-        config["controller_name"] = f"{service_name}-{id_generator(5)}"
+        configs = k8_get_storage_volume_configuration(item.workspace)
+
+        configs["service_name"] = service_name
+        configs["service_namespace"] = service_namespace
+        configs["workspace_id"] = workspace_id
+        configs["workspace_id_slug"] = k8_normalize_name(workspace_id)
+        configs["item_id"] = item.id
+        configs["controller_name"] = f"{service_name}-{id_generator(5)}"
         # TensorFlow Serving 1.15.0
-        config[
+        configs[
             "image_name"
         ] = "tensorflow/serving@sha256:c25e808561b6983031f1edf080d63d5a2a933b47e374ce6913342f5db4d1280c"
 
@@ -422,20 +423,26 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         protobuf_model_config = kf_update_tensorflow_models_config(item, current_models_config)
         # align all lines in order to be correctly formatted and accepted on the yaml data attribute
         protobuf_model_config = "    ".join(protobuf_model_config.splitlines(True))
-        config["protobuf_model_config"] = protobuf_model_config
+        configs["protobuf_model_config"] = protobuf_model_config
+
+        configs["pv_storage_size"] = "100Gi"
+
+        # deploy workspace persistent volume on Analitico Drive
+        template_filename = os.path.join(TEMPLATE_DIR, "persistent-volume-and-claim-template.yaml")
+        service_json = k8_customize_and_apply(template_filename, context_name=context_name, **configs)
 
         # deploy the main service resource
         template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-service-template.yaml")
-        service_json = k8_customize_and_apply(template_filename, context_name=context_name, **config)
+        service_json = k8_customize_and_apply(template_filename, context_name=context_name, **configs)
 
         # retrieve existing services
         services = target.get_attribute("service", {})
 
-        config["owner_uid"] = get_dict_dot(service_json, "metadata.uid")
+        configs["owner_uid"] = get_dict_dot(service_json, "metadata.uid")
 
         # deploy all the other service related resources
         template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-template.yaml")
-        k8_customize_and_apply(template_filename, context_name=context_name, **config)
+        k8_customize_and_apply(template_filename, context_name=context_name, **configs)
 
         # save deployment information inside item, endpoint and job
         attrs = collections.OrderedDict()

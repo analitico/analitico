@@ -139,12 +139,32 @@ class KubeflowTests(AnaliticoApiTestCase):
             # response = requests.get(url)
             response = requests.get(url, verify=False)
             self.assertApiResponse(response)
+
+            # also persistent volume and clain is deployed with the serving endpoint
+            response, _ = kubectl(
+                    K8_DEFAULT_NAMESPACE,
+                    "get",
+                    "pv",
+                    args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
+                    context_name="admin@cloud-staging.analitico.ai",
+                )
+            self.assertEqual(1, len(response["items"]))
+            # persistent volume is bound to the right claim
+            pv = response["items"][0]
+            self.assertEqual("Bound", pv["status"]["phase"])
+            self.assertEqual("analitico-drive-ws-001-claim", pv["spec"]["claimRef"]["name"])
+
+            # a next deploy should not change any deployed services
+            # and thus everything should complete fine.
+            result = tensorflow_serving_deploy(recipe, model)
+            self.assertEqual(service_name, result.get("name"))
         finally:
             try:
                 kubectl(
                     K8_DEFAULT_NAMESPACE,
                     "delete",
-                    "service/" + service_name,
+                    "service,pvc,pv",
+                    args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
                     context_name="admin@cloud-staging.analitico.ai",
                     output=None,
                 )
