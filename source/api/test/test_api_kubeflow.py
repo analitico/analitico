@@ -125,34 +125,37 @@ class KubeflowTests(AnaliticoApiTestCase):
 
             # wait for pod to be scheduled
             time.sleep(3)
-            k8_wait_for_condition(
-                K8_DEFAULT_NAMESPACE,
-                "pod",
-                "condition=Ready",
-                labels="app=" + service_name,
-                context_name="admin@cloud-staging.analitico.ai",
-            )
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="app=" + service_name)
 
             # test endpoint
-            # url = "https://ws-001.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
-            url = "https://ws-001.cloud.cloud-staging.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
-            # response = requests.get(url)
-            response = requests.get(url, verify=False)
+            url = "https://ws-001-tfserving.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            response = requests.get(url)
             self.assertApiResponse(response)
 
-            # also persistent volume and clain is deployed with the serving endpoint
+            # persistent volume and claim are deployed with the serving endpoint
             response, _ = kubectl(
-                    K8_DEFAULT_NAMESPACE,
-                    "get",
-                    "pv",
-                    args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
-                    context_name="admin@cloud-staging.analitico.ai",
-                )
+                K8_DEFAULT_NAMESPACE, "get", "pv", args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id]
+            )
             self.assertEqual(1, len(response["items"]))
             # persistent volume is bound to the right claim
             pv = response["items"][0]
             self.assertEqual("Bound", pv["status"]["phase"])
             self.assertEqual("analitico-drive-ws-001-claim", pv["spec"]["claimRef"]["name"])
+
+            # persistent volume and claim are deployed also in the cloud-staging cluster
+            # to be used for KFP execution
+            # TODO: kfp runs should be deployed in `cloud` namespace instead of kubeflow
+            response, _ = kubectl(
+                "kubeflow",
+                "get",
+                "pv",
+                args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
+                context_name="admin@cloud-staging.analitico.ai",
+            )
+            self.assertEqual(1, len(response["items"]))
+            # persistent volume is bound to the right claim in the kubeflow namespace
+            pv = response["items"][0]
+            self.assertEqual("kubeflow", pv["spec"]["claimRef"]["namespace"])
 
             # a next deploy should not change any deployed services
             # and thus everything should complete fine.
@@ -160,10 +163,19 @@ class KubeflowTests(AnaliticoApiTestCase):
             self.assertEqual(service_name, result.get("name"))
         finally:
             try:
+                # cleanup specificing the service to avoid conflict with other tests
+                kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + service_name, output=None)
                 kubectl(
                     K8_DEFAULT_NAMESPACE,
                     "delete",
-                    "service,pvc,pv",
+                    "pvc,pv",
+                    args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
+                    output=None,
+                )
+                kubectl(
+                    "kubeflow",
+                    "delete",
+                    "pvc,pv",
                     args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
                     context_name="admin@cloud-staging.analitico.ai",
                     output=None,

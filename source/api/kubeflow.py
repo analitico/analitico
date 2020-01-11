@@ -79,6 +79,10 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
             f"Automl configuration is missing for item {item.id}", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
         )
 
+    # deploy endpoint for serving all workspace's automl models
+    if serving_endpoint:
+        tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
+
     with tempfile.NamedTemporaryFile("w+", suffix=".yaml") as output_filename:
         # inject the proper item's workspace id
         automl_config["workspace_id"] = item.workspace_id
@@ -87,7 +91,7 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
         analitico_automl.pipeline.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
 
         client = kfp.Client(settings.KFP_CLIENT_URL)
-
+        
         # run name must be unique
         run_name = item.id + " " + datetime.now().strftime("%Y-%m-%d %H-%M-%S")
         # experiment name is created if missing, it is used if it exists
@@ -115,10 +119,6 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
     model.set_attribute("recipe_id", item.id)
     model.set_attribute("automl", automl_config)
     model.save()
-
-    # deploy endpoint for serving all workspace's automl models
-    if serving_endpoint:
-        tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
 
     return model
 
@@ -382,18 +382,24 @@ def kf_pipeline_runs_get(item: ItemMixin, run_id: str = None, list_page_token: s
 
 
 def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODUCTION) -> dict:
-    """ Deploy a Tensorflow Serving image for a recipe built with a TensorFlow model """
+    """ Deploy a TensorFlow Serving image for serving a recipe's TensorFlow model.
+
+    TensorFlow Serving image is able to serve multiple models with multiple versions.
+    We use this feature thus we deploy a single endpoint for prediction, named with the workspace
+    id for serving all workspace's recipes' models.
+    Eg: https://ws-automl-tfserving.cloud.analitico.ai/v1/models/rx_iris
+    """
     try:
         assert item.workspace
         workspace_id = item.workspace.id
 
-        # TODO: temporary working on cloud-staging cluster
-        context_name = "admin@cloud-staging.analitico.ai"
+        # TODO: kfp is currently installed on cloud-staging cluster only
+        cloud_staging_context_name = "admin@cloud-staging.analitico.ai"
         from api.k8 import k8_customize_and_apply, k8_get_storage_volume_configuration
 
         # name of service we are deploying
         stage_suffix = "-{stage}" if stage != K8_STAGE_PRODUCTION else ""
-        name = workspace_id + stage_suffix
+        name = workspace_id + "-tfserving" + stage_suffix
         service_name = k8_normalize_name(name)
         service_namespace = "cloud"
 
@@ -427,13 +433,17 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
 
         configs["pv_storage_size"] = "100Gi"
 
-        # deploy workspace persistent volume on Analitico Drive
+        # deploy workspace persistent volume and claim on both clusters
         template_filename = os.path.join(TEMPLATE_DIR, "persistent-volume-and-claim-template.yaml")
-        service_json = k8_customize_and_apply(template_filename, context_name=context_name, **configs)
+        k8_customize_and_apply(template_filename, **configs)
+        # TODO: kfp runs should be deployed in `cloud ` namespace instead of kubeflow
+        configs_cluster_staging = configs.copy()
+        configs_cluster_staging["service_namespace"] = "kubeflow"
+        k8_customize_and_apply(template_filename, context_name=cloud_staging_context_name, **configs_cluster_staging)
 
         # deploy the main service resource
-        template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-service-template.yaml")
-        service_json = k8_customize_and_apply(template_filename, context_name=context_name, **configs)
+        template_filename = os.path.join(TEMPLATE_DIR, "tfserving-service-template.yaml")
+        service_json = k8_customize_and_apply(template_filename, **configs)
 
         # retrieve existing services
         services = target.get_attribute("service", {})
@@ -441,8 +451,8 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         configs["owner_uid"] = get_dict_dot(service_json, "metadata.uid")
 
         # deploy all the other service related resources
-        template_filename = os.path.join(TEMPLATE_DIR, "service-tensorflow-template.yaml")
-        k8_customize_and_apply(template_filename, context_name=context_name, **configs)
+        template_filename = os.path.join(TEMPLATE_DIR, "tfserving-template.yaml")
+        k8_customize_and_apply(template_filename, **configs)
 
         # save deployment information inside item, endpoint and job
         attrs = collections.OrderedDict()

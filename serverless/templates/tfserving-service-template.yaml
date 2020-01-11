@@ -5,6 +5,7 @@ metadata:
   namespace: {service_namespace}
   labels:
     app: {service_name}
+    analitico.ai/service: tfserving
     analitico.ai/workspace-id: {workspace_id}
 spec:
   selector:

@@ -35,11 +35,9 @@ class AutomlViewSetMixin:
 
         json_request = automl_convert_request_for_prediction(item, content)
 
-        url = f"https://{k8_normalize_name(item.workspace.id)}.cloud.cloud-staging.analitico.ai/v1/models/{item.id}:predict"
-        # url = f"http://{k8_normalize_name(item.workspace.id)}.cloud.svc.cluster.local/v1/models/{item.id}:predict"
-        # url = f"https://{k8_normalize_name(item.workspace.id)}.cloud.analitico.ai/v1/models/{item.id}:predict"
-        response = requests.post(url, json_request, verify=False)
-        # response = requests.post(url, json_request)
+        url = f"http://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.svc.cluster.local/v1/models/{item.id}:predict"
+        # url = f"https://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.analitico.ai/v1/models/{item.id}:predict"
+        response = requests.post(url, json_request)
 
         return HttpResponse(
             response.content, status=response.status_code, content_type=response.headers.get("content-type")
