@@ -14,13 +14,13 @@ from api.k8 import kubectl, k8_wait_for_condition, K8_DEFAULT_NAMESPACE
 
 
 class KubeflowTests(AnaliticoApiTestCase):
-    def kf_run_pipeline(self, recipe_id: str = None) -> Model:
-        """ Execute an Automl pipeline for testing """
+    def kf_run_pipeline(self, recipe_id: str = None) -> dict:
+        """ Execute an Automl pipeline for testing and return the Analitico model as json. """
         if not recipe_id:
             recipe_id = "rx_test_iris"
 
         # create a recipe with automl configs
-        recipe = Recipe.objects.create(pk=recipe_id, workspace_id=self.ws1.id)
+        recipe, isNew = Recipe.objects.get_or_create(pk=recipe_id, workspace_id=self.ws1.id)
         recipe.set_attribute(
             "automl",
             {
@@ -43,7 +43,50 @@ class KubeflowTests(AnaliticoApiTestCase):
             token=self.token1,
         )
 
-        return automl_run(recipe)
+        url = reverse("api:recipe-automl-run", args=(recipe_id,))
+        self.auth_token(self.token1)
+        response = self.client.post(url)
+        self.assertApiResponse(response)
+
+        return response.json().get("data")
+
+    def cleanup_kf_test_services(self):
+        """ 
+        Some actions (eg, the run of an automl config) also deploy Persistent Volume and TFServing service.
+        The method simplifies the deletion of all services deployed by tests. 
+        """
+        try:
+            kubectl(
+                K8_DEFAULT_NAMESPACE,
+                "delete",
+                "service",
+                args=["--selector", "analitico.ai/service=tfserving,analitico.ai/workspace-id=" + self.ws1.id],
+                output=None,
+            )
+        except:
+            pass
+        try:
+            kubectl(
+                K8_DEFAULT_NAMESPACE,
+                "delete",
+                "pvc,pv",
+                args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
+                output=None,
+            )
+        except:
+            pass
+        # TODO: cannot be cleaned because they are in used by kf pipeline executors' pods
+        # try:
+        #     kubectl(
+        #         "kubeflow",
+        #         "delete",
+        #         "pvc,pv",
+        #         args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
+        #         context_name="admin@cloud-staging.analitico.ai",
+        #         output=None,
+        #     )
+        # except:
+        #     pass
 
     ##
     ## Test Kubeflow
@@ -51,77 +94,79 @@ class KubeflowTests(AnaliticoApiTestCase):
 
     @tag("k8s", "kf", "slow")
     def test_kf_pipeline_runs(self):
-        """ Test Kubeflow get and list pipeline run objects """
-        # run a pipeline for testing
-        model = self.kf_run_pipeline()
-        recipe_id = model.get_attribute("recipe_id")
-        run_id = model.get_attribute("automl.run_id")
-
-        # user cannot retrieve runs if he doesn't have access
-        # to the related analitico item
-        self.auth_token(self.token2)
-        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-        # recipe not found
-        self.auth_token(self.token1)
-        url = reverse("api:recipe-kf-pipeline-runs", args=("rx_fake_id", run_id))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-        # run id not found
-        self.auth_token(self.token1)
-        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, "fake-run-id"))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-        # retrieve the specific run
-        self.auth_token(self.token1)
-        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
-        response = self.client.get(url)
-        self.assertApiResponse(response)
-        data = response.json()
-        self.assertEqual(data["data"]["run"]["id"], run_id)
-
-        # user cannot retrieve pipeline ran in an experiment
-        # not releated to the given item id.
-        # Create a new recipe and replace the experiment id
-        # from the other run
-        invalid_recipe_id = "rx_test_runs"
-        self.kf_run_pipeline(invalid_recipe_id)
-        invalid_recipe = Recipe.objects.get(pk=invalid_recipe_id)
-        invalid_recipe.set_attribute("automl.experiment_id", model.get_attribute("automl.experiment_id"))
-        invalid_recipe.save()
-
-        self.auth_token(self.token1)
-        url = reverse("api:recipe-kf-pipeline-runs", args=(invalid_recipe_id, ""))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-        # retrieve the list of runs for a given item id
-        self.auth_token(self.token1)
-        url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, ""))
-        response = self.client.get(url)
-        self.assertApiResponse(response)
-        data = response.json().get("data")
-        self.assertGreaterEqual(len(data["runs"]), 1)
-
-    @tag("k8s", "kf", "live", "slow")
-    def test_tensorflow_serving_deploy(self):
-        """ Test deploy of a TensorFlow model """
         try:
+            """ Test Kubeflow get and list pipeline run objects """
+            # run a pipeline for testing
+            content = self.kf_run_pipeline()
+            recipe_id = get_dict_dot(content, "attributes.recipe_id")
+            run_id = get_dict_dot(content, "attributes.automl.run_id")
+            experiment_id = get_dict_dot(content, "attributes.automl.experiment_id")
+
+            # user cannot retrieve runs if he doesn't have access
+            # to the related analitico item
+            self.auth_token(self.token2)
+            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # recipe not found
+            self.auth_token(self.token1)
+            url = reverse("api:recipe-kf-pipeline-runs", args=("rx_fake_id", run_id))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # run id not found
+            self.auth_token(self.token1)
+            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, "fake-run-id"))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # retrieve the specific run
+            self.auth_token(self.token1)
+            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
+            response = self.client.get(url)
+            self.assertApiResponse(response)
+            data = response.json()
+            self.assertEqual(data["data"]["run"]["id"], run_id)
+
+            # user cannot retrieve pipeline ran in an experiment
+            # not releated to the given item id.
+            # Create a new recipe and replace the experiment id
+            # from the other run
+            invalid_recipe_id = "rx_test_runs"
+            self.kf_run_pipeline(invalid_recipe_id)
+            invalid_recipe = Recipe.objects.get(pk=invalid_recipe_id)
+            invalid_recipe.set_attribute("automl.experiment_id", experiment_id)
+            invalid_recipe.save()
+
+            self.auth_token(self.token1)
+            url = reverse("api:recipe-kf-pipeline-runs", args=(invalid_recipe_id, ""))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+            # retrieve the list of runs for a given item id
+            self.auth_token(self.token1)
+            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, ""))
+            response = self.client.get(url)
+            self.assertApiResponse(response)
+            data = response.json().get("data")
+            self.assertGreaterEqual(len(data["runs"]), 1)
+        finally:
+            self.cleanup_kf_test_services()
+
+    @tag("k8s", "kf", "slow")
+    def test_automl_run_also_deploys_persistent_volume_and_tfserving_endpoint(self):
+        """ 
+        When is run an automl config expect to find deployed the Persistent Volume and
+        Claim and the TFServing endpoint. 
+        """
+        try:     
             # model pre-loaded in
             # //u212674.your-storagebox.de/ws_y1ehlz2e/automl/rx_testk8_test_tensorflow_serving_deploy/serving
-            recipe_id = "rx_testk8_test_tensorflow_serving_deploy"
-            recipe = Recipe.objects.create(pk=recipe_id, workspace=self.ws1)
-            recipe.save()
-
-            model = Model.objects.create(pk="ml_testk8_test_tensorflow_serving_deploy", workspace=self.ws1)
-            model.save()
-            result = tensorflow_serving_deploy(recipe, model)
-
-            service_name = result.get("name")
+            recipe_id = "rx_testk8_test_tensorflow_serving_deploy"            
+            # run a recipe in the `self.ws1` workspace
+            self.kf_run_pipeline(recipe_id=recipe_id)
+            service_name = k8_normalize_name(self.ws1.id) + "-tfserving"
 
             # wait for pod to be scheduled
             time.sleep(3)
@@ -131,6 +176,15 @@ class KubeflowTests(AnaliticoApiTestCase):
             url = "https://ws-001-tfserving.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
             response = requests.get(url)
             self.assertApiResponse(response)
+
+            # a next deploy should not change any deployed services
+            # and thus everything should complete fine.
+            self.kf_run_pipeline(recipe_id=recipe_id)
+
+            # the run of an automl config also deploys Persistent Volume
+            # and KFServing endpoint
+            service, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", f"service/{k8_normalize_name(self.ws1.id)}-tfserving")
+            self.assertIsNotNone(service)
 
             # persistent volume and claim are deployed with the serving endpoint
             response, _ = kubectl(
@@ -156,32 +210,8 @@ class KubeflowTests(AnaliticoApiTestCase):
             # persistent volume is bound to the right claim in the kubeflow namespace
             pv = response["items"][0]
             self.assertEqual("kubeflow", pv["spec"]["claimRef"]["namespace"])
-
-            # a next deploy should not change any deployed services
-            # and thus everything should complete fine.
-            result = tensorflow_serving_deploy(recipe, model)
-            self.assertEqual(service_name, result.get("name"))
         finally:
-            try:
-                # cleanup specificing the service to avoid conflict with other tests
-                kubectl(K8_DEFAULT_NAMESPACE, "delete", "service/" + service_name, output=None)
-                kubectl(
-                    K8_DEFAULT_NAMESPACE,
-                    "delete",
-                    "pvc,pv",
-                    args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
-                    output=None,
-                )
-                kubectl(
-                    "kubeflow",
-                    "delete",
-                    "pvc,pv",
-                    args=["--selector", "analitico.ai/workspace-id=" + self.ws1.id],
-                    context_name="admin@cloud-staging.analitico.ai",
-                    output=None,
-                )
-            except:
-                pass
+            self.cleanup_kf_test_services()
 
     def test_kf_update_tensorflow_models_config(self):
         # update model config from empty config

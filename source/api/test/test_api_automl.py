@@ -121,6 +121,7 @@ class AutomlTests(AnaliticoApiTestCase):
         content = '{ "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }'
         headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
+        # TODO: get_object() raises 404 not found
         # user can request prediction even without authentication
         response = requests.post(url, data=content)
         self.assertApiResponse(response)
@@ -140,10 +141,10 @@ class AutomlTests(AnaliticoApiTestCase):
     def OFF_test_model_schema(self):
         # pre-generated artifacts are loaded in the `self.ws2` drive at:
         # //u206378@u206378.your-storagebox.de/user5-test/automl/rx_iris_unittest_artifacts/pipelines
-        # URI to the artifacts are retrieved using `self.recipe_id` references in the mlmetadata-db.
-        # In case of new runs of `self.recipe_id`'s automl pipeline, folder id in the above location 
+        # URI to the artifacts are retrieved using `self.run_recipe_id` references in the mlmetadata-db.
+        # In case of new runs of `self.run_recipe_id`'s automl pipeline, folder id in the above location 
         # must be changed accordingly.
-        recipe = Recipe.objects.create(pk=self.recipe_id, workspace_id=self.ws2.id)
+        recipe = Recipe.objects.create(pk=self.run_recipe_id, workspace_id=self.ws2.id)
         recipe.save()
         url = reverse("api:recipe-automl-schema", args=(recipe.id, ))
 

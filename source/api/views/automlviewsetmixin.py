@@ -15,12 +15,13 @@ from api.kubeflow import (
     automl_convert_request_for_prediction,
     automl_model_schema,
     automl_model_statistics,
-    automl_model_examples
+    automl_model_examples,
 )
 from api.k8 import k8_normalize_name
 
 
 class AutomlViewSetMixin:
+
     # All methods require prior authentication, no token, no access
     permission_classes = (IsAuthenticated,)
 
@@ -35,15 +36,14 @@ class AutomlViewSetMixin:
 
         json_request = automl_convert_request_for_prediction(item, content)
 
-        url = f"http://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.svc.cluster.local/v1/models/{item.id}:predict"
-        # url = f"https://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.analitico.ai/v1/models/{item.id}:predict"
+        url = f"https://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.analitico.ai/v1/models/{item.id}:predict"
         response = requests.post(url, json_request)
 
         return HttpResponse(
             response.content, status=response.status_code, content_type=response.headers.get("content-type")
         )
 
-    @action(methods=["GET"], detail=True, url_name="automl-schema", url_path="automl/schema", permission_classes=[AllowAny])
+    @action(methods=["GET"], detail=True, url_name="automl-schema", url_path="automl/schema")
     def model_schema(self, request, pk):
         """ Return the recipe's model schema """
         item = self.get_object()

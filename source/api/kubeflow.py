@@ -14,7 +14,15 @@ from django.conf import settings
 
 from analitico import AnaliticoException, logger
 from api.models import ItemMixin, Recipe, Model, Workspace
-from api.k8 import k8_normalize_name, kubectl, K8_DEFAULT_NAMESPACE, K8_STAGE_PRODUCTION, K8_STAGE_STAGING, TEMPLATE_DIR
+from api.k8 import (
+    k8_persistent_volume_deploy,
+    k8_normalize_name,
+    kubectl,
+    K8_DEFAULT_NAMESPACE,
+    K8_STAGE_PRODUCTION,
+    K8_STAGE_STAGING,
+    TEMPLATE_DIR,
+)
 from analitico.utilities import save_json, save_text, read_text, subprocess_run, id_generator, get_dict_dot
 
 from analitico_automl import AutomlConfig
@@ -79,9 +87,10 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
             f"Automl configuration is missing for item {item.id}", status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
         )
 
-    # deploy endpoint for serving all workspace's automl models
-    if serving_endpoint:
-        tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
+    # used by KFP for saving the pipeline artifacts on the Analitico Drive
+    # TODO: this is the first place where they are used. The deployment of
+    #       the PV/PVC should be made when workspace is provisioned.
+    k8_persistent_volume_deploy(item.workspace, storage_size="100Gi")
 
     with tempfile.NamedTemporaryFile("w+", suffix=".yaml") as output_filename:
         # inject the proper item's workspace id
@@ -91,7 +100,7 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
         analitico_automl.pipeline.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
 
         client = kfp.Client(settings.KFP_CLIENT_URL)
-        
+
         # run name must be unique
         run_name = item.id + " " + datetime.now().strftime("%Y-%m-%d %H-%M-%S")
         # experiment name is created if missing, it is used if it exists
@@ -119,6 +128,10 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
     model.set_attribute("recipe_id", item.id)
     model.set_attribute("automl", automl_config)
     model.save()
+
+    # deploy the endpoint for serving all workspace's automl models.
+    if serving_endpoint:
+        tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
 
     return model
 
@@ -393,9 +406,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         assert item.workspace
         workspace_id = item.workspace.id
 
-        # TODO: kfp is currently installed on cloud-staging cluster only
-        cloud_staging_context_name = "admin@cloud-staging.analitico.ai"
-        from api.k8 import k8_customize_and_apply, k8_get_storage_volume_configuration
+        from api.k8 import k8_customize_and_apply
 
         # name of service we are deploying
         stage_suffix = "-{stage}" if stage != K8_STAGE_PRODUCTION else ""
@@ -403,8 +414,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         service_name = k8_normalize_name(name)
         service_namespace = "cloud"
 
-        configs = k8_get_storage_volume_configuration(item.workspace)
-
+        configs = collections.OrderedDict()
         configs["service_name"] = service_name
         configs["service_namespace"] = service_namespace
         configs["workspace_id"] = workspace_id
@@ -430,16 +440,6 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         # align all lines in order to be correctly formatted and accepted on the yaml data attribute
         protobuf_model_config = "    ".join(protobuf_model_config.splitlines(True))
         configs["protobuf_model_config"] = protobuf_model_config
-
-        configs["pv_storage_size"] = "100Gi"
-
-        # deploy workspace persistent volume and claim on both clusters
-        template_filename = os.path.join(TEMPLATE_DIR, "persistent-volume-and-claim-template.yaml")
-        k8_customize_and_apply(template_filename, **configs)
-        # TODO: kfp runs should be deployed in `cloud ` namespace instead of kubeflow
-        configs_cluster_staging = configs.copy()
-        configs_cluster_staging["service_namespace"] = "kubeflow"
-        k8_customize_and_apply(template_filename, context_name=cloud_staging_context_name, **configs_cluster_staging)
 
         # deploy the main service resource
         template_filename = os.path.join(TEMPLATE_DIR, "tfserving-service-template.yaml")

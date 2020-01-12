@@ -152,6 +152,32 @@ def get_image_commit_sha():
         logger.warning(msg)
     return commit_sha
 
+def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
+    """ Deploy a Kubernetes Persistent Volume and Claim for the workspace
+    
+    Arguments:
+    ----------
+        workspace : Workspace --- Analitico Workspace object
+        storage_size : str --- storage size in Kubernetes Persistent Volume format, eg: 100Gi
+    """
+    
+    configs = k8_get_storage_volume_configuration(workspace)
+    configs["service_namespace"] = K8_DEFAULT_NAMESPACE
+    configs["workspace_id"] = workspace.id
+    configs["workspace_id_slug"] = k8_normalize_name(workspace.id)
+    configs["pv_storage_size"] = storage_size
+
+    template_filename = os.path.join(TEMPLATE_DIR, "persistent-volume-and-claim-template.yaml")
+    k8_customize_and_apply(template_filename, **configs)
+    
+    # TODO: kfp is currently installed on cloud-staging cluster only
+    # TODO: deploy also on `cloud-staging` cluster because they are required by KFP
+    cloud_staging_context_name = "admin@cloud-staging.analitico.ai"
+
+    # TODO: kfp runs should be deployed in `cloud ` namespace instead of `kubeflow`
+    configs_cluster_staging = configs.copy()
+    configs_cluster_staging["service_namespace"] = "kubeflow"
+    k8_customize_and_apply(template_filename, context_name=cloud_staging_context_name, **configs_cluster_staging)
 
 def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=True) -> dict:
     """
