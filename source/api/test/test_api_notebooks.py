@@ -20,6 +20,7 @@ from api.models import *
 from api.factory import factory
 from api.models.log import *
 from api.pagination import *
+from api.models.notebook import nb_clear_error_cells
 
 from .utils import AnaliticoApiTestCase
 
@@ -545,3 +546,13 @@ class NotebooksTests(AnaliticoApiTestCase):
         data_csv = next(asset for asset in assets if asset["id"] == "data.csv")
         self.assertEqual(data_csv["rows"], 100)
         self.assertEqual(data_csv["schema"]["columns"][0]["name"], "A_100")
+
+    def test_clear_error_cells(self):
+        notebook_path = os.path.join(NOTEBOOKS_PATH, "notebook15-with-error-cell.ipynb")
+        notebook = self.read_notebook(notebook_path)
+        self.assertIn("An Exception was encountered at", notebook["cells"][0]["outputs"][0]["data"]["text/html"][0])
+
+        notebook = nb_clear_error_cells(notebook)
+        self.assertNotIn("data", notebook["cells"][0]["outputs"][0])
+        self.assertIn("text", notebook["cells"][0]["outputs"][0])
+        self.assertIn("Raise Exeception", notebook["cells"][0]["outputs"][0]["text"][0])

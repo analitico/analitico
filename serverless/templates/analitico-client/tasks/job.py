@@ -79,7 +79,7 @@ try:
 
     try:
         from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
-        from analitico.utilities import read_json, subprocess_run
+        from analitico.utilities import read_json, save_json, subprocess_run
     except Exception as exc:
         raise AnaliticoException(f"Analitico dependencies should be installed.") from exc
 
@@ -103,7 +103,9 @@ try:
     notebook_dir = os.path.dirname(notebook_path)
     notebook = read_json(notebook_path)
 
+    logging.info("Cleaning notebook from error cells of previous execution")
     notebook = nb_clear_error_cells(notebook)
+    save_json(notebook, notebook_path)
 
     # process commands embedded in our notebook first to install dependencies, etc
     for i, cell in enumerate(notebook["cells"]):
