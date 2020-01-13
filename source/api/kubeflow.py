@@ -408,17 +408,18 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
 
         from api.k8 import k8_customize_and_apply
 
-        # name of service we are deploying
+        # name of service we are deploying, eg: ws-001-tfserving, ws-001-tfserving-staging
         stage_suffix = "-{stage}" if stage != K8_STAGE_PRODUCTION else ""
         name = workspace_id + "-tfserving" + stage_suffix
         service_name = k8_normalize_name(name)
         service_namespace = "cloud"
+        workspace_id_slug = k8_normalize_name(workspace_id)
 
         configs = collections.OrderedDict()
         configs["service_name"] = service_name
         configs["service_namespace"] = service_namespace
         configs["workspace_id"] = workspace_id
-        configs["workspace_id_slug"] = k8_normalize_name(workspace_id)
+        configs["workspace_id_slug"] = workspace_id_slug
         configs["item_id"] = item.id
         configs["controller_name"] = f"{service_name}-{id_generator(5)}"
         # TensorFlow Serving 1.15.0
@@ -427,7 +428,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         ] = "tensorflow/serving@sha256:c25e808561b6983031f1edf080d63d5a2a933b47e374ce6913342f5db4d1280c"
 
         try:
-            config_map, _ = kubectl(service_namespace, "get", f"configMap/tensorflow-serving-config-{workspace_id}")
+            config_map, _ = kubectl(service_namespace, "get", f"configMap/tensorflow-serving-config-{workspace_id_slug}")
             current_models_config = get_dict_dot(config_map, "models.config", "")
         except Exception as e:
             if e.status_code == status.HTTP_404_NOT_FOUND:
