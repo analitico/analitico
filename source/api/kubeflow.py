@@ -429,7 +429,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
 
         try:
             config_map, _ = kubectl(service_namespace, "get", f"configMap/tensorflow-serving-config-{workspace_id_slug}")
-            current_models_config = get_dict_dot(config_map, "models.config", "")
+            current_models_config = get_dict_dot(config_map, "data", {}).get("models.config", "")
         except Exception as e:
             if e.status_code == status.HTTP_404_NOT_FOUND:
                 # config map not found

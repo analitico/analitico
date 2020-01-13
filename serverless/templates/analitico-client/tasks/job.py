@@ -49,6 +49,8 @@ def try_request_notification(notification_url):
         logging.warning("Failed to request the notification", exec_info=True)
 
 
+# TODO: Refactory required. This method is duplicated from api/models/notebook.py. Methods
+#       from notebook.py should not be used anywhere because job runs are executed only by this script.
 def nb_clear_error_cells(notebook: dict) -> dict:
     """ Removes any cells that were created by previous papermill runs showing notebook execution errors """
     try:
@@ -102,7 +104,7 @@ try:
     notebook = read_json(notebook_path)
 
     notebook = nb_clear_error_cells(notebook)
-    
+
     # process commands embedded in our notebook first to install dependencies, etc
     for i, cell in enumerate(notebook["cells"]):
         if cell["cell_type"] == "code":
