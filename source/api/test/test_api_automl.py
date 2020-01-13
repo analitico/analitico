@@ -116,6 +116,14 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertTrue(content["instances"][1]["b64"])
 
     def OFF_test_predict(self):
+        # recipe's automl config has never run before and the predict cannot be performed
+        recipe_automl_never_run = Recipe.objects.create(pk="rx_automl_config_never_run", workspace_id=self.ws1.id)
+        recipe_automl_never_run.save()
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-automl-predict", args=(recipe_automl_never_run.id, ))
+        response = self.client.post(url)
+        self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
+
         # model for prediction is served from the self.workspace_id's drive
         url = f"https://api-staging.cloud.analitico.ai/api/recipes/{self.run_recipe_id}/automl/predict"
         content = '{ "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }'
@@ -139,6 +147,15 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertEqual(prediction["classes"], ['Versicolor', 'Virginica', 'Setosa'])
 
     def OFF_test_model_schema(self):
+        # recipe's automl config has never run before and the schema
+        # does not exist
+        recipe_automl_never_run = Recipe.objects.create(pk="rx_automl_config_never_run", workspace_id=self.ws2.id)
+        recipe_automl_never_run.save()
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-automl-schema", args=(recipe_automl_never_run.id, ))
+        response = self.client.get(url)
+        self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
+
         # pre-generated artifacts are loaded in the `self.ws2` drive at:
         # //u206378@u206378.your-storagebox.de/user5-test/automl/rx_iris_unittest_artifacts/pipelines
         # URI to the artifacts are retrieved using `self.run_recipe_id` references in the mlmetadata-db.
@@ -165,6 +182,14 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertContains(response, "sepal_width")
 
     def OFF_test_model_statistics(self):
+        # recipe's automl config has never run before and the statistics don't exist
+        recipe_automl_never_run = Recipe.objects.create(pk="rx_automl_config_never_run", workspace_id=self.ws1.id)
+        recipe_automl_never_run.save()
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-automl-statistics", args=(recipe_automl_never_run.id, ))
+        response = self.client.get(url)
+        self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
+
         # pre-generated artifacts are loaded in the `self.ws2` drive at:
         # //u206378@u206378.your-storagebox.de/user5-test/automl/rx_iris_unittest_artifacts/pipelines
         # URI to the artifacts are retrieved using `self.run_recipe_id` references in the mlmetadata-db.
@@ -189,6 +214,15 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertEqual("84", schema["datasets"][0]["numExamples"])
 
     def OFF_test_model_examples(self):
+        # recipe's automl config has never run before and the examples don't exist
+        recipe_automl_never_run = Recipe.objects.create(pk="rx_automl_config_never_run", workspace_id=self.ws1.id)
+        recipe_automl_never_run.save()
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-automl-statistics", args=(recipe_automl_never_run.id, ))
+        response = self.client.get(url)
+        self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
+
+
         # pre-generated artifacts are loaded in the `self.ws2` drive at:
         # //u206378@u206378.your-storagebox.de/user5-test/automl/rx_iris_unittest_artifacts/pipelines
         # URI to the artifacts are retrieved using `self.run_recipe_id` references in the mlmetadata-db.

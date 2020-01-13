@@ -8,8 +8,9 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
 
-from api.views.modelviews import ModelSerializer
+from analitico import AnaliticoException
 
+from api.views.modelviews import ModelSerializer
 from api.kubeflow import (
     automl_run,
     automl_convert_request_for_prediction,
@@ -36,6 +37,9 @@ class AutomlViewSetMixin:
 
         json_request = automl_convert_request_for_prediction(item, content)
 
+        if not json_request:
+            raise AnaliticoException("Model schema not found. Has the item's automl config been run?", status_code=status.HTTP_404_NOT_FOUND)  
+
         url = f"https://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.analitico.ai/v1/models/{item.id}:predict"
         response = requests.post(url, json_request)
 
@@ -50,6 +54,9 @@ class AutomlViewSetMixin:
 
         schema_json = automl_model_schema(item, to_json=True)
 
+        if not schema_json:
+            raise AnaliticoException("Model schema not found. Has the item's automl config been run?", status_code=status.HTTP_404_NOT_FOUND)    
+
         return Response(json.loads(schema_json), status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["GET"], detail=True, url_name="automl-statistics", url_path="automl/statistics")
@@ -58,6 +65,9 @@ class AutomlViewSetMixin:
         item = self.get_object()
 
         stats_json = automl_model_statistics(item, to_json=True)
+
+        if not stats_json:
+            raise AnaliticoException("TensorFlow Extended statistics not found. Has the item's automl config been run?", status_code=status.HTTP_404_NOT_FOUND)    
 
         return Response(json.loads(stats_json), status=status.HTTP_200_OK, content_type="application/json")
 
@@ -68,6 +78,9 @@ class AutomlViewSetMixin:
 
         quantity = 10
         examples, labels = automl_model_examples(item, quantity=quantity, to_json=True)
+
+        if not examples:
+            raise AnaliticoException("Model examples not found. Has the item's automl config been run?", status_code=status.HTTP_404_NOT_FOUND)  
 
         data = f'{{ "instances": {examples}, "labels": {labels} }}'
 

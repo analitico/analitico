@@ -167,7 +167,11 @@ def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
     configs["workspace_id_slug"] = k8_normalize_name(workspace.id)
     configs["pv_storage_size"] = storage_size
 
+    # in case secrets have not been deployed yet
+    secret_template = os.path.join(TEMPLATE_DIR, "drive-secret-template.yaml")
     template_filename = os.path.join(TEMPLATE_DIR, "persistent-volume-and-claim-template.yaml")
+    
+    k8_customize_and_apply(secret_template, **configs)
     k8_customize_and_apply(template_filename, **configs)
     
     # TODO: kfp is currently installed on cloud-staging cluster only
@@ -177,6 +181,7 @@ def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
     # TODO: kfp runs should be deployed in `cloud ` namespace instead of `kubeflow`
     configs_cluster_staging = configs.copy()
     configs_cluster_staging["service_namespace"] = "kubeflow"
+    k8_customize_and_apply(secret_template, context_name=cloud_staging_context_name, **configs_cluster_staging)
     k8_customize_and_apply(template_filename, context_name=cloud_staging_context_name, **configs_cluster_staging)
 
 def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=True) -> dict:
@@ -384,7 +389,8 @@ def k8_jobs_create(
     configs["job_action"] = job_action
     configs["job_id"] = job_id = generate_job_id()
     configs["job_id_slug"] = k8_normalize_name(job_id)
-
+    configs["service_namespace"] = K8_DEFAULT_NAMESPACE
+ 
     configs["workspace_id"] = item.workspace.id
     configs["workspace_id_slug"] = k8_normalize_name(item.workspace.id)
 
