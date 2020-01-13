@@ -49,6 +49,30 @@ def try_request_notification(notification_url):
         logging.warning("Failed to request the notification", exec_info=True)
 
 
+def nb_clear_error_cells(notebook: dict) -> dict:
+    """ Removes any cells that were created by previous papermill runs showing notebook execution errors """
+    try:
+        while len(notebook["cells"]) > 1:
+            # error cells created by papermill are not marked explicitely as such, so we just check
+            # the first cells to see if they have the characteristics of papermill error cells and in
+            # that case we remove them from the notebook...
+            cell = notebook["cells"][0]
+            if (
+                cell["cell_type"] == "code"
+                and cell["execution_count"] == None
+                and cell["metadata"]["hide_input"]
+                and cell["metadata"]["inputHidden"]
+                and "An Exception was encountered at" in "".join(cell["outputs"][0]["data"]["text/html"])
+            ):
+                notebook["cells"].remove(cell)
+            else:
+                return notebook
+    except KeyError:
+        # cells or keys we looked for are missing, ignore and proceed
+        pass
+    return notebook
+
+
 try:
 
     try:
@@ -77,6 +101,8 @@ try:
     notebook_dir = os.path.dirname(notebook_path)
     notebook = read_json(notebook_path)
 
+    notebook = nb_clear_error_cells(notebook)
+    
     # process commands embedded in our notebook first to install dependencies, etc
     for i, cell in enumerate(notebook["cells"]):
         if cell["cell_type"] == "code":
