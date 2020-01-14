@@ -432,7 +432,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         configs["workspace_id"] = workspace_id
         configs["workspace_id_slug"] = workspace_id_slug
         configs["item_id"] = item.id
-        configs["controller_name"] = f"{service_name}-{id_generator(5)}"
+        configs["controller_name"] = service_name
         # TensorFlow Serving 1.15.0
         configs[
             "image_name"
