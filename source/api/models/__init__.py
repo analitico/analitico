@@ -14,3 +14,4 @@ from .log import Log  # NOQA
 from .notebook import Notebook, NOTEBOOK_MIME_TYPE  # NOQA
 from .role import Role  # NOQA
 from .drive import Drive  # NOQA
+from .automl import Automl  # NOQA

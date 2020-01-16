@@ -125,7 +125,7 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
     # in order to persist the configuration the pipeline
     # has been run with
     model = Model(workspace=item.workspace)
-    model.set_attribute("recipe_id", item.id)
+    model.set_attribute("automl_id", item.id)
     model.set_attribute("automl", automl_config)
     model.save()
 

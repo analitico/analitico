@@ -14,36 +14,36 @@ from api.k8 import kubectl, k8_wait_for_condition, K8_DEFAULT_NAMESPACE
 
 
 class KubeflowTests(AnaliticoApiTestCase):
-    def kf_run_pipeline(self, recipe_id: str = None) -> dict:
+    def kf_run_pipeline(self, automl_id: str = None) -> dict:
         """ Execute an Automl pipeline for testing and return the Analitico model as json. """
-        if not recipe_id:
-            recipe_id = "rx_test_iris"
+        if not automl_id:
+            automl_id = "au_test_iris"
 
-        # create a recipe with automl configs
-        recipe, isNew = Recipe.objects.get_or_create(pk=recipe_id, workspace_id=self.ws1.id)
-        recipe.set_attribute(
+        # create an automl item with automl configs
+        automl, isNew = Automl.objects.get_or_create(pk=automl_id, workspace_id=self.ws1.id)
+        automl.set_attribute(
             "automl",
             {
                 "workspace_id": "ws_001",
-                "recipe_id": recipe_id,
-                "data_item_id": "rx_iris",
+                "automl_id": automl_id,
+                "data_item_id": "au_iris",
                 "data_path": "data",
                 "prediction_type": "regression",
                 "target_column": "target",
             },
         )
-        recipe.save()
+        automl.save()
         # upload dataset used by pipeline
         self.auth_token(self.token1)
-        data_url = url = reverse("api:recipe-files", args=(recipe.id, "data/iris.csv"))
+        data_url = url = reverse("api:automl-files", args=(automl.id, "data/iris.csv"))
         self.upload_file(
             data_url,
-            "../../../../automl/mount/recipes/rx_iris/data/iris.csv",
+            "../../../../automl/mount/automls/au_iris/data/iris.csv",
             content_type="text/csv",
             token=self.token1,
         )
 
-        url = reverse("api:recipe-automl-run", args=(recipe_id,))
+        url = reverse("api:automl-run", args=(automl_id,))
         self.auth_token(self.token1)
         response = self.client.post(url)
         self.assertApiResponse(response)
@@ -98,32 +98,32 @@ class KubeflowTests(AnaliticoApiTestCase):
             """ Test Kubeflow get and list pipeline run objects """
             # run a pipeline for testing
             content = self.kf_run_pipeline()
-            recipe_id = get_dict_dot(content, "attributes.recipe_id")
+            automl_id = get_dict_dot(content, "attributes.automl_id")
             run_id = get_dict_dot(content, "attributes.automl.run_id")
             experiment_id = get_dict_dot(content, "attributes.automl.experiment_id")
 
             # user cannot retrieve runs if he doesn't have access
             # to the related analitico item
             self.auth_token(self.token2)
-            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
+            url = reverse("api:automl-kf-pipeline-runs", args=(automl_id, run_id))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-            # recipe not found
+            # automl not found
             self.auth_token(self.token1)
-            url = reverse("api:recipe-kf-pipeline-runs", args=("rx_fake_id", run_id))
+            url = reverse("api:automl-kf-pipeline-runs", args=("au_fake_id", run_id))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
             # run id not found
             self.auth_token(self.token1)
-            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, "fake-run-id"))
+            url = reverse("api:automl-kf-pipeline-runs", args=(automl_id, "fake-run-id"))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
             # retrieve the specific run
             self.auth_token(self.token1)
-            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, run_id))
+            url = reverse("api:automl-kf-pipeline-runs", args=(automl_id, run_id))
             response = self.client.get(url)
             self.assertApiResponse(response)
             data = response.json()
@@ -131,22 +131,22 @@ class KubeflowTests(AnaliticoApiTestCase):
 
             # user cannot retrieve pipeline ran in an experiment
             # not releated to the given item id.
-            # Create a new recipe and replace the experiment id
+            # Create a new Automl and replace the experiment id
             # from the other run
-            invalid_recipe_id = "rx_test_runs"
-            self.kf_run_pipeline(invalid_recipe_id)
-            invalid_recipe = Recipe.objects.get(pk=invalid_recipe_id)
-            invalid_recipe.set_attribute("automl.experiment_id", experiment_id)
-            invalid_recipe.save()
+            invalid_automl_id = "au_test_runs"
+            self.kf_run_pipeline(invalid_automl_id)
+            invalid_automl = Automl.objects.get(pk=invalid_automl_id)
+            invalid_automl.set_attribute("automl.experiment_id", experiment_id)
+            invalid_automl.save()
 
             self.auth_token(self.token1)
-            url = reverse("api:recipe-kf-pipeline-runs", args=(invalid_recipe_id, ""))
+            url = reverse("api:automl-kf-pipeline-runs", args=(invalid_automl_id, ""))
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
             # retrieve the list of runs for a given item id
             self.auth_token(self.token1)
-            url = reverse("api:recipe-kf-pipeline-runs", args=(recipe_id, ""))
+            url = reverse("api:automl-kf-pipeline-runs", args=(automl_id, ""))
             response = self.client.get(url)
             self.assertApiResponse(response)
             data = response.json().get("data")
@@ -154,7 +154,7 @@ class KubeflowTests(AnaliticoApiTestCase):
         finally:
             self.cleanup_kf_test_services()
 
-    @tag("k8s", "kf", "slow")
+    @tag("k8s", "slow")
     def test_automl_run_also_deploys_persistent_volume_and_tfserving_endpoint(self):
         """ 
         When is run an automl config expect to find deployed the Persistent Volume and
@@ -162,10 +162,10 @@ class KubeflowTests(AnaliticoApiTestCase):
         """
         try:     
             # model pre-loaded in
-            # //u212674.your-storagebox.de/ws_y1ehlz2e/automl/rx_testk8_test_tensorflow_serving_deploy/serving
-            recipe_id = "rx_testk8_test_tensorflow_serving_deploy"            
+            # //u212674.your-storagebox.de/ws_y1ehlz2e/automl/au_testk8_test_tensorflow_serving_deploy/serving
+            automl_id = "au_testk8_test_tensorflow_serving_deploy"            
             # run a recipe in the `self.ws1` workspace
-            self.kf_run_pipeline(recipe_id=recipe_id)
+            self.kf_run_pipeline(automl_id=automl_id)
             service_name = k8_normalize_name(self.ws1.id) + "-tfserving"
 
             # wait for pod to be scheduled
@@ -173,13 +173,13 @@ class KubeflowTests(AnaliticoApiTestCase):
             k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="app=" + service_name)
 
             # test endpoint
-            url = "https://ws-001-tfserving.cloud.analitico.ai/v1/models/rx_testk8_test_tensorflow_serving_deploy"
+            url = "https://ws-001-tfserving.cloud.analitico.ai/v1/models/au_testk8_test_tensorflow_serving_deploy"
             response = requests.get(url)
             self.assertApiResponse(response)
 
             # a next deploy should not change any deployed services
             # and thus everything should complete fine.
-            self.kf_run_pipeline(recipe_id=recipe_id)
+            self.kf_run_pipeline(automl_id=automl_id)
 
             # the run of an automl config also deploys Persistent Volume
             # and KFServing endpoint
@@ -215,28 +215,28 @@ class KubeflowTests(AnaliticoApiTestCase):
 
     def test_kf_update_tensorflow_models_config(self):
         # update model config from empty config
-        recipe = Recipe.objects.create(pk="rx_automl_model_config", workspace=self.ws1)
-        recipe.save()
+        automl = Automl.objects.create(pk="au_automl_model_config", workspace=self.ws1)
+        automl.save()
 
-        config = kf_update_tensorflow_models_config(recipe, "")
-        self.assertIn('name: "rx_automl_model_config"', config)
-        self.assertIn('base_path: "/mnt/automl/rx_automl_model_config/serving"', config)
+        config = kf_update_tensorflow_models_config(automl, "")
+        self.assertIn('name: "au_automl_model_config"', config)
+        self.assertIn('base_path: "/mnt/automl/au_automl_model_config/serving"', config)
         self.assertIn('model_platform: "tensorflow"', config)
 
         # update model config from empty config
-        recipe2 = Recipe.objects.create(pk="rx_automl_model_config_2", workspace=self.ws1)
-        recipe2.save()
+        automl2 = Automl.objects.create(pk="au_automl_model_config_2", workspace=self.ws1)
+        automl2.save()
 
-        config = kf_update_tensorflow_models_config(recipe2, config)
-        self.assertIn('name: "rx_automl_model_config_2"', config)
-        self.assertIn('base_path: "/mnt/automl/rx_automl_model_config_2/serving"', config)
+        config = kf_update_tensorflow_models_config(automl2, config)
+        self.assertIn('name: "au_automl_model_config_2"', config)
+        self.assertIn('base_path: "/mnt/automl/au_automl_model_config_2/serving"', config)
         self.assertIn('model_platform: "tensorflow"', config)
 
         # update model config from an existing config, re-add an existing item's model
-        config = kf_update_tensorflow_models_config(recipe2, config)
-        self.assertEqual(config.count('name: "rx_automl_model_config_2"'), 1, "model should not be present twice")
+        config = kf_update_tensorflow_models_config(automl2, config)
+        self.assertEqual(config.count('name: "au_automl_model_config_2"'), 1, "model should not be present twice")
         self.assertEqual(
-            config.count('base_path: "/mnt/automl/rx_automl_model_config_2/serving'),
+            config.count('base_path: "/mnt/automl/au_automl_model_config_2/serving'),
             1,
             "model should not be present twice",
         )

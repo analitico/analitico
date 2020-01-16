@@ -42,6 +42,7 @@ router.register("workspaces", api.views.WorkspaceViewSet, basename="workspace") 
 router.register("notebooks", api.views.NotebookViewSet, basename="notebook")  # notebooks
 router.register("k8s", api.views.K8ViewSet, basename="k8")  # kubernetes monitoring, operations, etc
 router.register("billing", api.views.BillingViewSet, basename="billing")  # billing, plans, invoices, etc...
+router.register("automls", api.views.AutomlViewSet, basename="automl")  # machine learning algorightms
 
 urlpatterns = router.urls + [
     path("runtime", runtime, name="runtime"),
