@@ -175,4 +175,5 @@ kfp==0.1.37
 absl-py==0.8.1
 protobuf==3.11.1
 tensorflow-serving-api==2.0.0
-networkx==2.4
+networkx==2.2
+hyperopt==0.2.3

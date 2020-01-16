@@ -328,13 +328,7 @@ def automl_convert_request_for_prediction(item: ItemMixin, content: dict) -> dic
     json_request = '{ "instances": [' + ",".join(examples_base64) + "]}"
     return json_request
 
-
-##
-## Kubeflow
-##
-
-
-def kf_update_tensorflow_models_config(item: ItemMixin, current_models_config: str):
+def tensorflow_models_config_update(item: ItemMixin, current_models_config: str):
     """ 
     Models are defined in a configuration file on a Kubernetes ConfigMap in a format 
     called Google Protobuf. 
@@ -361,11 +355,15 @@ def kf_update_tensorflow_models_config(item: ItemMixin, current_models_config: s
         # define model's specs
         config_model = model_server_config.model_config_list.config.add()
         config_model.name = item.id
-        config_model.base_path = f"/mnt/automl/{item.id}/serving"
+        config_model.base_path = f"/mnt/automls/{item.id}/serving"
         config_model.model_platform = "tensorflow"
 
     config_content = text_format.MessageToString(model_server_config)
     return config_content
+
+##
+## Kubeflow
+##
 
 
 def kf_pipeline_runs_get(item: ItemMixin, run_id: str = None, list_page_token: str = "") -> dict:
@@ -450,7 +448,7 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
             else:
                 raise e
 
-        protobuf_model_config = kf_update_tensorflow_models_config(item, current_models_config)
+        protobuf_model_config = tensorflow_models_config_update(item, current_models_config)
         # align all lines in order to be correctly formatted and accepted on the yaml data attribute
         protobuf_model_config = "    ".join(protobuf_model_config.splitlines(True))
         configs["protobuf_model_config"] = protobuf_model_config

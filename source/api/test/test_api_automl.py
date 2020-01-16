@@ -1,5 +1,6 @@
 import json
 import requests
+import time
 
 from django.urls import reverse
 from django.test import tag
@@ -8,7 +9,7 @@ from rest_framework import status
 from api.models import *
 from .utils import AnaliticoApiTestCase
 from analitico.utilities import id_generator
-from api.k8 import kubectl, K8_STAGE_PRODUCTION, K8_DEFAULT_NAMESPACE, k8_normalize_name
+from api.k8 import kubectl, K8_STAGE_PRODUCTION, K8_DEFAULT_NAMESPACE, k8_normalize_name, k8_wait_for_condition
 from api.kubeflow import automl_convert_request_for_prediction, tensorflow_serving_deploy
 
 
@@ -18,17 +19,48 @@ class AutomlTests(AnaliticoApiTestCase):
     # use for testing artifacts or predictions
     run_automl_id = "au_test_automl_with_iris_labeled"
 
-    @tag("live", "slow")
-    def OFF_test_automl_run(self):
+    def cleanup_deployed_resources(self, workspace_id):
+        """ 
+        Some actions (eg, the run of an automl config) also deploy Persistent Volume and TFServing service.
+        The method simplifies the deletion of all services deployed by tests. 
+        """
+        try:
+            kubectl(K8_DEFAULT_NAMESPACE, "delete", f"service/{k8_normalize_name(workspace_id)}-tfserving", output=None)
+        except:
+            pass
+        try:
+            kubectl(
+                K8_DEFAULT_NAMESPACE,
+                "delete",
+                "pvc,pv",
+                args=["--selector", "analitico.ai/workspace-id=" + workspace_id],
+                output=None,
+            )
+        except:
+            pass
+        # TODO: cannot be cleaned because they are in used by kf pipeline executors' pods
+        # try:
+        #     kubectl(
+        #         "kubeflow",
+        #         "delete",
+        #         "pvc,pv",
+        #         args=["--selector", "analitico.ai/workspace-id=" + workspace_id],
+        #         context_name="admin@cloud-staging.analitico.ai",
+        #         output=None,
+        #     )
+        # except:
+        #     pass
+
+    def test_automl_run(self):
         try:
             # create a recipe with automl configs
-            automl_id = "au_test_automl_run_with_iris"
-            automl = Automl.objects.create(pk=automl_id, workspace_id=self.ws1.id)
+            automl_id = "au_test_api_automl_test_run_and_tfserving_deploy"
+            automl = Automl.objects.create(pk=automl_id, workspace_id=self.ws2.id)
             automl.set_attribute(
                 "automl",
                 {
-                    "workspace_id": self.ws1.id,
-                    "recipe_id": automl_id,
+                    "workspace_id": self.ws2.id,
+                    "automl_id": automl_id,
                     "data_item_id": automl_id,
                     "data_path": "data",
                     "prediction_type": "regression",
@@ -37,18 +69,18 @@ class AutomlTests(AnaliticoApiTestCase):
             )
             automl.save()
             # upload dataset used by pipeline
-            self.auth_token(self.token1)
+            self.auth_token(self.token2)
             data_url = reverse("api:automl-files", args=(automl.id, "data/iris.csv"))
             self.upload_file(
                 data_url,
                 # TODO: files should be moved to automls/au_iris/..
-                "../../../../automl/mount/recipes/rx_iris/data/iris.csv",
+                "../../../../automl/mount/automls/au_iris/data/iris.csv",
                 content_type="text/csv",
                 token=self.token1,
             )
 
             # user cannot run automl he doesn't have access to
-            self.auth_token(self.token2)
+            self.auth_token(self.token3)
             url = reverse("api:automl-run", args=(automl.id,))
             response = self.client.post(url)
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -63,8 +95,7 @@ class AutomlTests(AnaliticoApiTestCase):
             self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
 
             # user can run an automl config on an automl item he owns
-            # request to run the pipeline
-            self.auth_token(self.token1)
+            self.auth_token(self.token2)
             url = reverse("api:automl-run", args=(automl.id,))
             response = self.client.post(url)
             self.assertApiResponse(response)
@@ -79,14 +110,61 @@ class AutomlTests(AnaliticoApiTestCase):
             automl.refresh_from_db()
             self.assertEqual(attributes["automl"]["run_id"], automl.get_attribute("automl.run_id"))
 
-            # the run of a pipeline create the endpoint service.
-            # It raises 404 exception in case of error
-            kubectl("cloud", "get", "service/ws-001-tfserving")
+            # test tfserving endpoint and related expected resources
+            self.assert_automl_run_deployed_persistent_volume_and_tfserving_endpoint(automl_id)
         finally:
-            try:
-                kubectl("cloud", "delete", "service/ws-001-tfserving", output=None)
-            except:
-                pass
+            self.cleanup_deployed_resources(self.ws2.id)
+
+    def assert_automl_run_deployed_persistent_volume_and_tfserving_endpoint(self, automl_id: str):
+        """ 
+        When is run an automl config expect to find deployed the Persistent Volume and
+        Claim and the TFServing endpoint. 
+        """
+        try:
+            # model run and loaded in:
+            # //u206378.your-storagebox.de/automls/au_test_api_automl_test_run_and_tfserving_deploy/serving
+            service_name = k8_normalize_name(self.ws2.id) + "-tfserving"
+
+            # wait for pod to be scheduled
+            time.sleep(3)
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="app=" + service_name)
+
+            # test endpoint
+            url = (
+                f"https://{k8_normalize_name(self.ws2.id)}-tfserving.cloud.analitico.ai/v1/models/au_test_api_automl_test_run_and_tfserving_deploy"
+            )
+            response = requests.get(url)
+            self.assertApiResponse(response)
+
+            # the run of an automl config also deploys Persistent Volume
+            # and KFServing endpoint
+            service, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", f"service/{k8_normalize_name(self.ws2.id)}-tfserving") 
+            self.assertIsNotNone(service)
+
+            # persistent volume and claim are deployed with the serving endpoint
+            response, _ = kubectl(
+                K8_DEFAULT_NAMESPACE, "get", "pv", args=["--selector", "analitico.ai/workspace-id=" + self.ws2.id] )
+            self.assertEqual(1, len(response["items"]))
+            # persistent volume is bound to the right claim
+            pv = response["items"][0]
+            self.assertEqual("Bound", pv["status"]["phase"])
+            self.assertEqual("analitico-drive-ws-002-claim", pv["spec"]["claimRef"]["name"])
+
+            # persistent volume and claim are deployed also in the cloud-staging cluster
+            # to be used for KFP execution
+            # TODO: kfp runs should be deployed in `cloud` namespace instead of kubeflow
+            response, _ = kubectl(
+                "kubeflow",
+                "get",
+                "pv",
+                args=["--selector", "analitico.ai/workspace-id=" + self.ws2.id], context_name="admin@cloud-staging.analitico.ai",
+            )
+            self.assertEqual(1, len(response["items"]))
+            # persistent volume is bound to the right claim in the kubeflow namespace
+            pv = response["items"][0]
+            self.assertEqual("kubeflow", pv["spec"]["claimRef"]["namespace"])
+        finally:
+            self.cleanup_deployed_resources(self.ws2.id)
 
     def test_automl_convert_predict_request(self):
         # pre-generated artifacts are loaded in the `self.ws2` drive at:
@@ -129,7 +207,7 @@ class AutomlTests(AnaliticoApiTestCase):
     # TODO: testalo con l'oggetto automl
     def OFF_test_predict(self):
         # recipe's automl config has never run before and the predict cannot be performed
-        automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id)
+        automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id) 
         automl_never_run.save()
         self.auth_token(self.token1)
         url = reverse("api:automl-predict", args=(automl_never_run.id,))
