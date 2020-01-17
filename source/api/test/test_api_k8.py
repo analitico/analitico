@@ -888,7 +888,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_deploy_jupyter_default_settings(self):
         try:
             deployment = self.deploy_jupyter()
@@ -954,7 +954,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_jupyter_deploy_workspace_settings(self):
         try:
             # provision the workspace with settings that should
@@ -993,7 +993,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_jupyter_deploy_custom_settings(self):
         try:
             # custom settings cannot exceed those specified in the workspace
@@ -1038,7 +1038,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_jupyter_deploy_max_instances_reached(self):
         try:
             # deploy the first jupyter
@@ -1068,7 +1068,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_jupyter_update_status(self):
         try:
             # deploy update fails when the given Jupyter does not exist
@@ -1138,7 +1138,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_jupyter_stop_manually(self):
         """ Stop Jupyter pod manually with an explicit request """
         try:
@@ -1153,7 +1153,6 @@ class K8Tests(AnaliticoApiTestCase):
             jupyter = response.json().get("data")
 
             self.assertEqual(0, get_dict_dot(jupyter, "spec.replicas"))
-            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "delete", labels="app=" + jupyter_name)
 
             # Jupyter is stopped and so pod is missing, delete it and expect it to don't raise not found
             url = reverse("api:workspace-k8-jupyters", args=(self.ws1.id, jupyter_name))
@@ -1163,7 +1162,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_jupyter_start_and_contact_jupyter(self):
         """ 
         Deploy a Jupyter with zero replicas then kick it off
@@ -1210,11 +1209,21 @@ class K8Tests(AnaliticoApiTestCase):
         and performs scale to zero on enabled services. 
         """
         try:
-            # deploy Jupyter with 1 min grace period
+            # set 1 min of grace period as default in the workspace because
+            # the parameter cannot be set when Jupyter is deployed
             settings = {
-                "settings": {"max_instances": 1, "enable_scale_to_zero": "true", "scale_to_zero_grace_period": "1"}
+                "settings": {
+                    "max_instances": 1,
+                    "replicas": 1,
+                    "enable_scale_to_zero": "true",
+                    "scale_to_zero_grace_period": "1",
+                    "requests": {"cpu": "100m", "memory": "100M", "nvidia.com/gpu": 0},
+                    "limits": {"cpu": "2", "memory": "200Mi", "nvidia.com/gpu": 0},
+                }
             }
-            jupyter = self.deploy_jupyter(custom_settings=settings)
+            self.ws1.set_attribute("jupyter", settings)
+            self.ws1.save()
+            jupyter = self.deploy_jupyter()
 
             jupyter_name = get_dict_dot(jupyter, "metadata.name")
             namespace = get_dict_dot(jupyter, "metadata.namespace")
@@ -1236,15 +1245,25 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_k8_scale_to_zero(self):
         """ Deploy a Jupyter with scale to zero enabled and check synchronous for it to be actually scaled. """
         try:
-            # deploy Jupyter with 1 min grace period
+            # set 1 min of grace period as default in the workspace because
+            # the parameter cannot be set when Jupyter is deployed
             settings = {
-                "settings": {"max_instances": 1, "enable_scale_to_zero": "true", "scale_to_zero_grace_period": "1"}
+                "settings": {
+                    "max_instances": 1,
+                    "replicas": 1,
+                    "enable_scale_to_zero": "true",
+                    "scale_to_zero_grace_period": "1",
+                    "requests": {"cpu": "100m", "memory": "100M", "nvidia.com/gpu": 0},
+                    "limits": {"cpu": "2", "memory": "200Mi", "nvidia.com/gpu": 0},
+                }
             }
-            jupyter = self.deploy_jupyter(custom_settings=settings)
+            self.ws1.set_attribute("jupyter", settings)
+            self.ws1.save()
+            jupyter = self.deploy_jupyter()
 
             name = get_dict_dot(jupyter, "metadata.name")
             namespace = get_dict_dot(jupyter, "metadata.namespace")
@@ -1278,7 +1297,7 @@ class K8Tests(AnaliticoApiTestCase):
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
-    @tag("slow", "k8s", "live")
+    @tag("slow", "k8s")
     def test_k8_jupyter_delete(self):
         try:
             # Jupyter deployed in workspace `ws1`
