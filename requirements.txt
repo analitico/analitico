@@ -170,6 +170,7 @@ widgetsnbextension==3.4.2
 wrapt==1.11.2
 xlrd==1.2.0
 binary==1.0.0
+# Kuberflow/TensorFlow Extended pipeline packages
 tfx==0.15.0
 kfp==0.1.37
 absl-py==0.8.1
