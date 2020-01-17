@@ -345,3 +345,38 @@ class AutomlTests(AnaliticoApiTestCase):
         labels = data.get("labels")
         self.assertEqual(10, len(labels))
         self.assertIn("variety", labels[0])
+
+    
+    def test_model_preconditioner_statistics(self):
+        # automl config has never run before and the examples don't exist
+        automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id)
+        automl_never_run.save()
+        self.auth_token(self.token1)
+        url = reverse("api:automl-preconditioner", args=(automl_never_run.id,))
+        response = self.client.get(url)
+        self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
+
+        # pre-generated artifacts are loaded in the `self.ws2` drive at:
+        # //u206378.your-storagebox.de/user5-test/automls/au_test_automl_with_iris_labeled/pipelines
+        # URI to the artifacts are retrieved using `self.run_automl_id` references in the mlmetadata-db.
+        # In case of new runs of `self.run_automl_id`'s automl pipeline, folder id in the above location
+        # must be changed accordingly.
+        automl = Automl.objects.create(pk=self.run_automl_id, workspace_id=self.ws2.id)
+        automl.save()
+        url = reverse("api:automl-preconditioner", args=(automl.id,))
+
+        # user cannot request model examples of an item he doesn't have access to
+        self.auth_token(self.token3)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.auth_token(self.token1)
+        response = self.client.get(url)
+        self.assertApiResponse(response)
+
+        data = response.json().get("data")
+        self.assertIn("variety", data)
+        self.assertEqual(data["variety"]["dtype"], "object")
+        self.assertEqual(data["variety"]["name"], "variety")
+        self.assertIn("Setosa", data["variety"]["values"])
+        self.assertGreater(data["variety"]["values"]["Setosa"], 0)
