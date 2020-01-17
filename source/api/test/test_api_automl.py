@@ -380,7 +380,7 @@ class AutomlTests(AnaliticoApiTestCase):
         
         features = data["features"]
         self.assertIn("variety", features)
-        self.assertEqual(features["variety"]["dtype"], "object")
+        self.assertEqual(features["variety"]["dtype"], "string")
         self.assertEqual(features["variety"]["name"], "variety")
         self.assertIn("Setosa", features["variety"]["values"])
         self.assertGreater(features["variety"]["values"]["Setosa"], 0)

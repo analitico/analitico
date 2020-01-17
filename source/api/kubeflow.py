@@ -319,7 +319,7 @@ def automl_model_preconditioner_statistics(item: ItemMixin, to_json: bool = Fals
                 feature["dtype"] = "float"
             elif feature["dtype"].kind == "i" or feature["dtype"].kind == "u":
                 feature["dtype"] = "integer"
-            elif feature["dtype"].kind == "S" or feature["dtype"].kind == "U":
+            elif feature["dtype"].kind == "S" or feature["dtype"].kind == "U" or feature["dtype"].kind == "O":
                 feature["dtype"] = "string"
             else:
                 feature["dtype"] = "object"
