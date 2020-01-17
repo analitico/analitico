@@ -4,6 +4,7 @@ import tempfile
 import collections
 import argparse
 import base64
+import simplejson as json
 from datetime import datetime
 from cacheout import Cache
 from typing import Optional
@@ -309,7 +310,23 @@ def automl_model_preconditioner_statistics(item: ItemMixin, to_json: bool = Fals
             data = pickle.load(pkl)
 
     if to_json:
-        data = data.to_json()
+        data = data.to_dict()
+        # convert numpy dtype into plain type
+        features = data.get("features", {})
+        for feature_name in features.keys():
+            feature = features[feature_name]
+            if feature["dtype"].kind == "f"  :
+                feature["dtype"] = "float"
+            elif feature["dtype"].kind == "i" or feature["dtype"].kind == "u":
+                feature["dtype"] = "integer"
+            elif feature["dtype"].kind == "S" or feature["dtype"].kind == "U":
+                feature["dtype"] = "string"
+            else:
+                feature["dtype"] = "object"
+            features[feature_name] = feature
+        data["features"] = features
+        
+        data = json.dumps(data)
 
     return data
 

@@ -375,8 +375,12 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertApiResponse(response)
 
         data = response.json().get("data")
-        self.assertIn("variety", data)
-        self.assertEqual(data["variety"]["dtype"], "object")
-        self.assertEqual(data["variety"]["name"], "variety")
-        self.assertIn("Setosa", data["variety"]["values"])
-        self.assertGreater(data["variety"]["values"]["Setosa"], 0)
+        self.assertGreater(data["count"] , 0)
+        self.assertIn("features", data)
+        
+        features = data["features"]
+        self.assertIn("variety", features)
+        self.assertEqual(features["variety"]["dtype"], "object")
+        self.assertEqual(features["variety"]["name"], "variety")
+        self.assertIn("Setosa", features["variety"]["values"])
+        self.assertGreater(features["variety"]["values"]["Setosa"], 0)

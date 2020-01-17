@@ -274,6 +274,9 @@ class ItemsTests(AnaliticoApiTestCase):
     def test_item_clone_recipe(self):
         self.create_item_then_clone_it(api.models.Recipe)
 
+    def test_item_clone_automl(self):
+        self.create_item_then_clone_it(api.models.Automl)
+
     def test_item_clone_workspace_does_not_work(self):
         url = reverse(f"api:workspace-clone", args=(self.ws1.id,))
         response = self.client.get(url)

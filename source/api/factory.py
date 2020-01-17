@@ -193,6 +193,8 @@ class ServerFactory(Factory):
                 return api.models.Recipe.objects.get(pk=item_id)
             if item_id.startswith(analitico.WORKSPACE_PREFIX):
                 return api.models.Workspace.objects.get(pk=item_id)
+            if item_id.startswith(analitico.AUTOML_PREFIX):
+                return api.models.Automl.objects.get(pk=item_id)
         except Exception as exc:
             self.warning("get_item: could not find item %s", item_id)
             raise exc
