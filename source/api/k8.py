@@ -703,10 +703,12 @@ def k8_jupyter_deploy(workspace: Workspace, settings: dict = None) -> dict:
     template = k8_customize_and_apply(jupyter_template, **configs)
 
     # wait for pod to be started, deployed or restored to one replica
+    # wait few seconds for the pod to be deployed
+    time.sleep(2)
     k8_wait_for_condition(service_namespace, "pod", "condition=Ready", labels=f"app={jupyter_name}", timeout=30)
     # k8s / pod / ready be sure pod is activated when it's ready #383
     # wait a little more
-    time.sleep(5)
+    time.sleep(3)
 
     jupyter = k8_jupyter_get(workspace, jupyter_name)
 
