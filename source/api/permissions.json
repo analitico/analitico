@@ -23,10 +23,10 @@
         "analitico.recipes.delete": "Delete recipes.",
         "analitico.recipes.train": "Train recipes to produce models.",
 
-        "analitico.automl.create": "Create automl.",
-        "analitico.automl.get": "Get automl and associated models.",
-        "analitico.automl.update": "Update automl.",
-        "analitico.automl.delete": "Delete automl.",
+        "analitico.automls.create": "Create automl.",
+        "analitico.automls.get": "Get automl and associated models.",
+        "analitico.automls.update": "Update automl.",
+        "analitico.automls.delete": "Delete automl.",
 
         "analitico.endpoints.create": "Create endpoints.",
         "analitico.endpoints.get": "Get endpoints.",
