@@ -64,7 +64,7 @@ class AutomlTests(AnaliticoApiTestCase):
                     "data_item_id": automl_id,
                     "data_path": "data",
                     "prediction_type": "regression",
-                    "target_column": "target",
+                    "target_column": "variety",
                 },
             )
             automl.save()
