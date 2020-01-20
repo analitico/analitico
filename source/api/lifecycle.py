@@ -4,6 +4,7 @@ import api.models
 from analitico import logger
 from api.models.drive import dr_delete_workspace_storage
 from api.k8 import k8_jupyter_deallocate
+from api.kubeflow import tensorflow_serving_deploy_deallocate
 from django.dispatch import receiver
 
 # Django signals:
@@ -83,3 +84,4 @@ def post_delete_model(sender, instance, *args, **kwargs):
 def post_delete_workspace(sender, instance, *args, **kwargs):
     post_delete_item_storage(instance)
     k8_jupyter_deallocate(instance)
+    tensorflow_serving_deploy_deallocate(instance)

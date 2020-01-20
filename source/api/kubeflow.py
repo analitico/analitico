@@ -546,3 +546,10 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
     except Exception as exc:
         raise AnaliticoException(f"Could not deploy {item.id} because: {exc}") from exc
 
+
+def tensorflow_serving_deploy_deallocate(workspace: Workspace):
+    """ Remove resources used by a TensorFlow Serving endpoint for the given workspace """
+    try:
+        kubectl(K8_DEFAULT_NAMESPACE, "delete", f"service/{k8_normalize_name(workspace.id)}-tfserving", output=None)
+    except Exception:
+        pass
