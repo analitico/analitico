@@ -22,12 +22,7 @@
         "analitico.recipes.update": "Update recipes' notebooks.",
         "analitico.recipes.delete": "Delete recipes.",
         "analitico.recipes.train": "Train recipes to produce models.",
-
-        "analitico.automls.create": "Create automl.",
-        "analitico.automls.get": "Get automl and associated models.",
-        "analitico.automls.update": "Update automl.",
-        "analitico.automls.delete": "Delete automl.",
-
+        
         "analitico.endpoints.create": "Create endpoints.",
         "analitico.endpoints.get": "Get endpoints.",
         "analitico.endpoints.update": "Update endpoints.",
@@ -50,13 +45,18 @@
         "analitico.logs.delete": "Delete logs.",
 
         "analitico.webdav.get": "Mount desktop volume (read only).",
-        "analitico.webdav.create": "Mount desktop volume (read and write)."
+        "analitico.webdav.create": "Mount desktop volume (read and write).",
+
+        "analitico.automls.create": "Create automl.",
+        "analitico.automls.get": "Get automl and associated models.",
+        "analitico.automls.update": "Update automl.",
+        "analitico.automls.delete": "Delete automl."
     },
 
     "roles": {
         "analitico.reader": {
             "title": "Analitico Reader",
-            "description": "Read access to datasets, notebooks, recipes, models, endpoints.",
+            "description": "Read access to datasets, notebooks, recipes, models, endpoints and automl.",
             "permissions": [
                 "analitico.workspaces.get",
                 "analitico.notebooks.get",
@@ -66,13 +66,14 @@
                 "analitico.models.get",
                 "analitico.jobs.get",
                 "analitico.logs.get",
-                "analitico.webdav.get"
+                "analitico.webdav.get",
+                "analitico.automls.get"
             ]
         },
 
         "analitico.editor": {
             "title": "Analitico Editor",
-            "description": "Create, edit and delete access to datasets, notebooks, recipes, models, endpoints.",
+            "description": "Create, edit and delete access to datasets, notebooks, recipes, models, endpoints and automl.",
             "permissions": [
                 "analitico.workspaces.create",
                 "analitico.workspaces.get",
@@ -118,7 +119,13 @@
                 "analitico.logs.delete",
 
                 "analitico.webdav.get",
-                "analitico.webdav.create"
+                "analitico.webdav.create",
+
+                "analitico.automls.create",
+                "analitico.automls.get",
+                "analitico.automls.update",
+                "analitico.automls.delete"
+        
             ]
         },
 
@@ -171,7 +178,12 @@
                 "analitico.logs.delete",
 
                 "analitico.webdav.get",
-                "analitico.webdav.create"
+                "analitico.webdav.create",
+
+                "analitico.automls.create",
+                "analitico.automls.get",
+                "analitico.automls.update",
+                "analitico.automls.delete" 
              ]
         }
    }
