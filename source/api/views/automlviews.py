@@ -68,7 +68,8 @@ class AutomlViewSet(
                 "Model schema not found. Has the item's automl config been run?", status_code=status.HTTP_404_NOT_FOUND
             )
 
-        url = f"https://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.analitico.ai/v1/models/{item.id}:predict"
+        # url points to Kubernetes in-cluster DNS
+        url = f"http://{k8_normalize_name(item.workspace.id)}-tfserving.cloud.svc/v1/models/{item.id}:predict"
         response = requests.post(url, json_request)
 
         return HttpResponse(
