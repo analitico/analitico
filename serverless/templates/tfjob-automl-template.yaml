@@ -1,0 +1,35 @@
+apiVersion: kubeflow.org/v1
+kind: TFJob
+metadata:
+  name: {service_name}
+  namespace: {service_namespace}
+  labels:
+    analitico.ai/workspace-id: {workspace_id}
+    analitico.ai/item-id: {item_id}
+  annotations:
+    analitico.ai/automl-trainer-config: '{trainer_config}'
+spec:
+  # Set to `All` to delete pods when tfjob completes
+  # https://www.kubeflow.org/docs/components/training/tftraining/#tensorflow-logs
+  cleanPodPolicy: None
+  tfReplicaSpecs:
+    Worker:
+      replicas: {replicas}
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          labels:
+            analitico.ai/workspace-id: {workspace_id}
+            analitico.ai/item-id: {item_id}
+        spec:
+          volumes:
+          - name: analitico-drive
+            persistentVolumeClaim:
+              claimName: analitico-drive-{workspace_id_slug}-claim
+          containers:
+            - name: tensorflow
+              image: {image}
+              args: ["--config", "{trainer_config}"]
+              mountVolumes:
+              - name: analitico-drive
+                mountPath: /mnt

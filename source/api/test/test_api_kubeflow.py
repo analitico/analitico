@@ -10,6 +10,7 @@ from api.models import *
 from .utils import AnaliticoApiTestCase
 from api.kubeflow import *
 from api.k8 import kubectl, k8_wait_for_condition, K8_DEFAULT_NAMESPACE
+from analitico.utilities import get_dict_dot
 
 
 class KubeflowTests(AnaliticoApiTestCase):
@@ -174,3 +175,51 @@ class KubeflowTests(AnaliticoApiTestCase):
             1,
             "model should not be present twice",
         )
+
+    def test_tesorflow_job_deploy_and_get(self):
+        tfjob_id = None
+        try:
+            automl = Automl.objects.create(pk="au_tfjob", workspace=self.ws1)
+            automl.save()
+            url = reverse("api:automl-tfjob-deploy", args=(automl.id, ))
+            trainer_config = {"just-a-key": 3}
+            
+            # only admin can request a tfjob
+            self.auth_token(self.token2)
+            response = self.client.post(url, data=trainer_config, format="json")
+            self.assertApiResponse(response, status_code=status.HTTP_403_FORBIDDEN)
+
+            # missing trainer config
+            self.auth_token(self.token1)
+            response = self.client.post(url, data={}, format="json")
+            self.assertApiResponse(response, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+            # tfjob is deployed with the expected trainer config
+            self.auth_token(self.token1)
+            response = self.client.post(url, data=trainer_config, format="json")
+            self.assertApiResponse(response)
+            
+            # trainer config has been set in the arguments for the image's command
+            tfjob = response.json().get("data", {})
+            tfjob_id = get_dict_dot(tfjob, "metadata.name")
+            self.assertIsNotNone(tfjob_id)
+            container = get_dict_dot(tfjob, "spec.tfReplicaSpecs.Worker.template.spec.containers")[0]
+            self.assertIn("just-a-key", container["args"][1])
+
+            url = reverse("api:automl-tfjob-get", args=(automl.id, tfjob_id, ))
+            # only admin get retrieve the status of a tfjob
+            self.auth_token(self.token2)
+            response = self.client.get(url)
+            self.assertApiResponse(response, status_code=status.HTTP_403_FORBIDDEN)
+
+            # retrieve the status
+            self.auth_token(self.token1)
+            response = self.client.get(url)
+            self.assertApiResponse(response)
+            tfjob = response.json().get("data", {})
+            actual_tfjob_id = get_dict_dot(tfjob, "metadata.name")
+            self.assertEqual(tfjob_id, actual_tfjob_id)
+        finally:
+            if tfjob_id:
+                kubectl("kubeflow", "delete", "tfjob/" + tfjob_id, context_name="admin@cloud-staging.analitico.ai", output=None)
+

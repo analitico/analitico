@@ -19,6 +19,8 @@ from api.k8 import (
     k8_persistent_volume_deploy,
     k8_normalize_name,
     kubectl,
+    k8_wait_for_condition,
+    k8_customize_and_apply,
     K8_DEFAULT_NAMESPACE,
     K8_STAGE_PRODUCTION,
     K8_STAGE_STAGING,
@@ -315,7 +317,7 @@ def automl_model_preconditioner_statistics(item: ItemMixin, to_json: bool = Fals
         features = data.get("features", {})
         for feature_name in features.keys():
             feature = features[feature_name]
-            if feature["dtype"].kind == "f"  :
+            if feature["dtype"].kind == "f":
                 feature["dtype"] = "float"
             elif feature["dtype"].kind == "i" or feature["dtype"].kind == "u":
                 feature["dtype"] = "integer"
@@ -325,7 +327,7 @@ def automl_model_preconditioner_statistics(item: ItemMixin, to_json: bool = Fals
                 feature["dtype"] = "object"
             features[feature_name] = feature
         data["features"] = features
-        
+
         data = json.dumps(data)
 
     return data
@@ -475,8 +477,6 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         assert item.workspace
         workspace_id = item.workspace.id
 
-        from api.k8 import k8_customize_and_apply
-
         # name of service we are deploying, eg: ws-001-tfserving, ws-001-tfserving-staging
         stage_suffix = "-{stage}" if stage != K8_STAGE_PRODUCTION else ""
         name = workspace_id + "-tfserving" + stage_suffix
@@ -547,9 +547,42 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
         raise AnaliticoException(f"Could not deploy {item.id} because: {exc}") from exc
 
 
-def tensorflow_serving_deploy_deallocate(workspace: Workspace):
+def tensorflow_serving_deallocate(workspace: Workspace):
     """ Remove resources used by a TensorFlow Serving endpoint for the given workspace """
     try:
         kubectl(K8_DEFAULT_NAMESPACE, "delete", f"service/{k8_normalize_name(workspace.id)}-tfserving", output=None)
     except Exception:
         pass
+
+
+def tensorflow_job_deploy(item: ItemMixin, trainer_config: dict):
+    """ Deploy a TensorFlow Job for distributed Analitico Automl trainer """
+    workspace = item.workspace
+    assert workspace
+    assert trainer_config
+
+    config = collections.OrderedDict()
+    config["service_name"] = f"tfjob-{k8_normalize_name(item.id)}-{id_generator(5)}"
+    config["service_namespace"] = "kubeflow"
+    config["workspace_id_slug"] = k8_normalize_name(workspace.id)
+    config["item_id"] = item.id
+    config["workspace_id"] = workspace.id
+    config["replicas"] = 3
+    # TODO: usa analitico-automl image
+    config["image"] = "gcr.io/kubeflow-examples/distributed_worker:v20181031-513e107c"
+    config["trainer_config"] = json.dumps(trainer_config).replace('"', '\\"')
+
+    template_filename = os.path.join(TEMPLATE_DIR, "tfjob-automl-template.yaml")
+    # TODO: Kubeflow is still deployed on cloud-staging cluster
+    response = k8_customize_and_apply(template_filename, context_name="admin@cloud-staging.analitico.ai", **config)
+
+    return response
+
+
+def tensorflow_job_get(item: ItemMixin, tfjob_id):
+    """ Retrieve the given TensorFlow Job """
+    # TODO: Kubeflow is still deployed on cloud-staging cluster
+    response, _ = kubectl("kubeflow", "get", "tfjob/" + tfjob_id, context_name="admin@cloud-staging.analitico.ai")
+
+    return response
+
