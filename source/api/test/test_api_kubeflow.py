@@ -204,7 +204,7 @@ class KubeflowTests(AnaliticoApiTestCase):
             tfjob_id = get_dict_dot(tfjob, "metadata.name")
             self.assertIsNotNone(tfjob_id)
             container = get_dict_dot(tfjob, "spec.tfReplicaSpecs.Worker.template.spec.containers")[0]
-            self.assertIn("just-a-key", container["args"][0])
+            self.assertIn("just-a-key", container["args"][1])
 
             url = reverse("api:automl-tfjob-get", args=(automl.id, tfjob_id, ))
             # only admin get retrieve the status of a tfjob
