@@ -182,7 +182,7 @@ class KubeflowTests(AnaliticoApiTestCase):
             automl = Automl.objects.create(pk="au_tfjob", workspace=self.ws1)
             automl.save()
             url = reverse("api:automl-tfjob-deploy", args=(automl.id, ))
-            trainer_config = {"just-a-key": 3}
+            trainer_config = {"data": {"just-a-key": 3}}
             
             # only admin can request a tfjob
             self.auth_token(self.token2)
