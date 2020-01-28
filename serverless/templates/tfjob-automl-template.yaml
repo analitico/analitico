@@ -6,8 +6,6 @@ metadata:
   labels:
     analitico.ai/workspace-id: {workspace_id}
     analitico.ai/item-id: {item_id}
-  annotations:
-    analitico.ai/automl-trainer-config: '{trainer_config}'
 spec:
   # Set to `All` to delete pods when tfjob completes
   # https://www.kubeflow.org/docs/components/training/tftraining/#tensorflow-logs
@@ -30,7 +28,7 @@ spec:
             - name: tensorflow
               image: {image}
               command: ["python3"]
-              args: ["/workspaces/automl/source/analitico_automl/trainer.py", "{trainer_config}"]
+              args: ["/root/source/analitico_automl/trainer.py", "{trainer_config}"]
               mountVolumes:
               - name: analitico-drive
                 mountPath: /mnt
