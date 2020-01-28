@@ -29,8 +29,8 @@ spec:
           containers:
             - name: tensorflow
               image: {image}
-              command: ["python3", "source/analitico_automl/trainer.py"]
-              args: ["{trainer_config}"]
+              command: ["python3"]
+              args: ["source/analitico_automl/trainer.py", "{trainer_config}"]
               mountVolumes:
               - name: analitico-drive
                 mountPath: /mnt
