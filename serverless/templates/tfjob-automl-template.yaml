@@ -30,7 +30,7 @@ spec:
             - name: tensorflow
               image: {image}
               command: ["python3"]
-              args: ["source/analitico_automl/trainer.py", "{trainer_config}"]
+              args: ["/workspaces/automl/source/analitico_automl/trainer.py", "{trainer_config}"]
               mountVolumes:
               - name: analitico-drive
                 mountPath: /mnt
