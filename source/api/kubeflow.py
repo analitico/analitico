@@ -561,7 +561,7 @@ def tensorflow_job_deploy(item: ItemMixin, trainer_config: dict):
     assert workspace
     assert trainer_config
 
-    replicas = config.get("replicas", 3)
+    replicas = trainer_config.get("replicas", 3)
 
     config = collections.OrderedDict()
     config["service_name"] = f"tfjob-{k8_normalize_name(item.id)}-{id_generator(5)}"
