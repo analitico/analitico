@@ -24,6 +24,7 @@ COPY . .
 RUN chmod +x ./tasks/serverless-start.sh
 
 # Install analitico dependencies
+RUN pip install --upgrade pip
 RUN pip install -r analitico-requirements.txt
 
 # Add path to libraries

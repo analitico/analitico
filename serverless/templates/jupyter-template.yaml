@@ -19,6 +19,8 @@ spec:
   hosts:
   - "{service_name}.cloud.analitico.ai"
   - "{service_name}.cloud.svc.cluster.local"
+  - "{service_name}-tensorboard.cloud.analitico.ai"
+  - "{service_name}-tensorboard.cloud.svc.cluster.local"
   http:
   - match:
     - authority:
@@ -33,6 +35,21 @@ spec:
         host: "{service_name}.cloud.svc.cluster.local"
         port:
           number: 80
+    timeout: 10m0s
+    websocketUpgrade: true
+  - match:
+      - authority:
+          regex: ^{service_name}-tensorboard\.cloud\.analitico\.ai(?::\d{{1,5}})?$
+      - authority:
+          regex: ^{service_name}-tensorboard\.cloud\.svc\.cluster\.local(?::\d{{1,5}})?$
+    retries:
+      attempts: 3
+      perTryTimeout: 10m0s
+    route:
+      - destination:
+          host: "{service_name}.cloud.svc.cluster.local"
+          port:
+            number: 6006
     timeout: 10m0s
     websocketUpgrade: true
 ---
@@ -74,6 +91,11 @@ spec:
       - image: {image_name}
         name: {pod_name}
         command: ["/app/tasks/jupyter-start.sh"]
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 6006
+          protocol: TCP
         env:
         - name: PORT
           value: "8080"
