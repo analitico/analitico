@@ -27,6 +27,6 @@ tensorflow==2.0.1
 ## Required by SDK
 simplejson==3.16.0
 catboost==0.15.2
-numpy==1.17.0
-pandas==0.25.0
+numpy==1.17.4
+pandas==0.25.3
 pyarrow==0.14.1
