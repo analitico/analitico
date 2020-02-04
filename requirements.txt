@@ -104,7 +104,7 @@ protobuf==3.11.1
 psutil==5.6.7
 ptyprocess==0.6.0
 py==1.7.0
-pyarrow==0.14.1
+pyarrow==0.15.1
 pyasn1==0.4.4
 pyasn1-modules==0.2.2
 pycodestyle==2.4.0
@@ -138,7 +138,7 @@ rope==0.11.0
 rsa==4.0
 ruamel.yaml
 scikit-learn==0.20.0
-scipy==1.1.0
+scipy==1.4.1
 seaborn==0.9.0
 Send2Trash==1.5.0
 setoptconf==0.2.0
@@ -175,6 +175,6 @@ tfx==0.15.0
 kfp==0.1.37
 absl-py==0.8.1
 protobuf==3.11.1
-tensorflow-serving-api==2.0.0
+tensorflow-serving-api==2.1.0
 networkx==2.2
 hyperopt==0.2.3
