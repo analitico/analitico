@@ -172,10 +172,14 @@ xlrd==1.2.0
 binary==1.0.0
 # Kuberflow/TensorFlow Extended pipeline packages
 setuptools==41.0.0
-tfx==0.15.0
+tfx==0.21.0rc0
+# tfx-bsl==0.21.0
 kfp==0.1.37
 absl-py==0.8.1
 protobuf==3.11.1
 tensorflow-serving-api==2.1.0
+# tensorflow-model-analysis==0.21.2
+# tensorflow-data-validation==0.21.0
+# tensorflow-transform==0.21.0
 networkx==2.2
 hyperopt==0.2.3
