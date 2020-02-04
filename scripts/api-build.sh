@@ -10,6 +10,7 @@ echo "$(date +'%T'): Build analitico api and test"
 cd /home/www/analitico
 
 echo "Installing requirements"
+pip install --upgrade pip
 pip install -r requirements.txt
 # since python 3.6 the library is no longer compatible with the standard library.
 # it should be fixed with the ticket 
