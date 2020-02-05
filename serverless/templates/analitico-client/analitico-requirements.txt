@@ -22,7 +22,7 @@ papermill==1.0.1
 ## Required by Jupyter
 # Extension for displaying resource usage (https://github.com/yuvipanda/nbresuse)
 nbresuse==0.3.2
-tensorflow==2.1.0
+tensorflow==2.0.1
 
 ## Required by SDK
 simplejson==3.16.0
