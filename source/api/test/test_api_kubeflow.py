@@ -38,7 +38,7 @@ class KubeflowTests(AnaliticoApiTestCase):
         data_url = url = reverse("api:automl-files", args=(automl.id, "data/iris.csv"))
         self.upload_file(
             data_url,
-            "../../../../automl/mount/automls/au_iris/data/iris.csv",
+            "../../../../automl/test/data/automls/au_iris/data/iris.csv",
             content_type="text/csv",
             token=self.token1,
         )
