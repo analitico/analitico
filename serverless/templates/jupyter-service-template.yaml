@@ -13,7 +13,12 @@ spec:
   selector:
     app: {service_name}
   ports:
-  - protocol: TCP
+  - name: jupyter
+    protocol: TCP
     port: 80
     targetPort: 8080
+  - name: tensorboard
+    protocol: TCP
+    port: 6006
+    targetPort: 6006
   type: ClusterIP
