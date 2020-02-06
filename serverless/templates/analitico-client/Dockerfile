@@ -11,6 +11,7 @@ ENV PATH=$PATH:/opt/conda/bin/
 ENV LC_CTYPE=C.UTF-8
 ENV WORKDIR /app
 RUN mkdir /$WORKDIR
+RUN apt-get update --fix-missing
 
 WORKDIR $WORKDIR
 
