@@ -34,7 +34,9 @@ ENV PYTHONPATH=$PYTHONPATH:$WORKDIR/libraries
 # Jupyter setup
 ##
 
+RUN apt-get install -y psmisc
 RUN chmod +x ./tasks/jupyter-start.sh
+RUN chmod +x ./tasks/tensorboard-start.py
 
 # Generate configuration for Jupyter server
 RUN mkdir -p jupyter
