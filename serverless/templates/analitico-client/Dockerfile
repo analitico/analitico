@@ -36,8 +36,8 @@ ENV PYTHONPATH=$PYTHONPATH:$WORKDIR/libraries
 ##
 
 # `psmisc` is used for `killall` command in Tensorboard script
-# `gcc` is used to compile Python packages
-RUN apt-get install -y psmisc gcc
+# `python3-dev` is used to compile Python packages
+RUN apt-get install -y psmisc python3-dev
 RUN chmod +x ./tasks/jupyter-start.sh
 RUN chmod +x ./tasks/tensorboard-start.py
 
