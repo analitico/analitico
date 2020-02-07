@@ -637,8 +637,10 @@ def k8_jupyter_deploy(workspace: Workspace, settings: dict = None) -> dict:
     service_namespace = K8_DEFAULT_NAMESPACE
     controller_name = jupyter_name
     secret_name = f"analitico-{jupyter_name}"
+    tensorboard_service_name = f"{jupyter_name}-tensorboard"
 
     url = f"https://{jupyter_name}.{service_namespace}.analitico.ai"
+    tensorboard_url = f"https://{tensorboard_service_name}.{service_namespace}.analitico.ai"
 
     # in case of error the instance must be deployed
     # start from storage config and all the rest
@@ -655,6 +657,8 @@ def k8_jupyter_deploy(workspace: Workspace, settings: dict = None) -> dict:
     configs["pod_name"] = pod_name
     configs["virtualservice_name"] = virtualservice_name
     configs["service_url"] = url
+    configs["tensorboard_url"] = tensorboard_url
+    configs["tensorboard_service_name"] = tensorboard_service_name
     configs["jupyter_title"] = get_dict_dot(settings, "title", jupyter_name)
     configs["replicas"] = max(0, min(settings_default["replicas"], settings.get("replicas", 1)))
 

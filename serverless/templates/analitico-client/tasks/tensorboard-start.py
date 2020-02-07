@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import time
+import os
 
 args = sys.argv
 if len(args) < 1:
@@ -12,8 +13,8 @@ subprocess.run("killall -q tensorboard", shell=True)
 # run in background and save output on file for debugging
 subprocess.run(f"nohup /opt/conda/bin/tensorboard --logdir {args[1]} --bind_all > /tmp/tensorboard.logs 2>&1 &",
                shell=True)
-print("Starting Tensorboard...")
+print("Starting TensorBoard...")
 
 # wait few seconds for it to start
 time.sleep(6)
-print("Ready")
+print("TensorBoard is ready at: " + os.getenv("TENSORBOARD_URL"))
