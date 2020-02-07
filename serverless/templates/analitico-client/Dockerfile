@@ -11,7 +11,11 @@ ENV PATH=$PATH:/opt/conda/bin/
 ENV LC_CTYPE=C.UTF-8
 ENV WORKDIR /app
 RUN mkdir /$WORKDIR
+
 RUN apt-get update --fix-missing
+# `psmisc` is used for `killall` command in Tensorboard script
+# `python3-dev`, `gcc` and `g++` are used to compile Python packages
+RUN apt-get install -y psmisc gcc g++ python3-dev
 
 WORKDIR $WORKDIR
 
@@ -35,9 +39,6 @@ ENV PYTHONPATH=$PYTHONPATH:$WORKDIR/libraries
 # Jupyter setup
 ##
 
-# `psmisc` is used for `killall` command in Tensorboard script
-# `python3-dev` is used to compile Python packages
-RUN apt-get install -y psmisc python3-dev
 RUN chmod +x ./tasks/jupyter-start.sh
 RUN chmod +x ./tasks/tensorboard-start.py
 
