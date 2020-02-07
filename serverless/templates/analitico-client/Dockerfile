@@ -14,8 +14,8 @@ RUN mkdir /$WORKDIR
 
 RUN apt-get update --fix-missing
 # `psmisc` is used for `killall` command in Tensorboard script
-# `python3-dev`, `gcc` and `g++` are used to compile Python packages
-RUN apt-get install -y psmisc gcc g++ python3-dev
+# `gcc` and `g++` are used to compile Python packages
+RUN apt-get install -y psmisc gcc g++ 
 
 WORKDIR $WORKDIR
 
