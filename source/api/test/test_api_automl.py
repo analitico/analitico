@@ -51,7 +51,7 @@ class AutomlTests(AnaliticoApiTestCase):
         # except:
         #     pass
 
-    def OFF_test_automl_run(self):
+    def test_automl_run(self):
         try:
             # create a recipe with automl configs
             automl_id = "au_test_api_automl_test_run_and_tfserving_deploy"
@@ -74,7 +74,7 @@ class AutomlTests(AnaliticoApiTestCase):
             self.upload_file(
                 data_url,
                 # TODO: files should be moved to automls/au_iris/..
-                "../../../../automl/mount/automls/au_iris/data/iris.csv",
+                "../../../../automl/test/data/automls/au_iris/data/iris.csv",
                 content_type="text/csv",
                 token=self.token1,
             )
@@ -166,7 +166,7 @@ class AutomlTests(AnaliticoApiTestCase):
         finally:
             self.cleanup_deployed_resources(self.ws2.id)
 
-    def OFF_test_automl_convert_predict_request(self):
+    def test_automl_convert_predict_request(self):
         # pre-generated artifacts are loaded in the `self.ws2` drive at:
         # //u206378.your-storagebox.de/user5-test/automls/au_test_automl_with_iris_labeled/pipelines
         # URI to the artifacts are retrieved using `self.run_automl_id` references in the mlmetadata-db.
@@ -204,8 +204,8 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertIn("b64", content["instances"][1])
         self.assertTrue(content["instances"][1]["b64"])
 
-    # TODO: testalo con l'oggetto automl
-    def OFF_test_predict(self):
+    @tag("live")
+    def test_predict(self):
         # recipe's automl config has never run before and the predict cannot be performed
         automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id) 
         automl_never_run.save()
@@ -215,12 +215,12 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
 
         # model for prediction is served from the workspace `ws_y1ehlz2e` drive
-        url = f"https://api-staging.cloud.analitico.ai/api/automls/{self.run_automl_id}/predict"
+        url = f"https://analitico.ai/api/automls/{self.run_automl_id}/predict"
         content = '{ "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }'
         headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
-        # TODO: get_object() raises 404 not found
         # user can request prediction even without authentication
+        # TODO: get_object() raises 404 not found
         # response = requests.post(url, data=content)
         # self.assertApiResponse(response)
 
@@ -233,10 +233,10 @@ class AutomlTests(AnaliticoApiTestCase):
 
         prediction = predictions["predictions"][0]
         self.assertIn("scores", prediction)
-        self.assertEqual(prediction["scores"], [0.019_905_522_5, 0.980_042_815, 5.161_817_9e-05])
-        self.assertEqual(prediction["classes"], ["Versicolor", "Virginica", "Setosa"])
+        self.assertEqual(prediction["scores"], [1.11455747e-05, 0.479579, 0.520409822])
+        self.assertEqual(prediction["classes"], ["Setosa", "Virginica", "Versicolor"])
 
-    def OFF_test_model_schema(self):
+    def test_model_schema(self):
         # automl config has never run before and the schema does not exist
         automl_never_run = Recipe.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws2.id)
         automl_never_run.save()
@@ -270,7 +270,7 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertContains(response, "sepal_length")
         self.assertContains(response, "sepal_width")
 
-    def OFF_test_model_statistics(self):
+    def test_model_statistics(self):
         # automl config has never run before and the statistics don't exist
         automl_never_run = Recipe.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id)
         automl_never_run.save()
@@ -300,9 +300,9 @@ class AutomlTests(AnaliticoApiTestCase):
         schema = response.json().get("data")
         self.assertIn("datasets", schema)
         self.assertEqual(1, len(schema["datasets"]))
-        self.assertEqual("84", schema["datasets"][0]["numExamples"])
+        self.assertEqual("100", schema["datasets"][0]["numExamples"])
 
-    def OFF_test_model_examples(self):
+    def test_model_examples(self):
         # automl config has never run before and the examples don't exist
         automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id)
         automl_never_run.save()
@@ -346,7 +346,7 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertEqual(10, len(labels))
         self.assertIn("variety", labels[0])
 
-    def OFF_test_model_preconditioner_statistics(self):
+    def test_model_preconditioner_statistics(self):
         # automl config has never run before and the examples don't exist
         automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id)
         automl_never_run.save()
