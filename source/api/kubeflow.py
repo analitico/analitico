@@ -262,7 +262,7 @@ def automl_model_examples(item: ItemMixin, quantity: int, to_json: bool = False)
             example = {}
             for feature_name, feature_value in record.items():
                 value = None
-                if feature_value:
+                if feature_value is not None:
                     value = feature_value.item(0)
                     if feature_value.dtype == np.object:
                         value = str(value, "utf-8")
