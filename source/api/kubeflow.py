@@ -261,9 +261,11 @@ def automl_model_examples(item: ItemMixin, quantity: int, to_json: bool = False)
         for record in records:
             example = {}
             for feature_name, feature_value in record.items():
-                value = feature_value.item(0)
-                if feature_value.dtype == np.object:
-                    value = str(value, "utf-8")
+                value = None
+                if feature_value:
+                    value = feature_value.item(0)
+                    if feature_value.dtype == np.object:
+                        value = str(value, "utf-8")
                 # collect example features and labels separately
                 if feature_name == target_column:
                     labels.append({feature_name: value})
