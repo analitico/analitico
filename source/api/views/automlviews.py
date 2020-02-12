@@ -151,14 +151,10 @@ class AutomlViewSet(
     def serving_deploy(self, request, pk):
         """ Deploy the endpoint to serve the recipe's automl model """
         item = self.get_object()
-
-        # create the model with the applied automl configuration
-        # in order to persist the configuration the pipeline
-        # has been run with
-        model = Model(workspace=item.workspace)
-        model.set_attribute("automl_id", item.id)
-        model.set_attribute("automl", item.get_attribute("automl", {}))
-        model.save()
+        
+        run_id = item.get_attribute("automl.run_id")
+        model = Model.objects.get(attributes__icontains=f'"run_id":"{run_id}"')
+        assert model
 
         tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
 

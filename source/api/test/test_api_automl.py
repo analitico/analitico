@@ -101,7 +101,7 @@ class AutomlTests(AnaliticoApiTestCase):
             self.assertApiResponse(response)
 
             run = response.json().get("data")
-            
+
             # run id is saved in automl config
             automl.refresh_from_db()
             self.assertEqual(run["id"], automl.get_attribute("automl.run_id"))
@@ -117,29 +117,32 @@ class AutomlTests(AnaliticoApiTestCase):
         try:
             # create a recipe with automl configs
             automl_id = self.run_automl_id
+            automl_config = {
+                "workspace_id": self.ws2.id,
+                "run_id": "random-run-id",
+                "automl_id": automl_id,
+                "data_item_id": automl_id,
+                "data_path": "data",
+                "prediction_type": "regression",
+                "target_column": "variety",
+            }
             automl = Automl.objects.create(pk=automl_id, workspace_id=self.ws2.id)
-            automl.set_attribute(
-                "automl",
-                {
-                    "workspace_id": self.ws2.id,
-                    "automl_id": automl_id,
-                    "data_item_id": automl_id,
-                    "data_path": "data",
-                    "prediction_type": "regression",
-                    "target_column": "variety",
-                },
-            )
+            automl.set_attribute("automl", automl_config)
             automl.save()
+            # model is created when automl is run
+            model = Model.objects.create(workspace=self.ws2)
+            model.set_attribute("automl", automl_config)
+            model.save()
 
             # only admin can deploy a serving endpoint
             self.auth_token(self.token2)
-            url = reverse("api:automl-serving", args=(automl.id, ))
+            url = reverse("api:automl-serving", args=(automl.id,))
             response = self.client.post(url)
             self.assertApiResponse(response, status_code=status.HTTP_403_FORBIDDEN)
 
             # admin can deploy a serving endpoint
             self.auth_token(self.token1)
-            url = reverse("api:automl-serving", args=(automl.id, ))
+            url = reverse("api:automl-serving", args=(automl.id,))
             response = self.client.post(url)
             self.assertApiResponse(response)
 
@@ -158,20 +161,19 @@ class AutomlTests(AnaliticoApiTestCase):
             k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="app=" + service_name)
 
             # test endpoint
-            url = (
-                f"https://{k8_normalize_name(self.ws2.id)}-tfserving.cloud.analitico.ai/v1/models/{automl_id}"
-            )
+            url = f"https://{k8_normalize_name(self.ws2.id)}-tfserving.cloud.analitico.ai/v1/models/{automl_id}"
             response = requests.get(url)
             self.assertApiResponse(response)
 
             # the run of an automl config also deploys Persistent Volume
             # and KFServing endpoint
-            service, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", f"service/{k8_normalize_name(self.ws2.id)}-tfserving") 
+            service, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", f"service/{k8_normalize_name(self.ws2.id)}-tfserving")
             self.assertIsNotNone(service)
 
             # persistent volume and claim are deployed with the serving endpoint
             response, _ = kubectl(
-                K8_DEFAULT_NAMESPACE, "get", "pv", args=["--selector", "analitico.ai/workspace-id=" + self.ws2.id] )
+                K8_DEFAULT_NAMESPACE, "get", "pv", args=["--selector", "analitico.ai/workspace-id=" + self.ws2.id]
+            )
             self.assertEqual(1, len(response["items"]))
             # persistent volume is bound to the right claim
             pv = response["items"][0]
@@ -185,12 +187,13 @@ class AutomlTests(AnaliticoApiTestCase):
                 "kubeflow",
                 "get",
                 "pv",
-                args=["--selector", "analitico.ai/workspace-id=" + self.ws2.id], context_name="admin@cloud-staging.analitico.ai",
+                args=["--selector", "analitico.ai/workspace-id=" + self.ws2.id],
+                context_name="admin@cloud-staging.analitico.ai",
             )
             self.assertEqual(1, len(response["items"]))
             # persistent volume is bound to the right claim in the kubeflow namespace
             pv = response["items"][0]
-            self.assertEqual("kubeflow", pv["spec"]["claimRef"]["namespace"])            
+            self.assertEqual("kubeflow", pv["spec"]["claimRef"]["namespace"])
         finally:
             self.cleanup_deployed_resources(self.ws2.id)
 
@@ -235,7 +238,7 @@ class AutomlTests(AnaliticoApiTestCase):
     @tag("live")
     def test_predict(self):
         # recipe's automl config has never run before and the predict cannot be performed
-        automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id) 
+        automl_never_run = Automl.objects.create(pk="au_automl_config_never_run", workspace_id=self.ws1.id)
         automl_never_run.save()
         self.auth_token(self.token1)
         url = reverse("api:automl-predict", args=(automl_never_run.id,))
@@ -261,7 +264,7 @@ class AutomlTests(AnaliticoApiTestCase):
 
         prediction = predictions["predictions"][0]
         self.assertIn("scores", prediction)
-        self.assertEqual(prediction["scores"], [1.56334352e-06, 0.430399746, 0.569598675])
+        self.assertEqual(prediction["scores"], [1.563_343_52e-06, 0.430_399_746, 0.569_598_675])
         self.assertEqual(prediction["classes"], ["Setosa", "Virginica", "Versicolor"])
 
     def test_model_schema(self):
@@ -402,9 +405,9 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertApiResponse(response)
 
         data = response.json().get("data")
-        self.assertGreater(data["count"] , 0)
+        self.assertGreater(data["count"], 0)
         self.assertIn("features", data)
-        
+
         features = data["features"]
         self.assertIn("variety", features)
         self.assertEqual(features["variety"]["dtype"], "string")
