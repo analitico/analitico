@@ -48,7 +48,7 @@ class KubeflowTests(AnaliticoApiTestCase):
         response = self.client.post(url)
         self.assertApiResponse(response)
 
-        return response.json().get("data")
+        return automl_id, response.json().get("data")
 
     def cleanup_deployed_resources(self, workspace_id):
         """ 
@@ -91,10 +91,9 @@ class KubeflowTests(AnaliticoApiTestCase):
         try:
             """ Test Kubeflow get and list pipeline run objects """
             # run a pipeline for testing
-            content = self.kf_run_pipeline()
-            automl_id = get_dict_dot(content, "attributes.automl_id")
-            run_id = get_dict_dot(content, "attributes.automl.run_id")
-            experiment_id = get_dict_dot(content, "attributes.automl.experiment_id")
+            automl_id, content = self.kf_run_pipeline()
+            run_id = get_dict_dot(content, "id")
+            experiment_id = content["resource_references"][0]["key"]["id"]
 
             # user cannot retrieve runs if he doesn't have access
             # to the related analitico item
@@ -120,8 +119,8 @@ class KubeflowTests(AnaliticoApiTestCase):
             url = reverse("api:automl-kf-pipeline-runs", args=(automl_id, run_id))
             response = self.client.get(url)
             self.assertApiResponse(response)
-            data = response.json()
-            self.assertEqual(data["data"]["run"]["id"], run_id)
+            data = response.json().get("data")
+            self.assertEqual(data["run"]["id"], run_id)
 
             # user cannot retrieve pipeline ran in an experiment
             # not releated to the given item id.

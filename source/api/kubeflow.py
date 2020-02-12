@@ -71,7 +71,7 @@ def get_metadata_store() -> metadata_store:
     )
 
 
-def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
+def automl_run(item: ItemMixin) -> dict:
     """ 
     Request the execution on Kubeflow of the automl pipeline specified in the item object. 
     Create and return the Analitico Model object to map the execution in the Analitico flow.
@@ -82,6 +82,10 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
             Analitico item object.
         serving_endpoint : bool
             When true, it's deployed a Tensorflow Serving image on Kubernetes for REST API prediction.
+    
+    Return
+    ------
+        Dictionary representation fo Kubeflow Run object.
     
     """
     automl_config = item.get_attribute("automl")
@@ -124,19 +128,7 @@ def automl_run(item: ItemMixin, serving_endpoint=False) -> dict:
     item.set_attribute("automl", automl_config)
     item.save()
 
-    # create the model with the applied automl configuration
-    # in order to persist the configuration the pipeline
-    # has been run with
-    model = Model(workspace=item.workspace)
-    model.set_attribute("automl_id", item.id)
-    model.set_attribute("automl", automl_config)
-    model.save()
-
-    # deploy the endpoint for serving all workspace's automl models.
-    if serving_endpoint:
-        tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
-
-    return model
+    return run.run_info.to_dict()
 
 
 @cache.memoize()
@@ -509,6 +501,11 @@ def tensorflow_serving_deploy(item: ItemMixin, target: ItemMixin, stage: str = K
                 current_models_config = ""
             else:
                 raise e
+
+        # used by KFP for saving the pipeline artifacts on the Analitico Drive
+        # TODO: this is the first place where they are used. The deployment of
+        #       the PV/PVC should be made when workspace is provisioned.
+        k8_persistent_volume_deploy(item.workspace, storage_size="100Gi")
 
         protobuf_model_config = tensorflow_models_config_update(item, current_models_config)
         # align all lines in order to be correctly formatted and accepted on the yaml data attribute

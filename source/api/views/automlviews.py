@@ -5,7 +5,7 @@ from django.http import HttpResponse
 import rest_framework
 from rest_framework import serializers
 from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
@@ -88,7 +88,7 @@ class AutomlViewSet(
                 "Model schema not found. Has the item's automl config been run?", status_code=status.HTTP_404_NOT_FOUND
             )
 
-        return Response(json.loads(schema_json), status=status.HTTP_200_OK, content_type="application/json")
+        return Response({"data": json.loads(schema_json)}, status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["GET"], detail=True, url_name="statistics", url_path="statistics")
     def model_statistics(self, request, pk):
@@ -103,7 +103,7 @@ class AutomlViewSet(
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        return Response(json.loads(stats_json), status=status.HTTP_200_OK, content_type="application/json")
+        return Response({"data": json.loads(stats_json)}, status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["GET"], detail=True, url_name="examples", url_path="examples")
     def model_examples(self, request, pk):
@@ -121,7 +121,7 @@ class AutomlViewSet(
 
         data = f'{{ "instances": {examples}, "labels": {labels} }}'
 
-        return Response(json.loads(data), status=status.HTTP_200_OK, content_type="application/json")
+        return Response({"data": json.loads(data)}, status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["GET"], detail=True, url_name="preconditioner", url_path="preconditioner")
     def model_preconditioner_statistics(self, request, pk):
@@ -136,14 +136,31 @@ class AutomlViewSet(
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        return Response(json.loads(data), status=status.HTTP_200_OK, content_type="application/json")
+        return Response({"data": json.loads(data)}, status=status.HTTP_200_OK, content_type="application/json")
 
     @action(methods=["POST"], detail=True, url_name="run", url_path="automl")
     def run(self, request, pk):
         """ Execute an Automl configuration specified in the item """
         item = self.get_object()
 
-        model = automl_run(item, serving_endpoint=True)
+        run = automl_run(item)
+
+        return Response({"data": run}, status=status.HTTP_200_OK, content_type="application/json")
+
+    @action(methods=["POST"], detail=True, url_name="serving", url_path="serving", permission_classes=[IsAdminUser])
+    def serving_deploy(self, request, pk):
+        """ Deploy the endpoint to serve the recipe's automl model """
+        item = self.get_object()
+
+        # create the model with the applied automl configuration
+        # in order to persist the configuration the pipeline
+        # has been run with
+        model = Model(workspace=item.workspace)
+        model.set_attribute("automl_id", item.id)
+        model.set_attribute("automl", item.get_attribute("automl", {}))
+        model.save()
+
+        tensorflow_serving_deploy(item, model, stage=K8_STAGE_PRODUCTION)
 
         serializer = ModelSerializer(model)
         return Response(serializer.data)

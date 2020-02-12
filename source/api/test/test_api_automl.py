@@ -54,7 +54,7 @@ class AutomlTests(AnaliticoApiTestCase):
     def test_automl_run(self):
         try:
             # create a recipe with automl configs
-            automl_id = "au_test_api_automl_test_run_and_tfserving_deploy"
+            automl_id = "au_test_api_automl_test_run"
             automl = Automl.objects.create(pk=automl_id, workspace_id=self.ws2.id)
             automl.set_attribute(
                 "automl",
@@ -100,29 +100,57 @@ class AutomlTests(AnaliticoApiTestCase):
             response = self.client.post(url)
             self.assertApiResponse(response)
 
-            data = response.json().get("data")
-            attributes = data["attributes"]
-
-            # not yet started
-            self.assertIn("automl", attributes)
-            self.assertIsNotNone(attributes["automl"])
+            run = response.json().get("data")
+            
             # run id is saved in automl config
             automl.refresh_from_db()
-            self.assertEqual(attributes["automl"]["run_id"], automl.get_attribute("automl.run_id"))
-
-            # test tfserving endpoint and related expected resources
-            self.assert_automl_run_deployed_persistent_volume_and_tfserving_endpoint(automl_id)
+            self.assertEqual(run["id"], automl.get_attribute("automl.run_id"))
         finally:
             self.cleanup_deployed_resources(self.ws2.id)
 
-    def assert_automl_run_deployed_persistent_volume_and_tfserving_endpoint(self, automl_id: str):
+    @tag("slow", "k8", "kf", "live")
+    def test_serving_deploy(self):
         """ 
-        When is run an automl config expect to find deployed the Persistent Volume and
-        Claim and the TFServing endpoint. 
+        When is deployed an automl recipe, it is deployed the TFServing endpoint,
+        the Persistent Volume and PV Claim. 
         """
         try:
-            # model run and loaded in:
-            # //u206378.your-storagebox.de/automls/au_test_api_automl_test_run_and_tfserving_deploy/serving
+            # create a recipe with automl configs
+            automl_id = self.run_automl_id
+            automl = Automl.objects.create(pk=automl_id, workspace_id=self.ws2.id)
+            automl.set_attribute(
+                "automl",
+                {
+                    "workspace_id": self.ws2.id,
+                    "automl_id": automl_id,
+                    "data_item_id": automl_id,
+                    "data_path": "data",
+                    "prediction_type": "regression",
+                    "target_column": "variety",
+                },
+            )
+            automl.save()
+
+            # only admin can deploy a serving endpoint
+            self.auth_token(self.token2)
+            url = reverse("api:automl-serving", args=(automl.id, ))
+            response = self.client.post(url)
+            self.assertApiResponse(response, status_code=status.HTTP_403_FORBIDDEN)
+
+            # admin can deploy a serving endpoint
+            self.auth_token(self.token1)
+            url = reverse("api:automl-serving", args=(automl.id, ))
+            response = self.client.post(url)
+            self.assertApiResponse(response)
+
+            data = response.json().get("data")
+            attributes = data["attributes"]
+            # not yet started
+            self.assertIn("automl", attributes)
+            self.assertIsNotNone(attributes["automl"])
+
+            # model run and loaded in the `self.ws2` drive at:
+            # //u206378.your-storagebox.de/user5-test/automls/au_test_automl_with_iris_labeled/pipelines
             service_name = k8_normalize_name(self.ws2.id) + "-tfserving"
 
             # wait for pod to be scheduled
@@ -131,7 +159,7 @@ class AutomlTests(AnaliticoApiTestCase):
 
             # test endpoint
             url = (
-                f"https://{k8_normalize_name(self.ws2.id)}-tfserving.cloud.analitico.ai/v1/models/au_test_api_automl_test_run_and_tfserving_deploy"
+                f"https://{k8_normalize_name(self.ws2.id)}-tfserving.cloud.analitico.ai/v1/models/{automl_id}"
             )
             response = requests.get(url)
             self.assertApiResponse(response)
@@ -162,7 +190,7 @@ class AutomlTests(AnaliticoApiTestCase):
             self.assertEqual(1, len(response["items"]))
             # persistent volume is bound to the right claim in the kubeflow namespace
             pv = response["items"][0]
-            self.assertEqual("kubeflow", pv["spec"]["claimRef"]["namespace"])
+            self.assertEqual("kubeflow", pv["spec"]["claimRef"]["namespace"])            
         finally:
             self.cleanup_deployed_resources(self.ws2.id)
 
@@ -233,7 +261,7 @@ class AutomlTests(AnaliticoApiTestCase):
 
         prediction = predictions["predictions"][0]
         self.assertIn("scores", prediction)
-        self.assertEqual(prediction["scores"], [1.11455747e-05, 0.479579, 0.520409822])
+        self.assertEqual(prediction["scores"], [1.56334352e-06, 0.430399746, 0.569598675])
         self.assertEqual(prediction["classes"], ["Setosa", "Virginica", "Versicolor"])
 
     def test_model_schema(self):
