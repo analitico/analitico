@@ -26,6 +26,7 @@ from api.k8 import (
     K8_STAGE_STAGING,
     TEMPLATE_DIR,
 )
+from api.utilities import get_signed_secret
 from analitico.utilities import save_json, save_text, read_text, subprocess_run, id_generator, get_dict_dot
 
 from analitico_automl import AutomlConfig
