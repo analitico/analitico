@@ -1,6 +1,7 @@
 import json
 import requests
 import time
+import urllib
 
 from django.urls import reverse
 from django.test import tag
@@ -9,6 +10,7 @@ from rest_framework import status
 from api.models import *
 from .utils import AnaliticoApiTestCase
 from analitico.utilities import id_generator
+from api.utilities import get_signed_secret
 from api.k8 import kubectl, K8_STAGE_PRODUCTION, K8_DEFAULT_NAMESPACE, k8_normalize_name, k8_wait_for_condition
 from api.kubeflow import automl_convert_request_for_prediction, tensorflow_serving_deploy
 
@@ -134,16 +136,21 @@ class AutomlTests(AnaliticoApiTestCase):
             model.set_attribute("automl", automl_config)
             model.save()
 
-            # only admin can deploy a serving endpoint
-            self.auth_token(self.token2)
+            # nonce token is required
             url = reverse("api:automl-serving", args=(automl.id,))
             response = self.client.post(url)
-            self.assertApiResponse(response, status_code=status.HTTP_403_FORBIDDEN)
+            self.assertApiResponse(response, status_code=status.HTTP_401_UNAUTHORIZED)
 
-            # admin can deploy a serving endpoint
-            self.auth_token(self.token1)
+            # with an invalid nonce token the request is unauthorized
+            invalid_token = "invalid-token-1234"
             url = reverse("api:automl-serving", args=(automl.id,))
-            response = self.client.post(url)
+            response = self.client.post(url + "?state=" + urllib.parse.quote(invalid_token))
+            self.assertApiResponse(response, status_code=status.HTTP_401_UNAUTHORIZED)
+
+            # with a valid nonce token the user can deploy a serving endpoint
+            token = get_signed_secret(automl_id)
+            url = reverse("api:automl-serving", args=(automl.id,))
+            response = self.client.post(url + "?state=" + urllib.parse.quote(token))
             self.assertApiResponse(response)
 
             data = response.json().get("data")

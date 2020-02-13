@@ -16,6 +16,7 @@ from api.models import Model, Automl
 from api.views.modelviews import ModelSerializer
 from api.kubeflow import *
 from api.k8 import k8_normalize_name
+from api.utilities import get_query_parameter, get_signed_secret
 
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
@@ -147,10 +148,16 @@ class AutomlViewSet(
 
         return Response({"data": run}, status=status.HTTP_200_OK, content_type="application/json")
 
-    @action(methods=["POST"], detail=True, url_name="serving", url_path="serving", permission_classes=[IsAdminUser])
+    @action(methods=["POST"], detail=True, url_name="serving", url_path="serving", permission_classes=[AllowAny])
     def serving_deploy(self, request, pk):
         """ Deploy the endpoint to serve the recipe's automl model """
-        item = self.get_object()
+        token = get_query_parameter(request, "state", None)
+        if token != get_signed_secret(pk):
+            raise AnaliticoException("Request unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+        item = Automl.objects.get(pk=pk)
+        if not item:
+            raise AnaliticoException("Item not found", status_code=status.HTTP_404_NOT_FOUND)
         
         run_id = item.get_attribute("automl.run_id")
         model = Model.objects.get(attributes__icontains=f'"run_id":"{run_id}"')

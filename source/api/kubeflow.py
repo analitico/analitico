@@ -123,6 +123,7 @@ def automl_run(item: ItemMixin) -> dict:
     # the experiment id it's been run into
     automl_config["run_id"] = run.run_id
     automl_config["experiment_id"] = experiment.id
+    automl_config["api_token"] = get_signed_secret(item.id)
 
     # update item with the last configuration
     item.set_attribute("automl", automl_config)
