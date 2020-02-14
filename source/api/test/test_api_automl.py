@@ -259,7 +259,7 @@ class AutomlTests(AnaliticoApiTestCase):
 
         # user not authorized cannot request a prediction
         response = requests.post(url, data=content)
-        self.assertApiResponse(response, status_code=status.HTTP_401_UNAUTHORIZED)
+        self.assertApiResponse(response, status_code=status.HTTP_403_FORBIDDEN)
 
         # user can request a prediction
         response = requests.post(url, data=content, headers=headers)

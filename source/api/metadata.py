@@ -45,7 +45,7 @@ if not os.path.isdir(_cache_directory):
 _cache = diskcache.Cache(_cache_directory)
 
 # dataframe size limit for exploring, quering and generating metadata
-DATAFRAME_OPEN_SIZE_LIMIT_MB = 2000
+DATAFRAME_OPEN_SIZE_LIMIT_MB = 100
 
 
 ##
