@@ -103,6 +103,7 @@ def automl_run(item: ItemMixin) -> dict:
     with tempfile.NamedTemporaryFile("w+", suffix=".yaml") as output_filename:
         # inject the proper item's workspace id
         automl_config["workspace_id"] = item.workspace_id
+        automl_config["api_token"] = get_signed_secret(item.id)
 
         # setup the pipeline and generate its yaml
         analitico_automl.pipeline.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
@@ -124,7 +125,6 @@ def automl_run(item: ItemMixin) -> dict:
     # the experiment id it's been run into
     automl_config["run_id"] = run.run_id
     automl_config["experiment_id"] = experiment.id
-    automl_config["api_token"] = get_signed_secret(item.id)
 
     # update item with the last configuration
     item.set_attribute("automl", automl_config)
