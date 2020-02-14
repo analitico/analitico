@@ -50,7 +50,8 @@
         "analitico.automls.create": "Create automl.",
         "analitico.automls.get": "Get automl and associated models.",
         "analitico.automls.update": "Update automl.",
-        "analitico.automls.delete": "Delete automl."
+        "analitico.automls.delete": "Delete automl.",
+        "analitico.automls.predict": "Execute a prediction to the automl's model."
     },
 
     "roles": {
@@ -124,7 +125,8 @@
                 "analitico.automls.create",
                 "analitico.automls.get",
                 "analitico.automls.update",
-                "analitico.automls.delete"
+                "analitico.automls.delete",
+                "analitico.automls.predict"
         
             ]
         },
@@ -183,7 +185,8 @@
                 "analitico.automls.create",
                 "analitico.automls.get",
                 "analitico.automls.update",
-                "analitico.automls.delete" 
+                "analitico.automls.delete",
+                "analitico.automls.predict"
              ]
         }
    }

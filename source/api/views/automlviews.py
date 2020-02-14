@@ -13,10 +13,12 @@ from rest_framework import status
 from analitico import AnaliticoException
 
 from api.models import Model, Automl
+from api.factory import factory
 from api.views.modelviews import ModelSerializer
 from api.kubeflow import *
 from api.k8 import k8_normalize_name
 from api.utilities import get_query_parameter, get_signed_secret
+from api.permissions import has_item_permission_or_exception
 
 from .attributeserializermixin import AttributeSerializerMixin
 from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, ITEM_FILTERSET_FIELDS
@@ -53,11 +55,12 @@ class AutomlViewSet(
     search_fields = ITEM_SEARCH_FIELDS  # defaults
     filterset_fields = ITEM_FILTERSET_FIELDS  # defaults
 
-    @action(methods=["POST"], detail=True, url_name="predict", url_path="predict")
+    @action(methods=["POST"], detail=True, url_name="predict", url_path="predict", permission_classes=[AllowAny])
     def predict(self, request, pk):
         """ Convert Tensorflow prediction request from json format to base64 json format and
         send the request to the item's endpoint. Return the response from the prediction.  """
-        item = self.get_object()
+        item = factory.get_item(pk)
+        has_item_permission_or_exception(request.user, item, "analitico.automls.predict")
 
         # eg: { "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }
         content = request.data
@@ -155,10 +158,10 @@ class AutomlViewSet(
         if token != get_signed_secret(pk):
             raise AnaliticoException("Request unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
 
-        item = Automl.objects.get(pk=pk)
+        item = factory.get_item(pk)
         if not item:
             raise AnaliticoException("Item not found", status_code=status.HTTP_404_NOT_FOUND)
-        
+
         run_id = item.get_attribute("automl.run_id")
         model = Model.objects.get(attributes__icontains=f'"run_id":"{run_id}"')
         assert model

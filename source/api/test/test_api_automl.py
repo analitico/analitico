@@ -253,15 +253,15 @@ class AutomlTests(AnaliticoApiTestCase):
         self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
 
         # model for prediction is served from the workspace `ws_y1ehlz2e` drive
-        url = f"https://analitico.ai/api/automls/{self.run_automl_id}/predict"
+        url = f"https://staging.analitico.ai/api/automls/{self.run_automl_id}/predict"
         content = '{ "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }'
         headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
 
-        # user can request prediction even without authentication
-        # TODO: get_object() raises 404 not found
-        # response = requests.post(url, data=content)
-        # self.assertApiResponse(response)
+        # user not authorized cannot request a prediction
+        response = requests.post(url, data=content)
+        self.assertApiResponse(response, status_code=status.HTTP_401_UNAUTHORIZED)
 
+        # user can request a prediction
         response = requests.post(url, data=content, headers=headers)
         self.assertApiResponse(response)
 

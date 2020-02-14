@@ -135,8 +135,9 @@ def has_item_permission_or_exception(user, item: ItemMixin, permission: str) -> 
     if user.is_superuser:
         return True
 
-    # all users have read permission on the gallery and its contents
-    if permission.endswith(".get"):
+    # all users have read permission on the gallery and its contents.
+    # a prediction is considered a read action
+    if permission.endswith(".get") or permission == 'analitico.automls.predict':
         if item.id == GALLERY_WORKSPACE_ID or (item.workspace and item.workspace.id == GALLERY_WORKSPACE_ID):
             return True
 
