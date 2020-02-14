@@ -9,6 +9,7 @@ from datetime import datetime
 from cacheout import Cache
 from typing import Optional
 import pickle
+import socket
 
 from rest_framework import status
 from django.conf import settings
@@ -103,7 +104,7 @@ def automl_run(item: ItemMixin) -> dict:
     with tempfile.NamedTemporaryFile("w+", suffix=".yaml") as output_filename:
         # inject the proper item's workspace id
         automl_config["workspace_id"] = item.workspace_id
-        automl_config["api_token"] = get_signed_secret(item.id)
+        automl_config["deploy_url"] = f"https://{socket.gethostname()}/api/automls/{item.id}/serving?state=" + get_signed_secret(item.id)
 
         # setup the pipeline and generate its yaml
         analitico_automl.pipeline.get_kubeflow_pipeline_config(AutomlConfig(automl_config), output_filename.name)
