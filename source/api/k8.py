@@ -505,10 +505,10 @@ def k8_jobs_get(item: ItemMixin, job_id: str = None) -> dict:
     # cannot retrieve a job not created for the item
     if item.type == "workspace":
         item_type = "analitico.ai/workspace-id"
-    if item.type == "recipe":
-        item_type = "analitico.ai/item-id"
-    if item.type == "model":
+    elif item.type == "model":
         item_type = "analitico.ai/target-id"
+    else:
+        item_type = "analitico.ai/item-id"
     if job["metadata"]["labels"][item_type] != item.id:
         raise AnaliticoException(
             f"Job {job_id} not found for the item {item.id}", status_code=status.HTTP_404_NOT_FOUND
