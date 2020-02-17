@@ -112,6 +112,7 @@ spec:
           value: "{service_url}"
         - name: TENSORBOARD_URL
           value: "{tensorboard_url}"
+{env_vars}
         resources:
           requests:
             cpu: {cpu_request}

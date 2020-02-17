@@ -60,6 +60,24 @@ def k8_normalize_name(name: str):
     return name.lower().replace("_", "-")
 
 
+def k8_workspace_env_vars_to_yaml(workspace: Workspace):
+    """ 
+    Convert the list of workspace's environment variables
+    into a yaml string to use when customizing and applying a yaml 
+    template in K8
+    """
+    envs = workspace.get_attribute("env_vars", {})
+
+    envs_yaml = ""
+    # TODO: improve replacement of env vars by parsing the
+    # yaml with a dedicated library like PyYAML
+    for env_name in envs.keys():
+        envs_yaml += f"        - name: {env_name}\n"
+        envs_yaml += f"          value: {envs[env_name]}\n"
+
+    return envs_yaml
+
+
 def kubectl(
     namespace: str, action: str, resource: str, output: str = "json", context_name: str = None, args: [] = []
 ) -> (str, str):
@@ -136,7 +154,12 @@ def k8_wait_for_condition(
     """
     selector = ["--selector", labels] if labels is not None else []
     return kubectl(
-        namespace, "wait", resource, output=output, context_name=context_name, args=[f"--for={condition}", f"--timeout={timeout}s", *selector]
+        namespace,
+        "wait",
+        resource,
+        output=output,
+        context_name=context_name,
+        args=[f"--for={condition}", f"--timeout={timeout}s", *selector],
     )
 
 
@@ -152,6 +175,7 @@ def get_image_commit_sha():
         logger.warning(msg)
     return commit_sha
 
+
 def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
     """ Deploy a Kubernetes Persistent Volume and Claim for the workspace
     
@@ -160,7 +184,7 @@ def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
         workspace : Workspace --- Analitico Workspace object
         storage_size : str --- storage size in Kubernetes Persistent Volume format, eg: 100Gi
     """
-    
+
     configs = k8_get_storage_volume_configuration(workspace)
     configs["service_namespace"] = K8_DEFAULT_NAMESPACE
     configs["workspace_id"] = workspace.id
@@ -170,10 +194,10 @@ def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
     # in case secrets have not been deployed yet
     secret_template = os.path.join(TEMPLATE_DIR, "drive-secret-template.yaml")
     template_filename = os.path.join(TEMPLATE_DIR, "persistent-volume-and-claim-template.yaml")
-    
+
     k8_customize_and_apply(secret_template, **configs)
     k8_customize_and_apply(template_filename, **configs)
-    
+
     # TODO: kfp is currently installed on cloud-staging cluster only
     # TODO: deploy also on `cloud-staging` cluster because they are required by KFP
     cloud_staging_context_name = "admin@cloud-staging.analitico.ai"
@@ -183,6 +207,7 @@ def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
     configs_cluster_staging["service_namespace"] = "kubeflow"
     k8_customize_and_apply(secret_template, context_name=cloud_staging_context_name, **configs_cluster_staging)
     k8_customize_and_apply(template_filename, context_name=cloud_staging_context_name, **configs_cluster_staging)
+
 
 def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=True) -> dict:
     """
@@ -390,7 +415,7 @@ def k8_jobs_create(
     configs["job_id"] = job_id = generate_job_id()
     configs["job_id_slug"] = k8_normalize_name(job_id)
     configs["service_namespace"] = K8_DEFAULT_NAMESPACE
- 
+
     configs["workspace_id"] = item.workspace.id
     configs["workspace_id_slug"] = k8_normalize_name(item.workspace.id)
 
@@ -399,6 +424,8 @@ def k8_jobs_create(
 
     notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
     configs["notebook_name"] = notebook_name
+
+    configs["env_vars"] = k8_workspace_env_vars_to_yaml(item.workspace)
 
     # the run job needs to run using an image of the code that is the same of what we are running here
     # gitlab tags our build with the environment variable ANALITICO_COMMIT_SHA
@@ -686,6 +713,9 @@ def k8_jupyter_deploy(workspace: Workspace, settings: dict = None) -> dict:
 
     image_tag = get_image_commit_sha()
     configs["image_name"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
+
+    # workspace's custom environment variables
+    configs["env_vars"] = k8_workspace_env_vars_to_yaml(workspace)
 
     # generate a jupyter token for login
     token = id_generator(16)
@@ -980,9 +1010,7 @@ def k8_customize_and_apply(template_path: str, context_name=None, **kwargs):
         template_yaml = template_yaml.format(**kwargs)
         save_text(template_yaml, f.name)
         cmd_args = ["--filename", f.name]
-        item_json, _ = kubectl(
-            action="apply", namespace=None, resource=None, context_name=context_name, args=cmd_args
-        )
+        item_json, _ = kubectl(action="apply", namespace=None, resource=None, context_name=context_name, args=cmd_args)
         return item_json
 
 

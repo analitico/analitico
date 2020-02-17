@@ -583,6 +583,27 @@ class K8Tests(AnaliticoApiTestCase):
                 k8_job_delete(job_id)
 
     @tag("slow", "k8s", "live")
+    def test_k8s_jobs_run_with_workspace_env_vars(self):
+        recipe = Recipe.objects.create(pk="rx_recipe123", workspace_id=self.ws1.id)
+        recipe.save()
+        
+        self.ws1.set_attribute("env_vars", {"var1": "value1"})
+        self.ws1.save()
+
+        self.auth_token(self.token1)
+        url = reverse("api:recipe-k8-jobs", args=(recipe.id, analitico.ACTION_RUN))
+        response = self.client.post(url)
+        self.assertApiResponse(response)
+        try:
+            job_id = get_dict_dot(response.json(), "data.metadata.name")
+            containers = get_dict_dot(response.json(), "data.spec.template.spec.containers")
+            envs = containers[0].get("env", {})
+            self.assertIn({"name": "var1", "value": "value1"}, envs)
+        finally:
+            # clean up
+            k8_job_delete(job_id)
+
+    @tag("slow", "k8s", "live")
     def test_k8s_jobs_build(self):
         test_start_time = time.time()
 
@@ -1065,6 +1086,20 @@ class K8Tests(AnaliticoApiTestCase):
                 response.json().get("error").get("title"),
                 "The maximum number of Jupyter servers has been reached (max 1 / current 1)",
             )
+        finally:
+            k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
+
+    @tag("slow", "k8s")
+    def test_deploy_jupyter_with_workspace_env_vars(self):
+        try:
+            self.ws1.set_attribute("env_vars", {"var1": "value1", "var2": "value2"})
+            self.ws1.save()
+            deployment = self.deploy_jupyter()
+
+            containers = get_dict_dot(deployment, "spec.template.spec.containers")
+            envs = containers[0].get("env", {})
+            self.assertIn({"name": "var1", "value": "value1"}, envs)
+            self.assertIn({"name": "var2", "value": "value2"}, envs)
         finally:
             k8_jupyter_deallocate(self.ws1, wait_for_deletion=True)
 
