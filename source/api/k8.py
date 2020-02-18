@@ -339,10 +339,6 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         dict -- The knative service information.
     """
     try:
-        automl = item.get_attribute("automl")
-        if automl:
-            return api.kubeflow.kf_serving_deploy(item, target, stage)
-
         docker = item.get_attribute("docker")
         if docker is None:
             raise AnaliticoException(f"{item.id} cannot be deployed because its docker has not been built yet.")
