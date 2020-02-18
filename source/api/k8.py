@@ -29,6 +29,7 @@ from analitico.utilities import (
     id_generator,
     size_to_bytes,
     cpu_unit_to_fractional,
+    find_key
 )
 import api
 from api.factory import factory
@@ -378,6 +379,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             attrs = collections.OrderedDict()
             attrs["type"] = "analitico/service"
             attrs["name"] = service_name
+            attrs["item_id"] = item.id
             attrs["namespace"] = service_namespace
             attrs["url"] = get_dict_dot(service_json, "status.url", None)
             attrs["docker"] = docker
@@ -394,6 +396,54 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         raise exc
     except Exception as exc:
         raise AnaliticoException(f"Could not deploy {item.id} because: {exc}") from exc
+
+
+def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
+    """
+    Evaluate the blessed deployed model on the given metric and 
+    deploy the new model if it's improved. Model is also considered 
+    improved if the metric is missing in the blessed model or it's 
+    never been deployed any model before.
+    """
+    assert config
+
+    improved = False
+
+    # eg: "abs error 75% quantile"
+    metric_to_monitor = config.get("metric_to_monitor")
+    modality = config.get("modality")
+    stage = config.get("stage", K8_STAGE_STAGING)
+    assert metric_to_monitor and modality, "invalid autodeploy configuration"
+
+    # deployed model
+    blessed_model_id = target.get_attribute(f"service.{stage}.item_id")
+    if not blessed_model_id:
+        improved = True
+    else:
+        blessed_model = factory.get_item(blessed_model_id)
+
+        current_metrics = item.get_attribute("metadata.scores", {})
+        blessed_metrics = blessed_model.get_attribute("metadata.scores", {})
+
+        # metric to monitor's value
+        current_metric = find_key(current_metrics, metric_to_monitor, {})
+        current_metric_value = current_metric.get("value", None)
+        assert current_metric_value is not None
+        blessed_metric = find_key(blessed_metrics, metric_to_monitor, {})
+        blessed_metric_value = blessed_metric.get("value", None)
+
+        # when metric is missing in the blessed model we consider it improved
+        if blessed_metric_value is None:
+            improved = True
+        elif modality == "decrease":
+            improved = current_metric_value < blessed_metric_value
+        else:
+            improved = current_metric_value > blessed_metric_value
+
+    if improved:
+        return k8_deploy_v2(item, target, stage)
+    
+    return None
 
 
 ##

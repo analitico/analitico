@@ -5,7 +5,7 @@ import logging
 from django.core.management.base import BaseCommand
 
 from api.factory import factory
-from api.k8 import k8_build_v2
+from api.k8 import k8_build_v2, k8_autodeploy
 
 
 class Command(BaseCommand):
@@ -32,6 +32,10 @@ class Command(BaseCommand):
         job_data = {"notebook": notebook}  # the notebook name
         try:
             k8_build_v2(item, target, job_data)
+            
+            autodeploy = item.get_attribute("autodeploy")
+            if autodeploy:
+                k8_autodeploy(item, target, config=autodeploy)
         finally:
             notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
             if notification_url:

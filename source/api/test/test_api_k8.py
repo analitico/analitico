@@ -41,21 +41,20 @@ class K8Tests(AnaliticoApiTestCase):
     stage = api.k8.K8_STAGE_STAGING
     item_id = "nb_K8Tests_test_k8"  # help registry cleanups
     item_id_normalized = "nb-k8tests-test-k8-staging"
+    # `docker` attribute spec representing a built item
+    pre_built_docker_spec = {
+        "type": "analitico/docker",
+        "image": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-81anpwk3",
+        "image_name": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-81anpwk3",
+        "image_id": "sha256:ff32d10b2b5b2e9577c1e1de90aeb200acc8a5ad161be58b5e4ca81f740e4d49",
+    }
 
     def deploy_service(self, wait=True):
         self.auth_token(self.token1)
         self.post_notebook("notebook11.ipynb", self.item_id)
         notebook = Notebook.objects.get(pk=self.item_id)
         # pre run and built image tagged with `K8Tests_test_k8_deploy`
-        notebook.set_attribute(
-            "docker",
-            {
-                "type": "analitico/docker",
-                "image": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-81anpwk3",
-                "image_name": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-81anpwk3",
-                "image_id": "sha256:ff32d10b2b5b2e9577c1e1de90aeb200acc8a5ad161be58b5e4ca81f740e4d49",
-            },
-        )
+        notebook.set_attribute("docker", self.pre_built_docker_spec)
         notebook.save()
 
         service = k8_deploy_v2(notebook, notebook, self.stage)
@@ -127,6 +126,54 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("metadata", service)
         self.assertIn("spec", service)
         self.assertIn("status", service)
+
+    @tag("k8s")
+    def test_k8_autodeploy(self):
+        autodeploy_config = {
+            "metric_to_monitor": "abs error 75% quantile",
+            "modality": "decrease",
+            "stage": K8_STAGE_PRODUCTION,
+        }
+        item_current = Model.objects.create(pk="ml_current", workspace_id=self.ws1.id)
+        item_blessed = Model.objects.create(pk="ml_blessed", workspace_id=self.ws1.id)
+        target = Recipe.objects.create(pk="rx_test_autodeploy", workspace_id=self.ws1.id)
+
+        item_current.set_attribute("metadata.scores", {"business KPI": {"abs error 75% quantile": {"value": 10.40}}})
+        item_current.set_attribute("docker", self.pre_built_docker_spec)
+        item_current.save()
+
+        # model is considered improved if recipe was never deployed before
+        # no staging nor production is defined in the `service` attributes
+        target.set_attribute("service", {})
+        target.save()
+        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        self.assertIsNotNone(deployed)
+
+        # model is considered improved when the metric to monitor
+        # does not exist in the current deployed model
+        item_blessed.set_attribute("metadata.scores", {"some old metric": {"value": 5.4}})
+        item_blessed.save()
+        target.set_attribute("service.production", {"item_id": item_blessed.id})
+        target.save()
+        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        self.assertIsNotNone(deployed)
+
+        # model is considered improved because current deployed `item_blessed` model is worst
+        # then the blessed one
+        item_blessed.set_attribute("metadata.scores", {"business KPI": {"abs error 75% quantile": {"value": 20.80}}})
+        item_blessed.save()
+        target.set_attribute("service.production", {"item_id": item_blessed.id})
+        target.save()
+        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        self.assertIsNotNone(deployed)
+
+        # model is not improved
+        item_current.set_attribute("metadata.scores", {"business KPI": {"abs error 75% quantile": {"value": 25.40}}})
+        item_current.save()
+        target.set_attribute("service.production", {"item_id": item_blessed.id})
+        target.save()
+        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        self.assertIsNone(deployed)
 
     ##
     ## K8s APIs that work on ENTIRE cluster
@@ -586,7 +633,7 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8s_jobs_run_with_workspace_env_vars(self):
         recipe = Recipe.objects.create(pk="rx_recipe123", workspace_id=self.ws1.id)
         recipe.save()
-        
+
         self.ws1.set_attribute("env_vars", {"var1": "value1"})
         self.ws1.save()
 
