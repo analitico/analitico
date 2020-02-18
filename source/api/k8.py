@@ -435,14 +435,18 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
         # when metric is missing in the blessed model we consider it improved
         if blessed_metric_value is None:
             improved = True
+            logger.warning(f"metric '{metric_to_monitor}' (to {modality}) not found in blessed model: consider current model better")
         elif modality == "decrease":
             improved = current_metric_value < blessed_metric_value
         else:
             improved = current_metric_value > blessed_metric_value
 
     if improved:
+        logger.info(f"current model is better on metric '{metric_to_monitor}' (to {modality}) than the blessed model")
+        logger.info(f"deploy current model to {stage}")
         return k8_deploy_v2(item, target, stage)
     
+    logger.info(f"current model on metric '{metric_to_monitor}' (to {modality}) is worse than the blessed model")
     return None
 
 
