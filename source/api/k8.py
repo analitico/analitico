@@ -29,11 +29,11 @@ from analitico.utilities import (
     id_generator,
     size_to_bytes,
     cpu_unit_to_fractional,
-    find_key
+    find_key,
 )
 import api
 from api.factory import factory
-from api.models import ItemMixin, Job, Recipe, Model, Workspace
+from api.models import ItemMixin, Job, Recipe, Model, Workspace, Automl
 from api.models.job import generate_job_id
 from api.models.notebook import nb_extract_serverless
 
@@ -440,7 +440,9 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
         # when metric is missing in the blessed model we consider it improved
         if blessed_metric_value is None:
             improved = True
-            logger.warning(f"metric '{metric_to_monitor}' (to {modality}) not found in blessed model: consider current model better")
+            logger.warning(
+                f"metric '{metric_to_monitor}' (to {modality}) not found in blessed model: consider current model better"
+            )
         elif modality == "decrease":
             improved = current_metric_value < blessed_metric_value
         else:
@@ -450,7 +452,7 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
         logger.info(f"current model is better on metric '{metric_to_monitor}' (to {modality}) than the blessed model")
         logger.info(f"deploy current model to {stage}")
         return k8_deploy_v2(item, target, stage)
-    
+
     logger.info(f"current model on metric '{metric_to_monitor}' (to {modality}) is worse than the blessed model")
     return None
 
@@ -463,9 +465,6 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
 def k8_jobs_create(
     item: ItemMixin, job_action: str = None, job_data: dict = None, notification_server_name: str = None
 ) -> dict:
-
-    if job_action == analitico.ACTION_RUN_AUTOML:
-        return api.kubeflow.automl_run(item)
 
     # start from storage config and all all the rest
     configs = k8_get_storage_volume_configuration(item)
@@ -491,7 +490,20 @@ def k8_jobs_create(
     # so we can use that to make sure that the build image is the same
     image_tag = get_image_commit_sha()
 
-    if job_action == analitico.ACTION_RUN or job_action == analitico.ACTION_RUN_AND_BUILD:
+    if job_action == analitico.ACTION_RUN and isinstance(item, Automl):
+        # Automl items have a different run
+        configs["job_template"] = os.path.join(TEMPLATE_DIR, "job-run-template.yaml")
+        configs["run_image"] = f"analitico/analitico-automl:latest"
+        automl_config = item.get_attribute("automl")
+        configs["run_command"] = str(
+            [
+                "python3",
+                "/root/source/analitico_automl/trainer.py",
+                f"/mnt/automls/{item.id}/models",
+                json.dumps(automl_config).replace('"', '\"')
+            ]
+        )
+    elif job_action == analitico.ACTION_RUN or job_action == analitico.ACTION_RUN_AND_BUILD:
         # pass command that should be executed on job docker
         configs["job_template"] = os.path.join(TEMPLATE_DIR, "job-run-template.yaml")
         configs["run_command"] = str(

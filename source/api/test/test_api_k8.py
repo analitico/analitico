@@ -887,6 +887,43 @@ class K8Tests(AnaliticoApiTestCase):
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_job_run_automl(self):
+        job_id = None
+        try:
+            automl = Automl.objects.create(pk="au_test_job_run_automl", workspace_id=self.ws1.id)
+            automl.set_attribute("automl", {
+                "workspace_id": self.ws1.id,
+                "automl_id": automl.id,
+                "data_item_id": automl.id,
+                "data_path": "data/iris.csv",
+                "prediction_type": "classification-multi-class",
+                "target_column": "variety",
+            })
+            automl.save()
+            
+            # user cannot run a job run on automl without permission
+            self.auth_token(self.token2)
+            url = reverse("api:automl-k8-jobs", args=(automl.id, analitico.ACTION_RUN))
+            response = self.client.post(url)
+            self.assertApiResponse(response, status_code=status.HTTP_404_NOT_FOUND)
+
+            # user can run a job run on automl he owns
+            self.auth_token(self.token1)
+            url = reverse("api:automl-k8-jobs", args=(automl.id, analitico.ACTION_RUN))
+            response = self.client.post(url)
+            self.assertApiResponse(response)
+
+            job = response.json().get("data")
+            job_id = get_dict_dot(job, "metadata.name")
+            container = get_dict_dot(job, "spec.template.spec.containers")[0]
+            image_name = container.get("image")
+            self.assertIn("analitico-automl", image_name)
+            command = container.get("command", [])
+            self.assertIn("/root/source/analitico_automl/trainer.py", command)
+        finally:
+            if job_id:
+                k8_job_delete(job_id)
+
     @tag("k8s")
     def test_k8_wait_for_condition(self):
         # non existent resource

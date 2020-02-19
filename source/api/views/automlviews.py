@@ -25,6 +25,7 @@ from .itemviewsetmixin import ItemViewSetMixin, filterset, ITEM_SEARCH_FIELDS, I
 from .filesviewsetmixin import FilesViewSetMixin
 from .k8viewsetmixin import K8ViewSetMixin
 from .kubeflowviewsetmixin import KubeflowViewSetMixin
+from .jobviews import JobViewSetMixin
 
 
 class AutomlSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
@@ -41,7 +42,7 @@ class AutomlSerializer(AttributeSerializerMixin, serializers.ModelSerializer):
 
 
 class AutomlViewSet(
-    ItemViewSetMixin, FilesViewSetMixin, K8ViewSetMixin, KubeflowViewSetMixin, rest_framework.viewsets.ModelViewSet
+    ItemViewSetMixin, FilesViewSetMixin, JobViewSetMixin, K8ViewSetMixin, KubeflowViewSetMixin, rest_framework.viewsets.ModelViewSet
 ):
     """
     An Automl object describes the configuration for generating a model
