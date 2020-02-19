@@ -35,7 +35,7 @@ class Command(BaseCommand):
             
             autodeploy = item.get_attribute("autodeploy")
             if autodeploy:
-                k8_autodeploy(item, target, config=autodeploy)
+                k8_autodeploy(target, item, config=autodeploy)
         finally:
             notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
             if notification_url:

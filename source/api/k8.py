@@ -400,6 +400,15 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
     deploy the new model if it's improved. Model is also considered 
     improved if the metric is missing in the blessed model or it's 
     never been deployed any model before.
+
+    Parameters
+    ----------
+        item: ItemMixin -- An item to be deployed, normally a Model.
+        target: ItemMixin -- The target of the deploy, normally a Recipe.
+
+    Return
+    ------
+        Dict if the item has been deployed, None otherwise.
     """
     assert config
 
