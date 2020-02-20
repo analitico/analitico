@@ -921,7 +921,7 @@ class K8Tests(AnaliticoApiTestCase):
             command = container.get("command", [])
             self.assertEqual("python3", command[0])
             self.assertEqual("/root/source/analitico_automl/trainer.py", command[1])
-            self.assertEqual("${ANALITICO_DRIVE}/automls/" + automl.id + "/models", command[2])
+            self.assertEqual("/mnt/analitico-drive/automls/" + automl.id + "/models", command[2])
             # is a valid json
             json.loads(command[3])
         finally:
