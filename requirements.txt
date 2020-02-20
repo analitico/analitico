@@ -83,7 +83,7 @@ nbconvert==5.5.0
 nbformat==4.4.0
 notebook==5.7.8
 nteract-on-jupyter==2.0.7
-numpy==1.17.4
+numpy
 oauthlib==3.0.0
 openpyxl
 ortools==6.9.5824
@@ -184,6 +184,7 @@ mxnet
 mxboard
 autogluon
 bokeh
+ConfigSpace==0.4.12
 # This package `avro-python3` is dependecy of another package which
 # does not require a precise version of this pacakge. The version
 # `1.9.2` automatically installed is not working because is missing the
