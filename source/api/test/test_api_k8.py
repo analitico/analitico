@@ -919,7 +919,11 @@ class K8Tests(AnaliticoApiTestCase):
             image_name = container.get("image")
             self.assertIn("analitico-automl", image_name)
             command = container.get("command", [])
-            self.assertIn("/root/source/analitico_automl/trainer.py", command)
+            self.assertEqual("python3", command[0])
+            self.assertEqual("/root/source/analitico_automl/trainer.py", command[1])
+            self.assertEqual("${ANALITICO_DRIVE}/automls/" + automl.id + "/models", command[2])
+            # is a valid json
+            json.loads(command[3])
         finally:
             if job_id:
                 k8_job_delete(job_id)
