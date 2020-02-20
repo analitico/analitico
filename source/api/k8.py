@@ -499,7 +499,7 @@ def k8_jobs_create(
             [
                 "python3",
                 "/root/source/analitico_automl/trainer.py",
-                f"${{ANALITICO_DRIVE}}/automls/{item.id}/models",
+                f"/mnt/analitico-drive/automls/{item.id}/models",
                 json.dumps(automl_config).replace('"', '\"')
             ]
         )
