@@ -179,6 +179,11 @@ protobuf==3.11.1
 tensorflow-serving-api==2.0.0
 networkx==2.2
 hyperopt==0.2.3
+# required by analitico_automl with autogluon
+mxnet
+mxboard
+autogluon
+bokeh
 # This package `avro-python3` is dependecy of another package which
 # does not require a precise version of this pacakge. The version
 # `1.9.2` automatically installed is not working because is missing the
