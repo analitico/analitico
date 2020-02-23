@@ -15,12 +15,17 @@ spec:
     spec:
       containers:
       - image: {docker_image}
-        command: ["./tasks/serverless-start.sh"]
+        imagePullPolicy: Always
+        command: {command}
         env:
         - name: ANALITICO_SERVICE_NAME
           value: "{service_name}"
         - name: ANALITICO_ITEM_ID
           value: "{item_id}"
+        - name: ANALITICO_API_TOKEN
+          value: "{api_token}"
+        - name: LOG_LEVEL
+          value: "{log_level}"
         resources:
           limits:
             cpu: "4"

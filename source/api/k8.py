@@ -339,55 +339,61 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         dict -- The knative service information.
     """
     try:
-        docker = item.get_attribute("docker")
-        if docker is None:
-            raise AnaliticoException(f"{item.id} cannot be deployed because its docker has not been built yet.")
-
         # name of service we are deploying
         name = f"{target.id}-{stage}" if stage != K8_STAGE_PRODUCTION else target.id
+        configs = {}
         service_name = k8_normalize_name(name)
-        service_namespace = "cloud"
-        docker_image = docker["image"]
+        service_namespace = K8_DEFAULT_NAMESPACE
+        configs["service_namespace"] = service_namespace
+        configs["workspace_id"] = item.workspace.id if item.workspace else ""
+        configs["item_id"] = item.id
+        configs["log_level"] = "20"
 
-        with tempfile.NamedTemporaryFile(mode="w+", suffix=".yaml") as f:
-            service_filename = os.path.join(TEMPLATE_DIR, "service.yaml")
-            service_yaml = read_text(service_filename)
-            service_yaml = service_yaml.format(
-                service_name=service_name,
-                service_namespace=service_namespace,
-                workspace_id=item.workspace.id if item.workspace else "",
-                item_id=item.id,
-                docker_image=docker_image,
-            )
-            save_text(service_yaml, f.name)
+        if isinstance(target, Automl):
+            # single serving image configured for a specific automl
 
-            # Deploy service to knative/k8 using kubectl command:
-            # kubectl apply --filename briggicloud.yaml -o json
-            # https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#apply
-            # export KUBECONFIG=$HOME/.kube/config/admin.conf
-            cmd_args = ["kubectl", "apply", "--filename", f.name, "-o", "json"]
-            service_json, _ = subprocess_run(cmd_args)
+            # add suffix to automl serving endpoint to differ from
+            # classic recipe's endpoint.
+            # eg: au-iris-serving
+            configs["service_name"] = service_name + "-serving"
+            # TODO: use COMMIT_SHA
+            configs["docker_image"] = "analitico/analitico-serving:latest"
+            configs["command"] = ["/root/source/analitico_serving/serving-start.sh"]
+            # TODO: use a signed token
+            configs["api_token"] = "tok_demo1_croJ7gVp4cW9"
+        else:
+            # snapshot built for the model
+            configs["service_name"] = service_name
+            docker_image = item.get_attribute("docker.image")
+            if docker_image is None:
+                raise AnaliticoException(f"{item.id} cannot be deployed because its docker has not been built yet.")
+            configs["docker_image"] = docker_image
+            configs["command"] = ["./tasks/serverless-start.sh"]
+            configs["api_token"] = "None"
 
-            # retrieve existing services
-            services = target.get_attribute("service", {})
+        service_filename = os.path.join(TEMPLATE_DIR, "service.yaml")
+        service_json = k8_customize_and_apply(service_filename, **configs)
 
-            # save deployment information inside item, endpoint and job
-            attrs = collections.OrderedDict()
-            attrs["type"] = "analitico/service"
-            attrs["name"] = service_name
-            attrs["item_id"] = item.id
-            attrs["namespace"] = service_namespace
-            attrs["url"] = get_dict_dot(service_json, "status.url", None)
-            attrs["docker"] = docker
-            attrs["response"] = service_json
+        # retrieve existing services
+        services = target.get_attribute("service", {})
 
-            # item's service dictionary can have a 'production' and a 'staging' collection or more
-            services[stage] = attrs
-            target.set_attribute("service", services)
-            target.save()
+        # save deployment information inside item, endpoint and job
+        attrs = collections.OrderedDict()
+        attrs["type"] = "analitico/service"
+        attrs["name"] = service_name
+        attrs["item_id"] = item.id
+        attrs["namespace"] = service_namespace
+        attrs["url"] = get_dict_dot(service_json, "status.url", None)
+        attrs["docker"] = item.get_attribute("docker")
+        attrs["response"] = service_json
 
-            logger.debug(json.dumps(attrs, indent=4))
-            return attrs
+        # item's service dictionary can have a 'production' and a 'staging' collection or more
+        services[stage] = attrs
+        target.set_attribute("service", services)
+        target.save()
+
+        logger.debug(json.dumps(attrs, indent=4))
+        return attrs
     except AnaliticoException as exc:
         raise exc
     except Exception as exc:
@@ -500,7 +506,7 @@ def k8_jobs_create(
                 "python3",
                 "/root/source/analitico_automl/trainer.py",
                 f"/mnt/analitico-drive/automls/{item.id}/models",
-                json.dumps(automl_config).replace('"', '\"')
+                json.dumps(automl_config),
             ]
         )
     elif job_action == analitico.ACTION_RUN or job_action == analitico.ACTION_RUN_AND_BUILD:
@@ -559,6 +565,11 @@ def k8_jobs_create(
     # k8s job that will launch
     job = k8_customize_and_apply(configs["job_template"], **configs)
     assert job, "kubctl did not apply the job"
+
+    if isinstance(item, Automl):
+        # deploy or update the automl serving endpoint
+        k8_deploy_v2(item, item, K8_STAGE_PRODUCTION)
+
     return job
 
 

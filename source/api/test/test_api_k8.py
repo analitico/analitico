@@ -121,7 +121,7 @@ class K8Tests(AnaliticoApiTestCase):
                 "json",
             ]
         )
-        self.assertEquals(service["apiVersion"], "serving.knative.dev/v1alpha1")
+        self.assertEquals(service["apiVersion"], "serving.knative.dev/v1")
         self.assertEquals(service["kind"], "Service")
         self.assertIn("metadata", service)
         self.assertIn("spec", service)
@@ -174,6 +174,41 @@ class K8Tests(AnaliticoApiTestCase):
         target.save()
         deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
         self.assertIsNone(deployed)
+
+    @tag("k8s")
+    def test_k8_deploy_automl(self):
+        """ Test deploying an Automl item """
+        service = None
+        try:
+            automl = Automl.objects.create(pk="au_test_deploy", workspace_id=self.ws1.id)
+            automl.save()
+
+            self.auth_token(self.token1)
+            url = reverse("api:automl-k8-deploy", args=(automl.id, K8_STAGE_STAGING))
+            response = self.client.post(url)
+            self.assertApiResponse(response)
+
+            # wait for pod to be deployed
+            time.sleep(5)
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60)
+
+            data = response.json()
+            service = data.get("data", {}).get("response", {})
+
+            self.assertEquals(service["apiVersion"], "serving.knative.dev/v1")
+            self.assertEquals(service["kind"], "Service")
+            
+            container = service["spec"]["template"]["spec"]["containers"][0]
+            self.assertIn("analitico/analitico-serving", container["image"])
+            self.assertIn("/root/source/analitico_serving/serving-start.sh", container["command"])
+
+            self.assertEqual("ANALITICO_API_TOKEN", container["env"][2]["name"])
+            self.assertIsNotNone(container["env"][2]["value"])
+            self.assertNotEqual("None", container["env"][2]["value"])
+        finally:
+            if service:
+                service_name = service["metadata"]["name"]
+                kubectl(K8_DEFAULT_NAMESPACE, "delete", "kservice/" + service_name, output=None)
 
     ##
     ## K8s APIs that work on ENTIRE cluster
@@ -886,21 +921,26 @@ class K8Tests(AnaliticoApiTestCase):
         # try to delete job again but it's not find
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
+    
+    @tag("k8s")
     def test_job_run_automl(self):
         job_id = None
+        automl_id = "au_test_job_run_automl"
         try:
-            automl = Automl.objects.create(pk="au_test_job_run_automl", workspace_id=self.ws1.id)
-            automl.set_attribute("automl", {
-                "workspace_id": self.ws1.id,
-                "automl_id": automl.id,
-                "data_item_id": automl.id,
-                "data_path": "data/iris.csv",
-                "prediction_type": "classification-multi-class",
-                "target_column": "variety",
-            })
+            automl = Automl.objects.create(pk=automl_id, workspace_id=self.ws1.id)
+            automl.set_attribute(
+                "automl",
+                {
+                    "workspace_id": self.ws1.id,
+                    "automl_id": automl.id,
+                    "data_item_id": automl.id,
+                    "data_path": "data/iris.csv",
+                    "prediction_type": "classification-multi-class",
+                    "target_column": "variety",
+                },
+            )
             automl.save()
-            
+
             # user cannot run a job run on automl without permission
             self.auth_token(self.token2)
             url = reverse("api:automl-k8-jobs", args=(automl.id, analitico.ACTION_RUN))
@@ -924,9 +964,16 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertEqual("/mnt/analitico-drive/automls/" + automl.id + "/models", command[2])
             # is a valid json
             json.loads(command[3])
+
+            # expect serving endpoint to be deployed as well
+            # wait for pod to be deployed
+            time.sleep(5)
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60)
+
         finally:
             if job_id:
                 k8_job_delete(job_id)
+                kubectl(K8_DEFAULT_NAMESPACE, "delete", f"kservice/{k8_normalize_name(automl_id)}-serving", output=None)
 
     @tag("k8s")
     def test_k8_wait_for_condition(self):
