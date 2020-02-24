@@ -323,7 +323,7 @@ def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=
 def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODUCTION) -> dict:
     """
     Takes an item that already has a docker and deploys it to our knative cloud.
-    Deployment performed by customizing a template service.yaml which is then
+    Deployment performed by customizing a template serving.yaml which is then
     applied to the kubernets cluster via 'kubectl apply'. The command needs to be
     able to find the cluster's credential which need to be installed in the machine
     and be available to the user running the process (the development user or the jobs
@@ -371,7 +371,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             configs["command"] = ["./tasks/serverless-start.sh"]
             configs["api_token"] = "None"
 
-        service_filename = os.path.join(TEMPLATE_DIR, "service.yaml")
+        service_filename = os.path.join(TEMPLATE_DIR, "serving.yaml")
         service_json = k8_customize_and_apply(service_filename, **configs)
 
         # retrieve existing services

@@ -6,12 +6,14 @@ metadata:
   labels:
     analitico.ai/workspace-id: {workspace_id}
     analitico.ai/item-id: {item_id}
+    analitico.ai/service: "serving"
 spec:
   template:
     metadata:
       labels:
         analitico.ai/workspace-id: {workspace_id}
         analitico.ai/item-id: {item_id}
+        analitico.ai/service: "serving"
     spec:
       containers:
       - image: {docker_image}

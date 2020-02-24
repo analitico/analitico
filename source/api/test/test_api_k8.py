@@ -971,7 +971,7 @@ class K8Tests(AnaliticoApiTestCase):
             # wait for pod to be deployed
             time.sleep(5)
             k8_wait_for_condition(
-                K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60
+                K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=f"analitico.ai/item-id={automl.id},analitico.ai/service=serving", timeout=60
             )
 
         finally:
