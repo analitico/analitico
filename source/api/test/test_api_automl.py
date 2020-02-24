@@ -255,7 +255,7 @@ class AutomlTests(AnaliticoApiTestCase):
         # model for prediction is served from the workspace `ws_y1ehlz2e` drive
         url = f"https://staging.analitico.ai/api/automls/{self.run_automl_id}/predict"
         content = '{ "instances": [ {"sepal_length":6.4, "sepal_width":2.8, "petal_length":5.6, "petal_width":2.2} ] }'
-        headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
+        headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1", "Content-Type": "application/json"}
 
         # user not authorized cannot request a prediction
         response = requests.post(url, data=content)

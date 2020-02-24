@@ -360,7 +360,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             configs["docker_image"] = "analitico/analitico-serving:latest"
             configs["command"] = ["/root/source/analitico_serving/serving-start.sh"]
             # TODO: use a signed token
-            configs["api_token"] = "tok_demo1_croJ7gVp4cW9"
+            configs["api_token"] = "tok_demo2_xaffg23443d1"
         else:
             # snapshot built for the model
             configs["service_name"] = service_name

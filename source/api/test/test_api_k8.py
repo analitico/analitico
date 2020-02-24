@@ -190,14 +190,16 @@ class K8Tests(AnaliticoApiTestCase):
 
             # wait for pod to be deployed
             time.sleep(5)
-            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60)
+            k8_wait_for_condition(
+                K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60
+            )
 
             data = response.json()
             service = data.get("data", {}).get("response", {})
 
             self.assertEquals(service["apiVersion"], "serving.knative.dev/v1")
             self.assertEquals(service["kind"], "Service")
-            
+
             container = service["spec"]["template"]["spec"]["containers"][0]
             self.assertIn("analitico/analitico-serving", container["image"])
             self.assertIn("/root/source/analitico_serving/serving-start.sh", container["command"])
@@ -615,7 +617,7 @@ class K8Tests(AnaliticoApiTestCase):
             recipe_id = "rx_x5b1npmn"
             notebook_name = "notebook.ipynb"
             server = "https://staging.analitico.ai"
-            headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
+            headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1", "Content-Type": "application/json"}
 
             # run the recipe
             url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_RUN))
@@ -693,7 +695,7 @@ class K8Tests(AnaliticoApiTestCase):
         recipe_id = "rx_x5b1npmn"
         notebook_name = "notebook.ipynb"
         server = "https://staging.analitico.ai"
-        headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
+        headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1", "Content-Type": "application/json"}
 
         # build the recipe
         url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_BUILD))
@@ -769,7 +771,7 @@ class K8Tests(AnaliticoApiTestCase):
     def k8s_deploy_and_test(self, model_id, recipe_id):
         """ This test is called by the test `test_k8s_jobs_build`. """
         server = "https://staging.analitico.ai"
-        headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9"}
+        headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1"}
 
         # deploy the build model
         url = reverse("api:model-k8-deploy", args=(model_id, K8_STAGE_STAGING))
@@ -812,7 +814,7 @@ class K8Tests(AnaliticoApiTestCase):
             # default or custom name
             notebook_name = "notebook.ipynb" if not notebook_name else notebook_name
             server = "https://staging.analitico.ai"
-            headers = {"Authorization": "Bearer tok_demo1_croJ7gVp4cW9", "Content-Type": "application/json"}
+            headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1", "Content-Type": "application/json"}
 
             # run and build the recipe
             url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_RUN_AND_BUILD))
@@ -921,7 +923,7 @@ class K8Tests(AnaliticoApiTestCase):
         # try to delete job again but it's not find
         response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    
+
     @tag("k8s")
     def test_job_run_automl(self):
         job_id = None
@@ -968,7 +970,9 @@ class K8Tests(AnaliticoApiTestCase):
             # expect serving endpoint to be deployed as well
             # wait for pod to be deployed
             time.sleep(5)
-            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60)
+            k8_wait_for_condition(
+                K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60
+            )
 
         finally:
             if job_id:
