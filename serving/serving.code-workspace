@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "/"
+		}
+	],
+	"settings": {
+		"python.formatting.provider": "black",
+		"python.testing.pytestEnabled": true,
+		"python.formatting.blackArgs": [
+			"-l 120"
+		],
+		"editor.formatOnSave": true,
+		"explorer.compactFolders": false,
+		"files.exclude": {
+			"venv": true
+		},
+		"terminal.integrated.scrollback": 10000
+	}
+}
