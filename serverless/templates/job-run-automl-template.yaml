@@ -52,12 +52,11 @@ spec:
           readOnly: false
         resources:
           requests:
-            cpu: 500m
-            memory: 28Gi
-          limits:
             cpu: 4
-            memory: 32Gi
-#           nvidia.com/gpu: 1
+            memory: 48Gi
+          limits:
+            cpu: 12
+            memory: 64Gi
       restartPolicy: Never
       volumes:
       - name: analitico-drive

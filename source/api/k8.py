@@ -452,6 +452,23 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
     logger.info(f"current model on metric '{metric_to_monitor}' (to {modality}) is worse than the blessed model")
     return None
 
+def k8_serving_deallocate(item: ItemMixin, stage: str = K8_STAGE_PRODUCTION):
+    """ Remove service used for serving inference for the given item type """
+    name = k8_normalize_name(item.id)
+    if isinstance(item, Recipe):
+        service_name = name
+    elif isinstance(item, Automl):
+        service_name = name + "-serving"
+    else:
+        raise Exception(f"no serving exists for item type {type(item)}")
+
+    service_name = service_name if stage == K8_STAGE_PRODUCTION else service_name + "-staging"
+    
+    try:
+        kubectl(K8_DEFAULT_NAMESPACE, "delete", f"kservice/{service_name}", output=None)
+    except Exception as e:
+        logger.warning(e)
+        pass
 
 ##
 ## K8s jobs used to process notebooks

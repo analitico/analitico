@@ -10,7 +10,7 @@ import analitico
 
 from analitico import logger
 from .utils import AnaliticoApiTestCase
-from api.models import Dataset, Recipe, Notebook, Model, Workspace
+from api.models import Dataset, Recipe, Notebook, Model, Workspace, Automl
 
 # conflicts with django's dynamically generated model.objects
 # pylint: disable=no-member
@@ -56,6 +56,11 @@ class LifecycleTests(AnaliticoApiTestCase):
 
     def test_lifecycle_delete_recipe_storage(self):
         item = Recipe(workspace=self.ws1)
+        item.save()
+        self.create_item_file_then_delete_item_verify_file_deletion(item)
+
+    def test_lifecycle_delete_automl_storage(self):
+        item = Automl(workspace=self.ws1)
         item.save()
         self.create_item_file_then_delete_item_verify_file_deletion(item)
 

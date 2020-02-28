@@ -3,7 +3,7 @@ import api.models
 
 from analitico import logger
 from api.models.drive import dr_delete_workspace_storage
-from api.k8 import k8_jupyter_deallocate
+from api.k8 import k8_jupyter_deallocate, k8_serving_deallocate, K8_STAGE_STAGING
 from django.dispatch import receiver
 
 # Django signals:
@@ -67,6 +67,15 @@ def post_delete_dataset(sender, instance, *args, **kwargs):
 @receiver(django.db.models.signals.post_delete, sender=api.models.Recipe)
 def post_delete_recipe(sender, instance, *args, **kwargs):
     post_delete_item_storage(instance)
+    k8_serving_deallocate(instance)
+    k8_serving_deallocate(instance, K8_STAGE_STAGING)
+
+
+@receiver(django.db.models.signals.post_delete, sender=api.models.Automl)
+def post_delete_automl(sender, instance, *args, **kwargs):
+    post_delete_item_storage(instance)
+    k8_serving_deallocate(instance)
+    k8_serving_deallocate(instance, K8_STAGE_STAGING)
 
 
 @receiver(django.db.models.signals.post_delete, sender=api.models.Notebook)

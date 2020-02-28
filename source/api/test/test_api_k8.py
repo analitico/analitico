@@ -179,12 +179,11 @@ class K8Tests(AnaliticoApiTestCase):
     def test_k8_deploy_automl(self):
         """ Test deploying an Automl item """
         service = None
+        automl = Automl.objects.create(pk="au_test_deploy", workspace_id=self.ws1.id)
+        automl.save()
         try:
-            automl = Automl.objects.create(pk="au_test_deploy", workspace_id=self.ws1.id)
-            automl.save()
-
             self.auth_token(self.token1)
-            url = reverse("api:automl-k8-deploy", args=(automl.id, K8_STAGE_STAGING))
+            url = reverse("api:automl-k8-deploy", args=(automl.id, K8_STAGE_PRODUCTION))
             response = self.client.post(url)
             self.assertApiResponse(response)
 
@@ -209,8 +208,7 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertNotEqual("None", container["env"][2]["value"])
         finally:
             if service:
-                service_name = service["metadata"]["name"]
-                kubectl(K8_DEFAULT_NAMESPACE, "delete", "kservice/" + service_name, output=None)
+                k8_serving_deallocate(automl)
 
     ##
     ## K8s APIs that work on ENTIRE cluster
