@@ -498,7 +498,7 @@ def k8_jobs_create(
 
     if job_action == analitico.ACTION_RUN and isinstance(item, Automl):
         # Automl items have a different run
-        configs["job_template"] = os.path.join(TEMPLATE_DIR, "job-run-template.yaml")
+        configs["job_template"] = os.path.join(TEMPLATE_DIR, "job-run-automl-template.yaml")
         configs["run_image"] = f"analitico/analitico-automl:autogluon"
         automl_config = item.get_attribute("automl")
         configs["run_command"] = str(

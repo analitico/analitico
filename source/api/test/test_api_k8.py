@@ -967,6 +967,10 @@ class K8Tests(AnaliticoApiTestCase):
             # is a valid json
             json.loads(command[3])
 
+            toleration = get_dict_dot(job, "spec.template.spec.tolerations")[0]
+            self.assertEqual("analitico.ai/automl", toleration["key"])
+            self.assertEqual("Exists", toleration["operator"])
+
             # expect serving endpoint to be deployed as well
             # wait for pod to be deployed
             time.sleep(5)
