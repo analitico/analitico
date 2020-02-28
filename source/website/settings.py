@@ -469,27 +469,6 @@ try:
     ELASTIC_SEARCH_API_TOKEN = os.environ.get("ANALITICO_ELASTIC_SEARCH_API_TOKEN", None)
     assert ELASTIC_SEARCH_API_TOKEN, "Did you forget to configure the env variable ANALITICO_ELASTIC_SEARCH_API_TOKEN?"
 
-    ##
-    ## Kubeflow settings and credentials
-    ##  
-
-    # Leave it empty to use the in-cluster uri
-    KFP_CLIENT_URL = None
-    
-    # Kubeflow Pipeline Metadata Store DB
-    # In-cluster URI and port
-    KFP_METADATA_STORE_HOST = "metadata-db.kubeflow"
-    KFP_METADATA_STORE_PORT = 3306
-    KFP_METADATA_STORE_DB_NAME = "metadb"
-    KFP_METADATA_STORE_USER = "root"
-    KFP_METADATA_STORE_PASSWORD = "test"
-
-    # TODO: use these settings while Kubeflow is not in the production cluster
-    # if TESTING:
-    KFP_METADATA_STORE_HOST = "staging1.analitico.ai"
-    KFP_METADATA_STORE_PORT = 32125
-    KFP_CLIENT_URL = "staging1.analitico.ai:31061"
-
 except KeyError as exc:
     detail = (
         "settings.py - Configuration error, did you forget to declare " + exc.args[0] + " as an environment variable?"

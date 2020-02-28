@@ -170,17 +170,3 @@ widgetsnbextension==3.4.2
 wrapt==1.11.2
 xlrd==1.2.0
 binary==1.0.0
-# Kuberflow/TensorFlow Extended pipeline packages
-setuptools==41.0.0
-tfx==0.15.0
-kfp==0.1.37
-absl-py==0.8.1
-protobuf==3.11.1
-tensorflow-serving-api==2.0.0
-networkx==2.2
-hyperopt==0.2.3
-# This package `avro-python3` is dependecy of another package which
-# does not require a precise version of this pacakge. The version
-# `1.9.2` automatically installed is not working because is missing the
-# `pycodestyle` package. We specify this package and version to fix the issue.
-avro-python3==1.9.1

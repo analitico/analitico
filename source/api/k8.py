@@ -199,16 +199,6 @@ def k8_persistent_volume_deploy(workspace: Workspace, storage_size: str):
     k8_customize_and_apply(secret_template, **configs)
     k8_customize_and_apply(template_filename, **configs)
 
-    # TODO: kfp is currently installed on cloud-staging cluster only
-    # TODO: deploy also on `cloud-staging` cluster because they are required by KFP
-    cloud_staging_context_name = "admin@cloud-staging.analitico.ai"
-
-    # TODO: kfp runs should be deployed in `cloud ` namespace instead of `kubeflow`
-    configs_cluster_staging = configs.copy()
-    configs_cluster_staging["service_namespace"] = "kubeflow"
-    k8_customize_and_apply(secret_template, context_name=cloud_staging_context_name, **configs_cluster_staging)
-    k8_customize_and_apply(template_filename, context_name=cloud_staging_context_name, **configs_cluster_staging)
-
 
 def k8_build_v2(item: ItemMixin, target: ItemMixin, job_data: dict = None, push=True) -> dict:
     """
