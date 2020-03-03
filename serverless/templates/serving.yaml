@@ -30,8 +30,8 @@ spec:
           value: "{log_level}"
         resources:
           limits:
-            cpu: "4"
-            memory: 4Gi
+            cpu: 4
+            memory: 8Gi
           requests:
             cpu: 500m
             memory: 2Gi
