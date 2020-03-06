@@ -1,5 +1,5 @@
 ansiwrap==0.8.4
-apache-libcloud==2.4.0
+apache-libcloud==2.8.1
 appdirs==1.4.3
 appnope==0.1.0
 asn1crypto==0.24.0

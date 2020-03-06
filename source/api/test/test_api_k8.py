@@ -17,8 +17,8 @@ from rest_framework import status
 # pylint: disable=unused-variable
 # pylint: disable=unused-wildcard-import
 
-from analitico.constants import ACTION_PROCESS, ACTION_DEPLOY
-from analitico.utilities import read_json, subprocess_run, size_to_bytes
+from analitico.constants import ACTION_PROCESS, ACTION_DEPLOY, ACTION_DATASET_METADATA
+from analitico.utilities import read_json, subprocess_run, size_to_bytes, id_generator
 
 import api
 
@@ -187,14 +187,14 @@ class K8Tests(AnaliticoApiTestCase):
             response = self.client.post(url)
             self.assertApiResponse(response)
 
+            data = response.json()
+            service = data.get("data", {}).get("response", {})
+
             # wait for pod to be deployed
             time.sleep(5)
             k8_wait_for_condition(
                 K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels="analitico.ai/item-id=" + automl.id, timeout=60
             )
-
-            data = response.json()
-            service = data.get("data", {}).get("response", {})
 
             self.assertEquals(service["apiVersion"], "serving.knative.dev/v1")
             self.assertEquals(service["kind"], "Service")
@@ -237,6 +237,26 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("metadata", nodes[0])
         self.assertIn("spec", nodes[0])
         self.assertIn("status", nodes[0])
+
+    @tag("k8s")
+    def test_k8_wait_for_condition(self):
+        # non existent resource
+        try:
+            k8_wait_for_condition("cloud", "pod/fake", "condition=Ready", timeout=2)
+            self.fail("Expected not found exception")
+        except AnaliticoException:
+            pass
+
+        # delete then deploy the service and the pod otherwise no pod will be ready
+        kubectl("cloud", "delete", "kservice/" + self.item_id_normalized, output=None)
+        service = self.deploy_service(wait=False)
+        # wait pod to be created
+        time.sleep(5)
+        # wait for pod to be ready
+        status, _ = k8_wait_for_condition(
+            "cloud", "pod", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
+        )
+        self.assertIn("condition met", status)
 
     ##
     ## K8s APIs that work on specific service
@@ -981,25 +1001,38 @@ class K8Tests(AnaliticoApiTestCase):
                 k8_job_delete(job_id)
                 kubectl(K8_DEFAULT_NAMESPACE, "delete", f"kservice/{k8_normalize_name(automl_id)}-serving", output=None)
 
-    @tag("k8s")
-    def test_k8_wait_for_condition(self):
-        # non existent resource
+    def test_k8_job_generate_dataset_metadata(self):
+        job_id = None
         try:
-            k8_wait_for_condition("cloud", "pod/fake", "condition=Ready", timeout=2)
-            self.fail("Expected not found exception")
-        except AnaliticoException:
-            pass
+            dataset = Dataset.objects.create(pk="ds_titanic_1", workspace_id=self.ws1.id)
+            dataset.save()
+            asset_name="titanic_1.csv"
+            url = reverse("api:dataset-files", args=(dataset.id, asset_name))
+            response = self.upload_file(url, asset_name, "text/csv", token=self.token1)
+            self.assertApiResponse(response, status_code=status.HTTP_204_NO_CONTENT)
+            
+            hash = id_generator()
+            extra = {"pippo": "pluto", "quotes": "\"pippo-with-quotes\""}
+            resource = k8_job_generate_dataset_metadata(dataset, f"datasets/{dataset.id}/{asset_name}", hash, extra)
+            
+            # wait for generation
+            job_id = get_dict_dot(resource, "metadata.name")
+            time.sleep(3)
+            k8_wait_for_condition(
+                K8_DEFAULT_NAMESPACE, f"job/{job_id}", "condition=complete", timeout=120
+            )
+            
+            # check file existence
+            self.auth_token(self.token1)
+            url = f"/api/datasets/{dataset.id}/files/.analitico/{asset_name}.json"
+            response = self.client.get(url, stream=True)
+            self.assertApiResponse(response)
+            metadata = json.loads(next(iter(response.streaming_content)))
+            self.assertEqual(hash, metadata["hash"])
 
-        # delete then deploy the service and the pod otherwise no pod will be ready
-        kubectl("cloud", "delete", "kservice/" + self.item_id_normalized, output=None)
-        service = self.deploy_service(wait=False)
-        # wait pod to be created
-        time.sleep(5)
-        # wait for pod to be ready
-        status, _ = k8_wait_for_condition(
-            "cloud", "pod", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
-        )
-        self.assertIn("condition met", status)
+        finally:
+            if job_id:
+                k8_job_delete(job_id)
 
     ##
     ## Test Jupyter

@@ -33,6 +33,7 @@ from analitico.utilities import get_dict_dot
 from api.models import Workspace
 from api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, PAGE_PARAM, PAGE_SIZE_PARAM
 from api.utilities import get_query_parameter_as_bool, get_query_parameter_as_int, get_query_parameter
+from api.models import ItemMixin
 
 import libcloud
 import api.libcloud
@@ -198,7 +199,7 @@ class FilesViewSetMixin:
 
         # retrieve metadata, refresh if needed
         path = os.path.join(base_path, url)
-        metadata = api.metadata.get_file_metadata(driver, path, refresh=True)
+        metadata = api.metadata.get_file_metadata(item, driver, path, refresh=True)
 
         # which page are we on, what size is each page? should we filter rows?
         page = get_query_parameter_as_int(request, PAGE_PARAM, 0)
@@ -210,7 +211,7 @@ class FilesViewSetMixin:
         sort = get_query_parameter(request, ORDER_PARAM, None)  # ?order=
 
         # retrieve data and filter it if requested
-        df, rows = api.metadata.get_file_dataframe(driver, path, page, page_size, query, sort)
+        df, rows = api.metadata.get_file_dataframe(item, driver, path, page, page_size, query, sort)
         df = df.fillna("")  # replace NaN with empty string
 
         # add paging metadata
@@ -230,7 +231,7 @@ class FilesViewSetMixin:
     ## ?metadata=true - methods used to retrieve information on the files (as opposed to file contents)
     ##
 
-    def files_metadata(self, request, pk, url, driver, base_path):
+    def files_metadata(self, request, item: ItemMixin, url, driver, base_path):
         # return metadata for files and directories
         assert base_path and base_path.endswith("/")
         assert url and url.startswith("/")
@@ -243,29 +244,29 @@ class FilesViewSetMixin:
         if request.method in ["GET"]:
             try:
                 path = os.path.join(base_path, url)
-                items = driver.ls(path)
+                files = driver.ls(path)
             except api.libcloud.WebdavException as exc:
                 raise AnaliticoException(f"Can't get information on {path}", status_code=exc.actual_code) from exc
 
-            for item in items:
+            for f in files:
                 # append analitico's metadata to webdav's metadata
-                metadata = api.metadata.get_file_metadata(driver, item.name, refresh=refresh)
+                metadata = api.metadata.get_file_metadata(item, driver, f.name, refresh=refresh)
                 if metadata:
-                    if item.meta_data:
+                    if f.meta_data:
                         for key, value in metadata:
-                            item.meta_data[key] = value
+                            f.meta_data[key] = value
                     else:
-                        item.meta_data = metadata
+                        f.meta_data = metadata
 
-            for item in items:
-                item.name = item.name.replace(base_path[:-1], "")
+            for f in files:
+                f.name = f.name.replace(base_path[:-1], "")
 
             # order to be applied to the files, eg: ?order=name,size
             order = get_query_parameter(request, ORDER_PARAM, "id")
-            items = sorted(items, key=compare_files_to_key(order))
+            files = sorted(files, key=compare_files_to_key(order))
 
             base_url = request.build_absolute_uri()
-            serializer = LibcloudStorageItemsSerializer(items, many=True, base_url=base_url)
+            serializer = LibcloudStorageItemsSerializer(files, many=True, base_url=base_url)
             return Response(serializer.data)
 
         # modify metadata, rename, add custom metadata
@@ -273,7 +274,7 @@ class FilesViewSetMixin:
             data = request.data["data"]
 
             # schema has changes?
-            old_schema = get_dict_dot(api.metadata.get_file_metadata(driver, url), "schema")
+            old_schema = get_dict_dot(api.metadata.get_file_metadata(item, driver, url), "schema")
             new_schema = get_dict_dot(data, "attributes.metadata.schema")
             if new_schema == old_schema:
                 # new schema same as old, don't convert
@@ -389,6 +390,11 @@ class FilesViewSetMixin:
         if request.method == "DELETE":
             try:
                 driver.delete(path)
+                try:
+                    # delete metadata if exists
+                    driver.delete(api.metadata.get_metadata_path(path))
+                except:
+                    pass
             except api.libcloud.WebdavException as exc:
                 raise AnaliticoException(f"Can't delete {path}", status_code=exc.actual_code) from exc
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -423,7 +429,7 @@ class FilesViewSetMixin:
         # requesting file metadata instead of the file itself?
         metadata = get_query_parameter_as_bool(request, "metadata", False)
         if metadata:
-            return self.files_metadata(request, pk, url, driver, base_path)
+            return self.files_metadata(request, item, url, driver, base_path)
 
         # requesting data records instead of the file itself?
         records = get_query_parameter_as_bool(request, "records", False)
