@@ -350,6 +350,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             configs["docker_image"] = "analitico/analitico-serving:latest"
             configs["command"] = ["/root/source/analitico_serving/serving-start.sh"]
             # TODO: use a signed token
+            # automl / serving / use signed token for serving image #503 
             configs["api_token"] = "tok_demo2_xaffg23443d1"
         else:
             # snapshot built for the model
@@ -452,6 +453,7 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
     logger.info(f"current model on metric '{metric_to_monitor}' (to {modality}) is worse than the blessed model")
     return None
 
+
 def k8_serving_deallocate(item: ItemMixin, stage: str = K8_STAGE_PRODUCTION):
     """ Remove service used for serving inference for the given item type """
     name = k8_normalize_name(item.id)
@@ -463,12 +465,13 @@ def k8_serving_deallocate(item: ItemMixin, stage: str = K8_STAGE_PRODUCTION):
         raise Exception(f"no serving exists for item type {type(item)}")
 
     service_name = service_name if stage == K8_STAGE_PRODUCTION else service_name + "-staging"
-    
+
     try:
         kubectl(K8_DEFAULT_NAMESPACE, "delete", f"kservice/{service_name}", output=None)
     except Exception as e:
         logger.warning(e)
         pass
+
 
 ##
 ## K8s jobs used to process notebooks
@@ -637,6 +640,38 @@ def k8_job_delete(job_id: str):
         raise AnaliticoException(
             f"Job {job_id} cannot be deleted or not found", status_code=status.HTTP_404_NOT_FOUND
         ) from exec
+
+
+def k8_job_generate_dataset_metadata(item: ItemMixin, dataset_path: str, dataset_hash: str, extra: dict = None):
+    """ 
+    Execute a job that opens a dataset with Pandas and generates
+    the file metadata with statistics, schema etc...
+    The metadata generation is made async due to memory limits with
+    large datasets.
+    """
+    configs = k8_get_storage_volume_configuration(item)
+
+    job_id = generate_job_id()
+    workspace_id = item.workspace.id
+    configs["job_id_slug"] = k8_normalize_name(job_id)
+    configs["workspace_id"] = workspace_id
+    configs["workspace_id_slug"] = k8_normalize_name(workspace_id)
+    configs["item_id"] = item.id
+    configs["item_type"] = item.type
+    configs["job_action"] = analitico.ACTION_DATASET_METADATA
+    configs["job_id"] = job_id
+    configs["env_vars"] = ""
+    configs["run_image"] = "analitico/analitico-automl:latest"
+    configs["notification_url"] = ""
+
+    # remove double quotes in values 
+    extra = json.dumps(extra).replace('\\"', '') if extra else ""
+    configs["run_command"] = ["python3", "/root/source/analitico_automl/metadata.py", dataset_path, dataset_hash, extra]
+
+    job_template = os.path.join(TEMPLATE_DIR, "job-run-automl-template.yaml")
+    resource = k8_customize_and_apply(job_template, **configs)
+
+    return resource
 
 
 ##

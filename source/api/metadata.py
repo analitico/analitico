@@ -1,5 +1,4 @@
 import tempfile
-import diskcache
 import pandas as pd
 import os
 import libcloud.storage
@@ -12,6 +11,8 @@ import analitico.schema
 import analitico.utilities
 from analitico import AnaliticoException, logger, PARQUET_SUFFIXES, CSV_SUFFIXES, EXCEL_SUFFIXES, HDF_SUFFIXES
 from analitico.pandas import pd_read_csv
+from api.k8 import k8_job_generate_dataset_metadata
+from api.models import ItemMixin
 
 import api.libcloud.iterio
 from api.libcloud.webdavdrivers import WebdavStorageDriver
@@ -22,28 +23,6 @@ from api.libcloud.webdavdrivers import WebdavStorageDriver
 # https://simplejson.readthedocs.io/en/latest/
 import simplejson as json
 
-# Diskcache is used to cache file's metadata on the server
-# http://www.grantjenks.com/docs/diskcache/tutorial.html
-# http://www.grantjenks.com/docs/diskcache/api.html
-# Pros:
-#   Simple: servers don't need to coordinate
-#   Fast: data is stored on local disk
-# Cons:
-#   Data is lost when server is restarted
-#   Data needs to be recalculated on each server
-
-
-# how long we store metadata for? 1 month
-_cache_expire = 60 * 60 * 24 * 31
-
-# temporary directory where items are stored
-_cache_directory = os.path.join(tempfile.gettempdir(), "analitico-metadata-cache")
-if not os.path.isdir(_cache_directory):
-    os.makedirs(_cache_directory)
-
-# cache object is global so it stays open
-_cache = diskcache.Cache(_cache_directory)
-
 # dataframe size limit for exploring, quering and generating metadata
 DATAFRAME_OPEN_SIZE_LIMIT_MB = 100
 
@@ -52,8 +31,15 @@ DATAFRAME_OPEN_SIZE_LIMIT_MB = 100
 ## Public methods
 ##
 
+def get_metadata_path(path: str):
+    """ 
+    Return the path where the file metadata is saved.
+    Eg: datasets/ds_titanic/.analitico/titanic.csv.json
+    """
+    return os.path.join(os.path.dirname(path), ".analitico/", os.path.basename(path) + ".json")
 
-def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = True) -> dict:
+
+def get_file_metadata(item: ItemMixin, driver: WebdavStorageDriver, path: str, refresh: bool = True) -> dict:
     """
     Retrieve file object from path.
     
@@ -75,37 +61,37 @@ def get_file_metadata(driver: WebdavStorageDriver, path: str, refresh: bool = Tr
         # no metadata for directories for now
         return {}
 
-    # retrieve metadata from disk cache if availa
-    metadata_key = f"{driver.url}{path}#{obj.hash}"
-    metadata = _cache.get(metadata_key)
+    # file suffix, eg: .csv, .pdf
+    suffix = Path(path).suffix.lower()
+
+    # can this file be read into a pandas dataframe?
+    if suffix not in analitico.PANDAS_SUFFIXES:
+        return {}
+
+    # retrieve metadata from disk if available
+    try:
+        # eg: datasets/ds_titanic/.analitico/titanic.csv.metadata
+        metadata_path = get_metadata_path(path)
+        content = next(iter(driver.download_as_stream(metadata_path)))
+        metadata = json.loads(content)
+        if metadata.get("hash") != obj.hash:
+            # it needs to be refreshed because file has changed
+            metadata = {}
+    except Exception as e:
+        logger.debug(f"metadata for the file {path} does not exist")
+        metadata = {}
 
     try:
         # should create missing metadata?
-        if metadata is None and refresh:
+        if not metadata and refresh:
             metadata = {}
 
-            # file suffix, eg: .csv, .pdf
-            suffix = Path(path).suffix.lower()
+            # generate metadata asyncronous due to memory limits
+            # to open the dataset with Pandas.
+            k8_job_generate_dataset_metadata(item, path, obj.hash, extra=obj.extra)
 
-            # can this file be read into a pandas dataframe?
-            if suffix in analitico.PANDAS_SUFFIXES:
-                df, rows = get_file_dataframe(driver, path)
-                if df is not None:
-                    metadata["total_records"] = rows
-                    metadata["schema"] = analitico.schema.generate_schema(df)
-                    metadata["describe"] = df.describe().to_dict()
-
-            # numpy and pandas can add NaN values to the dictionary which
-            # then creates problems when these values are served in our
-            # json reply so we sanitize the metadata before we store it
-            metadata = json.loads(
-                json.dumps(metadata, skipkeys=True, ignore_nan=True, default=lambda o: "NOT-SERIALIZABLE")
-            )
-
-            # store updated metadata in local disk cache
-            _cache.set(metadata_key, metadata, expire=_cache_expire)
     except Exception as exc:
-        logger.warning("get_file_metadata - could not save metadata for %s, exc: %s", metadata_key, exc)
+        logger.warning("get_file_metadata - could not save metadata for %s, exc: %s", path, exc)
         metadata = {}
 
     return metadata
