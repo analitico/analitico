@@ -393,7 +393,7 @@ class FilesViewSetMixin:
                 try:
                     # delete metadata if exists
                     driver.delete(api.metadata.get_metadata_path(path))
-                except:
+                except Exception:
                     pass
             except api.libcloud.WebdavException as exc:
                 raise AnaliticoException(f"Can't delete {path}", status_code=exc.actual_code) from exc

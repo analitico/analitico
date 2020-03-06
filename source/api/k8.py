@@ -642,7 +642,7 @@ def k8_job_delete(job_id: str):
         ) from exec
 
 
-def k8_job_generate_dataset_metadata(item: ItemMixin, dataset_path: str, hash: str, extra: dict = None):
+def k8_job_generate_dataset_metadata(item: ItemMixin, dataset_path: str, dataset_hash: str, extra: dict = None):
     """ 
     Execute a job that opens a dataset with Pandas and generates
     the file metadata with statistics, schema etc...
@@ -666,7 +666,7 @@ def k8_job_generate_dataset_metadata(item: ItemMixin, dataset_path: str, hash: s
 
     # remove double quotes in values 
     extra = json.dumps(extra).replace('\\"', '') if extra else ""
-    configs["run_command"] = ["python3", "/root/source/analitico_automl/metadata.py", dataset_path, hash, extra]
+    configs["run_command"] = ["python3", "/root/source/analitico_automl/metadata.py", dataset_path, dataset_hash, extra]
 
     job_template = os.path.join(TEMPLATE_DIR, "job-run-automl-template.yaml")
     resource = k8_customize_and_apply(job_template, **configs)
