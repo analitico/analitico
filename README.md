@@ -2,7 +2,7 @@
 
 This project includes analitico's website, APIs and libraries. A number of experiments, data sources, queries, jupyter notebooks are also available. Large data files and models are stored externally. 
   
- <a href="https://github.com/ambv/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+ <a href="https://github.com/ambv/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a> [![CodeFactor](https://www.codefactor.io/repository/github/analitico/analitico/badge?s=a5958aced86f3af20cf6a88be39e3895fd9e34f2)](https://www.codefactor.io/repository/github/analitico/analitico)
  
 Environment
 ---
