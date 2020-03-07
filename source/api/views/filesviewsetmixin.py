@@ -211,7 +211,7 @@ class FilesViewSetMixin:
         sort = get_query_parameter(request, ORDER_PARAM, None)  # ?order=
 
         # retrieve data and filter it if requested
-        df, rows = api.metadata.get_file_dataframe(item, driver, path, page, page_size, query, sort)
+        df, rows = api.metadata.get_file_dataframe(driver, path, page, page_size, query, sort)
         df = df.fillna("")  # replace NaN with empty string
 
         # add paging metadata
