@@ -72,10 +72,9 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                // "api.test.test_api_automl.AutomlTests.test_serving_deploy",
-                // "api.test.test_api_automl.AutomlTests.test_predict",
-                // "api.test.test_api_jobs.JobsTests",
-                "api.test.test_api_k8.K8Tests.test_job_run_automl",
+                "api.test.test_api_dataset.DatasetTests",
+                // "api.test.test_api_k8.K8Tests.test_k8_deploy_automl",
+                // "api.test.test_api_k8.K8Tests.test_k8_job_generate_dataset_metadata",
                 "-v",
                 "2"
             ],
