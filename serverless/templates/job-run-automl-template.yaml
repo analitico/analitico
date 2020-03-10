@@ -48,11 +48,11 @@ spec:
           readOnly: false
         resources:
           requests:
-            cpu: 4
-            memory: 48Gi
+            cpu: {cpu_request}
+            memory: {memory_request}
           limits:
-            cpu: 12
-            memory: 64Gi
+            cpu: {cpu_limit}
+            memory: {memory_limit}
       restartPolicy: Never
       volumes:
       - name: analitico-drive

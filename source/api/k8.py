@@ -510,6 +510,11 @@ def k8_jobs_create(
         # Automl items have a different run
         configs["job_template"] = os.path.join(TEMPLATE_DIR, "job-run-automl-template.yaml")
         configs["run_image"] = f"analitico/analitico-automl:latest"
+        configs["cpu_request"] = "4"
+        configs["memory_request"] = "48Gi"
+        configs["cpu_limit"] = "12"
+        configs["memory_limit"] = "64Gi"
+
         automl_config = item.get_attribute("automl")
         configs["run_command"] = str(
             [
@@ -663,6 +668,11 @@ def k8_job_generate_dataset_metadata(item: ItemMixin, dataset_path: str, dataset
     configs["env_vars"] = ""
     configs["run_image"] = "analitico/analitico-automl:latest"
     configs["notification_url"] = ""
+    configs["cpu_request"] = "100m"
+    configs["memory_request"] = "48Gi"
+    configs["cpu_limit"] = "1"
+    configs["memory_limit"] = "64Gi"
+
 
     # remove double quotes in values 
     extra = json.dumps(extra).replace('\\"', '') if extra else ""
