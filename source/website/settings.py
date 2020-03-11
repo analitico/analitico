@@ -463,7 +463,7 @@ try:
     ##
 
     # kubernetes endpoint used for elastic search service
-    ELASTIC_SEARCH_URL = "https://cloud.analitico.ai:6443/api/v1/namespaces/knative-monitoring/services/elasticsearch-logging/proxy/_search"
+    ELASTIC_SEARCH_URL = "https://cloud.analitico.ai:6443/api/v1/namespaces/knative-monitoring/services/elasticsearch-logging/proxy/logstash-*/_search"
 
     # bearer token used to authenticate on elastic search service
     ELASTIC_SEARCH_API_TOKEN = os.environ.get("ANALITICO_ELASTIC_SEARCH_API_TOKEN", None)

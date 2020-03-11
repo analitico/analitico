@@ -400,7 +400,7 @@ class K8Tests(AnaliticoApiTestCase):
         # generate info logs
         for x in range(20):
             response = requests.get(
-                endpoint_echo, params={"message": f"INFO log for unit-testing", "level": logging.INFO}, verify=False
+                endpoint_echo, params={"message": f"INFO log for unit-testing", "level": logging.INFO}
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -463,7 +463,7 @@ class K8Tests(AnaliticoApiTestCase):
         message = f"test_k8s_get_logs-{start_time}"
         for level, level_number in levels.items():
             response = requests.get(
-                endpoint_echo, params={"message": f"{message}-{level}", "level": level_number}, verify=False
+                endpoint_echo, params={"message": f"{message}-{level}", "level": level_number}
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
