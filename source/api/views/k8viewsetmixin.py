@@ -233,7 +233,7 @@ class K8ViewSetMixin:
         # query the current service only
         if query:
             query = f"{query} AND "
-        query += f'kubernetes.labels.serving_knative_dev\/service:"{service_name}" AND kubernetes.namespace_name:"{service_namespace}"'
+        query += f'kubernetes.labels.serving_knative_dev\/service.keyword:"{service_name}" AND kubernetes.namespace_name.keyword:"{service_namespace}"'
 
         url = django.conf.settings.ELASTIC_SEARCH_URL
         token = django.conf.settings.ELASTIC_SEARCH_API_TOKEN
@@ -271,7 +271,7 @@ class K8ViewSetMixin:
         # query the current service only
         if query:
             query = f"{query} AND "
-        query += f'kubernetes.labels.job-name:"{job_id}" AND kubernetes.namespace_name:{job_namespace}'
+        query += f'kubernetes.labels.job-name.keyword:"{job_id}" AND kubernetes.namespace_name.keyword:{job_namespace}'
 
         url = django.conf.settings.ELASTIC_SEARCH_URL
         token = django.conf.settings.ELASTIC_SEARCH_API_TOKEN
