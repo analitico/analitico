@@ -11,7 +11,7 @@ import analitico.schema
 import analitico.utilities
 from analitico import AnaliticoException, logger, PARQUET_SUFFIXES, CSV_SUFFIXES, EXCEL_SUFFIXES, HDF_SUFFIXES
 from analitico.pandas import pd_read_csv
-from api.k8 import k8_job_generate_dataset_metadata
+from api.k8 import k8_job_generate_dataset_metadata, kubectl, K8_DEFAULT_NAMESPACE
 from api.models import ItemMixin
 
 import api.libcloud.iterio
@@ -30,6 +30,7 @@ DATAFRAME_OPEN_SIZE_LIMIT_MB = 100
 ##
 ## Public methods
 ##
+
 
 def get_metadata_path(path: str):
     """ 
@@ -88,7 +89,18 @@ def get_file_metadata(item: ItemMixin, driver: WebdavStorageDriver, path: str, r
 
             # generate metadata asyncronous due to memory limits
             # to open the dataset with Pandas.
-            k8_job_generate_dataset_metadata(item, path, obj.hash, extra=obj.extra)
+            # First check the job is not already running.
+            jobs, _ = kubectl(
+                K8_DEFAULT_NAMESPACE,
+                "get",
+                "job",
+                args=[
+                    "--selector",
+                    f"analitico.ai/job-action={analitico.ACTION_DATASET_METADATA},analitico.ai/item-id={item.id},analitico.ai/dataset-hash={obj.hash}",
+                ],
+            )
+            if len(jobs["items"]) == 0:
+                k8_job_generate_dataset_metadata(item, path, obj.hash, extra=obj.extra)
 
     except Exception as exc:
         logger.warning("get_file_metadata - could not save metadata for %s, exc: %s", path, exc)

@@ -514,6 +514,7 @@ def k8_jobs_create(
         configs["memory_request"] = "48Gi"
         configs["cpu_limit"] = "12"
         configs["memory_limit"] = "64Gi"
+        configs["dataset_hash"] = "None"
 
         automl_config = item.get_attribute("automl")
         configs["run_command"] = str(
@@ -663,6 +664,7 @@ def k8_job_generate_dataset_metadata(item: ItemMixin, dataset_path: str, dataset
     configs["workspace_id_slug"] = k8_normalize_name(workspace_id)
     configs["item_id"] = item.id
     configs["item_type"] = item.type
+    configs["dataset_hash"] = dataset_hash
     configs["job_action"] = analitico.ACTION_DATASET_METADATA
     configs["job_id"] = job_id
     configs["env_vars"] = ""

@@ -8,6 +8,7 @@ metadata:
     analitico.ai/item-id: {item_id}
     analitico.ai/job-action: {job_action}
     analitico.ai/job-id: {job_id}
+    analitico.ai/dataset-hash: {dataset_hash}
 spec:
   # no retries
   backoffLimit: 0
@@ -16,6 +17,7 @@ spec:
       labels:
         analitico.ai/workspace-id: {workspace_id}
         analitico.ai/item-id: {item_id}
+        analitico.ai/dataset-hash: {dataset_hash}
     spec:
       # used to schedule the job in the reserved nodes with a lot of RAM and CPUs
       tolerations:
