@@ -628,7 +628,7 @@ def k8_jobs_list(item: ItemMixin) -> [dict]:
             "-n",
             "cloud",
             "--selector",
-            f"analitico.ai/{selectBy}",
+            f"analitico.ai/job-action in ({analitico.ACTION_BUILD}, {analitico.ACTION_RUN}, {analitico.ACTION_RUN_AND_BUILD}),analitico.ai/{selectBy}",
             "--sort-by",
             ".metadata.creationTimestamp",
             "-o",
