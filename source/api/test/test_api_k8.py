@@ -480,7 +480,7 @@ class K8Tests(AnaliticoApiTestCase):
                 logging.log(logging.INFO, msg=f"Logs indexed in {elapsed} secs")
             else:
                 time.sleep(2)
-                insist = elapsed <= 60
+                insist = elapsed <= 90
 
         # check results from Elastic Search
         hits_len = len(response.data["hits"]["hits"])
@@ -550,7 +550,7 @@ class K8Tests(AnaliticoApiTestCase):
             # run a job to generate logs
             job_id, _ = self.job_run_notebook()
             # wait for logs to be collected
-            time.sleep(30)
+            time.sleep(60)
 
             url = reverse("api:notebook-k8-job-logs", args=(self.item_id, job_id))
 
