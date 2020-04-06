@@ -12,7 +12,7 @@ import sys
 import analitico
 import pandas as pd
 
-TOKEN = "tok_tester1_A7HMc7FA"
+TOKEN = "tok_XXX"
 ENDPOINT = "https://staging.analitico.ai/api/"
 
 api = analitico.authorize(token=TOKEN, endpoint=ENDPOINT)

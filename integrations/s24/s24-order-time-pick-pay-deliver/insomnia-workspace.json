@@ -112,7 +112,7 @@
 		{
 			"_id": "req_5664860803184c4f917a962f1245f2f5",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {
@@ -155,7 +155,7 @@
 		{
 			"_id": "req_a237e3f431614bc1915bef40d1370102",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
@@ -181,7 +181,7 @@
 		{
 			"_id": "req_8dde1ab0fe8b4faa9f7a6ae0c925c4ed",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
@@ -207,7 +207,7 @@
 		{
 			"_id": "req_618bc5b7c2a4489c9475b2764a1b39ef",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {
@@ -242,7 +242,7 @@
 		{
 			"_id": "req_198e9df9d143453bac499001a2f8f996",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {
@@ -277,7 +277,7 @@
 		{
 			"_id": "req_d5c4849ce6b04bc594037dc6f50eb2a9",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {
@@ -312,7 +312,7 @@
 		{
 			"_id": "req_ca36d241cc3c472a97bc56658f2fadba",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
@@ -338,7 +338,7 @@
 		{
 			"_id": "req_29324c19bcdc46ff8b500338fac678e0",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
@@ -364,7 +364,7 @@
 		{
 			"_id": "req_49061006d21c47e08e22403c8040d775",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
@@ -390,7 +390,7 @@
 		{
 			"_id": "req_b1383040bfe44d35bb36ee113c8e0335",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
@@ -416,7 +416,7 @@
 		{
 			"_id": "req_0bfb4cff58da4d1ea78a321dbb5e7703",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
@@ -442,7 +442,7 @@
 		{
 			"_id": "req_1bd6314104ae44c9b0b5a2c5273d5f95",
 			"authentication": {
-				"token": "tok_tester1_A7HMc7FA",
+				"token": "tok_XXX",
 				"type": "bearer"
 			},
 			"body": {},
