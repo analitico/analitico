@@ -34,7 +34,7 @@ class AnaliticoApiTestCase(APITestCase):
                 "driver": "hetzner-webdav",
                 "storagebox_id": "196299",
                 "url": "https://u208199.your-storagebox.de",
-                "credentials": {"username": "u208199", "password": "AyG9OxeeuXr0XpqF"},
+                "credentials": {"username": "u208199", "password": "xQy8qeXlF3Zfo5gE"},
             }
         }
 
