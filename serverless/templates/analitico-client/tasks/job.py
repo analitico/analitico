@@ -94,16 +94,13 @@ def bless(notebook_path: str) -> bool:
     blessed = False
 
     # convert notebook to executable python module
-    notebook = read_text(notebook_path)
-    notebook_obj = nbformat.reads(notebook, as_version=4)
     exporter = PythonExporter()
     (body, resources) = exporter.from_filename(notebook_path)
 
     module_name = "notebook"
-    module_path = "/tmp/notebook.py"
-    save_text(body, module_path)
-
+    module_path = "._notebook.py"
     try:
+        save_text(body, module_path)
         spec = spec_from_file_location(module_name, module_path)
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -131,6 +128,10 @@ def bless(notebook_path: str) -> bool:
 
     except Exception as exc:
         logging.error("load module %s at %s failed:\n %s", module_name, module_path, exc)
+    finally:
+        # clean up
+        if os.path.exists(module_path):
+            os.remove(module_path)
 
     return blessed
 
