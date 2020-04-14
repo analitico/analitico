@@ -180,9 +180,6 @@ class K8Tests(AnaliticoApiTestCase):
         item.save()
         target = Recipe.objects.create(pk="rx_test_autodeploy", workspace_id=self.ws1.id)        
 
-        url = reverse("api:model-files", args=(item.id, "notebook.py"))
-        self.upload_file(url, "notebook-docker-hello-world.py", "text/plain", token=self.token1)
-
         # model is not autodeployed because is blessed before the current one
         blessed_on = "2020-01-01T10:10:11Z"
         model_deployed_on = "2020-04-04T10:10:11Z"
