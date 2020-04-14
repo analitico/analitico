@@ -7,6 +7,16 @@ import os
 import json
 import argparse
 import requests
+from importlib.util import spec_from_file_location, module_from_spec
+import tempfile
+import datetime
+
+import papermill
+from nbconvert import PythonExporter
+import nbformat
+
+from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
+from analitico.utilities import read_json, save_json, subprocess_run, read_text
 
 import analitico.logging
 
@@ -75,18 +85,59 @@ def nb_clear_error_cells(notebook: dict) -> dict:
     return notebook
 
 
+def bless(notebook_path: str) -> bool:
+    """ 
+    User can customize the logic used to decide if a model is imporoved
+    than the precedent. The logic is defined in the method `bless()`
+    inside the notebook.py module of the recipe.
+    """
+    blessed = False
+
+    # convert notebook to executable python module
+    notebook = read_text(notebook_path)
+    notebook_obj = nbformat.reads(notebook, as_version=4)
+    exporter = PythonExporter()
+    exporter.template_file = "full"
+    (body, resources) = exporter.export_from_notebook(notebook_obj)
+
+    module_name = "notebook"
+    module_path = "/tmp/notebook.py"
+    with open(module_path, "w+") as module_file:
+        module_file.write(body)
+
+    try:
+        spec = spec_from_file_location(module_name, module_path)
+        module = module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        blessed_model_id = os.getenv("ANALITICO_BLESSED_MODEL_ID", "")
+        blessed_metrics = {}
+        if blessed_model_id:
+            blessed_metadata_path = os.path.join(
+                os.getenv("ANALITICO_DRIVE", "models", blessed_model_id, "metadata.json")
+            )
+            try:
+                blessed_metrics = read_json(blessed_metadata_path)
+                blessed_metrics = blessed_metrics.get("scores", {})
+            except Exception as exc:
+                logging.warning("metrics for the blessed model %s cannot be retrieved: \n%s", blessed_model_id, exc)
+
+        try:
+            current_metrics = read_json(os.path.join(os.path.dirname(notebook_path), "metadata.json"))
+        except Exception as exc:
+            logging.warning("metrics for the current execution cannot be retrieved: \n%s", exc)
+
+        if module is not None and hasattr(module, "bless"):
+            logging.info("use custom bless() function defined for the recipe")
+            blessed = module.bless(None, current_metrics, blessed_model_id, blessed_metrics)
+
+    except Exception as exc:
+        logging.error("load module %s at %s failed:\n %s", module_name, module_path, exc)
+
+    return blessed
+
+
 try:
-
-    try:
-        from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
-        from analitico.utilities import read_json, save_json, subprocess_run
-    except Exception as exc:
-        raise AnaliticoException(f"Analitico dependencies should be installed.") from exc
-
-    try:
-        import papermill
-    except Exception as exc:
-        raise AnaliticoException(f"Papermill dependency should be installed.") from exc
 
     # enable logging by default
     logging.getLogger().setLevel(logging.INFO)
@@ -140,6 +191,15 @@ try:
         logging.info("Running papermill to process notebook")
 
         papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir, log_output=True)
+
+        # if defined, check if model has improved metrics and should be promoted
+        is_blessed = bless(notebook_path)
+        if is_blessed:
+            metadata = read_json("metadata.json") if os.path.exists("metadata.json") else {}
+            # ISO8601
+            metadata["blessed_on"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            save_json(metadata, "metadata.json")
+
     except Exception as exc:
         raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
 except Exception:

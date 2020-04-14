@@ -38,6 +38,8 @@ spec:
           value: /mnt/analitico-drive/{item_type}s/{item_id}
         - name: ANALITICO_JOB_ID
           value: {job_id}
+        - name: ANALITICO_BLESSED_MODEL_ID
+          value: {blessed_model_id}
         - name: ANALITICO_DRIVE
           value: /mnt/analitico-drive
         - name: ANALITICO_JOB_ACTION

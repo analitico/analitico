@@ -129,14 +129,12 @@ class K8Tests(AnaliticoApiTestCase):
 
     @tag("k8s")
     def test_k8_autodeploy(self):
-        autodeploy_config = {
-            "metric_to_monitor": "abs error 75% quantile",
-            "modality": "decrease",
-            "stage": K8_STAGE_PRODUCTION,
-        }
+        autodeploy_config = {"metric_to_monitor": "abs error 75% quantile", "modality": "decrease"}
         item_current = Model.objects.create(pk="ml_current", workspace_id=self.ws1.id)
         item_blessed = Model.objects.create(pk="ml_blessed", workspace_id=self.ws1.id)
-        target = Recipe.objects.create(pk="rx_test_autodeploy", workspace_id=self.ws1.id)
+        target = Recipe.objects.create(
+            pk="rx_test_autodeploy", workspace_id=self.ws1.id, attributes={"autodeploy": autodeploy_config}
+        )
 
         item_current.set_attribute("metadata.scores", {"business KPI": {"abs error 75% quantile": {"value": 10.40}}})
         item_current.set_attribute("docker", self.pre_built_docker_spec)
@@ -146,7 +144,7 @@ class K8Tests(AnaliticoApiTestCase):
         # no staging nor production is defined in the `service` attributes
         target.set_attribute("service", {})
         target.save()
-        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        deployed = k8_autodeploy(item_current, target)
         self.assertIsNotNone(deployed)
 
         # model is considered improved when the metric to monitor
@@ -155,7 +153,7 @@ class K8Tests(AnaliticoApiTestCase):
         item_blessed.save()
         target.set_attribute("service.production", {"item_id": item_blessed.id})
         target.save()
-        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        deployed = k8_autodeploy(item_current, target)
         self.assertIsNotNone(deployed)
 
         # model is considered improved because current deployed `item_blessed` model is worst
@@ -164,7 +162,7 @@ class K8Tests(AnaliticoApiTestCase):
         item_blessed.save()
         target.set_attribute("service.production", {"item_id": item_blessed.id})
         target.save()
-        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        deployed = k8_autodeploy(item_current, target)
         self.assertIsNotNone(deployed)
 
         # model is not improved
@@ -172,8 +170,47 @@ class K8Tests(AnaliticoApiTestCase):
         item_current.save()
         target.set_attribute("service.production", {"item_id": item_blessed.id})
         target.save()
-        deployed = k8_autodeploy(item_current, target, config=autodeploy_config)
+        deployed = k8_autodeploy(item_current, target)
         self.assertIsNone(deployed)
+
+    def test_k8_autodeploy_with_custom_code(self):
+        # create a model with a preprocessed notebook file
+        item = Model.objects.create(pk="ml_current", workspace_id=self.ws1.id)
+        item.set_attribute("docker", self.pre_built_docker_spec)
+        item.save()
+        target = Recipe.objects.create(pk="rx_test_autodeploy", workspace_id=self.ws1.id)        
+
+        url = reverse("api:model-files", args=(item.id, "notebook.py"))
+        self.upload_file(url, "notebook-docker-hello-world.py", "text/plain", token=self.token1)
+
+        # model is not autodeployed because is blessed before the current one
+        blessed_on = "2020-01-01T10:10:11Z"
+        model_deployed_on = "2020-04-04T10:10:11Z"
+        item.set_attribute("metadata.blessed_on", blessed_on)
+        item.save()
+        target.set_attribute("service.production.response.metadata.creationTimestamp", model_deployed_on)
+        target.save()
+        deployed = k8_autodeploy(item, target)
+        self.assertIsNone(deployed)
+
+        # blessed model is deployed when no other model is already deployed
+        blessed_on = "2020-01-01T10:10:11Z"
+        item.set_attribute("metadata.blessed_on", blessed_on)
+        item.save()
+        target.set_attribute("service.production", {})
+        target.save()
+        deployed = k8_autodeploy(item, target)
+        self.assertIsNotNone(deployed)
+
+        # model is blessed recently and it should be deployed
+        blessed_on = "2020-04-04T10:10:11Z"
+        model_deployed_on = "2020-01-01T10:10:11Z"
+        item.set_attribute("metadata.blessed_on", blessed_on)
+        item.save()
+        target.set_attribute("service.production.response.metadata.creationTimestamp", model_deployed_on)
+        target.save()
+        deployed = k8_autodeploy(item, target)
+        self.assertIsNotNone(deployed)
 
     @tag("k8s")
     def test_k8_deploy_automl(self):
@@ -462,9 +499,7 @@ class K8Tests(AnaliticoApiTestCase):
         }
         message = f"test_k8s_get_logs-{start_time}"
         for level, level_number in levels.items():
-            response = requests.get(
-                endpoint_echo, params={"message": f"{message}-{level}", "level": level_number}
-            )
+            response = requests.get(endpoint_echo, params={"message": f"{message}-{level}", "level": level_number})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # wait for all logs to be indexed
@@ -993,7 +1028,11 @@ class K8Tests(AnaliticoApiTestCase):
             # wait for pod to be deployed
             time.sleep(5)
             k8_wait_for_condition(
-                K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=f"analitico.ai/item-id={automl.id},analitico.ai/service=serving", timeout=60
+                K8_DEFAULT_NAMESPACE,
+                "pod",
+                "condition=Ready",
+                labels=f"analitico.ai/item-id={automl.id},analitico.ai/service=serving",
+                timeout=60,
             )
 
         finally:
@@ -1006,22 +1045,20 @@ class K8Tests(AnaliticoApiTestCase):
         try:
             dataset = Dataset.objects.create(pk="ds_titanic_1", workspace_id=self.ws1.id)
             dataset.save()
-            asset_name="titanic_1.csv"
+            asset_name = "titanic_1.csv"
             url = reverse("api:dataset-files", args=(dataset.id, asset_name))
             response = self.upload_file(url, asset_name, "text/csv", token=self.token1)
             self.assertApiResponse(response, status_code=status.HTTP_204_NO_CONTENT)
-            
+
             hash = id_generator()
-            extra = {"pippo": "pluto", "quotes": "\"pippo-with-quotes\""}
+            extra = {"pippo": "pluto", "quotes": '"pippo-with-quotes"'}
             resource = k8_job_generate_dataset_metadata(dataset, f"datasets/{dataset.id}/{asset_name}", hash, extra)
-            
+
             # wait for generation
             job_id = get_dict_dot(resource, "metadata.name")
             time.sleep(3)
-            k8_wait_for_condition(
-                K8_DEFAULT_NAMESPACE, f"job/{job_id}", "condition=complete", timeout=120
-            )
-            
+            k8_wait_for_condition(K8_DEFAULT_NAMESPACE, f"job/{job_id}", "condition=complete", timeout=120)
+
             # check file existence
             self.auth_token(self.token1)
             url = f"/api/datasets/{dataset.id}/files/.analitico/{asset_name}.json"

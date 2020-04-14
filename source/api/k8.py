@@ -11,6 +11,7 @@ import urllib.parse
 import requests
 import time
 from datetime import datetime, timedelta
+import dateutil.parser
 import django.conf
 
 import analitico.utilities
@@ -350,7 +351,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             configs["docker_image"] = "analitico/analitico-serving:latest"
             configs["command"] = ["/root/source/analitico_serving/serving-start.sh"]
             # TODO: use a signed token
-            # automl / serving / use signed token for serving image #503 
+            # automl / serving / use signed token for serving image #503
             configs["api_token"] = "tok_demo2_xaffg23443d1"
         else:
             # snapshot built for the model
@@ -391,9 +392,15 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         raise AnaliticoException(f"Could not deploy {item.id} because: {exc}") from exc
 
 
-def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
-    """
-    Evaluate the blessed deployed model on the given metric and 
+def k8_autodeploy(item: ItemMixin, target: ItemMixin) -> dict:
+    """ Check if the model is blessed and then deploy it.
+
+    If the user has defined a custom bless() function in the notebook
+    and the function blessed the execution of the notebook, then the
+    model is deployed. A model is deployed if the blessing date is 
+    after the deploy date of the current model.
+
+    Alternatively, evaluate bless the model on the given metric and 
     deploy the new model if it's improved. Model is also considered 
     improved if the metric is missing in the blessed model or it's 
     never been deployed any model before.
@@ -407,50 +414,74 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin, config: dict) -> dict:
     ------
         Dict if the item has been deployed, None otherwise.
     """
-    assert config
-
     improved = False
 
-    # eg: "abs error 75% quantile"
-    metric_to_monitor = config.get("metric_to_monitor")
-    modality = config.get("modality")
-    stage = config.get("stage", K8_STAGE_STAGING)
-    assert metric_to_monitor and modality, "invalid autodeploy configuration"
-
     # deployed model
+    stage = K8_STAGE_PRODUCTION
     blessed_model_id = target.get_attribute(f"service.{stage}.item_id")
-    if not blessed_model_id:
-        improved = True
-    else:
-        blessed_model = factory.get_item(blessed_model_id)
+    blessed_model = factory.get_item(blessed_model_id) if blessed_model_id else None
 
-        current_metrics = item.get_attribute("metadata.scores", {})
-        blessed_metrics = blessed_model.get_attribute("metadata.scores", {})
+    blessed_metrics = blessed_model.get_attribute("metadata.scores", {}) if blessed_model else {}
+    current_metrics = item.get_attribute("metadata.scores", {})
 
-        # metric to monitor's value
-        current_metric = find_key(current_metrics, metric_to_monitor, {})
-        current_metric_value = current_metric.get("value", None)
-        assert current_metric_value is not None
-        blessed_metric = find_key(blessed_metrics, metric_to_monitor, {})
-        blessed_metric_value = blessed_metric.get("value", None)
+    # when the current model has been blessed by the custom bless() function
+    current_blessed_on = item.get_attribute("metadata.blessed_on")
+    try:
+        # eg: 2010-04-04T10:11:12Z
+        current_blessed_on = dateutil.parser.isoparse(current_blessed_on)
+    except Exception:
+        logger.debug("notebook has not been evaluated with the custom bless() function")
 
-        # when metric is missing in the blessed model we consider it improved
-        if blessed_metric_value is None:
+    if current_blessed_on:
+        model_deployed_on = target.get_attribute(f"service.{stage}.response.metadata.creationTimestamp")
+        if not model_deployed_on:
+            # it's the first model and has been blessed
             improved = True
-            logger.warning(
-                f"metric '{metric_to_monitor}' (to {modality}) not found in blessed model: consider current model better"
-            )
-        elif modality == "decrease":
-            improved = current_metric_value < blessed_metric_value
         else:
-            improved = current_metric_value > blessed_metric_value
+            # eg: 2010-04-04T10:11:12Z
+            model_deployed_on = dateutil.parser.isoparse(model_deployed_on)
+            improved = current_blessed_on > model_deployed_on
+
+        logger.info("last execution has evaluated the model %s has blessed: %s", item.id, improved)
+    else:
+        logger.info("no custom bless() function defined for the recipe")
+
+        config = target.get_attribute("autodeploy")
+        if not config:
+            return None
+
+        # eg: "abs error 75% quantile"
+        metric_to_monitor = config.get("metric_to_monitor")
+        modality = config.get("modality")
+        assert metric_to_monitor and modality, "invalid autodeploy configuration"
+
+        if not blessed_model_id:
+            improved = True
+        else:
+            # metric to monitor's value
+            current_metric = find_key(current_metrics, metric_to_monitor, {})
+            current_metric_value = current_metric.get("value", None)
+            assert current_metric_value is not None
+
+            blessed_metric = find_key(blessed_metrics, metric_to_monitor, {})
+            blessed_metric_value = blessed_metric.get("value", None)
+
+            # when metric is missing in the blessed model we consider it improved
+            if blessed_metric_value is None:
+                improved = True
+                logger.warning(
+                    f"metric '{metric_to_monitor}' (to {modality}) not found in blessed model: consider current model better"
+                )
+            elif modality == "decrease":
+                improved = current_metric_value < blessed_metric_value
+            else:
+                improved = current_metric_value > blessed_metric_value
 
     if improved:
-        logger.info(f"current model is better on metric '{metric_to_monitor}' (to {modality}) than the blessed model")
-        logger.info(f"deploy current model to {stage}")
+        logger.info(f"current model is blessed")
         return k8_deploy_v2(item, target, stage)
 
-    logger.info(f"current model on metric '{metric_to_monitor}' (to {modality}) is worse than the blessed model")
+    logger.info(f"current model on metric is worse than the blessed model")
     return None
 
 
@@ -499,6 +530,8 @@ def k8_jobs_create(
     notebook_name = job_data.get("notebook", "notebook.ipynb") if job_data else "notebook.ipynb"
     configs["notebook_name"] = notebook_name
 
+    # model deployed in production used for evaluating the bless model
+    configs["blessed_model_id"] = item.get_attribute("service.production.item_id", "")
     configs["env_vars"] = k8_workspace_env_vars_to_yaml(item.workspace)
 
     # the run job needs to run using an image of the code that is the same of what we are running here
@@ -674,10 +707,8 @@ def k8_job_generate_dataset_metadata(item: ItemMixin, dataset_path: str, dataset
     configs["memory_request"] = "48Gi"
     configs["cpu_limit"] = "1"
     configs["memory_limit"] = "64Gi"
-
-
-    # remove double quotes in values 
-    extra = json.dumps(extra).replace('\\"', '') if extra else ""
+    # remove double quotes in values
+    extra = json.dumps(extra).replace('\\"', "") if extra else ""
     configs["run_command"] = ["python3", "/root/source/analitico_automl/metadata.py", dataset_path, dataset_hash, extra]
 
     job_template = os.path.join(TEMPLATE_DIR, "job-run-automl-template.yaml")

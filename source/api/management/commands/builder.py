@@ -32,10 +32,8 @@ class Command(BaseCommand):
         job_data = {"notebook": notebook}  # the notebook name
         try:
             k8_build_v2(item, target, job_data)
-            
-            autodeploy = item.get_attribute("autodeploy")
-            if autodeploy:
-                k8_autodeploy(target, item, config=autodeploy)
+            # check if model has improved metrics and should be autodeployed
+            k8_autodeploy(target, item)
         finally:
             notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
             if notification_url:
