@@ -16,7 +16,7 @@ from nbconvert import PythonExporter
 import nbformat
 
 from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
-from analitico.utilities import read_json, save_json, subprocess_run, read_text
+from analitico.utilities import read_json, save_json, subprocess_run, read_text, save_text
 
 import analitico.logging
 
@@ -97,13 +97,11 @@ def bless(notebook_path: str) -> bool:
     notebook = read_text(notebook_path)
     notebook_obj = nbformat.reads(notebook, as_version=4)
     exporter = PythonExporter()
-    exporter.template_file = "full"
-    (body, resources) = exporter.export_from_notebook(notebook_obj)
+    (body, resources) = exporter.from_filename(notebook_path)
 
     module_name = "notebook"
     module_path = "/tmp/notebook.py"
-    with open(module_path, "w+") as module_file:
-        module_file.write(body)
+    save_text(body, module_path)
 
     try:
         spec = spec_from_file_location(module_name, module_path)

@@ -667,7 +667,7 @@ class K8Tests(AnaliticoApiTestCase):
             recipe_id = "rx_x5b1npmn"
             notebook_name = "notebook.ipynb"
             server = "https://staging.analitico.ai"
-            headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1", "Content-Type": "application/json"}
+            headers = {"Authorization": "Bearer tok_tester1_Xf4dfG345B", "Content-Type": "application/json"}
 
             # run the recipe
             url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_RUN))
@@ -710,6 +710,13 @@ class K8Tests(AnaliticoApiTestCase):
             self.assertGreaterEqual(notebook_start_time, test_start_time)
             self.assertGreaterEqual(notebook_end_time, notebook_start_time)
             self.assertEqual(None, execution_status["exception"])
+
+            # the bless() function defined in the notebook always returns true.
+            # See metadata.json has blessed_on has results.
+            url = reverse("api:recipe-files", args=(recipe_id, "metadata.json"))
+            response = requests.get(server + url, headers=headers)
+            self.assertApiResponse(response)
+            self.assertIsNone(response.json().get("blessed_on"))
 
         finally:
             # clean up
