@@ -126,7 +126,7 @@ def bless(notebook_path: str) -> bool:
         blessed_metrics = {}
         if blessed_model_id:
             blessed_metadata_path = os.path.join(
-                os.getenv("ANALITICO_DRIVE", "models", blessed_model_id, "metadata.json")
+                os.path.join(os.getenv("ANALITICO_DRIVE"), "models", blessed_model_id, "metadata.json")
             )
             try:
                 blessed_metrics = read_json(blessed_metadata_path)
