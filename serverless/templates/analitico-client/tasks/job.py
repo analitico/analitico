@@ -221,7 +221,7 @@ except Exception:
         try_request_notification(notification_url)
     raise
 finally:
-    # eclude when job does `run and build`
+    # eclude when job does `run and build` to let the build send the notification
     notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
     if os.environ.get("ANALITICO_JOB_ACTION") == ACTION_RUN and notification_url:
         try_request_notification(notification_url)

@@ -716,7 +716,10 @@ class K8Tests(AnaliticoApiTestCase):
             url = reverse("api:recipe-files", args=(recipe_id, "metadata.json"))
             response = requests.get(server + url, headers=headers)
             self.assertApiResponse(response)
-            self.assertIsNotNone(response.json().get("blessed_on"))
+            blessed_on = response.json().get("blessed_on")
+            self.assertIsNotNone(blessed_on)
+            # try to parse, eg: 2020-01-01T10:11:12Z
+            dateutil.parser.isoparse(blessed_on)
 
         finally:
             # clean up
