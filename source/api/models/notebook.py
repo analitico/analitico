@@ -268,7 +268,7 @@ def nb_extract_source(nb, disable_scripts=True):
                 # TODO could write exception blocks cell by cell and use them to improve error messaging
 
                 source += "# Cell {}\n".format(i)
-                for line in iter(cell["source"].splitlines()):
+                for line in iter(cell["source"]):
                     # lines starting with ! and % are special scripts and are removed
                     if len(line) > 0 and line[0] in ("!", "%"):
                         source += "# COMMENTED OUT: "
