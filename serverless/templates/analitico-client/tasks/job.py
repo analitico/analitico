@@ -122,18 +122,19 @@ def bless(notebook_path: str) -> bool:
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
 
-        blessed_model_id = os.getenv("ANALITICO_BLESSED_MODEL_ID", "")
-        blessed_metrics = {}
+        blessed_model_id = os.getenv("ANALITICO_BLESSED_MODEL_ID")
+        blessed_metrics = None
         if blessed_model_id:
             blessed_metadata_path = os.path.join(
-                os.path.join(os.getenv("ANALITICO_DRIVE"), "models", blessed_model_id, "metadata.json")
+                os.path.join(os.getenv("ANALITICO_DRIVE", ""), "models", blessed_model_id, "metadata.json")
             )
             try:
                 blessed_metrics = read_json(blessed_metadata_path)
-                blessed_metrics = blessed_metrics.get("scores", {})
+                blessed_metrics = blessed_metrics.get("scores")
             except Exception as exc:
                 logging.warning("metrics for the blessed model %s cannot be retrieved: \n%s", blessed_model_id, exc)
 
+        current_metrics = None
         try:
             current_metrics = read_json(os.path.join(os.path.dirname(notebook_path), "metadata.json"))
         except Exception as exc:
@@ -207,10 +208,7 @@ try:
         # if defined, check if model has improved metrics and should be promoted
         is_blessed = bless(notebook_path)
         if is_blessed:
-            metadata = read_json("metadata.json") if os.path.exists("metadata.json") else {}
-            # ISO8601
-            metadata["blessed_on"] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-            save_json(metadata, "metadata.json")
+            analitico.set_metric("blessed_on", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
     except Exception as exc:
         raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
