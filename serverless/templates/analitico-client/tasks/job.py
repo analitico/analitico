@@ -12,7 +12,6 @@ import tempfile
 import datetime
 
 import papermill
-from nbconvert import PythonExporter
 
 from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
 from analitico.utilities import read_json, save_json, subprocess_run, read_text, save_text
@@ -57,9 +56,29 @@ def try_request_notification(notification_url):
     except Exception:
         logging.warning("Failed to request the notification", exec_info=True)
 
+# TODO: Refactory required. This method is duplicated from api/models/notebook.py. Methods
+#       from notebook.py should not be used anywhere else because job runs are executed only by this script.
+def nb_extract_source(nb, disable_scripts=True):
+    """ Extract source code from notebook, optionally disabling lines starting with ! and % that run scripts and special modes """
+    source = ""
+    for i, cell in enumerate(nb["cells"]):
+        if cell["cell_type"] == "code":
+            if disable_scripts:
+                # TODO could write exception blocks cell by cell and use them to improve error messaging
+
+                source += "# Cell {}\n".format(i)
+                for line in iter(cell["source"]):
+                    # lines starting with ! and % are special scripts and are removed
+                    if len(line) > 0 and line[0] in ("!", "%"):
+                        source += "# COMMENTED OUT: "
+                    source += line + "\n"
+            else:
+                # comment with cell number makes it a bit easier in case of exceptions
+                source += "# Cell {}\n{}\n\n".format(i, cell["source"])
+    return source
 
 # TODO: Refactory required. This method is duplicated from api/models/notebook.py. Methods
-#       from notebook.py should not be used anywhere because job runs are executed only by this script.
+#       from notebook.py should not be used anywhere else because job runs are executed only by this script.
 def nb_clear_error_cells(notebook: dict) -> dict:
     """ Removes any cells that were created by previous papermill runs showing notebook execution errors """
     try:
@@ -93,13 +112,12 @@ def bless(notebook_path: str) -> bool:
     blessed = False
 
     # convert notebook to executable python module
-    exporter = PythonExporter()
-    (body, resources) = exporter.from_filename(notebook_path)
+    source = nb_extract_source(read_json(notebook_path))
 
     module_name = "notebook"
     module_path = "/tmp/notebook.py"
     try:
-        save_text(body, module_path)
+        save_text(source, module_path)
         spec = spec_from_file_location(module_name, module_path)
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -191,7 +209,7 @@ try:
         if is_blessed:
             metadata = read_json("metadata.json") if os.path.exists("metadata.json") else {}
             # ISO8601
-            metadata["blessed_on"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            metadata["blessed_on"] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
             save_json(metadata, "metadata.json")
 
     except Exception as exc:
