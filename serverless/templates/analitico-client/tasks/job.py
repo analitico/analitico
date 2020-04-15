@@ -13,7 +13,6 @@ import datetime
 
 import papermill
 from nbconvert import PythonExporter
-import nbformat
 
 from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
 from analitico.utilities import read_json, save_json, subprocess_run, read_text, save_text
@@ -98,7 +97,7 @@ def bless(notebook_path: str) -> bool:
     (body, resources) = exporter.from_filename(notebook_path)
 
     module_name = "notebook"
-    module_path = "._notebook.py"
+    module_path = "/tmp/notebook.py"
     try:
         save_text(body, module_path)
         spec = spec_from_file_location(module_name, module_path)
@@ -128,10 +127,6 @@ def bless(notebook_path: str) -> bool:
 
     except Exception as exc:
         logging.error("load module %s at %s failed:\n %s", module_name, module_path, exc)
-    finally:
-        # clean up
-        if os.path.exists(module_path):
-            os.remove(module_path)
 
     return blessed
 

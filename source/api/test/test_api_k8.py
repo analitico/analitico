@@ -716,7 +716,7 @@ class K8Tests(AnaliticoApiTestCase):
             url = reverse("api:recipe-files", args=(recipe_id, "metadata.json"))
             response = requests.get(server + url, headers=headers)
             self.assertApiResponse(response)
-            self.assertIsNone(response.json().get("blessed_on"))
+            self.assertIsNotNone(response.json().get("blessed_on"))
 
         finally:
             # clean up
