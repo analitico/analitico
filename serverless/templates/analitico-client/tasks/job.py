@@ -122,26 +122,27 @@ def bless(notebook_path: str) -> bool:
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
 
-        blessed_model_id = os.getenv("ANALITICO_BLESSED_MODEL_ID")
-        blessed_metrics = None
-        if blessed_model_id:
-            blessed_metadata_path = os.path.join(
-                os.path.join(os.getenv("ANALITICO_DRIVE", ""), "models", blessed_model_id, "metadata.json")
-            )
-            try:
-                blessed_metrics = read_json(blessed_metadata_path)
-                blessed_metrics = blessed_metrics.get("scores")
-            except Exception as exc:
-                logging.warning("metrics for the blessed model %s cannot be retrieved: \n%s", blessed_model_id, exc)
-
-        current_metrics = None
-        try:
-            current_metrics = read_json(os.path.join(os.path.dirname(notebook_path), "metadata.json"))
-        except Exception as exc:
-            logging.warning("metrics for the current execution cannot be retrieved: \n%s", exc)
-
         if module is not None and hasattr(module, "bless"):
             logging.info("use custom bless() function defined for the recipe")
+
+            blessed_model_id = os.getenv("ANALITICO_BLESSED_MODEL_ID")
+            blessed_metrics = None
+            if blessed_model_id:
+                blessed_metadata_path = os.path.join(
+                    os.path.join(os.getenv("ANALITICO_DRIVE", ""), "models", blessed_model_id, "metadata.json")
+                )
+                try:
+                    blessed_metrics = read_json(blessed_metadata_path)
+                    blessed_metrics = blessed_metrics.get("scores")
+                except Exception as exc:
+                    logging.warning("metrics for the blessed model %s cannot be retrieved: \n%s", blessed_model_id, exc)
+
+            current_metrics = None
+            try:
+                current_metrics = read_json(os.path.join(os.path.dirname(notebook_path), "metadata.json"))
+            except Exception as exc:
+                logging.warning("metrics for the current execution cannot be retrieved: \n%s", exc)
+
             blessed = module.bless(None, current_metrics, blessed_model_id, blessed_metrics)
 
     except Exception as exc:
@@ -207,6 +208,7 @@ try:
 
         # if defined, check if model has improved metrics and should be promoted
         is_blessed = bless(notebook_path)
+        logging.info("model is blessed: %s", is_blessed)
         if is_blessed:
             analitico.set_metric("blessed_on", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
