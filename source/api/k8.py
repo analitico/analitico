@@ -430,6 +430,7 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin) -> dict:
         # eg: 2010-04-04T10:11:12Z
         current_blessed_on = dateutil.parser.isoparse(current_blessed_on)
     except Exception:
+        current_blessed_on = None
         logger.debug("notebook has not been evaluated with the custom bless() function")
 
     if current_blessed_on:
