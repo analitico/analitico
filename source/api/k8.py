@@ -446,19 +446,24 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin) -> dict:
 
         # deployed model
         blessed_model_id = target.get_attribute(f"service.{stage}.item_id")
-        blessed_model = factory.get_item(blessed_model_id) if blessed_model_id else None
+        try:
+            # model can be missing if it was deployed and then deleted
+            blessed_model = factory.get_item(blessed_model_id)
+        except Exception as exc:
+            blessed_model = None
+            logger.warning("model %s not found: %s", blessed_model_id, exc)
 
-        blessed_metrics = blessed_model.get_attribute("metadata.scores", {}) if blessed_model else {}
-        current_metrics = item.get_attribute("metadata.scores", {})
-
-        # eg: "abs error 75% quantile"
-        metric_to_monitor = config.get("metric_to_monitor")
-        modality = config.get("modality")
-        assert metric_to_monitor and modality, "invalid autodeploy configuration"
-
-        if not blessed_model_id:
+        if not blessed_model:
             improved = True
         else:
+            blessed_metrics = blessed_model.get_attribute("metadata.scores", {})
+            current_metrics = item.get_attribute("metadata.scores", {})
+
+            # eg: "abs error 75% quantile"
+            metric_to_monitor = config.get("metric_to_monitor")
+            modality = config.get("modality")
+            assert metric_to_monitor and modality, "invalid autodeploy configuration"
+
             # metric to monitor's value
             current_metric = find_key(current_metrics, metric_to_monitor, {})
             current_metric_value = current_metric.get("value", None)
