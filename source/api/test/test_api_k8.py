@@ -183,7 +183,7 @@ class K8Tests(AnaliticoApiTestCase):
         # model is not autodeployed because is blessed before the current one
         blessed_on = "2020-01-01T10:10:11Z"
         model_deployed_on = "2020-04-04T10:10:11Z"
-        item.set_attribute("metadata.blessed_on", blessed_on)
+        item.set_attribute("metadata.scores.blessed_on", blessed_on)
         item.save()
         target.set_attribute("service.production.response.metadata.creationTimestamp", model_deployed_on)
         target.save()
@@ -192,7 +192,7 @@ class K8Tests(AnaliticoApiTestCase):
 
         # blessed model is deployed when no other model is already deployed
         blessed_on = "2020-01-01T10:10:11Z"
-        item.set_attribute("metadata.blessed_on", blessed_on)
+        item.set_attribute("metadata.scores.blessed_on", blessed_on)
         item.save()
         target.set_attribute("service.production", {})
         target.save()
@@ -202,7 +202,7 @@ class K8Tests(AnaliticoApiTestCase):
         # model is blessed recently and it should be deployed
         blessed_on = "2020-04-04T10:10:11Z"
         model_deployed_on = "2020-01-01T10:10:11Z"
-        item.set_attribute("metadata.blessed_on", blessed_on)
+        item.set_attribute("metadata.scores.blessed_on", blessed_on)
         item.save()
         target.set_attribute("service.production.response.metadata.creationTimestamp", model_deployed_on)
         target.save()
