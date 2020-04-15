@@ -415,17 +415,10 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin) -> dict:
         Dict if the item has been deployed, None otherwise.
     """
     improved = False
-
-    # deployed model
     stage = K8_STAGE_PRODUCTION
-    blessed_model_id = target.get_attribute(f"service.{stage}.item_id")
-    blessed_model = factory.get_item(blessed_model_id) if blessed_model_id else None
 
-    blessed_metrics = blessed_model.get_attribute("metadata.scores", {}) if blessed_model else {}
-    current_metrics = item.get_attribute("metadata.scores", {})
-
-    # when the current model has been blessed by the custom bless() function
-    current_blessed_on = item.get_attribute("metadata.blessed_on")
+    # is set when the current model has been blessed by the user's defined bless() function
+    current_blessed_on = item.get_attribute("metadata.scores.blessed_on")
     try:
         # eg: 2010-04-04T10:11:12Z
         current_blessed_on = dateutil.parser.isoparse(current_blessed_on)
@@ -450,6 +443,13 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin) -> dict:
         config = target.get_attribute("autodeploy")
         if not config:
             return None
+
+        # deployed model
+        blessed_model_id = target.get_attribute(f"service.{stage}.item_id")
+        blessed_model = factory.get_item(blessed_model_id) if blessed_model_id else None
+
+        blessed_metrics = blessed_model.get_attribute("metadata.scores", {}) if blessed_model else {}
+        current_metrics = item.get_attribute("metadata.scores", {})
 
         # eg: "abs error 75% quantile"
         metric_to_monitor = config.get("metric_to_monitor")
