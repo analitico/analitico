@@ -755,7 +755,7 @@ class K8Tests(AnaliticoApiTestCase):
         recipe_id = "rx_x5b1npmn"
         notebook_name = "notebook.ipynb"
         server = "https://staging.analitico.ai"
-        headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1", "Content-Type": "application/json"}
+        headers = {"Authorization": "Bearer tok_tester1_Xf4dfG345B", "Content-Type": "application/json"}
 
         # build the recipe
         url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_BUILD))
@@ -831,7 +831,7 @@ class K8Tests(AnaliticoApiTestCase):
     def k8s_deploy_and_test(self, model_id, recipe_id):
         """ This test is called by the test `test_k8s_jobs_build`. """
         server = "https://staging.analitico.ai"
-        headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1"}
+        headers = {"Authorization": "Bearer tok_tester1_Xf4dfG345B"}
 
         # deploy the build model
         url = reverse("api:model-k8-deploy", args=(model_id, K8_STAGE_STAGING))
@@ -874,7 +874,7 @@ class K8Tests(AnaliticoApiTestCase):
             # default or custom name
             notebook_name = "notebook.ipynb" if not notebook_name else notebook_name
             server = "https://staging.analitico.ai"
-            headers = {"Authorization": "Bearer tok_demo2_xaffg23443d1", "Content-Type": "application/json"}
+            headers = {"Authorization": "Bearer tok_tester1_Xf4dfG345B", "Content-Type": "application/json"}
 
             # run and build the recipe
             url = reverse("api:recipe-k8-jobs", args=(recipe_id, analitico.ACTION_RUN_AND_BUILD))
