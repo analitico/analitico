@@ -38,9 +38,9 @@ logger = logging.getLogger("analitico")
 class K8Tests(AnaliticoApiTestCase):
     """ Test kubernets API to build and deploy on knative """
 
-    stage = api.k8.K8_STAGE_STAGING
-    item_id = "nb_K8Tests_test_k8"  # help registry cleanups
-    item_id_normalized = "nb-k8tests-test-k8-staging"
+    stage = api.k8.K8_STAGE_PRODUCTION
+    item_id = "rx_K8Tests_test_k8"  # help registry cleanups
+    item_id_normalized = "rx-k8tests-test-k8"
     # `docker` attribute spec representing a built item
     pre_built_docker_spec = {
         "type": "analitico/docker",
@@ -51,19 +51,21 @@ class K8Tests(AnaliticoApiTestCase):
 
     def deploy_service(self, wait=True):
         self.auth_token(self.token1)
-        self.post_notebook("notebook11.ipynb", self.item_id)
-        notebook = Notebook.objects.get(pk=self.item_id)
+        self.post_notebook("notebook11.ipynb", self.item_id, item_type="recipe")
+        recipe = Recipe.objects.get(pk=self.item_id)
         # pre run and built image tagged with `K8Tests_test_k8_deploy`
-        notebook.set_attribute("docker", self.pre_built_docker_spec)
-        notebook.save()
+        model = Model.objects.create(workspace_id=self.ws1.id)
+        model.set_attribute("docker", self.pre_built_docker_spec)
+        model.save()
 
-        service = k8_deploy_v2(notebook, notebook, self.stage)
+        service = k8_deploy_v2(model, recipe, self.stage)
         self.assertEquals(service["type"], "analitico/service")
         self.assertEquals(service["name"], self.item_id_normalized)
         self.assertEquals(service["namespace"], "cloud")
         self.assertIn("url", service)
 
         if wait:
+            time.sleep(3)
             k8_wait_for_condition(
                 K8_DEFAULT_NAMESPACE, "pod", "condition=Ready", labels=f"serving.knative.dev/service=" + service["name"]
             )
@@ -173,41 +175,39 @@ class K8Tests(AnaliticoApiTestCase):
         deployed = k8_autodeploy(item_current, target)
         self.assertIsNone(deployed)
 
+    @tag("k8s")
     def test_k8_autodeploy_with_custom_code(self):
         # create a model with a preprocessed notebook file
-        item = Model.objects.create(pk="ml_current", workspace_id=self.ws1.id)
-        item.set_attribute("docker", self.pre_built_docker_spec)
-        item.save()
-        target = Recipe.objects.create(pk="rx_test_autodeploy", workspace_id=self.ws1.id)        
+        service = self.deploy_service()
+        item = Model.objects.get(pk=service["item_id"])
+        target = Recipe.objects.get(pk=self.item_id)
+        try:
 
-        # model is not autodeployed because is blessed before the current one
-        blessed_on = "2020-01-01T10:10:11Z"
-        model_deployed_on = "2020-04-04T10:10:11Z"
-        item.set_attribute("metadata.scores.blessed_on", blessed_on)
-        item.save()
-        target.set_attribute("service.production.response.metadata.creationTimestamp", model_deployed_on)
-        target.save()
-        deployed = k8_autodeploy(item, target)
-        self.assertIsNone(deployed)
+            # model is not autodeployed because is blessed before the current one
+            blessed_on = "1980-01-01T10:10:11Z"
+            item.set_attribute("metadata.scores.blessed_on", blessed_on)
+            item.save()
+            deployed = k8_autodeploy(item, target)
+            self.assertIsNone(deployed)
 
-        # blessed model is deployed when no other model is already deployed
-        blessed_on = "2020-01-01T10:10:11Z"
-        item.set_attribute("metadata.scores.blessed_on", blessed_on)
-        item.save()
-        target.set_attribute("service.production", {})
-        target.save()
-        deployed = k8_autodeploy(item, target)
-        self.assertIsNotNone(deployed)
+            # blessed model is deployed when no other model is already deployed
+            blessed_on = "2020-01-01T10:10:11Z"
+            item.set_attribute("metadata.scores.blessed_on", blessed_on)
+            item.save()
+            # create a new target recipe with no model deployed
+            target_not_deployed = Recipe.objects.create(pk="rx_test_autodeploy", workspace_id=self.ws1.id)        
+            deployed = k8_autodeploy(item, target_not_deployed)
+            self.assertIsNotNone(deployed)
 
-        # model is blessed recently and it should be deployed
-        blessed_on = "2020-04-04T10:10:11Z"
-        model_deployed_on = "2020-01-01T10:10:11Z"
-        item.set_attribute("metadata.scores.blessed_on", blessed_on)
-        item.save()
-        target.set_attribute("service.production.response.metadata.creationTimestamp", model_deployed_on)
-        target.save()
-        deployed = k8_autodeploy(item, target)
-        self.assertIsNotNone(deployed)
+            # model is blessed recently and it should be deployed
+            blessed_on = datetime_to_iso8601()
+            item.set_attribute("metadata.scores.blessed_on", blessed_on)
+            item.save()
+            deployed = k8_autodeploy(item, target)
+            self.assertIsNotNone(deployed)
+        finally:
+            k8_serving_deallocate(target)
+            
 
     @tag("k8s")
     def test_k8_deploy_automl(self):
@@ -275,20 +275,22 @@ class K8Tests(AnaliticoApiTestCase):
     @tag("k8s")
     def test_k8_wait_for_condition(self):
         # non existent resource
-        try:
+        with self.failUnlessRaises(AnaliticoException):
             k8_wait_for_condition("cloud", "pod/fake", "condition=Ready", timeout=2)
             self.fail("Expected not found exception")
-        except AnaliticoException:
-            pass
 
-        # delete then deploy the service and the pod otherwise no pod will be ready
-        kubectl("cloud", "delete", "kservice/" + self.item_id_normalized, output=None)
+        # delete the service and the pod and then deploy it again otherwise no pod will be ready
+        try:
+            kubectl("cloud", "delete", "kservice/" + self.item_id_normalized, output=None, args=["--wait", "true"])
+        except:
+            logging.info(f"no service {self.item_id_normalized} to delete")
+
         service = self.deploy_service(wait=False)
         # wait pod to be created
         time.sleep(5)
         # wait for pod to be ready
         status, _ = k8_wait_for_condition(
-            "cloud", "pod", "condition=Ready", labels="analitico.ai/item-id=" + self.item_id
+            "cloud", "pod", "condition=Ready", labels="serving.knative.dev/service=" + self.item_id_normalized
         )
         self.assertIn("condition met", status)
 

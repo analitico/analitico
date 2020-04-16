@@ -29,7 +29,7 @@ def get_namespace(request) -> str:
     return api.utilities.get_query_parameter(request, "namespace", api.k8.K8_DEFAULT_NAMESPACE)
 
 
-def get_kubctl_response(*args):
+def get_kubectl_response(*args):
     """ Runs kubectl command, returns result as json """
     stdout, _ = analitico.utilities.subprocess_run(args)
     return Response(stdout, content_type="application/json")
@@ -63,7 +63,7 @@ class K8ViewSetMixin:
         """ Return given kubernetes service. The primary key can be the service name or an item that was deployed to a service. """
         service_name, service_namespace = self.get_service_name(request, pk, stage)
         # kubectl get ksvc {service_name} -n {service_namespace} -o json
-        return get_kubctl_response("kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json")
+        return get_kubectl_response("kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json")
 
     @action(
         methods=["get"], detail=True, url_name="k8-revisions", url_path=r"k8s/revisions/(?P<stage>staging|production)$"
@@ -71,20 +71,8 @@ class K8ViewSetMixin:
     def revisions(self, request, pk, stage: str):
         """ Return a list of revisions for the given service. """
         service_name, service_namespace = self.get_service_name(request, pk, stage)
-        # kubectl get revisions -l serving.knative.dev/service={service_name} -n {service_namespace} -o json --sort-by .metadata.creationTimestamp
-        return get_kubctl_response(
-            "kubectl",
-            "get",
-            "revisions",
-            "-l",
-            f"serving.knative.dev/service={service_name}",
-            "-n",
-            service_namespace,
-            "-o",
-            "json",
-            "--sort-by",
-            ".metadata.creationTimestamp",
-        )
+        revisions, _ = get_revisions(service_name, service_namespace)
+        return Response(revisions, content_type="application/json")
 
     @action(methods=["get"], detail=True, url_name="k8-pods", url_path="k8s/pods")
     def pods(self, request, pk):

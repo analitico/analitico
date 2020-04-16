@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 import analitico.utilities
-from api.views.k8viewsetmixin import get_namespace, get_kubctl_response, K8ViewSetMixin
+from api.views.k8viewsetmixin import get_namespace, get_kubectl_response, K8ViewSetMixin
 import api.utilities
 
 from analitico import AnaliticoException, logger
@@ -23,6 +23,6 @@ class K8ViewSet(GenericViewSet):
     def nodes(self, request):
         """ Returns a list of nodes in the cluster. """
         service_namespace = get_namespace(request)
-        return get_kubctl_response(
+        return get_kubectl_response(
             "kubectl", "get", "nodes", "-n", service_namespace, "-o", "json", "--sort-by", ".metadata.creationTimestamp"
         )

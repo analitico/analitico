@@ -31,6 +31,7 @@ from analitico.utilities import (
     size_to_bytes,
     cpu_unit_to_fractional,
     find_key,
+    datetime_to_iso8601,
 )
 import api
 from api.factory import factory
@@ -111,6 +112,16 @@ def kubectl(
         raise AnaliticoException(
             f"Resource not found or invalid request", status_code=status.HTTP_404_NOT_FOUND
         ) from exec
+
+
+def get_revisions(service_name: str, namespace: str) -> (dict, dict):
+    """ Knative revisions ordered by creation date (asc) """
+    return kubectl(
+        namespace,
+        "get",
+        "revisions",
+        args=["--selector", f"serving.knative.dev/service={service_name}", "--sort-by", ".metadata.creationTimestamp"],
+    )
 
 
 def k8_wait_for_condition(
@@ -352,7 +363,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
             configs["command"] = ["/root/source/analitico_serving/serving-start.sh"]
             # TODO: use a signed token
             # automl / serving / use signed token for serving image #503
-            configs["api_token"] = "tok_demo2_xaffg23443d1"
+            configs["api_token"] = "tok_demo3_8bv2a2bf"
         else:
             # snapshot built for the model
             configs["service_name"] = service_name
@@ -427,7 +438,16 @@ def k8_autodeploy(item: ItemMixin, target: ItemMixin) -> dict:
         logger.debug("notebook has not been evaluated with the custom bless() function")
 
     if current_blessed_on:
-        model_deployed_on = target.get_attribute(f"service.{stage}.response.metadata.creationTimestamp")
+        # deploy date is the creation time of the most recent Knative revision
+        model_deployed_on = None
+        service_name = target.get_attribute(f"service.{stage}.response.metadata.name")
+        if service_name:
+            revisions, _ = get_revisions(service_name, K8_DEFAULT_NAMESPACE)
+            model_deployed_on = (
+                get_dict_dot(revisions["items"][-1], "metadata.creationTimestamp")
+                if len(revisions["items"]) > 0
+                else None
+            )
         if not model_deployed_on:
             # it's the first model and has been blessed
             improved = True
@@ -1070,9 +1090,7 @@ def k8_scale_to_zero(controllers: [] = None) -> (int, int):
                 now = datetime.utcnow()
                 # eg: 2019-11-25T11:16:04Z
                 creation_time = get_dict_dot(pod, "metadata.creationTimestamp")
-                running_since = (
-                    datetime.strptime(creation_time, "%Y-%m-%dT%H:%M:%SZ") if creation_time else datetime.utcnow()
-                )
+                running_since = datetime_to_iso8601(creation_time) if creation_time else datetime.utcnow()
                 running_for = (now - running_since).total_seconds()
                 logger.info(
                     f"{controller_name} has been running since {running_since}Z ({round(running_for / 60)} minutes)"

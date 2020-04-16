@@ -228,36 +228,36 @@ class AnaliticoApiTestCase(APITestCase):
             assert os.path.isfile(notebook_path)
         return read_json(notebook_path)
 
-    def post_notebook(self, notebook_path, notebook_id="nb_1", notebook_name="notebook.ipynb"):
-        """ Posts a notebook model """
+    def post_notebook(self, notebook_path, item_id="nb_1", notebook_name="notebook.ipynb", item_type: str = "notebook"):
+        """ Posts a notebook in a Notebook, Recipe etc. """
         if not os.path.isfile(notebook_path):
             notebook_path = os.path.join(NOTEBOOKS_PATH, notebook_path)
             assert os.path.isfile(notebook_path)
         notebook = self.read_notebook(notebook_path)
 
-        url = reverse("api:notebook-list")
+        url = reverse(f"api:{item_type}-list")
         self.auth_token(token=self.token1)
         response = self.client.post(
             url,
             dict(
-                id=notebook_id,
+                id=item_id,
                 workspace_id="ws_001",
-                title="title: " + notebook_id,
-                description="description: " + notebook_id,
+                title="title: " + item_id,
+                description="description: " + item_id,
                 notebook=notebook,
-                extra="extra: " + notebook_id,
+                extra="extra: " + item_id,
             ),
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # upload notebook file
-        url = reverse("api:notebook-files", args=(notebook_id, notebook_name))
+        url = reverse(f"api:{item_type}-files", args=(item_id, notebook_name))
         response_upload = self.upload_file(url, notebook_path, NOTEBOOK_MIME_TYPE, token=self.token1)
         self.assertEqual(response_upload.status_code, status.HTTP_204_NO_CONTENT)
 
         data = response.data
-        self.assertEqual(data["id"], notebook_id)
+        self.assertEqual(data["id"], item_id)
         return response
 
     def update_notebook(self, notebook_id="nb_01", notebook=None, notebook_name=None):

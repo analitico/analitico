@@ -14,7 +14,7 @@ import datetime
 import papermill
 
 from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
-from analitico.utilities import read_json, save_json, subprocess_run, read_text, save_text
+from analitico.utilities import read_json, save_json, subprocess_run, read_text, save_text, datetime_to_iso8601
 
 import analitico.logging
 
@@ -210,7 +210,7 @@ try:
         is_blessed = bless(notebook_path)
         logging.info("model is blessed: %s", is_blessed)
         if is_blessed:
-            analitico.set_metric("blessed_on", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
+            analitico.set_metric("blessed_on", datetime_to_iso8601())
 
     except Exception as exc:
         raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
