@@ -15,6 +15,7 @@ from rest_framework import status
 
 import analitico
 import analitico.utilities
+from analitico import WORKSPACE_PREFIX
 import api.utilities
 import api.factory
 import api.permissions
@@ -49,9 +50,7 @@ class K8ViewSetMixin:
         item = self.get_object()
         service = item.get_attribute("service")
         if not service or not stage in service:
-            raise AnaliticoException(
-                f"Item {item.id} in {stage} has not been deployed as a service.", status_code=status.HTTP_404_NOT_FOUND
-            )
+            raise AnaliticoException(f"Item {item.id} in {stage} has not been deployed as a service.", status_code=status.HTTP_404_NOT_FOUND)
         return service[stage]["name"], service[stage]["namespace"]
 
     ##
@@ -65,9 +64,7 @@ class K8ViewSetMixin:
         # kubectl get ksvc {service_name} -n {service_namespace} -o json
         return get_kubectl_response("kubectl", "get", "ksvc", service_name, "-n", service_namespace, "-o", "json")
 
-    @action(
-        methods=["get"], detail=True, url_name="k8-revisions", url_path=r"k8s/revisions/(?P<stage>staging|production)$"
-    )
+    @action(methods=["get"], detail=True, url_name="k8-revisions", url_path=r"k8s/revisions/(?P<stage>staging|production)$")
     def revisions(self, request, pk, stage: str):
         """ Return a list of revisions for the given service. """
         service_name, service_namespace = self.get_service_name(request, pk, stage)
@@ -81,12 +78,7 @@ class K8ViewSetMixin:
         # list jobs by workspace or item
         selectBy = f"workspace-id={item.id}" if item.type == "workspace" else f"item-id={item.id}"
         # kubectl get pods -l serving.knative.dev/service={service_name} -n {service_namespace} -o json
-        pods, _ = kubectl(
-            K8_DEFAULT_NAMESPACE,
-            "get",
-            "pods",
-            args=["--selector", f"analitico.ai/{selectBy}", "--sort-by", ".metadata.creationTimestamp"],
-        )
+        pods, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "pods", args=["--selector", f"analitico.ai/{selectBy}", "--sort-by", ".metadata.creationTimestamp"])
 
         return Response(pods, content_type="application/json")
 
@@ -120,12 +112,7 @@ class K8ViewSetMixin:
 
         return Response(service, content_type="application/json")
 
-    @action(
-        methods=["get"],
-        detail=True,
-        url_name="k8-metrics",
-        url_path=r"k8s/services/(?P<stage>staging|production)/metrics",
-    )
+    @action(methods=["get"], detail=True, url_name="k8-metrics", url_path=r"k8s/services/(?P<stage>staging|production)/metrics")
     def metrics(self, request, pk, stage):
         """ 
         Returns a list of metrics owned by the service. This API does not return information using
@@ -135,44 +122,34 @@ class K8ViewSetMixin:
         The API takes the following http query parameters:
         query - The Prometheus query to be performed
         """
-        kservice_name, service_namespace = self.get_service_name(request, pk, stage)
-
         metric = api.utilities.get_query_parameter(request, "metric", "")
         start_time = api.utilities.get_query_parameter(request, "start")
         end_time = api.utilities.get_query_parameter(request, "end")
         # query resolution step width, eg: 10s, 1m, 2h, 1d, 2w, 1y
         step = api.utilities.get_query_parameter(request, "step")
 
-        # The Prometheus's regexp is not enough to filter metrics between staging and production.
-        # We need to retrieve the kubernetes service name by the knative service name
-        # because metrics are stored with the kubernetes service name or the pod name.
-        # The service name is prefix of the pod name so we don't need to know the full pod
-        # name. Secondary, we pass through the deployment component to be sure to get
-        # the actual deployment that handles the pods.
-        deployment, _ = subprocess_run(
-            [
-                "kubectl",
-                "get",
-                "deployment",
-                "-n",
-                service_namespace,
-                "--selector",
-                f"serving.knative.dev/service={kservice_name}",
-                "--output",
-                "json",
-            ]
-        )
-        service_name = deployment["items"][0]["metadata"]["labels"]["app"]
+        # service name is the same as the recipe or other item's id plus a short slug or -staging-slug
+        suffix = "-staging-[a-zA-Z0-9]+" if stage == "staging" else "-[a-zA-Z0-9]+"
+
+        if pk.startswith(WORKSPACE_PREFIX):
+            workspace = Workspace.objects.get(pk=pk)
+            # if we're being requested data for a workspace, we return metrics for all the recipes that belong to that workspace instead
+            items = [recipe["id"] + suffix for recipe in Recipe.objects.filter(workspace_id=workspace.id).values("id")]
+        else:
+            items = [pk + suffix]
+
+        service_namespace = "cloud"
+        service_name = "|".join(items).replace("_", "-")
 
         # metric converted in Prometheus query fixed to the given service
         metrics = {
-            "istio_requests_total": f'istio_requests_total{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
-            "istio_request_duration_seconds_count": f'istio_request_duration_seconds_count{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
-            "istio_request_duration_seconds_sum": f'istio_request_duration_seconds_sum{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}',
-            "istio_requests_rate": f'rate(istio_requests_total{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m])',
+            "istio_requests_total": f'istio_requests_total{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}"}}',
+            "istio_request_duration_seconds_count": f'istio_request_duration_seconds_count{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}"}}',
+            "istio_request_duration_seconds_sum": f'istio_request_duration_seconds_sum{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}"}}',
+            "istio_requests_rate": f'rate(istio_requests_total{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}"}}[1m])',
             "istio_request_latency": (
-                f'rate(istio_request_duration_seconds_sum{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m]) / '
-                f'rate(istio_request_duration_seconds_count{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name="{service_name}"}}[1m])'
+                f'rate(istio_request_duration_seconds_sum{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}"}}[1m]) / '
+                f'rate(istio_request_duration_seconds_count{{destination_workload="activator", destination_service_namespace="{service_namespace}", destination_service_name=~"{service_name}"}}[1m])'
             ),
             "container_memory_usage_bytes": f'container_memory_usage_bytes{{container="", namespace="{service_namespace}", pod=~"{service_name}-.*"}}',
             "container_cpu_load": f'rate(container_cpu_usage_seconds_total{{container="", namespace="{service_namespace}", pod=~"{service_name}-.*"}}[1m])',
@@ -192,13 +169,9 @@ class K8ViewSetMixin:
             data = {"query": query, "start": start_time, "end": end_time, "step": step}
 
         prometheus_response = requests.get(django.conf.settings.PROMETHEUS_SERVICE_URL + path, params=data)
-        return Response(
-            prometheus_response.json(), content_type="application/json", status=prometheus_response.status_code
-        )
+        return Response(prometheus_response.json(), content_type="application/json", status=prometheus_response.status_code)
 
-    @action(
-        methods=["get"], detail=True, url_name="k8-logs", url_path=r"k8s/services/(?P<stage>staging|production)/logs"
-    )
+    @action(methods=["get"], detail=True, url_name="k8-logs", url_path=r"k8s/services/(?P<stage>staging|production)/logs")
     def service_logs(self, request, pk, stage):
         """ 
         Returns logs generated by the service. This API does not return information using
@@ -230,9 +203,7 @@ class K8ViewSetMixin:
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elasticsearch_response = requests.get(url, params=params, headers=headers, verify=False)
-        return Response(
-            elasticsearch_response.json(), content_type="application/json", status=elasticsearch_response.status_code
-        )
+        return Response(elasticsearch_response.json(), content_type="application/json", status=elasticsearch_response.status_code)
 
     @action(methods=["get"], detail=True, url_name="k8-job-logs", url_path=r"k8s/jobs/(?P<job_id>[-\w.]{0,64})/logs")
     def job_logs(self, request: Request, pk, job_id: str):
@@ -268,20 +239,13 @@ class K8ViewSetMixin:
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elastic_search_response = requests.get(url, params=params, headers=headers, verify=False)
-        return Response(
-            elastic_search_response.json(), content_type="application/json", status=elastic_search_response.status_code
-        )
+        return Response(elastic_search_response.json(), content_type="application/json", status=elastic_search_response.status_code)
 
     ##
     ## Jupyter
     ##
 
-    @action(
-        methods=["get", "put", "delete"],
-        detail=True,
-        url_name="k8-jupyters",
-        url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})",
-    )
+    @action(methods=["get", "put", "delete"], detail=True, url_name="k8-jupyters", url_path=r"k8s/jupyters/(?P<jupyter_name>[-\w.]{0,64})")
     def jupyters(self, request, pk, jupyter_name: str):
         if request.method == "GET":
             return self.jupyters_get(request, pk, jupyter_name)
@@ -335,10 +299,7 @@ class K8ViewSetMixin:
 
         # test that jupyter is owned by the workspace
         jupyter, _ = kubectl(K8_DEFAULT_NAMESPACE, "get", "service/" + jupyter_name)
-        if (
-            "jupyter" != jupyter["metadata"]["labels"]["analitico.ai/service"]
-            or workspace.id != jupyter["metadata"]["labels"]["analitico.ai/workspace-id"]
-        ):
+        if "jupyter" != jupyter["metadata"]["labels"]["analitico.ai/service"] or workspace.id != jupyter["metadata"]["labels"]["analitico.ai/workspace-id"]:
             raise AnaliticoException("Jupyter service not found", status_code=status.HTTP_404_NOT_FOUND)
 
         k8_jupyter_deallocate(workspace, jupyter_name, wait_for_deletion=True)
