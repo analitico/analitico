@@ -264,6 +264,8 @@ class K8ViewSetMixin:
             query = f"{query} AND "
         # search for HTTP log transactions starting with HTTP verb
         query += f"(GET or POST or PUT or DELETE) AND kubernetes.labels.analitico_ai\/workspace-id.keyword:{pk} AND kubernetes.labels.analitico_ai\/service.keyword:serving"
+        # include or exclude staging endpoints
+        query += " AND staging" if stage == "staging" else " AND -staging"
 
         url = django.conf.settings.ELASTIC_SEARCH_URL
         token = django.conf.settings.ELASTIC_SEARCH_API_TOKEN
@@ -274,6 +276,10 @@ class K8ViewSetMixin:
         elastic_search_response = requests.get(url, params=params, headers=headers, verify=False)
         logs = elastic_search_response.json()
         return Response(logs, content_type="application/json", status=elastic_search_response.status_code)
+
+    # kill server on port 8000:
+    # lsof -i:8000
+    # kill -9 pid
 
     ##
     ## Jupyter
