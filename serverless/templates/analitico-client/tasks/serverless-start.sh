@@ -22,7 +22,7 @@ exec gunicorn \
     --bind :$PORT \
     --workers 1 \
     --access-logfile - \
-    --access-logformat '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %({content-length}i)s %(L)s "%(f)s" "%(a)s" "%({x-forwarded-host}i)s"' \
+    --access-logformat '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %({content-length}i)s %(L)s "%(f)s" "%(a)s"' \
     --log-level debug \
     --timeout 60 \
     app:app
