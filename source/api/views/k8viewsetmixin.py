@@ -262,7 +262,8 @@ class K8ViewSetMixin:
         # query the current service only
         if query:
             query = f"{query} AND "
-        query += f"kubernetes.labels.analitico_ai\/workspace-id.keyword:{pk} AND kubernetes.labels.analitico_ai\/service.keyword:serving"
+        # search for HTTP log transactions starting with HTTP verb
+        query += f"(GET or POST or PUT or DELETE) AND kubernetes.labels.analitico_ai\/workspace-id.keyword:{pk} AND kubernetes.labels.analitico_ai\/service.keyword:serving"
 
         url = django.conf.settings.ELASTIC_SEARCH_URL
         token = django.conf.settings.ELASTIC_SEARCH_API_TOKEN
@@ -271,7 +272,8 @@ class K8ViewSetMixin:
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elastic_search_response = requests.get(url, params=params, headers=headers, verify=False)
-        return Response(elastic_search_response.json(), content_type="application/json", status=elastic_search_response.status_code)
+        logs = elastic_search_response.json()
+        return Response(logs, content_type="application/json", status=elastic_search_response.status_code)
 
     ##
     ## Jupyter
