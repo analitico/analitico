@@ -257,23 +257,33 @@ class K8ViewSetMixin:
         query = api.utilities.get_query_parameter(request, "query", "")
         from_hit = api.utilities.get_query_parameter(request, "from", 0)
         batch_size = api.utilities.get_query_parameter(request, "size", 1000)
-        order_by = api.utilities.get_query_parameter(request, "order", "@timestamp:desc")
 
+        # https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax
         # query the current service only
         if query:
             query = f"{query} AND "
         # search for HTTP log transactions starting with HTTP verb
         query += f"(GET or POST or PUT or DELETE) AND kubernetes.labels.analitico_ai\/workspace-id.keyword:{pk} AND kubernetes.labels.analitico_ai\/service.keyword:serving"
         # include or exclude staging endpoints
-        query += " AND staging" if stage == "staging" else " AND -staging"
+        query += " AND kubernetes.labels.serving_knative_dev\/service.keyword:" + ("/.*-staging/" if stage == "staging" else "(NOT staging)")
 
         url = django.conf.settings.ELASTIC_SEARCH_URL
         token = django.conf.settings.ELASTIC_SEARCH_API_TOKEN
         headers = {"Authorization": f"Bearer {token}"}
-        params = {"q": query, "from": from_hit, "size": batch_size, "sort": order_by}
+
+        params = {
+            # https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-query-ex-request
+            "query": {"query_string": {"query": query, "default_field": "log"}},
+            "from": from_hit,
+            "size": batch_size,
+            # https://www.elastic.co/guide/en/elasticsearch/reference/7.5/search-request-body.html#request-body-search-sort
+            "sort": [{"@timestamp": {"order": "desc"}}],
+            # https://www.elastic.co/guide/en/elasticsearch/reference/5.6/search-request-source-filtering.html#search-request-source-filtering
+            "_source": ["log", "level", "msg", "@timestamp", "kubernetes.labels.serving_knative_dev/service"],
+        }
 
         # certs verification is disabled beacause we trust in our k8-self signed certificates
-        elastic_search_response = requests.get(url, params=params, headers=headers, verify=False)
+        elastic_search_response = requests.get(url, json=params, headers=headers, verify=False)
         logs = elastic_search_response.json()
         return Response(logs, content_type="application/json", status=elastic_search_response.status_code)
 
