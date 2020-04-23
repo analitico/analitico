@@ -41,6 +41,16 @@ def google_registry_delete_image_all_tags(image: str):
         google_registry_delete_image(full_image)
 
 
+"""
+(venv) gionata@Yoshi analitico % gsutil -o GSUtil:default_project_id=analitico-api du -shc
+115.45 GiB   gs://data.analitico.ai
+1.36 TiB     gs://eu.artifacts.analitico-api.appspot.com
+2.88 GiB     gs://public.analitico.ai
+65.73 MiB    gs://test.analitico.ai
+1.48 TiB     total
+"""
+
+
 class Command(BaseCommand):
     """ 
     A command used to clean used images and their storage from Google Registry 
@@ -72,10 +82,28 @@ class Command(BaseCommand):
                 # remove images that belong to recipes which no longer exist
                 # also remove specific tagged images for models that no longer exists
                 if item_id.startswith(RECIPE_PREFIX):
-                    exists = Recipe.objects.filter(pk=item_id).exists()
-                    print(f"{image_name}, exists? {exists}")
-                    if not exists:
+                    recipe_exists = Recipe.objects.filter(pk=item_id).exists()
+                    print(f"{image_name}, exists? {recipe_exists}")
+                    if not recipe_exists:
+                        # recipe no longer exists, remove all its tagged images
                         google_registry_delete_image_all_tags(image)
+                    else:
+                        # recipe still exists but we can check each of its model tags and see if they can be deleted
+                        tags_cmd = f"gcloud container images list-tags {image}"
+                        tags = run_json(tags_cmd)
+                        for tag in tags:
+                            if tag["tags"]:
+                                try:
+                                    model_tag = tag["tags"][0]
+                                    model_id = model_tag.replace("-", "_")
+                                    model_exists = Model.objects.filter(pk=model_id).exists()
+                                    print(f"{image_name}:{model_tag}, exists? {model_exists}")
+                                    if not model_exists:
+                                        delete_cmd = f"gcloud container images delete {image}:{model_tag} --force-delete-tags --quiet"
+                                        run(delete_cmd)
+
+                                except Exception as exc:
+                                    print(exc)
 
         except Exception as exc:
             print(exc)
