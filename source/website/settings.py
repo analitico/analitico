@@ -104,14 +104,7 @@ try:
                     # while preserving the log messages' metadata (eg. level, function, line, logger, etc)
                     "json": {"()": analitico.logging.FluentdFormatter, "format": "%(asctime)s %(message)s"}
                 },
-                "handlers": {
-                    "json": {
-                        "level": "INFO",
-                        "class": "logging.StreamHandler",
-                        "formatter": "json",
-                        "stream": "ext://sys.stderr",
-                    }
-                },
+                "handlers": {"json": {"level": "INFO", "class": "logging.StreamHandler", "formatter": "json", "stream": "ext://sys.stderr"}},
                 "loggers": {
                     # root logger
                     "": {"level": "INFO", "handlers": ["json"]}
@@ -151,10 +144,7 @@ try:
     }
 
     if TESTING:
-        DATABASES = {
-            "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "analitico.sqlite")}
-        }
-
+        DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "analitico.sqlite")}}
 
     # WARNING: Private sql keys are included in /conf
     # They can later be easily removed and rotated out of service
@@ -166,25 +156,8 @@ try:
     # is used for all assets belonging to the workspace and its children. If the workspace
     # does not have a storage configured, the following configuration is used as a default.
 
-    GCS_KEY_FILENAME = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), "../../../analitico-ci/gcloud/analitico-api-service-account-key.json")
-    )
+    GCS_KEY_FILENAME = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../../analitico-ci/gcloud/analitico-api-service-account-key.json"))
     gcs_key = read_json(GCS_KEY_FILENAME)
-
-    ANALITICO_STORAGE = {
-        "driver": "google-storage",
-        "container": "data.analitico.ai",
-        "basepath": "",
-        "credentials": {
-            "key": gcs_key["client_email"],
-            "secret": gcs_key["private_key"],
-            "project": gcs_key["project_id"],
-        },
-    }
-
-    # Special storage for regular testing and django-coverage
-    if "test" in sys.argv or "test_coverage" in sys.argv:
-        ANALITICO_STORAGE["container"] = "test.analitico.ai"
 
     # List of domains serving the app, can be customized as needed
     ALLOWED_HOSTS = [
@@ -325,9 +298,7 @@ try:
 
     ACCOUNT_PRESERVE_USERNAME_CASING = False
 
-    SOCIALACCOUNT_PROVIDERS = {
-        "google": {"SCOPE": ["profile", "email"], "AUTH_PARAMS": {"access_type": "online"}}  # email is a requirement
-    }
+    SOCIALACCOUNT_PROVIDERS = {"google": {"SCOPE": ["profile", "email"], "AUTH_PARAMS": {"access_type": "online"}}}  # email is a requirement
 
     LOGIN_REDIRECT_URL = "app"
 
@@ -443,12 +414,7 @@ try:
         "SECURITY_DEFINITIONS": {
             "basic": {"description": "Authorize using credentials from analitico.ai", "type": "basic"},
             # Support authentication with API tokens
-            "token": {
-                "description": "Authorize using an 'Authorization: Bearer tok_xxx' header.",
-                "type": "apiKey",
-                "in": "header",
-                "name": "Authorization",
-            },
+            "token": {"description": "Authorize using an 'Authorization: Bearer tok_xxx' header.", "type": "apiKey", "in": "header", "name": "Authorization"},
         }
     }
 
@@ -470,8 +436,6 @@ try:
     assert ELASTIC_SEARCH_API_TOKEN, "Did you forget to configure the env variable ANALITICO_ELASTIC_SEARCH_API_TOKEN?"
 
 except KeyError as exc:
-    detail = (
-        "settings.py - Configuration error, did you forget to declare " + exc.args[0] + " as an environment variable?"
-    )
+    detail = "settings.py - Configuration error, did you forget to declare " + exc.args[0] + " as an environment variable?"
     sys.stderr.write(detail)
     sys.exit(1)  # error

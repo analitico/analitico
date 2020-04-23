@@ -67,12 +67,6 @@ class Storage:
     def factory(settings: dict):
         """ Creates a storage object from a settings dictionary or from default settings if None passed. """
         try:
-            # WE NO LONGER AUTOMATICALLY ALLOCATE STORAGE ON GOOGLE STORAGE
-            # RATHER STORAGE HAS TO BE CONFIGURED EXPLICITLY VIA DRIVE MODEL APIs
-            # if settings is None:
-            #    settings = django.conf.settings.ANALITICO_STORAGE
-            # if "credentials" not in settings and settings["driver"] == django.conf.settings.ANALITICO_STORAGE["driver"]:
-            #    settings["credentials"] = django.conf.settings.ANALITICO_STORAGE["credentials"]
             assert settings, "Storage.factory - no settings for this item"
 
             driver = settings["driver"]
@@ -87,15 +81,11 @@ class Storage:
                     driver = libcloud.storage.drivers.google_storage.GoogleStorageDriver(**credentials)
                     return Storage(settings, driver)
                 except ValueError as exc:
-                    raise Exception(
-                        "Storage.factory - could not login to Google Cloud Storage, please check your keys", exc
-                    )
+                    raise Exception("Storage.factory - could not login to Google Cloud Storage, please check your keys", exc)
 
             if driver == "webdav" or driver == "hetzner-webdav":
                 driver = api.libcloud.WebdavStorageDriver(
-                    url=settings["url"],
-                    username=settings["credentials"]["username"],
-                    password=settings["credentials"]["password"],
+                    url=settings["url"], username=settings["credentials"]["username"], password=settings["credentials"]["password"]
                 )
                 return Storage(settings, driver)
 
