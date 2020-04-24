@@ -44,9 +44,9 @@ class K8Tests(AnaliticoApiTestCase):
     # `docker` attribute spec representing a built item
     pre_built_docker_spec = {
         "type": "analitico/docker",
-        "image": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-81anpwk3",
-        "image_name": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-81anpwk3",
-        "image_id": "sha256:ff32d10b2b5b2e9577c1e1de90aeb200acc8a5ad161be58b5e4ca81f740e4d49",
+        "image": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-cmbn7j6b",
+        "image_name": "eu.gcr.io/analitico-api/rx-qx1ek6jb:ml-cmbn7j6b",
+        "image_id": "sha256:66890fb99da9c2b0d411636418e08377a49f1d9781bf723ce41921c1e3f9b10f",
     }
 
     def deploy_service(self, wait=True):
