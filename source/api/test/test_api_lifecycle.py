@@ -59,6 +59,21 @@ class LifecycleTests(AnaliticoApiTestCase):
         item.save()
         self.create_item_file_then_delete_item_verify_file_deletion(item)
 
+    def test_lifecycle_delete_recipe_and_models(self):
+        item = Recipe(workspace=self.ws1)
+        item.save()
+        recipe_id = item.id
+
+        # create models that belong to this recipe
+        for i in range(10):
+            m = Model(workspace=self.ws1)
+            m.set_attribute("recipe_id", item.id)
+            m.save()
+
+        self.assertEqual(Model.objects.filter(attributes__contains=recipe_id).count(), 10)
+        self.create_item_file_then_delete_item_verify_file_deletion(item)
+        self.assertEqual(Model.objects.filter(attributes__contains=recipe_id).count(), 0)
+
     def test_lifecycle_delete_automl_storage(self):
         item = Automl(workspace=self.ws1)
         item.save()

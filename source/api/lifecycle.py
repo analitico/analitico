@@ -2,6 +2,8 @@ import django.db.models.signals
 import api.models
 
 from analitico import logger
+
+from api.models import Model
 from api.models.drive import dr_delete_workspace_storage
 from api.k8 import k8_jupyter_deallocate, k8_serving_deallocate, K8_STAGE_STAGING
 from django.dispatch import receiver
@@ -67,6 +69,14 @@ def post_delete_dataset(sender, instance, *args, **kwargs):
 @receiver(django.db.models.signals.post_delete, sender=api.models.Recipe)
 def post_delete_recipe(sender, instance, *args, **kwargs):
     post_delete_item_storage(instance)
+
+    # delete all models belonging to this recipe (check once)
+    models = Model.objects.filter(attributes__contains=instance.id)
+    for model in list(models):
+        # check twice
+        if model.get_attribute("recipe_id") == instance.id:
+            model.delete()
+
     k8_serving_deallocate(instance)
     k8_serving_deallocate(instance, K8_STAGE_STAGING)
 
@@ -86,6 +96,7 @@ def post_delete_notebook(sender, instance, *args, **kwargs):
 @receiver(django.db.models.signals.post_delete, sender=api.models.Model)
 def post_delete_model(sender, instance, *args, **kwargs):
     post_delete_item_storage(instance)
+    # TODO delete images from google registry
 
 
 @receiver(django.db.models.signals.post_delete, sender=api.models.Workspace)
