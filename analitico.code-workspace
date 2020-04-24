@@ -63,6 +63,11 @@
                 "autoFix": true
             }
         ],
-        "explorer.compactFolders": false
+        "explorer.compactFolders": false,
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": [
+            "-l",
+            "120"
+        ]
     }
 }

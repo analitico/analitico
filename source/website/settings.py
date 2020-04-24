@@ -120,15 +120,6 @@ try:
     # SECURITY WARNING: keep the secret key used in production secret!
     SECRET_KEY = os.environ["ANALITICO_SECRET_KEY"]
 
-    # We connect to MySQL using SSL so we need the proper certificates
-    sql_ssl_key_path = os.path.join(BASE_DIR, "../../analitico-ci/ssl/cloudsql/client-key.pem")
-    sql_ssl_cert_path = os.path.join(BASE_DIR, "../../analitico-ci/ssl/cloudsql/client-cert.pem")
-    sql_ssl_ca_path = os.path.join(BASE_DIR, "../../analitico-ci/ssl/cloudsql/server-ca.pem")
-
-    # assert os.path.isfile(sql_ssl_key_path), sql_ssl_key_path + " is missing, please install"
-    # assert os.path.isfile(sql_ssl_cert_path), sql_ssl_cert_path + " is missing, please install"
-    # assert os.path.isfile(sql_ssl_ca_path), sql_ssl_ca_path + " is missing, please install"
-
     # MySQL database
     DATABASES = {
         "default": {
@@ -138,8 +129,7 @@ try:
             "HOST": os.environ["ANALITICO_MYSQL_HOST"],
             "USER": os.environ["ANALITICO_MYSQL_USER"],
             "PASSWORD": os.environ["ANALITICO_MYSQL_PASSWORD"],
-            "CONN_MAX_AGE": 120,  # connection stays on for two minutes
-            "OPTIONS": {"ssl_key": sql_ssl_key_path, "ssl_cert": sql_ssl_cert_path, "ssl_ca": sql_ssl_ca_path},
+            "CONN_MAX_AGE": 120  # connection stays on for two minutes
         }
     }
 
