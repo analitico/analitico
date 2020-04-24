@@ -72,7 +72,7 @@
             "console": "integratedTerminal",
             "args": [
                 "test",
-                "api.test.test_api_dataset.DatasetTests",
+                "api.test.test_api_lifecycle.LifecycleTests.test_lifecycle_delete_recipe_and_models",
                 // "api.test.test_api_k8.K8Tests.test_k8_deploy_automl",
                 // "api.test.test_api_k8.K8Tests.test_k8_job_generate_dataset_metadata",
                 "-v",
@@ -95,6 +95,18 @@
                 "builder",
                 "jb_0rwHrO8vpTig",
                 "ml_OYioM1MCg3AG"
+            ],
+            "django": true
+        },
+        {
+            "name": "Cleaner",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/source",
+            "program": "${workspaceFolder}/source/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "cleaner",
             ],
             "django": true
         },
