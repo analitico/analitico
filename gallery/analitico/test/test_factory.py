@@ -13,7 +13,7 @@ from .test_mixin import TestMixin
 
 # pylint: disable=no-member
 
-TITANIC_PUBLIC_URL = "https://storage.googleapis.com/public.analitico.ai/data/titanic/train.csv"
+TITANIC_PUBLIC_URL = "https://storage.googleapis.com/eu.artifacts.analitico-api.appspot.com/data/train-titanic.csv"
 
 
 class FactoryTests(unittest.TestCase, TestMixin):
@@ -55,9 +55,9 @@ class FactoryTests(unittest.TestCase, TestMixin):
         stream = self.factory.get_url_stream(TITANIC_PUBLIC_URL)
         df = pd.read_csv(stream)
 
-        self.assertEqual(len(df), 891)
-        self.assertEqual(df.columns[1], "Survived")
-        self.assertEqual(df.loc[0, "Name"], "Braund, Mr. Owen òèéàù Harris")
+        self.assertEqual(len(df), 887)
+        self.assertEqual(df.columns[0], "Survived")
+        self.assertEqual(df.loc[0, "Name"], "Mr. Owen òèéàù Harris")
 
     def test_factory_get_gzip_url_stream_(self):
         # Server sends API responses as gzip streams
