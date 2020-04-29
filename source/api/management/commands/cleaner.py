@@ -45,7 +45,9 @@ def delete_extra_models():
         production_model_id = recipe.get_attribute("service.production.item_id")
 
         if num_models > MAX_MODELS:
-            print(f"recipe: {recipe.id}, {num_models} models, staging: {staging_model_id}, production: {production_model_id}")
+            print(
+                f"recipe: {recipe.id}, {num_models} models, staging: {staging_model_id}, production: {production_model_id}"
+            )
             # skip most recent models
             for model in list(models.iterator(chunk_size=1000))[:-MAX_MODELS]:
                 delete = model.id != staging_model_id and model.id != production_model_id
@@ -80,12 +82,10 @@ def google_registry_delete_image_all_tags(image: str):
 
 
 """
+2020-04-29
 (venv) gionata@Yoshi analitico % gsutil -o GSUtil:default_project_id=analitico-api du -shc
-115.45 GiB   gs://data.analitico.ai
-1.36 TiB     gs://eu.artifacts.analitico-api.appspot.com
-2.88 GiB     gs://public.analitico.ai
-65.73 MiB    gs://test.analitico.ai
-1.48 TiB     total
+561.17 GiB   gs://eu.artifacts.analitico-api.appspot.com
+561.17 GiB   total
 """
 
 
