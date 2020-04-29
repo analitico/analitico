@@ -22,7 +22,7 @@ exec gunicorn \
     --bind :$PORT \
     --workers 1 \
     --access-logfile - \
-    --access-logformat '{ "method": "%(m)s", "path": "%(U)s", "query": "%(q)s", "status": %(s)s, "response_length": %(B)s, "content_length": %({content-length}i)s, "host": "%({host}i)s", "request_time": %(L)s, "user_agent": "%(a)s" }' \
+    --access-logformat '{ "method": "%(m)s", "path": "%(U)s", "query": "%(q)s", "status_code": %(s)s, "response_length": %(B)s, "content_length": %({content-length}i)s, "host": "%({host}i)s", "request_time": %(L)s, "user_agent": "%(a)s" }' \
     --log-level debug \
     --timeout 60 \
     app:app
