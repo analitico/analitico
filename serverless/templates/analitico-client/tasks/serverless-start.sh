@@ -22,9 +22,12 @@ exec gunicorn \
     --bind :$PORT \
     --workers 1 \
     --access-logfile - \
-    --access-logformat '{ "remote_address": "%(h)s", "date": "%(t)s", "request_method": "%(m)s", "status_line": "%(r)s", "url_path": "%(U)s", "query_string": "%(q)s", "status": "%(s)s", "response_length": "%(b)s", "content_length": "%({content-length}i)s", "request_time": "%(L)s", "referer": "%(f)s", "user_agent": "%(a)s" }' \
+    --access-logformat '{ "method": "%(m)s", "path": "%(U)s", "query": "%(q)s", "status": %(s)s, "response_length": %(B)s, "content_length": %({content-length}i)s, "host": "%({host}i)s", "request_time": %(L)s, "user_agent": "%(a)s" }' \
     --log-level debug \
     --timeout 60 \
     app:app
+
+# access log format documentation:
+# https://docs.gunicorn.org/en/stable/settings.html#access-log-format
 
 echo "Started"
