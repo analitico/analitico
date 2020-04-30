@@ -286,8 +286,8 @@ class K8ViewSetMixin:
         # query the current service only
         if query:
             query = f"{query} AND "
-        # search for HTTP log transactions starting with HTTP verb
-        query += f"kubernetes.labels.analitico_ai\/workspace-id.keyword:{pk} AND kubernetes.labels.analitico_ai\/service.keyword:serving"
+        # search for HTTP weblog transactions
+        query += f"_exists_:method AND kubernetes.labels.analitico_ai\/workspace-id.keyword:{pk} AND kubernetes.labels.analitico_ai\/service.keyword:serving"
 
         #   query += " AND _exists_:remote_address"
         # include or exclude staging endpoints
@@ -302,8 +302,6 @@ class K8ViewSetMixin:
         params = {
             # https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-query-ex-request
             "query": {"query_string": {"query": query, "default_field": "log"}},
-            # must have http request fields so we filter only website logs
-            # "exists": {"field": "method"},
             "from": from_hit,
             "size": batch_size,
             # https://www.elastic.co/guide/en/elasticsearch/reference/7.5/search-request-body.html#request-body-search-sort
@@ -325,15 +323,6 @@ class K8ViewSetMixin:
         # certs verification is disabled beacause we trust in our k8-self signed certificates
         elastic_search_response = requests.get(url, json=params, headers=headers, verify=False)
         logs = elastic_search_response.json()
-
-        # keep only entry that contain http web logs explicit fields
-        filtered_hits = []
-        for hit in logs["hits"]["hits"]:
-            source = hit["_source"]
-            if "method" in source and "path" in source:
-                filtered_hits.append(hit)
-        logs["hits"]["hits"] = filtered_hits
-
         return Response(logs, content_type="application/json", status=elastic_search_response.status_code)
 
     # kill server on port 8000:
