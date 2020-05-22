@@ -38,11 +38,11 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            timeoutSeconds: 5
+          timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /health
-            timeoutSeconds: 5
+          timeoutSeconds: 5
 
 
 
