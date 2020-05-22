@@ -287,10 +287,10 @@ class K8Tests(AnaliticoApiTestCase):
 
         service = self.deploy_service(wait=False)
         # wait pod to be created
-        time.sleep(5)
+        time.sleep(10)
         # wait for pod to be ready
         status, _ = k8_wait_for_condition(
-            "cloud", "pod", "condition=Ready", labels="serving.knative.dev/service=" + self.item_id_normalized
+            "cloud", "pod", "condition=Ready", labels="serving.knative.dev/service=" + self.item_id_normalized, timeout=120
         )
         self.assertIn("condition met", status)
 
