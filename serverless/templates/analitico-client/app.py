@@ -153,7 +153,13 @@ def handle_main():
 @app.route("/health", methods=["GET", "POST"])
 def handle_health():
     # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#define-a-liveness-http-request
-    return "ready"
+    try:
+        # call the custom test method if set
+        return notebook.test()
+    except (Exception):
+        # the response from this endpoint it's enough 
+        # to consider the app healthy and ready
+        return True
 
 
 @app.route("/version")

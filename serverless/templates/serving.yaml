@@ -35,5 +35,14 @@ spec:
           requests:
             cpu: 500m
             memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            timeoutSeconds: 5
+
 
 
