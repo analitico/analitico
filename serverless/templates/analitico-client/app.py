@@ -165,7 +165,7 @@ def handle_health():
         if not ready:
             status = 404
     
-    return Response('{{"ready": {}}}'.format(str(ready)), status=status)
+    return Response(json.dumps({"ready": ready}), status=status)
 
 
 @app.route("/version")
