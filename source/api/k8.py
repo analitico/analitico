@@ -351,6 +351,17 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         configs["item_id"] = item.id
         configs["log_level"] = "20"
 
+        # retrieve existing services
+        services = target.get_attribute("service", {})
+        # item's service dictionary can have a 'production' and a 'staging' collection or more
+        attrs = services.get(stage, {})
+        
+        # autoscaling
+        min_scale = attrs.get("min_scale", 0)
+        max_scale = attrs.get("max_scale", min(max(1, min_scale), 10))
+        configs["autoscaling_min_scale"] = min_scale
+        configs["autoscaling_max_scale"] = max_scale
+
         if isinstance(target, Automl):
             # single serving image configured for a specific automl
 
@@ -377,11 +388,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         service_filename = os.path.join(TEMPLATE_DIR, "serving.yaml")
         service_json = k8_customize_and_apply(service_filename, **configs)
 
-        # retrieve existing services
-        services = target.get_attribute("service", {})
-
         # save deployment information inside item, endpoint and job
-        attrs = collections.OrderedDict()
         attrs["type"] = "analitico/service"
         attrs["name"] = service_name
         attrs["item_id"] = item.id
@@ -390,7 +397,6 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         attrs["docker"] = item.get_attribute("docker")
         attrs["response"] = service_json
 
-        # item's service dictionary can have a 'production' and a 'staging' collection or more
         services[stage] = attrs
         target.set_attribute("service", services)
         target.save()
