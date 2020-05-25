@@ -155,7 +155,10 @@ def handle_health():
     # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#define-a-liveness-http-request
     try:
         # call the custom test method if set
-        return notebook.test()
+        value = notebook.test()
+        if not isinstance(value, str) and not isinstance(value, dict):
+            value = str(value)
+        return value
     except (Exception):
         # the response from this endpoint it's enough 
         # to consider the app healthy and ready
