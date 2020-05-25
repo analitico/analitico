@@ -272,7 +272,7 @@ class K8Tests(AnaliticoApiTestCase):
         self.assertIn("spec", nodes[0])
         self.assertIn("status", nodes[0])
 
-    @tag("k8s")
+    @tag("k8s", "live")
     def test_k8_wait_for_condition(self):
         # non existent resource
         with self.failUnlessRaises(AnaliticoException):
