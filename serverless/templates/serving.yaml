@@ -13,9 +13,9 @@ spec:
       annotations:
         autoscaling.knative.dev/minScale: "{autoscaling_min_scale}"
         autoscaling.knative.dev/maxScale: "{autoscaling_max_scale}"
-        autoscaling.knative.dev/class: hpa.autoscaling.knative.dev
-        autoscaling.knative.dev/metric: cpu
-        autoscaling.knative.dev/target: "80"
+        autoscaling.knative.dev/class: "{autoscaling_class}"
+        autoscaling.knative.dev/metric: "{autoscaling_metric}"
+        autoscaling.knative.dev/target: "{autoscaling_target}"
       labels:
         analitico.ai/workspace-id: {workspace_id}
         analitico.ai/item-id: {item_id}

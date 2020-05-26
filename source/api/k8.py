@@ -357,10 +357,13 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         attrs = services.get(stage, {})
         
         # autoscaling
-        min_scale = attrs.get("min_scale", 0)
-        max_scale = attrs.get("max_scale", min(max(1, min_scale), 10))
+        min_scale = attrs.get("autoscaling_min_scale", 0)
+        max_scale = attrs.get("autoscaling_max_scale", min(max(1, min_scale), 10))
         configs["autoscaling_min_scale"] = min_scale
         configs["autoscaling_max_scale"] = max_scale
+        configs["autoscaling_class"] = attrs.get("autoscaling_class", "hpa.autoscaling.knative.dev")
+        configs["autoscaling_metric"] = attrs.get("autoscaling_metric", "cpu")
+        configs["autoscaling_target"] = attrs.get("autoscaling_target", 80)
 
         if isinstance(target, Automl):
             # single serving image configured for a specific automl
