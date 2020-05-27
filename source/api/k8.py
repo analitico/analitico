@@ -362,7 +362,7 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         configs["autoscaling_min_scale"] = min_scale
         configs["autoscaling_max_scale"] = max_scale
         # by default is used Knative Pod Autoscaling (KPA) to allow kservice scale to zero
-        configs["autoscaling_class"] = attrs.get("autoscaling_class", "")
+        configs["autoscaling_class"] = attrs.get("autoscaling_class", "kpa.autoscaling.knative.dev")
         configs["autoscaling_metric"] = attrs.get("autoscaling_metric", "concurrency")
         configs["autoscaling_target"] = attrs.get("autoscaling_target", "100")
 
