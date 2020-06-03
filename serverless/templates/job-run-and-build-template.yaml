@@ -57,7 +57,7 @@ spec:
             memory: 28Gi
           limits:
             cpu: 4
-            memory: 32Gi
+            memory: 64Gi
 #           nvidia.com/gpu: 1
       containers:
       # build item into a docker, push to registry, store docker information
