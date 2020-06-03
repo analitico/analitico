@@ -36,7 +36,7 @@ build-and-test:
     ## Install dependecies
     ##
 
-    - apk add git bash curl python
+    - apk add git bash curl python3
     - curl https://sdk.cloud.google.com > script.sh
     - chmod +x script.sh
     - ./script.sh --disable-prompts
