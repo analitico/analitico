@@ -115,7 +115,7 @@ def bless(notebook_path: str) -> bool:
     source = nb_extract_source(read_json(notebook_path))
 
     module_name = "notebook"
-    module_path = "/tmp/notebook.py"
+    module_path = os.path.join(os.path.dirname(notebook_path, "._notebook.py"))
     try:
         save_text(source, module_path)
         spec = spec_from_file_location(module_name, module_path)
