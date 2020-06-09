@@ -10,6 +10,7 @@ import requests
 from importlib.util import spec_from_file_location, module_from_spec
 import tempfile
 import datetime
+import sys
 
 import papermill
 
@@ -19,7 +20,7 @@ from analitico.utilities import read_json, save_json, subprocess_run, read_text,
 import analitico.logging
 
 # python libraries search path
-os.environ["PYTHONPATH"] = os.path.expandvars("$PYTHONPATH:$ANALITICO_ITEM_PATH")
+sys.path.append(os.getenv("ANALITICO_ITEM_PATH", ""))
 
 # provide a basic command line interface to launch jobs
 parser = argparse.ArgumentParser(description="Process a job.")
@@ -115,10 +116,11 @@ def bless(notebook_path: str) -> bool:
     source = nb_extract_source(read_json(notebook_path))
 
     module_name = "notebook"
-    module_path = os.path.join(os.path.dirname(notebook_path), "._notebook.py")
+    module_dir = os.path.dirname(notebook_path)
+    module_path = os.path.join(module_dir, "._notebook.py")
     try:
         save_text(source, module_path)
-        spec = spec_from_file_location(module_name, module_path)
+        spec = spec_from_file_location(module_name, module_path, submodule_search_locations=[module_dir])
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
 
