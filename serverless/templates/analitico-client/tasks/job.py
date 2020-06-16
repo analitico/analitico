@@ -7,12 +7,13 @@ import os
 import json
 import argparse
 import requests
-from importlib.util import spec_from_file_location, module_from_spec
 import tempfile
 import datetime
 import sys
 
 import papermill
+from papermill.execute import load_notebook_node, write_ipynb
+import nbformat
 
 from analitico import AnaliticoException, ACTION_RUN, ACTION_RUN_AND_BUILD
 from analitico.utilities import read_json, save_json, subprocess_run, read_text, save_text
@@ -57,6 +58,7 @@ def try_request_notification(notification_url):
     except Exception:
         logging.warning("Failed to request the notification", exec_info=True)
 
+
 # TODO: Refactory required. This method is duplicated from api/models/notebook.py. Methods
 #       from notebook.py should not be used anywhere else because job runs are executed only by this script.
 def nb_extract_source(nb, disable_scripts=True):
@@ -77,6 +79,7 @@ def nb_extract_source(nb, disable_scripts=True):
                 # comment with cell number makes it a bit easier in case of exceptions
                 source += "# Cell {}\n{}\n\n".format(i, cell["source"])
     return source
+
 
 # TODO: Refactory required. This method is duplicated from api/models/notebook.py. Methods
 #       from notebook.py should not be used anywhere else because job runs are executed only by this script.
@@ -104,53 +107,53 @@ def nb_clear_error_cells(notebook: dict) -> dict:
     return notebook
 
 
-def bless(notebook_path: str) -> bool:
+def add_bless_cell(notebook_node):
     """ 
     User can customize the logic used to decide if a model is imporoved
     than the precedent. The logic is defined in the method `bless()`
     inside the notebook.py module of the recipe.
+
+    Add the invokation of the bless() function in the notebook itself
+    as last code cell.
     """
-    blessed = False
+    blessed_model_id = os.getenv("ANALITICO_BLESSED_MODEL_ID")
+    blessed_metrics = {}
+    if blessed_model_id:
+        blessed_metadata_path = os.path.join(
+            os.path.join(os.getenv("ANALITICO_DRIVE", ""), "models", blessed_model_id, "metadata.json")
+        )
+        try:
+            blessed_metrics = read_json(blessed_metadata_path)
+            blessed_metrics = blessed_metrics.get("scores")
+        except Exception as exc:
+            logging.warning("metrics for the blessed model %s cannot be retrieved: \n%s", blessed_model_id, exc)
 
-    # convert notebook to executable python module
-    source = nb_extract_source(read_json(notebook_path))
-
-    module_name = "notebook"
-    module_dir = os.path.dirname(notebook_path)
-    module_path = os.path.join(module_dir, "._notebook.py")
+    current_metrics = {}
     try:
-        save_text(source, module_path)
-        spec = spec_from_file_location(module_name, module_path, submodule_search_locations=[module_dir])
-        module = module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        if module is not None and hasattr(module, "bless"):
-            logging.info("use custom bless() function defined for the recipe")
-
-            blessed_model_id = os.getenv("ANALITICO_BLESSED_MODEL_ID")
-            blessed_metrics = None
-            if blessed_model_id:
-                blessed_metadata_path = os.path.join(
-                    os.path.join(os.getenv("ANALITICO_DRIVE", ""), "models", blessed_model_id, "metadata.json")
-                )
-                try:
-                    blessed_metrics = read_json(blessed_metadata_path)
-                    blessed_metrics = blessed_metrics.get("scores")
-                except Exception as exc:
-                    logging.warning("metrics for the blessed model %s cannot be retrieved: \n%s", blessed_model_id, exc)
-
-            current_metrics = None
-            try:
-                current_metrics = read_json(os.path.join(os.path.dirname(notebook_path), "metadata.json"))
-            except Exception as exc:
-                logging.warning("metrics for the current execution cannot be retrieved: \n%s", exc)
-
-            blessed = module.bless(None, current_metrics, blessed_model_id, blessed_metrics)
-
+        current_metrics = read_json(os.path.join(os.path.dirname(notebook_path), "metadata.json"))
     except Exception as exc:
-        logging.error("load module %s at %s failed:\n %s", module_name, module_path, exc)
+        logging.warning("metrics for the current execution cannot be retrieved: \n%s", exc)
 
-    return blessed
+    source_path = "/app/tasks/bless.py"
+    bless_args = {
+        "current_metrics": current_metrics,
+        "blessed_model_id": blessed_model_id,
+        "blessed_metrics": blessed_metrics,
+    }
+    cell = nbformat.v4.new_code_cell(
+        source=read_text(source_path).format(**bless_args), metadata={"name": "analitico_bless_cell"}
+    )
+    notebook_node.cells.append(cell)
+
+    return notebook_node
+
+
+def remove_bless_cell(notebook_node):
+    """ Remove the Analitico cell with the invocation of the bless() method. """
+    notebook_node.cells = [
+        cell for cell in notebook_node.cells if "analitico_bless_cell" != cell.metadata.get("name", "")
+    ]
+    return notebook_node
 
 
 try:
@@ -206,16 +209,22 @@ try:
         logging.info("Notebook directory: " + os.getcwd())
         logging.info("Running papermill to process notebook")
 
-        papermill.execute_notebook(notebook_path, notebook_path, cwd=notebook_dir, log_output=True)
+        # alter the notebook by adding the bless invocation
+        # of the bless() function
+        notebook_node = load_notebook_node(notebook_path)
+        notebook_node = add_bless_cell(notebook_node)
 
-        # if defined, check if model has improved metrics and should be promoted
-        is_blessed = bless(notebook_path)
-        logging.info("model is blessed: %s", is_blessed)
-        if is_blessed:
-            analitico.set_metric("blessed_on", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        # work on a temporary file to not alter the original notebook
+        with tempfile.NamedTemporaryFile(suffix=".ipynb") as f:
+            write_ipynb(notebook_node, f.name)
+            notebook_node = papermill.execute_notebook(f.name, f.name, cwd=notebook_dir, log_output=True)
+
+        notebook_node = remove_bless_cell(notebook_node)
+        write_ipynb(notebook_node, notebook_path)
 
     except Exception as exc:
         raise AnaliticoException(f"Error while processing {notebook_path}, exc: {exc}") from exc
+
 except Exception:
     # when job does `run and build` error notification must be sent
     notification_url = os.environ.get("ANALITICO_NOTIFICATION_URL")
