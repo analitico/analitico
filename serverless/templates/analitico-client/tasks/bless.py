@@ -12,9 +12,8 @@ blessed = False
 
 try:
     blessed = bless(model_id=None, metrics={current_metrics}, blessed_model_id="{blessed_model_id}", blessed_metrics={blessed_metrics})
-    print("using custom bless function defined for the recipe")
     
-    print("model is blessed: " + str(blessed))
+    print("using custom bless function defined for the recipe - model is blessed: " + str(blessed))
     if blessed:
         analitico.set_metric("blessed_on", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 except NameError:
