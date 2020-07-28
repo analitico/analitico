@@ -36,11 +36,11 @@ spec:
           value: "{log_level}"
         resources:
           limits:
-            cpu: 4
-            memory: 18Gi
+            cpu: {cpu_limit}
+            memory: {memory_limit}
           requests:
-            cpu: 500m
-            memory: 2Gi
+            cpu: {cpu_request}
+            memory: {memory_request}
         livenessProbe:
           httpGet:
             path: /health

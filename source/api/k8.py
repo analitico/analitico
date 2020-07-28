@@ -365,6 +365,12 @@ def k8_deploy_v2(item: ItemMixin, target: ItemMixin, stage: str = K8_STAGE_PRODU
         configs["autoscaling_class"] = attrs.get("autoscaling_class", "kpa.autoscaling.knative.dev")
         configs["autoscaling_metric"] = attrs.get("autoscaling_metric", "concurrency")
         configs["autoscaling_target"] = attrs.get("autoscaling_target", "100")
+        configs["autoscaling_target"] = attrs.get("autoscaling_target", "100")
+        
+        configs["cpu_limit"] = attrs.get("cpu_limit", "4")
+        configs["memory_limit"] = attrs.get("memory_limit", "18Gi")
+        configs["cpu_request"] = attrs.get("cpu_request", "500m")
+        configs["memory_request"] = attrs.get("memory_request", "2Gi")
 
         if isinstance(target, Automl):
             # single serving image configured for a specific automl
