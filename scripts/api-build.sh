@@ -10,7 +10,7 @@ echo "$(date +'%T'): Build analitico api and test"
 cd /home/www/analitico
 
 echo "Installing requirements"
-pip install --upgrade pip
+pip install pip==20.1.1
 pip install -r requirements.txt
 # since python 3.6 the `enum34` is no longer compatible with the standard library.
 # it should be fixed with the ticket `server / clean up and update requirements #143`
