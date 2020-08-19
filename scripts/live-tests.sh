@@ -42,18 +42,18 @@ do
     COMPLETEDTIME="$(date -u +%s)"
     RUNNING_TIME_SECS="$((($COMPLETEDTIME - STARTTIME)))"
 
-    count=0
+    succeded=0
+    failed=0
 
     len=${#endpoints[@]}
     for (( i=0; i<${len}; i++ ))
     do
 
-        count=$(($count+1))
-
         # exec the command and intercept the error message
         # the `true` is required to let the loop continue on error
         NAME_TEST=${names[$i]}
         CMD_TEST=${endpoints[$i]}
+        EXITSTATUS=0
 
         OUTPUT=$(eval "$CMD_TEST" 2>&1) || EXITSTATUS=$? || true
         # escape double quotes
@@ -63,26 +63,37 @@ do
         if [[ $EXITSTATUS -ne 0 ]]
         then
             echo "Tests failed"
+            failed=$(($failed+1))
 
             CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": %s, "color": "%s" } ] }' \
-                    "Failed (${count}/${len}): ${NAME_TEST}" \
+                    "Failed: ${NAME_TEST}" \
                     "${OUTPUT}" \
                     "danger")"
-        else 
-            CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": %s, "color": "%s" } ] }' \
-                    "Succeded (${count}/${len}): ${NAME_TEST}" \
-                    "${OUTPUT}" \
-                    "good")"
-        fi
 
-        curl --silent \
+            curl --silent \
                 -X POST \
                 -H "Accept: application/json" \
                 -H "Content-Type:application/json" \
                 --data "${CONTENT}" ${ANALITICO_SLACK_INTERNAL_WEBHOOK} || true
+        else
+            succeded=$(($succeded+1))
+        fi
     
     done
     # end loop
+
+    # summary
+    CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": "%s", "color": "%s" } ] }' \
+        "Monitor tests completed" \
+        "Succeded: ${succeded} - Failed: ${failed} - Run: ${len}" \
+        "good")"
+
+
+    curl --silent \
+        -X POST \
+        -H "Accept: application/json" \
+        -H "Content-Type:application/json" \
+        --data "${CONTENT}" ${ANALITICO_SLACK_INTERNAL_WEBHOOK} || true
 
     echo ""
     echo "Run completd in ${RUNNING_TIME_SECS} minutes."
