@@ -1,26 +1,37 @@
 #!/bin/bash
 
 ##
-# Execute Analitico tests tagged as `live`.
+# Execute Analitico endpoints for monitoring
 #
-# First, is run the docker deamon used by tests that require to build images.
-# This script is run on the `analitico` image that has already installed
-# a docker deamon and the script to run the deamon.
 ##
 
-if ! pgrep dockerd
-then
-    echo "Running docker daemon..."
-    # run and wait it starts listening
-    dockerd-entrypoint.sh &> /dev/null &
-    sleep 5s
-fi
 
 BASEDIR=$(dirname "$0")
 source $BASEDIR/import-env.sh
-cd $BASEDIR/../source
 
-# start a python worker process for executing
+# start a worker process for executing
+
+# endpoints to monitor
+declare -A names
+declare -A endpoints
+names[0]="API (without load balancer)"
+endpoints[0]='curl --silent --show-error --fail -H "Host:api.cloud.analitico.ai" -X GET https://s1.analitico.ai:31390/api/runtime'
+
+names[1]="api/jobs/schedule (cron)"
+endpoints[1]='curl --silent --show-error --fail -H "Authorization:Bearer tok_tester1_Xf4dfG345B" -X GET https://analitico.ai/api/jobs/schedule'
+
+names[2]="api/datasets"
+endpoints[2]='curl --silent --show-error --fail -X GET https://analitico.ai/api/datasets?token=tok_tester1_Xf4dfG345B&test=true'
+
+names[3]="app"
+endpoints[3]='curl --silent --show-error --fail -X GET https://analitico.ai/app'
+
+names[4]="elasticsearch (logs)"
+endpoints[4]='curl --silent --show-error --fail -H "Authorization:Bearer tok_tester3_vgG42y6S" -X GET https://analitico.ai/api/recipes/rx_helloworld/k8s/services/production/logs?size=50'
+
+names[5]="prometheus (metrics)"
+endpoints[5]='curl --silent --show-error --fail -X GET https://prometheus.cloud.analitico.ai/-/healthy'
+
 
 echo "Starting worker..."
 while true
@@ -28,48 +39,56 @@ do
     echo "$(date -u) - Running tests..."
     STARTTIME="$(date -u +%s)"
 
-    # exec the command and intercept the error message
-    # the `true` is required to let the loop continue on error
-    CMD_TEST="./manage.py test --tag=live"
-    { ERROR="$($CMD_TEST 2>&1 1>&3 3>&- )";  } 3>&1 || EXITSTATUS=$? || true
-    
     COMPLETEDTIME="$(date -u +%s)"
-    RUNNING_TIME_MIN="$((($COMPLETEDTIME - STARTTIME) / 60))"
+    RUNNING_TIME_SECS="$((($COMPLETEDTIME - STARTTIME)))"
 
-    # notify slack in case of errors
-    if [[ $EXITSTATUS -ne 0 ]]
-    then
-        echo "Tests failed"
+    count=0
 
-        # extract test results
-        [[ $(echo $ERROR) =~ (\=== (.*?) \---) ]]
+    len=${#endpoints[@]}
+    for (( i=0; i<${len}; i++ ))
+    do
 
-        echo ${BASH_REMATCH[0]}
+        count=$(($count+1))
 
+        # exec the command and intercept the error message
+        # the `true` is required to let the loop continue on error
+        NAME_TEST=${names[$i]}
+        CMD_TEST=${endpoints[$i]}
+
+        OUTPUT=$(eval "$CMD_TEST" 2>&1) || EXITSTATUS=$? || true
         # escape double quotes
-        ERROR=${BASH_REMATCH[0]//'"'/'\"'}
+        OUTPUT=$(printf '%s' ${OUTPUT} | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 
-        CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": "%s", "color": "%s" } ] }' \
-                "Live tests failed" \
-                "${ERROR}" \
-                "danger")"
-    else 
-        CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": "%s", "color": "%s" } ] }' \
-                "Live tests completed" \
-                "Live tests completed with success in ${RUNNING_TIME_MIN} minutes" \
-                "good")"
-    fi
+        # notify slack in case of errors
+        if [[ $EXITSTATUS -ne 0 ]]
+        then
+            echo "Tests failed"
 
-    curl --silent \
-             -X POST \
-             -H "Accept: application/json" \
-             -H "Content-Type:application/json" \
-             --data "${CONTENT}" ${ANALITICO_SLACK_INTERNAL_WEBHOOK} || true
+            CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": %s, "color": "%s" } ] }' \
+                    "Failed (${count}/${len}): ${NAME_TEST}" \
+                    "${OUTPUT}" \
+                    "danger")"
+        else 
+            CONTENT="$(printf '{"text": "%s", "attachments": [ {"text": %s, "color": "%s" } ] }' \
+                    "Succeded (${count}/${len}): ${NAME_TEST}" \
+                    "${OUTPUT}" \
+                    "good")"
+        fi
+
+        curl --silent \
+                -X POST \
+                -H "Accept: application/json" \
+                -H "Content-Type:application/json" \
+                --data "${CONTENT}" ${ANALITICO_SLACK_INTERNAL_WEBHOOK} || true
     
-    echo "Run completd in ${RUNNING_TIME_MIN} minutes."
+    done
+    # end loop
+
+    echo ""
+    echo "Run completd in ${RUNNING_TIME_SECS} minutes."
 
     # 5 min between tests
-    echo "Next run in 60 minutes"
+    echo "Next run in 60 seconds"
     
-    sleep 3600
+    sleep 60
 done
