@@ -607,6 +607,11 @@ def k8_jobs_create(
             ["python3", "./tasks/job.py", os.path.normpath(f"$ANALITICO_DRIVE/{item.type}s/{item.id}/{notebook_name}")]
         )
 
+        configs["cpu_request"] = item.get_attribute("job.cpu_request", "500m")
+        configs["memory_request"] = item.get_attribute("job.memory_request", "4Gi")
+        configs["cpu_limit"] = item.get_attribute("job.cpu_limit", "2")
+        configs["memory_limit"] = item.get_attribute("job.memory_limit", "8Gi")
+
         configs["run_image"] = f"eu.gcr.io/analitico-api/analitico-client:{image_tag}"
 
     if job_action == analitico.ACTION_BUILD or job_action == analitico.ACTION_RUN_AND_BUILD:

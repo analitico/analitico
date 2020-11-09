@@ -53,12 +53,11 @@ spec:
           readOnly: false
         resources:
           requests:
-            cpu: 500m
-            memory: 28Gi
+            cpu: {cpu_request}
+            memory: {memory_request}
           limits:
-            cpu: 4
-            memory: 64Gi
-#           nvidia.com/gpu: 1
+            cpu: {cpu_limit}
+            memory: {memory_limit}
       containers:
       # build item into a docker, push to registry, store docker information
       - name: build-job-container
