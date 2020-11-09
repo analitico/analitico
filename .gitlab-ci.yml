@@ -52,6 +52,7 @@ build-and-test:
     ## 
     
     # cleanup
+    - mkdir -p $WORKDIR
     - cd $WORKDIR
     - rm -rf $WORKDIR/*
     # clone with submodule 
