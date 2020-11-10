@@ -1,3 +1,5 @@
+# !! Project source code moved to GitLab due to CD/CI mirroring limitation !!
+
 # analitico.ai
  
 This project includes analitico's website, APIs and libraries. A number of experiments, data sources, queries, jupyter notebooks are also available. Large data files and models are stored externally. 
