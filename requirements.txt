@@ -29,7 +29,7 @@ Django==2.2.4
 django-allauth==0.38.0
 django-cors-headers==2.4.0
 django-filter==2.0.0
-djangorestframework==3.9.4
+djangorestframework==3.11.2
 djangorestframework-jsonapi==2.6.0
 docker==4.0.1
 docutils==0.14
