@@ -111,7 +111,7 @@ pycodestyle==2.4.0
 pycparser==2.19
 pydocstyle==3.0.0
 pyflakes==1.6.0
-Pygments==2.3.0
+Pygments==2.7.4
 pylint==2.1.1
 pylint-celery==0.3
 pylint-django==2.0.2
