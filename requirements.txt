@@ -25,7 +25,7 @@ decorator==4.3.0
 defusedxml==0.5.0
 diskcache==4.1.0
 distro==1.4.0
-Django==2.2.4
+Django==2.2.20
 django-allauth==0.38.0
 django-cors-headers==2.4.0
 django-filter==2.0.0
