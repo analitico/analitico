@@ -23,7 +23,7 @@ papermill==1.0.1
 ## Required by Jupyter
 # Extension for displaying resource usage (https://github.com/yuvipanda/nbresuse)
 nbresuse==0.3.2
-tensorflow==2.0.1
+tensorflow==2.6.4
 # it works with tf 2.0.x
 tensorflow-data-validation==0.15.0
 
