@@ -57,7 +57,7 @@ isort==4.3.4
 itypes==1.1.0
 jedi==0.13.1
 Jinja2==2.10.1
-joblib==0.13.0
+joblib==1.2.0
 jsonfield==2.0.2
 jsonpointer==1.14
 jsonschema==3.2.0
